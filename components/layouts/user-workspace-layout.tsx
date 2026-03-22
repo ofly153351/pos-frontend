@@ -1,0 +1,89 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+
+import { UserWorkspaceSidebar } from "@/components/navigation/user-workspace-sidebar";
+import { UserWorkspaceTopbar } from "@/components/navigation/user-workspace-topbar";
+import type { Locale } from "@/lib/locale-config";
+import { getCurrentStoreId } from "@/lib/store-storage";
+
+type UserWorkspaceLayoutProps = {
+  children: React.ReactNode;
+  locale: Locale;
+  shell: {
+    brand: string;
+    completeSale: string;
+    dashboard: string;
+    inventory: string;
+    register: string;
+    searchPlaceholder: string;
+    settings: string;
+    station: string;
+    transactions: string;
+  };
+  titles: {
+    dashboard: string;
+    sales: string;
+    stock: string;
+  };
+};
+
+export function UserWorkspaceLayout({
+  children,
+  locale,
+  shell,
+  titles,
+}: UserWorkspaceLayoutProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!getCurrentStoreId()) {
+      router.replace(`/${locale}/setup/store`);
+    }
+  }, [locale, router]);
+
+  const title = useMemo(() => {
+    if (pathname.endsWith("/sales")) {
+      return titles.sales;
+    }
+
+    if (pathname.endsWith("/stock")) {
+      return titles.stock;
+    }
+
+    return titles.dashboard;
+  }, [pathname, titles.dashboard, titles.sales, titles.stock]);
+
+  return (
+    <div className="min-h-screen bg-[#f9f9f9] text-slate-900">
+      <UserWorkspaceSidebar
+        collapsed={collapsed}
+        labels={{
+          dashboard: shell.dashboard,
+          inventory: shell.inventory,
+          register: shell.register,
+          settings: shell.settings,
+          transactions: shell.transactions,
+        }}
+        locale={locale}
+        shell={shell}
+      />
+
+      <div
+        className={`flex min-h-screen flex-col transition-all duration-300 ${
+          collapsed ? "ml-20" : "ml-64"
+        }`}
+      >
+        <UserWorkspaceTopbar
+          onToggle={() => setCollapsed((current) => !current)}
+          searchPlaceholder={shell.searchPlaceholder}
+          title={title}
+        />
+        <main className="flex-1 p-8">{children}</main>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,434 @@
+{
+  "common": {
+    "brand": "POS Suite",
+    "language": "Language",
+    "thai": "TH",
+    "english": "EN",
+    "switchToLogin": "Already have an account?",
+    "switchToRegister": "New to the system?",
+    "createAccount": "Create account",
+    "signIn": "Sign in",
+    "footerNote": "Responsive layout for front store and back office teams"
+  },
+  "validation": {
+    "required": "This field is required.",
+    "emailInvalid": "Please enter a valid email address.",
+    "passwordMin": "Password must be at least 8 characters.",
+    "genericError": "Something went wrong. Please try again.",
+    "redirecting": "Redirecting..."
+  },
+  "login": {
+    "eyebrow": "Store access",
+    "title": "Sign in to start selling",
+    "description": "Open the cashier screen, manage orders, and keep the counter moving without delays.",
+    "cardTitle": "Login",
+    "cardDescription": "Use your store account to access the POS dashboard.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "manager@store.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "submit": "Login",
+    "secondaryTitle": "Ready for service",
+    "secondaryDescription": "Designed for retail teams that need a quick workflow, clear stock visibility, and fewer mistakes at checkout."
+  },
+  "register": {
+    "eyebrow": "New store setup",
+    "title": "Create your POS account",
+    "description": "Set up the first staff account and prepare your store for sales, stock tracking, and daily reporting.",
+    "cardTitle": "Register",
+    "cardDescription": "Start with a primary account for your business.",
+    "nameLabel": "Full name",
+    "namePlaceholder": "Store owner name",
+    "storeLabel": "Store name",
+    "storePlaceholder": "Downtown Market",
+    "emailLabel": "Email",
+    "emailPlaceholder": "owner@store.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Create a password",
+    "submit": "Create account",
+    "secondaryTitle": "Built for busy counters",
+    "secondaryDescription": "A clean setup flow gives your team a stable starting point before products, staff roles, and payment settings are added."
+  },
+  "dashboard": {
+    "title": "Store dashboard",
+    "subtitle": "Track sales, move to the cashier screen quickly, and keep an eye on stock signals from one overview.",
+    "cards": {
+      "salesTodayLabel": "Sales today",
+      "salesTodayHint": "Current total from the active shift.",
+      "ordersLabel": "Orders",
+      "ordersHint": "Completed orders across all counters today.",
+      "lowStockLabel": "Low stock",
+      "lowStockHint": "Items that should be reviewed by the back office."
+    },
+    "quickActionsTitle": "Quick actions",
+    "actions": {
+      "newSaleTitle": "Open cashier",
+      "newSaleDescription": "Jump into the selling screen for walk-in customers and fast checkout.",
+      "stockTitle": "Review stock room",
+      "stockDescription": "Open the back-office stock page to inspect low inventory and incoming items."
+    },
+    "activityTitle": "Recent activity",
+    "activityItems": [
+      {
+        "time": "09:30",
+        "title": "Morning shift started",
+        "description": "Cash drawer counted and ready for the first wave of customers."
+      },
+      {
+        "time": "11:10",
+        "title": "Best seller updated",
+        "description": "Iced Americano moved to the top product spot for the current day."
+      },
+      {
+        "time": "13:40",
+        "title": "Stock alert received",
+        "description": "Whole milk and takeaway lids dropped below the reorder threshold."
+      }
+    ]
+  },
+  "workspace": {
+    "navigation": {
+      "dashboard": "Dashboard",
+      "sales": "Sales",
+      "stock": "Stock"
+    }
+  },
+  "sales": {
+    "title": "Cashier screen",
+    "subtitle": "Keep the selling flow fast with quick product picks, a visible order summary, and a focused checkout area.",
+    "catalogTitle": "Product catalog",
+    "catalogDescription": "Tap a product to add it into the current bill.",
+    "searchPlaceholder": "Search product / scan barcode",
+    "addButton": "Add to cart",
+    "cartTitle": "Current order",
+    "checkoutButton": "Charge customer",
+    "quickKeypadTitle": "Quick keypad",
+    "summary": {
+      "subtotalLabel": "Subtotal",
+      "subtotalValue": "฿260",
+      "discountLabel": "Discount",
+      "discountValue": "฿20",
+      "totalLabel": "Total",
+      "totalValue": "฿240"
+    },
+    "products": [
+      {
+        "category": "Coffee",
+        "name": "Iced Americano",
+        "price": "฿80",
+        "stock": "24 left"
+      },
+      {
+        "category": "Coffee",
+        "name": "Latte",
+        "price": "฿95",
+        "stock": "18 left"
+      },
+      {
+        "category": "Bakery",
+        "name": "Butter Croissant",
+        "price": "฿65",
+        "stock": "11 left"
+      },
+      {
+        "category": "Tea",
+        "name": "Thai Milk Tea",
+        "price": "฿85",
+        "stock": "20 left"
+      },
+      {
+        "category": "Dessert",
+        "name": "Cheesecake Slice",
+        "price": "฿110",
+        "stock": "7 left"
+      },
+      {
+        "category": "Add-on",
+        "name": "Extra Shot",
+        "price": "฿30",
+        "stock": "Always"
+      }
+    ],
+    "cartItems": [
+      {
+        "name": "Iced Americano",
+        "meta": "1 x ฿80",
+        "price": "฿80"
+      },
+      {
+        "name": "Latte",
+        "meta": "2 x ฿95",
+        "price": "฿190"
+      }
+    ],
+    "quickKeypad": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "%", "0", "CLR"]
+  },
+  "admin": {
+    "eyebrow": "Admin workspace",
+    "title": "Subscription plans",
+    "description": "Manage the current store subscription after the store has been created. This area is reserved for owner and management roles.",
+    "backToDashboard": "Back to dashboard",
+    "backToLogin": "Back to login",
+    "navigation": {
+      "dashboard": "Dashboard",
+      "plans": "Plans"
+    },
+    "planManager": {
+      "title": "Store subscription",
+      "helper": "Review the active plan and switch to another plan when the store needs different limits or pricing.",
+      "currentLabel": "Current plan",
+      "selectLabel": "Select plan",
+      "save": "Update subscription",
+      "saving": "Updating...",
+      "empty": "No plan selected"
+    }
+  },
+  "storeSetup": {
+    "title": "Store setup",
+    "createTitle": "Create your first store",
+    "helper": "The store must exist before products, product types, or subscription changes can be managed.",
+    "nameLabel": "Store name",
+    "slugLabel": "Store slug",
+    "descriptionLabel": "Store description",
+    "save": "Create store",
+    "saving": "Creating store...",
+    "manualSelect": "Use existing store",
+    "existingStoreIdLabel": "Existing store ID",
+    "openDashboard": "Open store",
+    "createStore": "Create store",
+    "selectedPlanLabel": "Selected plan",
+    "selectedPlanEmpty": "No plan selected yet",
+    "planRequired": "Select a subscription plan before continuing",
+    "phoneLabel": "Phone number",
+    "addressLabel": "Address",
+    "currencyLabel": "Currency code",
+    "planNames": {
+      "plan_starter_monthly": "Starter",
+      "starter": "Starter",
+      "plan_growth_monthly": "Growth",
+      "growth": "Growth",
+      "plan_pro_yearly": "Pro",
+      "pro": "Pro"
+    }
+  },
+  "subscription": {
+    "title": "Choose a plan before store setup",
+    "subtitle": "Pick the subscription that fits your business first, then continue to create the store and connect that plan to it.",
+    "helper": "The selected plan will be kept for the next step so you can continue with store setup immediately.",
+    "ctaLabel": "Continue to store setup",
+    "selectedBadge": "Selected",
+    "plans": [
+      {
+        "id": "plan_starter_monthly",
+        "code": "starter",
+        "name": "Starter",
+        "description": "Single-store starter plan",
+        "durationDays": 30,
+        "price": "299.00",
+        "currency": "THB"
+      },
+      {
+        "id": "plan_growth_monthly",
+        "code": "growth",
+        "name": "Growth",
+        "description": "Growing store plan",
+        "durationDays": 30,
+        "price": "799.00",
+        "currency": "THB"
+      },
+      {
+        "id": "plan_pro_yearly",
+        "code": "pro",
+        "name": "Pro",
+        "description": "Annual professional plan",
+        "durationDays": 365,
+        "price": "7990.00",
+        "currency": "THB"
+      }
+    ]
+  },
+  "stock": {
+    "title": "Stock management",
+    "subtitle": "Monitor inventory health, prepare receiving work, and keep the storefront supplied before items run out.",
+    "shell": {
+      "brand": "Kinetic POS",
+      "station": "Station 01",
+      "register": "Register",
+      "inventory": "Inventory",
+      "transactions": "Transactions",
+      "settings": "User Plans",
+      "completeSale": "Complete Sale",
+      "searchPlaceholder": "Search SKU or Name..."
+    },
+    "stats": {
+      "totalProductsLabel": "Total Products",
+      "totalProductsValue": "1,284",
+      "lowStockLabel": "Low Stock",
+      "lowStockValue": "12",
+      "categoriesLabel": "Categories",
+      "categoriesValue": "18"
+    },
+    "quickAction": {
+      "label": "Quick Action",
+      "title": "Add New Item",
+      "button": "Open Catalog"
+    },
+    "filters": {
+      "categoryLabel": "Category",
+      "categoryValue": "All Categories",
+      "statusLabel": "Stock Status",
+      "statusValue": "All Status",
+      "gridView": "Grid",
+      "listView": "List"
+    },
+    "table": {
+      "productDetails": "Product Details",
+      "category": "Category",
+      "sku": "SKU",
+      "price": "Price",
+      "stock": "Stock",
+      "actions": "Actions",
+      "editAction": "Edit",
+      "deleteAction": "Delete"
+    },
+    "inventoryItems": [
+      {
+        "code": "AR",
+        "name": "Alpha Runner X1",
+        "updated": "Updated 2h ago",
+        "category": "Footwear",
+        "sku": "SNK-ALPH-992",
+        "price": "$129.00",
+        "stockValue": "85",
+        "barWidth": "85%",
+        "statusTone": "healthy"
+      },
+      {
+        "code": "TW",
+        "name": "Titanium Smart Watch",
+        "updated": "Updated yesterday",
+        "category": "Electronics",
+        "sku": "WTC-TITN-041",
+        "price": "$449.50",
+        "stockValue": "4",
+        "barWidth": "12%",
+        "statusTone": "danger"
+      },
+      {
+        "code": "SP",
+        "name": "Studio Pro Wireless",
+        "updated": "Updated 3d ago",
+        "category": "Electronics",
+        "sku": "AUD-STU-882",
+        "price": "$199.00",
+        "stockValue": "42",
+        "barWidth": "42%",
+        "statusTone": "healthy"
+      },
+      {
+        "code": "SC",
+        "name": "Swift Core v2",
+        "updated": "Updated 5d ago",
+        "category": "Footwear",
+        "sku": "SNK-SWFT-210",
+        "price": "$85.00",
+        "stockValue": "Out of Stock",
+        "barWidth": "0%",
+        "statusTone": "danger"
+      }
+    ],
+    "pagination": {
+      "summary": "Showing 1 to 10 of 1,284 products",
+      "previous": "Prev",
+      "next": "Next",
+      "activePage": "1",
+      "pages": ["1", "2", "3"]
+    },
+    "assetValue": {
+      "label": "Total Asset Value",
+      "value": "$84,291.50"
+    },
+    "loading": "Loading products...",
+    "emptyState": "No products found for this store yet.",
+    "searchPlaceholder": "Search SKU or Name...",
+    "form": {
+      "titleCreate": "Create product",
+      "titleEdit": "Edit product",
+      "nameLabel": "Product name",
+      "nameHint": "Use the customer-facing product name shown in the POS and reports.",
+      "skuLabel": "SKU",
+      "skuHint": "Optional internal code for scanning, search, or stock lookup.",
+      "quantityLabel": "Quantity",
+      "quantityHint": "Current stock on hand. Use whole numbers only.",
+      "basePriceLabel": "Base price",
+      "basePriceHint": "Standard selling price before any special pricing is applied.",
+      "amountLabel": "Amount",
+      "optionalLabel": "Optional",
+      "requiredLabel": "Required",
+      "specialPriceLabel": "Special price",
+      "specialPriceHint": "Optional override price used for promotions or temporary discounts.",
+      "categoryLabel": "Product type",
+      "categoryHint": "Choose the store category this product belongs to.",
+      "unitTypeLabel": "Unit type",
+      "unitTypeHint": "Select how this item is sold, for example piece or pair.",
+      "unitPiece": "Piece",
+      "unitPair": "Pair",
+      "imageLabel": "Image",
+      "imageHint": "Optional product photo shown in product listings and selection screens.",
+      "activeLabel": "Active product",
+      "activeHint": "Inactive products stay in the system but are hidden from active selling flows.",
+      "detailsSection": "Product details",
+      "detailsSectionHint": "Define the identity of the item so staff can find it quickly.",
+      "pricingSection": "Pricing and stock",
+      "pricingSectionHint": "Control selling price and available quantity before publishing.",
+      "setupSection": "Category and media",
+      "setupSectionHint": "Connect the product to store-specific catalog settings.",
+      "productTypeNameLabel": "New product type name",
+      "productTypeSlugLabel": "New product type slug",
+      "createType": "Create type",
+      "createProduct": "Create product",
+      "save": "Save changes",
+      "cancel": "Cancel"
+    },
+    "units": {
+      "title": "Product units",
+      "helper": "Define store-specific measurement units before creating products.",
+      "empty": "No units defined yet",
+      "codeLabel": "Unit code",
+      "nameLabel": "Display name",
+      "descriptionLabel": "Description",
+      "createButton": "Add unit",
+      "activateLabel": "Activate",
+      "deactivateLabel": "Deactivate",
+      "deleteLabel": "Remove",
+      "requiredError": "Name is required"
+    },
+    "management": {
+      "title": "Catalog setup",
+      "helper": "Create store-specific product types and units before adding products.",
+      "typesCountLabel": "Product types",
+      "unitsCountLabel": "Product units",
+      "createTypeButton": "Create product type",
+      "createUnitButton": "Create product unit",
+      "typeTitle": "Product types",
+      "unitTitle": "Product units",
+      "typeEmpty": "No product types defined yet",
+      "unitEmpty": "No product units defined yet",
+      "descriptionLabel": "Description",
+      "activeLabel": "Active",
+      "inactiveLabel": "Inactive",
+      "editLabel": "Edit",
+      "expandLabel": "Show list",
+      "collapseLabel": "Hide list",
+      "createTypeTitle": "Create product type",
+      "editTypeTitle": "Edit product type",
+      "createUnitTitle": "Create product unit",
+      "editUnitTitle": "Edit product unit",
+      "typeNameLabel": "Type name",
+      "typeSlugLabel": "Type slug",
+      "typeRequiredError": "Name is required",
+      "saveTypeButton": "Save type",
+      "saveUnitButton": "Save unit"
+    }
+  }
+}

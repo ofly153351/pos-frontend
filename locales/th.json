@@ -1,0 +1,434 @@
+{
+  "common": {
+    "brand": "POS Suite",
+    "language": "ภาษา",
+    "thai": "TH",
+    "english": "EN",
+    "switchToLogin": "มีบัญชีอยู่แล้ว?",
+    "switchToRegister": "เพิ่งเริ่มใช้งาน?",
+    "createAccount": "สมัครสมาชิก",
+    "signIn": "เข้าสู่ระบบ",
+    "footerNote": "เลย์เอาต์รองรับทั้งหน้าร้านและทีมหลังบ้าน"
+  },
+  "validation": {
+    "required": "กรุณากรอกข้อมูล",
+    "emailInvalid": "กรุณากรอกอีเมลให้ถูกต้อง",
+    "passwordMin": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+    "genericError": "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+    "redirecting": "กำลังเปลี่ยนหน้า..."
+  },
+  "login": {
+    "eyebrow": "ทางเข้าระบบร้านค้า",
+    "title": "เข้าสู่ระบบเพื่อเริ่มขาย",
+    "description": "เปิดหน้าขาย จัดการออเดอร์ และทำงานหน้าร้านได้ต่อเนื่องโดยไม่สะดุด",
+    "cardTitle": "เข้าสู่ระบบ",
+    "cardDescription": "ใช้บัญชีของร้านเพื่อเข้าใช้งานแดชบอร์ด POS",
+    "emailLabel": "อีเมล",
+    "emailPlaceholder": "manager@store.com",
+    "passwordLabel": "รหัสผ่าน",
+    "passwordPlaceholder": "กรอกรหัสผ่าน",
+    "submit": "เข้าสู่ระบบ",
+    "secondaryTitle": "พร้อมสำหรับหน้าร้าน",
+    "secondaryDescription": "ออกแบบมาสำหรับทีมขายที่ต้องการความเร็ว มองเห็นสต็อกชัดเจน และลดความผิดพลาดตอนชำระเงิน"
+  },
+  "register": {
+    "eyebrow": "เริ่มต้นเปิดร้านใหม่",
+    "title": "สร้างบัญชีสำหรับระบบ POS",
+    "description": "ตั้งค่าบัญชีหลักของร้าน เพื่อเตรียมพร้อมสำหรับการขาย การติดตามสต็อก และสรุปรายงานประจำวัน",
+    "cardTitle": "สมัครสมาชิก",
+    "cardDescription": "เริ่มต้นด้วยบัญชีหลักสำหรับธุรกิจของคุณ",
+    "nameLabel": "ชื่อผู้ใช้งาน",
+    "namePlaceholder": "ชื่อเจ้าของร้าน",
+    "storeLabel": "ชื่อร้าน",
+    "storePlaceholder": "Downtown Market",
+    "emailLabel": "อีเมล",
+    "emailPlaceholder": "owner@store.com",
+    "passwordLabel": "รหัสผ่าน",
+    "passwordPlaceholder": "สร้างรหัสผ่าน",
+    "submit": "สร้างบัญชี",
+    "secondaryTitle": "เหมาะกับหน้าร้านที่ต้องทำงานเร็ว",
+    "secondaryDescription": "เริ่มต้นด้วยหน้าสมัครที่ชัดเจน เพื่อให้ร้านพร้อมต่อยอดไปยังสินค้า พนักงาน และการตั้งค่าการชำระเงิน"
+  },
+  "dashboard": {
+    "title": "แดชบอร์ดร้านค้า",
+    "subtitle": "ดูภาพรวมยอดขาย เข้าหน้าขายได้ทันที และติดตามสัญญาณสต็อกที่ต้องจัดการจากหน้าเดียว",
+    "cards": {
+      "salesTodayLabel": "ยอดขายวันนี้",
+      "salesTodayHint": "ยอดรวมของกะที่กำลังเปิดใช้งานอยู่",
+      "ordersLabel": "จำนวนออเดอร์",
+      "ordersHint": "ออเดอร์ที่ปิดการขายแล้วของวันนี้ทุกจุดขาย",
+      "lowStockLabel": "สินค้าใกล้หมด",
+      "lowStockHint": "รายการที่หลังบ้านควรเข้ามาตรวจสอบ"
+    },
+    "quickActionsTitle": "ทางลัดการทำงาน",
+    "actions": {
+      "newSaleTitle": "เปิดหน้าขาย",
+      "newSaleDescription": "เข้าสู่หน้าขายสำหรับลูกค้าที่หน้าร้านและชำระเงินได้รวดเร็ว",
+      "stockTitle": "ตรวจห้องสต็อก",
+      "stockDescription": "เปิดหน้าจัดการสต็อกฝั่งหลังบ้านเพื่อตรวจสินค้าที่ใกล้หมดและของรอรับเข้า"
+    },
+    "activityTitle": "ความเคลื่อนไหวล่าสุด",
+    "activityItems": [
+      {
+        "time": "09:30",
+        "title": "เริ่มกะเช้า",
+        "description": "นับเงินสดในลิ้นชักเรียบร้อยและพร้อมรับลูกค้าช่วงเช้า"
+      },
+      {
+        "time": "11:10",
+        "title": "อัปเดตสินค้าขายดี",
+        "description": "Iced Americano ขึ้นเป็นสินค้าขายดีที่สุดของวันในตอนนี้"
+      },
+      {
+        "time": "13:40",
+        "title": "ได้รับแจ้งเตือนสต็อก",
+        "description": "นมสดและฝาแก้วแบบกลับบ้านต่ำกว่าจุดสั่งซื้อแล้ว"
+      }
+    ]
+  },
+  "workspace": {
+    "navigation": {
+      "dashboard": "แดชบอร์ด",
+      "sales": "หน้าขาย",
+      "stock": "สต็อก"
+    }
+  },
+  "sales": {
+    "title": "หน้าขาย",
+    "subtitle": "ทำงานหน้าร้านให้เร็วด้วยการเลือกสินค้าไว มองเห็นออเดอร์ชัด และมีจุดชำระเงินที่โฟกัสง่าย",
+    "catalogTitle": "รายการสินค้า",
+    "catalogDescription": "แตะสินค้าเพื่อเพิ่มเข้าออเดอร์ปัจจุบัน",
+    "searchPlaceholder": "ค้นหาสินค้า / สแกนบาร์โค้ด",
+    "addButton": "เพิ่มลงออเดอร์",
+    "cartTitle": "ออเดอร์ปัจจุบัน",
+    "checkoutButton": "ชำระเงิน",
+    "quickKeypadTitle": "แป้นลัด",
+    "summary": {
+      "subtotalLabel": "ยอดก่อนส่วนลด",
+      "subtotalValue": "฿260",
+      "discountLabel": "ส่วนลด",
+      "discountValue": "฿20",
+      "totalLabel": "ยอดสุทธิ",
+      "totalValue": "฿240"
+    },
+    "products": [
+      {
+        "category": "กาแฟ",
+        "name": "อเมริกาโนเย็น",
+        "price": "฿80",
+        "stock": "เหลือ 24"
+      },
+      {
+        "category": "กาแฟ",
+        "name": "ลาเต้",
+        "price": "฿95",
+        "stock": "เหลือ 18"
+      },
+      {
+        "category": "เบเกอรี",
+        "name": "ครัวซองต์เนย",
+        "price": "฿65",
+        "stock": "เหลือ 11"
+      },
+      {
+        "category": "ชา",
+        "name": "ชาไทย",
+        "price": "฿85",
+        "stock": "เหลือ 20"
+      },
+      {
+        "category": "ของหวาน",
+        "name": "ชีสเค้ก",
+        "price": "฿110",
+        "stock": "เหลือ 7"
+      },
+      {
+        "category": "เพิ่มพิเศษ",
+        "name": "ช็อตเพิ่ม",
+        "price": "฿30",
+        "stock": "พร้อมขาย"
+      }
+    ],
+    "cartItems": [
+      {
+        "name": "อเมริกาโนเย็น",
+        "meta": "1 x ฿80",
+        "price": "฿80"
+      },
+      {
+        "name": "ลาเต้",
+        "meta": "2 x ฿95",
+        "price": "฿190"
+      }
+    ],
+    "quickKeypad": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "%", "0", "CLR"]
+  },
+  "admin": {
+    "eyebrow": "พื้นที่ผู้ดูแลระบบ",
+    "title": "แผนการใช้งานร้าน",
+    "description": "จัดการ subscription ของร้านหลังจากสร้างร้านแล้ว โดยพื้นที่นี้ควรใช้สำหรับ owner หรือผู้จัดการที่มีสิทธิ์เท่านั้น",
+    "backToDashboard": "กลับไปแดชบอร์ด",
+    "backToLogin": "กลับไปหน้าเข้าสู่ระบบ",
+    "navigation": {
+      "dashboard": "แดชบอร์ด",
+      "plans": "แผน"
+    },
+    "planManager": {
+      "title": "subscription ของร้าน",
+      "helper": "ตรวจสอบแผนปัจจุบันของร้านและเปลี่ยนแผนเมื่อร้านต้องการข้อจำกัดหรือราคาแบบใหม่",
+      "currentLabel": "แผนปัจจุบัน",
+      "selectLabel": "เลือกแผน",
+      "save": "อัปเดต subscription",
+      "saving": "กำลังอัปเดต...",
+      "empty": "ยังไม่ได้เลือกแผน"
+    }
+  },
+  "storeSetup": {
+    "title": "ตั้งค่าร้าน",
+    "createTitle": "สร้างร้านแรกของคุณ",
+    "helper": "ต้องมีร้านก่อนจึงจะจัดการสินค้า ประเภทสินค้า และ subscription ของร้านได้",
+    "nameLabel": "ชื่อร้าน",
+    "slugLabel": "Slug ของร้าน",
+    "descriptionLabel": "รายละเอียดร้าน",
+    "save": "สร้างร้าน",
+    "saving": "กำลังสร้างร้าน...",
+    "manualSelect": "ใช้ร้านที่มีอยู่",
+    "existingStoreIdLabel": "Store ID เดิม",
+    "openDashboard": "เปิดร้าน",
+    "createStore": "สร้างร้าน",
+    "selectedPlanLabel": "แผนที่เลือก",
+    "selectedPlanEmpty": "ยังไม่ได้เลือกแผน",
+    "planRequired": "เลือกแผน subscription ก่อนดำเนินการต่อ",
+    "phoneLabel": "เบอร์โทรศัพท์",
+    "addressLabel": "ที่อยู่",
+    "currencyLabel": "รหัสสกุลเงิน",
+    "planNames": {
+      "plan_starter_monthly": "Starter",
+      "starter": "Starter",
+      "plan_growth_monthly": "Growth",
+      "growth": "Growth",
+      "plan_pro_yearly": "Pro",
+      "pro": "Pro"
+    }
+  },
+  "subscription": {
+    "title": "เลือกแผนก่อนเข้าสู่การตั้งค่าร้าน",
+    "subtitle": "เลือก subscription ที่เหมาะกับธุรกิจก่อน แล้วค่อยไปสร้างร้านและผูกแผนนั้นเข้ากับร้าน",
+    "helper": "ระบบจะจำแผนที่เลือกไว้สำหรับขั้นถัดไป เพื่อให้ตั้งค่าร้านต่อได้ทันที",
+    "ctaLabel": "ไปยังหน้าตั้งค่าร้าน",
+    "selectedBadge": "เลือกอยู่",
+    "plans": [
+      {
+        "id": "plan_starter_monthly",
+        "code": "starter",
+        "name": "Starter",
+        "description": "แผนเริ่มต้นสำหรับ 1 ร้าน",
+        "durationDays": 30,
+        "price": "299.00",
+        "currency": "THB"
+      },
+      {
+        "id": "plan_growth_monthly",
+        "code": "growth",
+        "name": "Growth",
+        "description": "แผนสำหรับร้านที่กำลังเติบโต",
+        "durationDays": 30,
+        "price": "799.00",
+        "currency": "THB"
+      },
+      {
+        "id": "plan_pro_yearly",
+        "code": "pro",
+        "name": "Pro",
+        "description": "แผนรายปีสำหรับธุรกิจระดับมืออาชีพ",
+        "durationDays": 365,
+        "price": "7990.00",
+        "currency": "THB"
+      }
+    ]
+  },
+  "stock": {
+    "title": "จัดการสต็อก",
+    "subtitle": "ติดตามสุขภาพของคลังสินค้า เตรียมงานรับเข้า และทำให้หน้าร้านมีของพร้อมขายก่อนสินค้าหมด",
+    "shell": {
+      "brand": "Kinetic POS",
+      "station": "Station 01",
+      "register": "หน้าขาย",
+      "inventory": "คลังสินค้า",
+      "transactions": "ธุรกรรม",
+      "settings": "แผนผู้ใช้",
+      "completeSale": "ปิดการขาย",
+      "searchPlaceholder": "ค้นหา SKU หรือชื่อสินค้า..."
+    },
+    "stats": {
+      "totalProductsLabel": "จำนวนสินค้าทั้งหมด",
+      "totalProductsValue": "1,284",
+      "lowStockLabel": "สินค้าใกล้หมด",
+      "lowStockValue": "12",
+      "categoriesLabel": "หมวดหมู่",
+      "categoriesValue": "18"
+    },
+    "quickAction": {
+      "label": "คำสั่งด่วน",
+      "title": "เพิ่มสินค้าใหม่",
+      "button": "เปิดแคตตาล็อก"
+    },
+    "filters": {
+      "categoryLabel": "หมวดหมู่",
+      "categoryValue": "ทุกหมวดหมู่",
+      "statusLabel": "สถานะสต็อก",
+      "statusValue": "ทุกสถานะ",
+      "gridView": "Grid",
+      "listView": "List"
+    },
+    "table": {
+      "productDetails": "รายละเอียดสินค้า",
+      "category": "หมวดหมู่",
+      "sku": "SKU",
+      "price": "ราคา",
+      "stock": "สต็อก",
+      "actions": "การจัดการ",
+      "editAction": "แก้ไข",
+      "deleteAction": "ลบ"
+    },
+    "inventoryItems": [
+      {
+        "code": "AR",
+        "name": "Alpha Runner X1",
+        "updated": "อัปเดต 2 ชั่วโมงก่อน",
+        "category": "รองเท้า",
+        "sku": "SNK-ALPH-992",
+        "price": "$129.00",
+        "stockValue": "85",
+        "barWidth": "85%",
+        "statusTone": "healthy"
+      },
+      {
+        "code": "TW",
+        "name": "Titanium Smart Watch",
+        "updated": "อัปเดตเมื่อวาน",
+        "category": "อิเล็กทรอนิกส์",
+        "sku": "WTC-TITN-041",
+        "price": "$449.50",
+        "stockValue": "4",
+        "barWidth": "12%",
+        "statusTone": "danger"
+      },
+      {
+        "code": "SP",
+        "name": "Studio Pro Wireless",
+        "updated": "อัปเดต 3 วันก่อน",
+        "category": "อิเล็กทรอนิกส์",
+        "sku": "AUD-STU-882",
+        "price": "$199.00",
+        "stockValue": "42",
+        "barWidth": "42%",
+        "statusTone": "healthy"
+      },
+      {
+        "code": "SC",
+        "name": "Swift Core v2",
+        "updated": "อัปเดต 5 วันก่อน",
+        "category": "รองเท้า",
+        "sku": "SNK-SWFT-210",
+        "price": "$85.00",
+        "stockValue": "หมดสต็อก",
+        "barWidth": "0%",
+        "statusTone": "danger"
+      }
+    ],
+    "pagination": {
+      "summary": "แสดง 1 ถึง 10 จากทั้งหมด 1,284 รายการ",
+      "previous": "ก่อนหน้า",
+      "next": "ถัดไป",
+      "activePage": "1",
+      "pages": ["1", "2", "3"]
+    },
+    "assetValue": {
+      "label": "มูลค่าสินค้าคงคลังรวม",
+      "value": "$84,291.50"
+    },
+    "loading": "กำลังโหลดสินค้า...",
+    "emptyState": "ยังไม่พบสินค้าของร้านนี้",
+    "searchPlaceholder": "ค้นหา SKU หรือชื่อสินค้า...",
+    "form": {
+      "titleCreate": "สร้างสินค้า",
+      "titleEdit": "แก้ไขสินค้า",
+      "nameLabel": "ชื่อสินค้า",
+      "nameHint": "ใช้ชื่อสินค้าที่จะแสดงให้พนักงานและลูกค้าเห็นในหน้าขายและรายงาน",
+      "skuLabel": "SKU",
+      "skuHint": "รหัสอ้างอิงภายในสำหรับค้นหา สแกน หรือเช็กสต็อก",
+      "quantityLabel": "จำนวนคงเหลือ",
+      "quantityHint": "จำนวนสต็อกปัจจุบัน ให้กรอกเป็นเลขจำนวนเต็มเท่านั้น",
+      "basePriceLabel": "ราคาปกติ",
+      "basePriceHint": "ราคาขายมาตรฐานก่อนใช้ราคาพิเศษหรือโปรโมชัน",
+      "amountLabel": "จำนวนเงิน",
+      "optionalLabel": "ไม่บังคับ",
+      "requiredLabel": "จำเป็น",
+      "specialPriceLabel": "ราคาพิเศษ",
+      "specialPriceHint": "ราคาชั่วคราวสำหรับโปรโมชันหรือส่วนลด หากไม่มีให้เว้นว่าง",
+      "categoryLabel": "ประเภทสินค้า",
+      "categoryHint": "เลือกประเภทสินค้าของร้านที่ต้องการผูกกับสินค้านี้",
+      "unitTypeLabel": "หน่วยขาย",
+      "unitTypeHint": "เลือกหน่วยที่ใช้ขายจริง เช่น ชิ้น หรือ คู่",
+      "unitPiece": "ชิ้น",
+      "unitPair": "คู่",
+      "imageLabel": "รูปสินค้า",
+      "imageHint": "รูปสินค้าเพิ่มเติมสำหรับแสดงในรายการสินค้าและหน้าขาย",
+      "activeLabel": "เปิดใช้งานสินค้า",
+      "activeHint": "ถ้าปิดใช้งาน สินค้ายังอยู่ในระบบแต่จะไม่พร้อมขายใน flow ปัจจุบัน",
+      "detailsSection": "ข้อมูลสินค้า",
+      "detailsSectionHint": "กำหนดข้อมูลหลักของสินค้าเพื่อให้ค้นหาและแยกแยะได้ง่าย",
+      "pricingSection": "ราคาและสต็อก",
+      "pricingSectionHint": "ตั้งราคาขายและจำนวนคงเหลือก่อนเปิดใช้งานสินค้า",
+      "setupSection": "ประเภทและสื่อ",
+      "setupSectionHint": "ผูกสินค้ากับการตั้งค่าแคตตาล็อกของร้าน",
+      "productTypeNameLabel": "ชื่อประเภทสินค้าใหม่",
+      "productTypeSlugLabel": "Slug ประเภทสินค้าใหม่",
+      "createType": "สร้างประเภทสินค้า",
+      "createProduct": "สร้างสินค้า",
+      "save": "บันทึกการเปลี่ยนแปลง",
+      "cancel": "ยกเลิก"
+    },
+    "units": {
+      "title": "หน่วยสินค้า",
+      "helper": "กำหนดหน่วยวัดของร้าน เพื่อให้ฟอร์มเรียกใช้งานได้เสมอ",
+      "empty": "ยังไม่มีหน่วยสินค้า",
+      "codeLabel": "รหัสหน่วย",
+      "nameLabel": "ชื่อหน่วย",
+      "descriptionLabel": "รายละเอียด",
+      "createButton": "เพิ่มหน่วย",
+      "activateLabel": "เปิดใช้งาน",
+      "deactivateLabel": "ปิดใช้งาน",
+      "deleteLabel": "ลบ",
+      "requiredError": "กรุณาระบุชื่อหน่วย"
+    },
+    "management": {
+      "title": "ตั้งค่าแคตตาล็อก",
+      "helper": "สร้างประเภทสินค้าและหน่วยสินค้าของร้านก่อนเพิ่มสินค้าเข้าระบบ",
+      "typesCountLabel": "ประเภทสินค้า",
+      "unitsCountLabel": "หน่วยสินค้า",
+      "createTypeButton": "สร้างประเภทสินค้า",
+      "createUnitButton": "สร้างหน่วยสินค้า",
+      "typeTitle": "ประเภทสินค้า",
+      "unitTitle": "หน่วยสินค้า",
+      "typeEmpty": "ยังไม่มีประเภทสินค้า",
+      "unitEmpty": "ยังไม่มีหน่วยสินค้า",
+      "descriptionLabel": "รายละเอียด",
+      "activeLabel": "เปิดใช้งาน",
+      "inactiveLabel": "ปิดใช้งาน",
+      "editLabel": "แก้ไข",
+      "expandLabel": "ดูรายการ",
+      "collapseLabel": "ซ่อนรายการ",
+      "createTypeTitle": "สร้างประเภทสินค้า",
+      "editTypeTitle": "แก้ไขประเภทสินค้า",
+      "createUnitTitle": "สร้างหน่วยสินค้า",
+      "editUnitTitle": "แก้ไขหน่วยสินค้า",
+      "typeNameLabel": "ชื่อประเภทสินค้า",
+      "typeSlugLabel": "Slug ประเภทสินค้า",
+      "typeRequiredError": "กรุณาระบุชื่อ",
+      "saveTypeButton": "บันทึกประเภทสินค้า",
+      "saveUnitButton": "บันทึกหน่วยสินค้า"
+    }
+  }
+}
