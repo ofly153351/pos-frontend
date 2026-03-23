@@ -233,6 +233,9 @@
     "shell": {
       "brand": "POS",
       "station": "Station 01",
+      "storeLabel": "ร้านค้า",
+      "editProfile": "แก้ไขโปรไฟล์",
+      "logout": "ออกจากระบบ",
       "register": "แคชเชียร์",
       "inventory": "คลังสินค้า",
       "stockLevels": "ระดับสต็อก",

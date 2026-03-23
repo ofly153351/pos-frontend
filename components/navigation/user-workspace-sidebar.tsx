@@ -26,6 +26,7 @@ type UserWorkspaceSidebarProps = {
     brand: string;
     completeSale: string;
     station: string;
+    storeLabel: string;
   };
 };
 
@@ -168,13 +169,6 @@ export function UserWorkspaceSidebar({
         <p className="text-xl font-black tracking-tight text-blue-800">
           {collapsed ? shell.brand.slice(0, 2) : shell.brand}
         </p>
-        {!collapsed ? <p className="mt-2 truncate text-sm font-semibold text-slate-700">{storeName}</p> : null}
-        {!collapsed && storeDescription ? (
-          <p className="mt-1 truncate text-xs text-slate-500">{storeDescription}</p>
-        ) : null}
-        {!collapsed && storeAddress ? (
-          <p className="mt-1 truncate text-xs text-slate-500">{storeAddress}</p>
-        ) : null}
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -309,17 +303,30 @@ export function UserWorkspaceSidebar({
       </nav>
 
       <div className="mt-auto">
-        <button
-          className={`flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-blue-700 to-blue-500 px-4 py-4 font-bold text-white shadow-lg transition hover:brightness-110 ${
-            collapsed ? "px-2" : ""
+        <div
+          className={`rounded-xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm ${
+            collapsed ? "px-2 py-2" : ""
           }`}
-          type="button"
         >
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs">
-            +
-          </span>
-          {!collapsed ? shell.completeSale : null}
-        </button>
+          {collapsed ? (
+            <span className="block truncate text-center text-xs font-semibold text-slate-600">
+              {storeName.slice(0, 2).toUpperCase()}
+            </span>
+          ) : (
+            <>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                {shell.storeLabel}
+              </p>
+              <p className="truncate text-sm font-semibold text-slate-700">{storeName}</p>
+              {storeDescription ? (
+                <p className="mt-1 truncate text-xs text-slate-500">{storeDescription}</p>
+              ) : null}
+              {storeAddress ? (
+                <p className="mt-1 truncate text-xs text-slate-500">{storeAddress}</p>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
     </aside>
   );

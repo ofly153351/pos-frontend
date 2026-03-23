@@ -233,6 +233,9 @@
     "shell": {
       "brand": "POS",
       "station": "Station 01",
+      "storeLabel": "Store",
+      "editProfile": "Edit profile",
+      "logout": "Logout",
       "register": "Cashier",
       "inventory": "Inventory",
       "stockLevels": "Stock Levels",

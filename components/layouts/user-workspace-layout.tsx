@@ -14,10 +14,13 @@ type UserWorkspaceLayoutProps = {
     brand: string;
     completeSale: string;
     dashboard: string;
+    editProfile: string;
     inventory: string;
+    logout: string;
     register: string;
     searchPlaceholder: string;
     settings: string;
+    storeLabel: string;
     stockCategories: string;
     stockLevels: string;
     station: string;
@@ -74,8 +77,10 @@ export function UserWorkspaceLayout({
         }`}
       >
         <UserWorkspaceTopbar
+          editProfileLabel={shell.editProfile}
+          locale={locale}
+          logoutLabel={shell.logout}
           onToggle={() => setCollapsed((current) => !current)}
-          searchPlaceholder={shell.searchPlaceholder}
           title={title}
         />
         <main className="flex-1 p-8">{children}</main>

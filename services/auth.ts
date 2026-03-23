@@ -14,3 +14,10 @@ export function register(input: RegisterRequest) {
     method: "POST",
   });
 }
+
+export function logout() {
+  return apiRequest<Record<string, never>>("/api/auth/logout", {
+    body: {},
+    method: "POST",
+  });
+}
