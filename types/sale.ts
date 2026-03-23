@@ -9,6 +9,7 @@ export type SaleItemInput = {
 };
 
 export type CreateSaleInput = {
+  customer_id?: string;
   items: SaleItemInput[];
   note?: string;
   paid_amount: number;

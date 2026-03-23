@@ -8,6 +8,9 @@ export type SalesDictionary = {
   clearCartButton: string;
   closeReceiptButton: string;
   confirmPaymentButton: string;
+  customerLabel: string;
+  customerDiscountLabel: string;
+  customerPlaceholder: string;
   customerPaymentLabel: string;
   discountAmountLabel: string;
   discountLabel: string;

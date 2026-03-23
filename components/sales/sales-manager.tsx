@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import type { SalesDictionary } from "@/components/sales/types";
+import { listCustomerLevelDiscounts, listCustomers } from "@/services/customers";
 import { listProducts } from "@/services/products";
 import { createSale, getSaleById, listSales } from "@/services/sales";
+import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 import type { Product } from "@/types/product";
 import type { Sale, SaleDiscountType, SalePaymentMethod } from "@/types/sale";
 
@@ -71,10 +73,13 @@ function getCartLine(item: CartItem) {
 export function SalesManager({ dictionary }: SalesManagerProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerLevelDiscounts, setCustomerLevelDiscounts] = useState<CustomerLevelDiscount[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [note, setNote] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
@@ -92,13 +97,17 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   useEffect(() => {
     startTransition(async () => {
       try {
-        const [productsResponse, salesResponse] = await Promise.all([
+        const [productsResponse, salesResponse, customersResponse, discountResponse] = await Promise.all([
           listProducts(),
           listSales(),
+          listCustomers(),
+          listCustomerLevelDiscounts(),
         ]);
 
         setProducts(productsResponse.data ?? []);
         setSales(salesResponse.data ?? []);
+        setCustomers(customersResponse.data ?? []);
+        setCustomerLevelDiscounts(discountResponse.data ?? []);
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -146,21 +155,47 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     );
   }, [cart]);
 
+  const selectedCustomer = useMemo(() => {
+    return customers.find((customer) => customer.id === selectedCustomerId) ?? null;
+  }, [customers, selectedCustomerId]);
+
+  const customerDiscountPercent = useMemo(() => {
+    if (!selectedCustomer) {
+      return 0;
+    }
+
+    const customerLevel = Number(selectedCustomer.level ?? 1);
+    const matchedRule = customerLevelDiscounts.find((rule) => rule.level === customerLevel);
+
+    return Number(matchedRule?.discount_percent ?? 0);
+  }, [customerLevelDiscounts, selectedCustomer]);
+
+  const customerDiscountAmount = useMemo(() => {
+    return cartSummary.total * Math.min(Math.max(customerDiscountPercent, 0), 100) / 100;
+  }, [cartSummary.total, customerDiscountPercent]);
+
+  const payableTotal = Math.max(cartSummary.total - customerDiscountAmount, 0);
+
   const paidAmountValue = Number(paidAmount || 0);
-  const changeAmount = paidAmountValue - cartSummary.total;
+  const changeAmount = paidAmountValue - payableTotal;
 
   async function reloadData() {
-    const [productsResponse, salesResponse] = await Promise.all([
+    const [productsResponse, salesResponse, customersResponse, discountResponse] = await Promise.all([
       listProducts(),
       listSales(),
+      listCustomers(),
+      listCustomerLevelDiscounts(),
     ]);
 
     setProducts(productsResponse.data ?? []);
     setSales(salesResponse.data ?? []);
+    setCustomers(customersResponse.data ?? []);
+    setCustomerLevelDiscounts(discountResponse.data ?? []);
   }
 
   function clearCart() {
     setCart([]);
+    setSelectedCustomerId("");
     setNote("");
     setPaidAmount("");
     setPaymentMethod("cash");
@@ -244,7 +279,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       return;
     }
 
-    if (paidAmountValue < cartSummary.total) {
+    if (paidAmountValue < payableTotal) {
       setError(dictionary.insufficientPayment);
       return;
     }
@@ -252,6 +287,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     startTransition(async () => {
       try {
         const response = await createSale({
+          customer_id: selectedCustomerId || undefined,
           items: cart.map((item) => {
             const discountValue = Number(item.discountValue || 0);
 
@@ -445,9 +481,25 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                             >
                               -
                             </button>
-                            <div className="min-w-12 rounded-xl bg-white px-3 py-2 text-center text-sm font-semibold text-slate-900">
-                              {item.quantity}
-                            </div>
+                            <input
+                              className="h-9 w-16 rounded-xl border border-slate-200 bg-white px-2 text-center text-sm font-semibold text-slate-900 outline-none transition focus:border-sky-300"
+                              inputMode="numeric"
+                              max={item.product.quantity}
+                              min="1"
+                              onChange={(event) => {
+                                const nextQuantity = Number.parseInt(event.target.value, 10);
+
+                                if (Number.isNaN(nextQuantity)) {
+                                  return;
+                                }
+
+                                updateCartQuantity(item.product.id, nextQuantity);
+                              }}
+                              pattern="[0-9]*"
+                              step="1"
+                              type="number"
+                              value={item.quantity}
+                            />
                             <button
                               className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
                               onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
@@ -516,6 +568,24 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
             <div className="mt-6 space-y-4 border-t border-sky-100 pt-5">
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  {dictionary.customerLabel}
+                </label>
+                <select
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                  onChange={(event) => setSelectedCustomerId(event.target.value)}
+                  value={selectedCustomerId}
+                >
+                  <option value="">{dictionary.customerPlaceholder}</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.full_name} (L{customer.level ?? 1} • {customerLevelDiscounts.find((rule) => rule.level === Number(customer.level ?? 1))?.discount_percent ?? 0}%)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
                   {dictionary.paymentMethodLabel}
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -575,6 +645,14 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 <span>{dictionary.summary.discountLabel}</span>
                 <span>{formatCurrency(cartSummary.discountAmount)}</span>
               </div>
+              {selectedCustomerId ? (
+                <div className="flex items-center justify-between">
+                  <span>
+                    {dictionary.customerDiscountLabel} ({customerDiscountPercent}%)
+                  </span>
+                  <span>-{formatCurrency(customerDiscountAmount)}</span>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between">
                 <span>{dictionary.totalPaidLabel}</span>
                 <span>{formatCurrency(paidAmountValue)}</span>
@@ -585,7 +663,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
               </div>
               <div className="flex items-center justify-between text-base font-semibold text-slate-950">
                 <span>{dictionary.summary.totalLabel}</span>
-                <span>{formatCurrency(cartSummary.total)}</span>
+                <span>{formatCurrency(payableTotal)}</span>
               </div>
             </div>
 
