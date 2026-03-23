@@ -61,9 +61,18 @@ export function ProductsTable({
             >
               <td className="px-6 py-4">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 shadow-inner">
-                    {product.name.slice(0, 2).toUpperCase()}
-                  </div>
+                  {product.image_url ? (
+                    <img
+                      alt={product.name}
+                      className="h-12 w-12 rounded-lg border border-slate-200 bg-slate-100 object-cover shadow-inner"
+                      loading="lazy"
+                      src={product.image_url}
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 shadow-inner">
+                      {product.name.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-slate-900">{product.name}</span>
                     <div className="mt-1 flex items-center gap-2">

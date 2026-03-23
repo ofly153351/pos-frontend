@@ -485,7 +485,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
             </div>
           ) : null}
 
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {saleableProducts.length > 0 ? (
               saleableProducts.map((product) => {
                 const currentQuantity =
@@ -494,35 +494,50 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 return (
                   <div
                     key={product.id}
-                    className="rounded-[1.5rem] border border-sky-100 bg-sky-50/55 p-5"
+                    className="rounded-[1.25rem] border border-sky-100 bg-gradient-to-b from-sky-50/70 to-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-600">
-                          {product.product_type_name ?? product.product_type?.name ?? "-"}
-                        </p>
-                        <p className="mt-3 text-lg font-semibold text-slate-950">
-                          {product.name}
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600">
-                        {dictionary.stockLabel} {product.quantity}
-                      </span>
+                    <div className="flex justify-center">
+                      {product.image_url ? (
+                        <img
+                          alt={product.name}
+                          className="h-16 w-24 rounded-xl border border-slate-200 bg-white object-cover shadow-sm"
+                          loading="lazy"
+                          src={product.image_url}
+                        />
+                      ) : (
+                        <div className="flex h-16 w-24 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-500 shadow-sm">
+                          {product.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between">
-                      <span className="text-base font-semibold text-slate-900">
+                    <div className="mt-3 text-center">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-600">
+                        {product.product_type_name ?? product.product_type?.name ?? "-"}
+                      </p>
+                      <p className="mt-1 truncate text-base font-semibold text-slate-950">
+                        {product.name}
+                      </p>
+                      <div className="mt-2 flex justify-center">
+                        <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
+                          {dictionary.stockLabel} {product.quantity}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-sm font-semibold text-slate-900">
                         {formatCurrency(product.effective_price)}
                       </span>
                       {currentQuantity > 0 ? (
-                        <span className="rounded-full bg-blue-700 px-3 py-1 text-xs font-semibold text-white">
+                        <span className="rounded-full bg-blue-700 px-2.5 py-0.5 text-[11px] font-semibold text-white">
                           {dictionary.quantityLabel} {currentQuantity}
                         </span>
                       ) : null}
                     </div>
 
                     <button
-                      className="mt-5 w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                      className="mt-3 w-full rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
                       disabled={currentQuantity >= product.quantity}
                       onClick={() => addToCart(product)}
                       type="button"
@@ -565,14 +580,24 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                   return (
                     <div
                       key={item.product.id}
-                      className="rounded-[1.25rem] border border-sky-100 bg-sky-50/60 px-4 py-4"
+                      className="rounded-[1.25rem] border border-sky-100 bg-sky-50/60 px-4 py-4 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div>
+                        <div className="flex min-w-0 items-start gap-3">
+                          {item.product.image_url ? (
+                            <img
+                              alt={item.product.name}
+                              className="h-11 w-11 shrink-0 rounded-xl border border-slate-200 bg-white object-cover"
+                              loading="lazy"
+                              src={item.product.image_url}
+                            />
+                          ) : null}
+                          <div className="min-w-0">
                           <p className="font-semibold text-slate-950">{item.product.name}</p>
                           <p className="mt-1 text-sm text-slate-600">
                             {dictionary.unitPriceLabel} {formatCurrency(line.unitPrice)}
                           </p>
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-semibold text-slate-900">
