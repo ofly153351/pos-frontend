@@ -298,14 +298,21 @@ export function ProductFormModal({
   quickActionLabel,
   unitOptions,
 }: ProductFormModalProps) {
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="max-h-[88vh] w-full max-w-4xl overflow-hidden rounded-[2rem] bg-white shadow-2xl">
-        <div className="border-b border-slate-200 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white md:px-8">
+    <div
+      aria-hidden={!isOpen}
+      className={`fixed inset-0 z-50 transition-opacity duration-300 ease-out ${
+        isOpen ? "pointer-events-auto bg-slate-950/45 opacity-100" : "pointer-events-none bg-slate-950/0 opacity-0"
+      }`}
+      onClick={onClose}
+    >
+      <div
+        className={`absolute right-0 top-0 h-full w-full overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out md:w-[35vw] ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="border-b border-slate-200 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
@@ -318,7 +325,7 @@ export function ProductFormModal({
           </div>
         </div>
 
-        <div className="max-h-[calc(88vh-120px)] overflow-y-auto p-6 md:p-7">
+        <div className="h-[calc(100vh-108px)] overflow-y-auto p-6">
           <div className="flex items-center justify-end">
             <button
               className="rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100"
@@ -329,135 +336,125 @@ export function ProductFormModal({
             </button>
           </div>
 
-          <form className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]" onSubmit={onSubmit}>
-            <div className="space-y-6">
-              <ProductModalSection
-                title={formLabels.detailsSection}
-              >
-                <div className="grid gap-5 md:grid-cols-2">
-                  <ProductTextInput
-                    badgeText={formLabels.requiredLabel}
-                    badgeTone="required"
-                    label={formLabels.nameLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, name: value }))
-                    }
-                    value={formState.name}
-                  />
-                  <ProductTextInput
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.skuLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, sku: value }))
-                    }
-                    value={formState.sku}
-                  />
-                </div>
-              </ProductModalSection>
+          <form className="mt-6 space-y-6" onSubmit={onSubmit}>
+            <ProductModalSection
+              title={formLabels.detailsSection}
+            >
+              <div className="grid gap-5">
+                <ProductTextInput
+                  badgeText={formLabels.requiredLabel}
+                  badgeTone="required"
+                  label={formLabels.nameLabel}
+                  onChange={(value) =>
+                    onFormStateChange((current) => ({ ...current, name: value }))
+                  }
+                  value={formState.name}
+                />
+                <ProductTextInput
+                  badgeText={formLabels.optionalLabel}
+                  label={formLabels.skuLabel}
+                  onChange={(value) =>
+                    onFormStateChange((current) => ({ ...current, sku: value }))
+                  }
+                  value={formState.sku}
+                />
+              </div>
+            </ProductModalSection>
 
-              <ProductModalSection
-                title={formLabels.amountLabel}
-              >
-                <div className="grid gap-5 md:grid-cols-3">
-                  <ProductTextInput
-                    badgeText={formLabels.requiredLabel}
-                    badgeTone="required"
-                    label={formLabels.basePriceLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, base_price: value }))
-                    }
-                    placeholder="0.00"
-                    value={formState.base_price}
-                  />
-                  <ProductTextInput
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.specialPriceLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, special_price: value }))
-                    }
-                    placeholder="0.00"
-                    value={formState.special_price}
-                  />
-                  <ProductTextInput
-                    badgeText={formLabels.requiredLabel}
-                    badgeTone="required"
-                    label={formLabels.quantityLabel}
-                    min="0"
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, quantity: value }))
-                    }
-                    step="1"
-                    type="number"
-                    value={formState.quantity ?? "0"}
-                  />
-                </div>
-              </ProductModalSection>
+            <ProductModalSection
+              title={formLabels.amountLabel}
+            >
+              <div className="grid gap-5">
+                <ProductTextInput
+                  badgeText={formLabels.requiredLabel}
+                  badgeTone="required"
+                  label={formLabels.basePriceLabel}
+                  onChange={(value) =>
+                    onFormStateChange((current) => ({ ...current, base_price: value }))
+                  }
+                  placeholder="0.00"
+                  value={formState.base_price}
+                />
+                <ProductTextInput
+                  badgeText={formLabels.optionalLabel}
+                  label={formLabels.specialPriceLabel}
+                  onChange={(value) =>
+                    onFormStateChange((current) => ({ ...current, special_price: value }))
+                  }
+                  placeholder="0.00"
+                  value={formState.special_price}
+                />
+                <ProductTextInput
+                  badgeText={formLabels.requiredLabel}
+                  badgeTone="required"
+                  label={formLabels.quantityLabel}
+                  min="0"
+                  onChange={(value) =>
+                    onFormStateChange((current) => ({ ...current, quantity: value }))
+                  }
+                  step="1"
+                  type="number"
+                  value={formState.quantity ?? "0"}
+                />
+              </div>
+            </ProductModalSection>
 
-              <ProductModalSection
-                title={formLabels.setupSection}
-              >
-                <div className="grid gap-5 md:grid-cols-2">
-                  <ProductSelectField
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.categoryLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, product_type_id: value }))
-                    }
-                    value={formState.product_type_id ?? ""}
-                  >
-                    <option value="">-</option>
-                    {productTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name}
-                      </option>
-                    ))}
-                  </ProductSelectField>
-                  <ProductSelectField
-                    badgeText={formLabels.requiredLabel}
-                    badgeTone="required"
-                    label={formLabels.unitTypeLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({
-                        ...current,
-                        unit_type: value as ProductInput["unit_type"],
-                      }))
-                    }
-                    value={formState.unit_type ?? unitOptions[0].code}
-                  >
-                    {unitOptions.map((unit) => (
-                      <option key={unit.id} value={unit.code}>
-                        {unit.name}
-                      </option>
-                    ))}
-                  </ProductSelectField>
-                </div>
+            <ProductModalSection
+              title={formLabels.setupSection}
+            >
+              <div className="grid gap-5">
+                <ProductSelectField
+                  badgeText={formLabels.optionalLabel}
+                  label={formLabels.categoryLabel}
+                  onChange={(value) =>
+                    onFormStateChange((current) => ({ ...current, product_type_id: value }))
+                  }
+                  value={formState.product_type_id ?? ""}
+                >
+                  <option value="">-</option>
+                  {productTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </ProductSelectField>
+                <ProductSelectField
+                  badgeText={formLabels.requiredLabel}
+                  badgeTone="required"
+                  label={formLabels.unitTypeLabel}
+                  onChange={(value) =>
+                    onFormStateChange((current) => ({
+                      ...current,
+                      unit_type: value as ProductInput["unit_type"],
+                    }))
+                  }
+                  value={formState.unit_type ?? unitOptions[0].code}
+                >
+                  {unitOptions.map((unit) => (
+                    <option key={unit.id} value={unit.code}>
+                      {unit.name}
+                    </option>
+                  ))}
+                </ProductSelectField>
+              </div>
 
-                <div className="mt-5 grid gap-5 md:grid-cols-2">
-                  <ProductFileField
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.imageLabel}
-                    onChange={(file) =>
-                      onFormStateChange((current) => ({ ...current, image: file }))
-                    }
-                  />
-                  <ProductActiveToggle
-                    checked={Boolean(formState.is_active)}
-                    label={formLabels.activeLabel}
-                    onChange={(checked) =>
-                      onFormStateChange((current) => ({ ...current, is_active: checked }))
-                    }
-                  />
-                </div>
-              </ProductModalSection>
-
-              <ProductModalFooter
-                cancelLabel={closeLabel}
-                isPending={isPending}
-                modeTitle={isEditing ? formLabels.titleEdit : formLabels.titleCreate}
-                onClose={onClose}
-                submitLabel={isEditing ? formLabels.save : formLabels.createProduct}
-              />
-            </div>
+              <div className="mt-5 grid gap-5">
+                <ProductFileField
+                  badgeText={formLabels.optionalLabel}
+                  label={formLabels.imageLabel}
+                  onChange={(file) =>
+                    onFormStateChange((current) => ({ ...current, image: file }))
+                  }
+                />
+                <ProductActiveToggle
+                  checked={Boolean(formState.is_active)}
+                  label={formLabels.activeLabel}
+                  onChange={(checked) =>
+                    onFormStateChange((current) => ({ ...current, is_active: checked }))
+                  }
+                />
+              </div>
+            </ProductModalSection>
 
             <ProductSummaryCard
               activeLabel={formLabels.activeLabel}
@@ -479,6 +476,14 @@ export function ProductFormModal({
               unitValue={
                 unitOptions.find((unit) => unit.code === formState.unit_type)?.name ?? "-"
               }
+            />
+
+            <ProductModalFooter
+              cancelLabel={closeLabel}
+              isPending={isPending}
+              modeTitle={isEditing ? formLabels.titleEdit : formLabels.titleCreate}
+              onClose={onClose}
+              submitLabel={isEditing ? formLabels.save : formLabels.createProduct}
             />
           </form>
         </div>

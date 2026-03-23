@@ -231,14 +231,16 @@
     "title": "จัดการสต็อก",
     "subtitle": "ติดตามสุขภาพของคลังสินค้า เตรียมงานรับเข้า และทำให้หน้าร้านมีของพร้อมขายก่อนสินค้าหมด",
     "shell": {
-      "brand": "Kinetic POS",
+      "brand": "POS",
       "station": "Station 01",
-      "register": "หน้าขาย",
+      "register": "แคชเชียร์",
       "inventory": "คลังสินค้า",
+      "stockLevels": "ระดับสต็อก",
+      "stockCategories": "หมวดหมู่",
       "transactions": "ธุรกรรม",
       "settings": "แผนผู้ใช้",
       "completeSale": "ปิดการขาย",
-      "searchPlaceholder": "ค้นหา SKU หรือชื่อสินค้า..."
+      "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า..."
     },
     "stats": {
       "totalProductsLabel": "จำนวนสินค้าทั้งหมด",
@@ -264,7 +266,7 @@
     "table": {
       "productDetails": "รายละเอียดสินค้า",
       "category": "หมวดหมู่",
-      "sku": "SKU",
+      "sku": "Barcode",
       "price": "ราคา",
       "stock": "สต็อก",
       "actions": "การจัดการ",
@@ -330,14 +332,14 @@
     },
     "loading": "กำลังโหลดสินค้า...",
     "emptyState": "ยังไม่พบสินค้าของร้านนี้",
-    "searchPlaceholder": "ค้นหา SKU หรือชื่อสินค้า...",
+    "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า...",
     "form": {
       "titleCreate": "สร้างสินค้า",
       "titleEdit": "แก้ไขสินค้า",
       "nameLabel": "ชื่อสินค้า",
       "nameHint": "ใช้ชื่อสินค้าที่จะแสดงให้พนักงานและลูกค้าเห็นในหน้าขายและรายงาน",
-      "skuLabel": "SKU",
-      "skuHint": "รหัสอ้างอิงภายในสำหรับค้นหา สแกน หรือเช็กสต็อก",
+      "skuLabel": "Barcode",
+      "skuHint": "บาร์โค้ดหรือรหัสอ้างอิงภายในสำหรับค้นหา สแกน หรือเช็กสต็อก",
       "quantityLabel": "จำนวนคงเหลือ",
       "quantityHint": "จำนวนสต็อกปัจจุบัน ให้กรอกเป็นเลขจำนวนเต็มเท่านั้น",
       "basePriceLabel": "ราคาปกติ",

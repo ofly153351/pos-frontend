@@ -231,14 +231,16 @@
     "title": "Stock management",
     "subtitle": "Monitor inventory health, prepare receiving work, and keep the storefront supplied before items run out.",
     "shell": {
-      "brand": "Kinetic POS",
+      "brand": "POS",
       "station": "Station 01",
-      "register": "Register",
+      "register": "Cashier",
       "inventory": "Inventory",
+      "stockLevels": "Stock Levels",
+      "stockCategories": "Categories",
       "transactions": "Transactions",
       "settings": "User Plans",
       "completeSale": "Complete Sale",
-      "searchPlaceholder": "Search SKU or Name..."
+      "searchPlaceholder": "Search Barcode or Name..."
     },
     "stats": {
       "totalProductsLabel": "Total Products",
@@ -264,7 +266,7 @@
     "table": {
       "productDetails": "Product Details",
       "category": "Category",
-      "sku": "SKU",
+      "sku": "Barcode",
       "price": "Price",
       "stock": "Stock",
       "actions": "Actions",
@@ -330,14 +332,14 @@
     },
     "loading": "Loading products...",
     "emptyState": "No products found for this store yet.",
-    "searchPlaceholder": "Search SKU or Name...",
+    "searchPlaceholder": "Search Barcode or Name...",
     "form": {
       "titleCreate": "Create product",
       "titleEdit": "Edit product",
       "nameLabel": "Product name",
       "nameHint": "Use the customer-facing product name shown in the POS and reports.",
-      "skuLabel": "SKU",
-      "skuHint": "Optional internal code for scanning, search, or stock lookup.",
+      "skuLabel": "Barcode",
+      "skuHint": "Optional barcode or internal code for scanning, search, or stock lookup.",
       "quantityLabel": "Quantity",
       "quantityHint": "Current stock on hand. Use whole numbers only.",
       "basePriceLabel": "Base price",

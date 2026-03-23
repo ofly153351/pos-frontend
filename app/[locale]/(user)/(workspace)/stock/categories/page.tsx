@@ -4,11 +4,11 @@ import { StockManager } from "@/components/stock/stock-manager";
 import { getDictionary } from "@/lib/i18n";
 import { isSupportedLocale, type Locale } from "@/lib/locale-config";
 
-type UserStockPageProps = {
+type StockCategoriesPageProps = {
   params: Promise<{ locale: string }>;
 };
 
-export default async function UserStockPage({ params }: UserStockPageProps) {
+export default async function StockCategoriesPage({ params }: StockCategoriesPageProps) {
   const { locale } = await params;
 
   if (!isSupportedLocale(locale)) {
@@ -20,7 +20,7 @@ export default async function UserStockPage({ params }: UserStockPageProps) {
   return (
     <StockManager
       dictionary={dictionary.stock}
-      initialSection="stock-levels"
+      initialSection="categories"
     />
   );
 }

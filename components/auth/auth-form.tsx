@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { saveAuthSession } from "@/lib/auth-storage";
-import { clearCurrentStoreId } from "@/lib/store-storage";
+import { clearCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
 import type { Locale } from "@/lib/locale-config";
 import { login, register } from "@/services/auth";
 import type { LoginRequest, RegisterRequest } from "@/types/auth";
@@ -94,10 +94,20 @@ export function AuthForm({
             : await register(formValues as RegisterRequest);
 
         saveAuthSession(payload.data);
-        clearCurrentStoreId();
+
+        if (mode === "login" && payload.data.store_id) {
+          saveCurrentStoreId(payload.data.store_id);
+        } else {
+          clearCurrentStoreId();
+        }
+
         setMessageTone("success");
         setMessage(payload.message);
-        router.replace(`/${locale}/subscription`);
+        router.replace(
+          mode === "login" && payload.data.store_id
+            ? `/${locale}/stock`
+            : `/${locale}/subscription`,
+        );
       } catch (error) {
         const nextMessage =
           error instanceof Error ? error.message : validation.genericError;

@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useTransition } from "react";
 
+import { CatalogSetupSection } from "@/components/stock/catalog-setup-section";
 import { ProductFormModal } from "@/components/stock/product-form-modal";
 import { ProductTypeModal } from "@/components/stock/product-type-modal";
 import { ProductUnitModal } from "@/components/stock/product-unit-modal";
-import { ProductsTable } from "@/components/stock/products-table";
+import { StockLevelsSection } from "@/components/stock/stock-levels-section";
 import {
   initialProductFormState,
   type ProductFormLabels,
@@ -32,12 +33,16 @@ import type {
   ProductUnit,
 } from "@/types/product";
 
-export function StockManager({ dictionary }: StockManagerProps) {
+export function StockManager({
+  dictionary,
+  initialSection = "stock-levels",
+}: StockManagerProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [productUnits, setProductUnits] = useState<ProductUnit[]>([]);
   const [search, setSearch] = useState("");
+  const [catalogSearch, setCatalogSearch] = useState("");
   const [error, setError] = useState("");
   const [typeError, setTypeError] = useState("");
   const [unitError, setUnitError] = useState("");
@@ -49,7 +54,6 @@ export function StockManager({ dictionary }: StockManagerProps) {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
-  const [isCatalogExpanded, setIsCatalogExpanded] = useState(false);
 
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
@@ -154,24 +158,9 @@ export function StockManager({ dictionary }: StockManagerProps) {
   if (!hasMounted) {
     return (
       <div className="space-y-8">
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          <div className="rounded-xl border-b-2 border-blue-200 bg-white p-6" />
-          <div className="rounded-xl border-b-2 border-rose-200 bg-white p-6" />
-          <div className="rounded-xl border-b-2 border-amber-200 bg-white p-6" />
-          <div className="rounded-xl bg-blue-700 p-6" />
-        </section>
-        <section className="rounded-2xl bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-                {managementDictionary.helper}
-              </p>
-              <h3 className="text-lg font-bold text-slate-900">{managementDictionary.title}</h3>
-            </div>
-          </div>
-        </section>
-        <section className="rounded-2xl bg-white p-6 shadow-sm">
-          <p className="text-sm text-slate-500">{dictionary.loading}</p>
+        <section className="rounded-2xl bg-white p-6 shadow-sm" id="categories">
+          <h3 className="text-lg font-bold text-slate-900">{managementDictionary.title}</h3>
+          <p className="mt-3 text-sm text-slate-500">{dictionary.loading}</p>
         </section>
       </div>
     );
@@ -190,13 +179,25 @@ export function StockManager({ dictionary }: StockManagerProps) {
     );
   });
 
-  const totalAssetValue = filteredProducts.reduce((sum, product) => {
-    return sum + Number(product.effective_price ?? product.base_price ?? 0);
-  }, 0);
-
   const lowStockCount = filteredProducts.filter((product) => {
     return Number(product.effective_price ?? 0) > 0 && (product.sku ?? "").length > 0;
   }).length;
+  const isCategoriesView = initialSection === "categories";
+  const catalogKeyword = catalogSearch.trim().toLowerCase();
+  const filteredCatalogTypes = productTypes.filter((productType) => {
+    if (!catalogKeyword) return true;
+    return (
+      productType.name.toLowerCase().includes(catalogKeyword) ||
+      (productType.description ?? "").toLowerCase().includes(catalogKeyword)
+    );
+  });
+  const filteredCatalogUnits = productUnits.filter((unit) => {
+    if (!catalogKeyword) return true;
+    return (
+      unit.name.toLowerCase().includes(catalogKeyword) ||
+      (unit.description ?? "").toLowerCase().includes(catalogKeyword)
+    );
+  });
 
   const activeUnits = productUnits.filter((unit) => unit.is_active);
   const unitOptions =
@@ -472,344 +473,47 @@ export function StockManager({ dictionary }: StockManagerProps) {
 
   return (
     <div className="space-y-8">
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
-        <div className="rounded-xl border-b-2 border-blue-200 bg-white p-6">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {dictionary.stats.totalProductsLabel}
-          </span>
-          <p className="mt-2 text-3xl font-extrabold text-blue-700">
-            {filteredProducts.length}
-          </p>
-        </div>
-        <div className="rounded-xl border-b-2 border-rose-200 bg-white p-6">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {dictionary.stats.lowStockLabel}
-          </span>
-          <p className="mt-2 text-3xl font-extrabold text-rose-600">
-            {lowStockCount}
-          </p>
-        </div>
-        <div className="rounded-xl border-b-2 border-amber-200 bg-white p-6">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {dictionary.stats.categoriesLabel}
-          </span>
-          <p className="mt-2 text-3xl font-extrabold text-amber-700">
-            {productTypes.length}
-          </p>
-        </div>
-        <div className="relative overflow-hidden rounded-xl bg-blue-700 p-6 text-white shadow-xl">
-          <div className="relative z-10">
-            <span className="text-xs font-bold uppercase tracking-widest opacity-80">
-              {dictionary.quickAction.label}
-            </span>
-            <h3 className="mt-1 text-xl font-bold">{dictionary.quickAction.title}</h3>
-            <button
-              className="mt-4 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold backdrop-blur-sm transition hover:bg-white/30"
-              onClick={openCreateModal}
-              type="button"
-            >
-              {dictionary.quickAction.button}
-            </button>
-          </div>
-          <div className="absolute -bottom-8 -right-4 text-8xl font-black text-white/10">
-            ST
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-slate-900">{managementDictionary.title}</h3>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              aria-expanded={isCatalogExpanded}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-              onClick={() => setIsCatalogExpanded((current) => !current)}
-              type="button"
-            >
-              <span>
-                {isCatalogExpanded
-                  ? managementDictionary.collapseLabel
-                  : managementDictionary.expandLabel}
-              </span>
-              <svg
-                aria-hidden="true"
-                className={`h-4 w-4 transition-transform ${isCatalogExpanded ? "rotate-180" : ""}`}
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  d="M6 9l6 6 6-6"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                />
-              </svg>
-            </button>
-            <button
-              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-              onClick={openCreateTypeModal}
-              type="button"
-            >
-              {managementDictionary.createTypeButton}
-            </button>
-            <button
-              className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
-              onClick={openCreateUnitModal}
-              type="button"
-            >
-              {managementDictionary.createUnitButton}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {managementDictionary.typeTitle}
-                </p>
-                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-                  {managementDictionary.typesCountLabel}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-slate-700">
-                  {productTypes.length}
-                </span>
-              </div>
-            </div>
-
-            {isCatalogExpanded ? productTypes.length > 0 ? (
-              <div className="mt-4 space-y-3">
-                {productTypes.map((productType) => (
-                  <div
-                    key={productType.id}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">
-                          {productType.name}
-                        </p>
-                        {productType.description ? (
-                          <p className="mt-2 text-xs text-slate-500">
-                            {productType.description}
-                          </p>
-                        ) : null}
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
-                          productType.is_active
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-200 text-slate-600"
-                        }`}
-                      >
-                        {productType.is_active
-                          ? managementDictionary.activeLabel
-                          : managementDictionary.inactiveLabel}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        onClick={() => openEditTypeModal(productType)}
-                        type="button"
-                      >
-                        {managementDictionary.editLabel}
-                      </button>
-                      <button
-                        className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        onClick={() => handleToggleType(productType)}
-                        type="button"
-                      >
-                        {productType.is_active
-                          ? unitsDictionary.deactivateLabel
-                          : unitsDictionary.activateLabel}
-                      </button>
-                      <button
-                        className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
-                        onClick={() => handleDeleteType(productType.id)}
-                        type="button"
-                      >
-                        {unitsDictionary.deleteLabel}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-slate-500">{managementDictionary.typeEmpty}</p>
-            ) : null}
-
-            {isCatalogExpanded && typeError ? (
-              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
-                {typeError}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {managementDictionary.unitTitle}
-                </p>
-                <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-500">
-                  {managementDictionary.unitsCountLabel}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-slate-700">
-                  {productUnits.length}
-                </span>
-              </div>
-            </div>
-
-            {isCatalogExpanded ? productUnits.length > 0 ? (
-              <div className="mt-4 space-y-3">
-                {productUnits.map((unit) => (
-                  <div
-                    key={unit.id}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-slate-900">
-                          {unit.name}
-                        </p>
-                        {unit.description ? (
-                          <p className="mt-2 text-xs text-slate-500">{unit.description}</p>
-                        ) : null}
-                      </div>
-                      <span
-                        className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
-                          unit.is_active
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-200 text-slate-600"
-                        }`}
-                      >
-                        {unit.is_active
-                          ? managementDictionary.activeLabel
-                          : managementDictionary.inactiveLabel}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        onClick={() => openEditUnitModal(unit)}
-                        type="button"
-                      >
-                        {managementDictionary.editLabel}
-                      </button>
-                      <button
-                        className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        onClick={() => handleToggleUnit(unit)}
-                        type="button"
-                      >
-                        {unit.is_active
-                          ? unitsDictionary.deactivateLabel
-                          : unitsDictionary.activateLabel}
-                      </button>
-                      <button
-                        className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
-                        onClick={() => handleDeleteUnit(unit.id)}
-                        type="button"
-                      >
-                        {unitsDictionary.deleteLabel}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-slate-500">{managementDictionary.unitEmpty}</p>
-            ) : null}
-
-            {isCatalogExpanded && unitError ? (
-              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
-                {unitError}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      <section className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-100 p-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex flex-col">
-            <label className="ml-1 text-[10px] font-bold uppercase tracking-tight text-slate-500">
-              {dictionary.filters.categoryLabel}
-            </label>
-            <div className="rounded-lg px-2 py-1 text-sm font-semibold text-slate-700">
-              {productTypes.length}
-            </div>
-          </div>
-          <div className="h-8 w-px bg-slate-200" />
-          <div className="flex flex-col">
-            <label className="ml-1 text-[10px] font-bold uppercase tracking-tight text-slate-500">
-              {dictionary.filters.statusLabel}
-            </label>
-            <div className="rounded-lg px-2 py-1 text-sm font-semibold text-slate-700">
-              {isPending ? dictionary.loading : filteredProducts.length}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <input
-            className="rounded-lg border-none bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-0 focus:ring-2 focus:ring-blue-500/20"
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder={dictionary.searchPlaceholder}
-            value={search}
-          />
-          <button
-            className="rounded-lg p-2 text-slate-400 transition hover:text-blue-600"
-            type="button"
-          >
-            {dictionary.filters.gridView}
-          </button>
-          <button
-            className="rounded-lg bg-white p-2 text-blue-700 shadow-sm"
-            type="button"
-          >
-            {dictionary.filters.listView}
-          </button>
-        </div>
-      </section>
-
-      {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {error}
-        </div>
+      {isCategoriesView ? (
+        <CatalogSetupSection
+          catalogSearch={catalogSearch}
+          isCategoriesView={isCategoriesView}
+          managementDictionary={managementDictionary}
+          onDeleteType={handleDeleteType}
+          onDeleteUnit={handleDeleteUnit}
+          onEditType={openEditTypeModal}
+          onEditUnit={openEditUnitModal}
+          onOpenCreateTypeModal={openCreateTypeModal}
+          onOpenCreateUnitModal={openCreateUnitModal}
+          onSearchChange={setCatalogSearch}
+          onToggleType={handleToggleType}
+          onToggleUnit={handleToggleUnit}
+          productTypes={filteredCatalogTypes}
+          productUnits={filteredCatalogUnits}
+          searchPlaceholder={dictionary.searchPlaceholder}
+          typeError={typeError}
+          unitError={unitError}
+          unitsDictionary={unitsDictionary}
+        />
       ) : null}
 
-      <ProductsTable
-        emptyState={dictionary.emptyState}
-        isPending={isPending}
-        loadingLabel={dictionary.loading}
-        managementDictionary={managementDictionary}
-        onDelete={handleDelete}
-        onEdit={openEditModal}
-        products={filteredProducts}
-        tableDictionary={dictionary.table}
-      />
-
-      <div className="flex justify-end pt-2">
-        <div className="relative w-full max-w-sm overflow-hidden rounded-2xl bg-slate-200 p-8">
-          <span className="relative z-10 text-sm font-bold uppercase tracking-widest text-slate-500">
-            {dictionary.assetValue.label}
-          </span>
-          <p className="relative z-10 mt-2 text-4xl font-extrabold tracking-tight text-blue-700">
-            {totalAssetValue.toFixed(2)}
-          </p>
-        </div>
-      </div>
+      {!isCategoriesView ? (
+        <StockLevelsSection
+          dictionary={dictionary}
+          emptyState={dictionary.emptyState}
+          error={error}
+          filteredProducts={filteredProducts}
+          isPending={isPending}
+          loadingLabel={dictionary.loading}
+          lowStockCount={lowStockCount}
+          managementDictionary={managementDictionary}
+          onDelete={handleDelete}
+          onEdit={openEditModal}
+          onOpenCreateModal={openCreateModal}
+          onSearchChange={setSearch}
+          productTypesCount={productTypes.length}
+          search={search}
+        />
+      ) : null}
 
       <ProductTypeModal
         cancelLabel={dictionary.form.cancel}

@@ -134,6 +134,7 @@ export type StockManagerDictionary = {
 
 export type StockManagerProps = {
   dictionary: StockManagerDictionary;
+  initialSection?: "categories" | "stock-levels";
 };
 
 export type ProductFormLabels = StockManagerDictionary["form"];

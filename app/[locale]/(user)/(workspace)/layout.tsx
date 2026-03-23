@@ -33,6 +33,8 @@ export default async function WorkspaceLayout({
         register: dictionary.stock.shell.register,
         searchPlaceholder: dictionary.stock.shell.searchPlaceholder,
         settings: dictionary.stock.shell.settings,
+        stockCategories: dictionary.stock.shell.stockCategories,
+        stockLevels: dictionary.stock.shell.stockLevels,
         station: dictionary.stock.shell.station,
         transactions: dictionary.stock.shell.transactions,
       }}

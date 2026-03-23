@@ -10,10 +10,13 @@ export type AuthUser = {
   email: string;
   id: string;
   name: string;
+  role?: string;
+  status?: string;
 };
 
 export type AuthPayload = {
   access_token: string;
+  store_id?: string;
   token_type: string;
   user: AuthUser;
 };

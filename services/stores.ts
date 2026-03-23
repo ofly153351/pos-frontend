@@ -32,17 +32,15 @@ function getAccessToken() {
 
 async function authorizedRequest<T>(path: string, init?: RequestInit) {
   const token = getAccessToken();
+  const headers = new Headers(init?.headers);
 
-  if (!token) {
-    throw new Error("Missing access token");
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(path, {
     ...init,
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${token}`,
-    },
+    headers,
   });
 
   return parseResponse<T>(response);
@@ -92,6 +90,15 @@ export function createStore(input: CreateStoreInput) {
     body: buildStoreFormData(input),
     method: "POST",
   });
+}
+
+export function listMyStores() {
+  return authorizedRequest<Store[]>("/api/me/stores");
+}
+
+export function getStoreById(storeId: string) {
+  const query = new URLSearchParams({ store_id: storeId });
+  return authorizedRequest<Store>(`/api/stores?${query.toString()}`);
 }
 
 export function listSubscriptionPlans() {

@@ -6,10 +6,19 @@ const backendBaseUrl =
 function buildForwardHeaders(request: Request, body: BodyInit | undefined) {
   const headers = new Headers();
   const authHeader = request.headers.get("authorization");
+  const cookieHeader = request.headers.get("cookie");
   const contentType = request.headers.get("content-type");
+  let accessTokenFromCookie = "";
+
+  if (cookieHeader) {
+    const matchedToken = cookieHeader.match(/(?:^|;\s*)pos-access-token=([^;]+)/);
+    accessTokenFromCookie = matchedToken?.[1] ?? "";
+  }
 
   if (authHeader) {
     headers.set("Authorization", authHeader);
+  } else if (accessTokenFromCookie) {
+    headers.set("Authorization", `Bearer ${decodeURIComponent(accessTokenFromCookie)}`);
   }
 
   if (contentType && !(body instanceof FormData)) {

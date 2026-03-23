@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import { UserWorkspaceSidebar } from "@/components/navigation/user-workspace-sidebar";
 import { UserWorkspaceTopbar } from "@/components/navigation/user-workspace-topbar";
 import type { Locale } from "@/lib/locale-config";
-import { getCurrentStoreId } from "@/lib/store-storage";
 
 type UserWorkspaceLayoutProps = {
   children: React.ReactNode;
@@ -19,6 +18,8 @@ type UserWorkspaceLayoutProps = {
     register: string;
     searchPlaceholder: string;
     settings: string;
+    stockCategories: string;
+    stockLevels: string;
     station: string;
     transactions: string;
   };
@@ -36,21 +37,14 @@ export function UserWorkspaceLayout({
   titles,
 }: UserWorkspaceLayoutProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    if (!getCurrentStoreId()) {
-      router.replace(`/${locale}/setup/store`);
-    }
-  }, [locale, router]);
 
   const title = useMemo(() => {
     if (pathname.endsWith("/sales")) {
       return titles.sales;
     }
 
-    if (pathname.endsWith("/stock")) {
+    if (pathname.includes("/stock")) {
       return titles.stock;
     }
 
@@ -66,6 +60,8 @@ export function UserWorkspaceLayout({
           inventory: shell.inventory,
           register: shell.register,
           settings: shell.settings,
+          stockCategories: shell.stockCategories,
+          stockLevels: shell.stockLevels,
           transactions: shell.transactions,
         }}
         locale={locale}
