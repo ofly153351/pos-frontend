@@ -14,6 +14,7 @@ type UserWorkspaceSidebarProps = {
   collapsed: boolean;
   locale: Locale;
   labels: {
+    customers: string;
     dashboard: string;
     inventory: string;
     register: string;
@@ -126,6 +127,7 @@ export function UserWorkspaceSidebar({
 
   const navItems = [
     { href: `/${locale}/sales`, key: "register", label: labels.register },
+    { href: `/${locale}/customers`, key: "customers", label: labels.customers },
     { href: `/${locale}/dashboard`, key: "transactions", label: labels.transactions },
     ...(role === "admin"
       ? [{ href: `/${locale}/admin/plans`, key: "settings", label: labels.settings }]

@@ -13,6 +13,7 @@ type UserWorkspaceLayoutProps = {
   shell: {
     brand: string;
     completeSale: string;
+    customers: string;
     dashboard: string;
     editProfile: string;
     inventory: string;
@@ -27,6 +28,7 @@ type UserWorkspaceLayoutProps = {
     transactions: string;
   };
   titles: {
+    customers: string;
     dashboard: string;
     sales: string;
     stock: string;
@@ -47,18 +49,23 @@ export function UserWorkspaceLayout({
       return titles.sales;
     }
 
+    if (pathname.includes("/customers")) {
+      return titles.customers;
+    }
+
     if (pathname.includes("/stock")) {
       return titles.stock;
     }
 
     return titles.dashboard;
-  }, [pathname, titles.dashboard, titles.sales, titles.stock]);
+  }, [pathname, titles.customers, titles.dashboard, titles.sales, titles.stock]);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-slate-900">
       <UserWorkspaceSidebar
         collapsed={collapsed}
         labels={{
+          customers: shell.customers,
           dashboard: shell.dashboard,
           inventory: shell.inventory,
           register: shell.register,
