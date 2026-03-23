@@ -38,7 +38,10 @@ export type SalesDictionary = {
   paymentMethodCash: string;
   paymentMethodCashLabel: string;
   paymentMethodLabel: string;
+  pdfButton: string;
+  pdfPreviewTitle: string;
   paymentMethodTransfer: string;
+  printButton: string;
   productCountLabel: string;
   productOutOfStock: string;
   quantityLabel: string;

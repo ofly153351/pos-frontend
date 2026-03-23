@@ -3,7 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Boxes, ChevronDown, Clock3, Layers3, ReceiptText, Tags } from "lucide-react";
+import {
+  Boxes,
+  ChevronDown,
+  CircleDollarSign,
+  Clock3,
+  FileText,
+  Layers3,
+  LayoutDashboard,
+  ReceiptText,
+  Settings2,
+  Tags,
+  Users,
+} from "lucide-react";
 
 import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
@@ -201,6 +213,27 @@ export function UserWorkspaceSidebar({
     ? "rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-200/70"
     : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600";
 
+  function getNavIcon(key: string, isActive: boolean) {
+    const className = "h-4 w-4";
+
+    const iconByKey = {
+      customers: <Users className={className} />,
+      register: <CircleDollarSign className={className} />,
+      settings: <Settings2 className={className} />,
+      transactions: <LayoutDashboard className={className} />,
+    } as const;
+
+    return (
+      <span
+        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+          isActive ? "bg-white/15 text-white" : "bg-blue-100 text-blue-700"
+        }`}
+      >
+        {iconByKey[key as keyof typeof iconByKey] ?? <FileText className={className} />}
+      </span>
+    );
+  }
+
   return (
     <aside
       className={`fixed left-0 top-0 z-40 flex h-screen flex-col bg-slate-50 px-4 py-6 transition-all duration-300 ${
@@ -223,15 +256,7 @@ export function UserWorkspaceSidebar({
             } ${collapsed ? "justify-center px-2" : ""}`}
             href={firstNavItem.href}
           >
-            <span
-              className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
-                pathname === firstNavItem.href
-                  ? "bg-white/15 text-white"
-                  : "bg-blue-100 text-blue-700"
-              }`}
-            >
-              {firstNavItem.label.slice(0, 2).toUpperCase()}
-            </span>
+            {getNavIcon(firstNavItem.key, pathname === firstNavItem.href)}
             {!collapsed ? <span>{firstNavItem.label}</span> : null}
           </Link>
         ) : null}
@@ -423,13 +448,7 @@ export function UserWorkspaceSidebar({
               } ${collapsed ? "justify-center px-2" : ""}`}
               href={item.href}
             >
-              <span
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
-                  isActive ? "bg-white/15 text-white" : "bg-blue-100 text-blue-700"
-                }`}
-              >
-                {item.label.slice(0, 2).toUpperCase()}
-              </span>
+              {getNavIcon(item.key, isActive)}
               {!collapsed ? <span>{item.label}</span> : null}
             </Link>
           );

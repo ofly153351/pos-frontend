@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { createStore, updateStoreSubscription } from "@/services/stores";
-import { saveCurrentStoreId } from "@/lib/store-storage";
+import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
 import type { Locale } from "@/lib/locale-config";
 import {
   clearPendingPlanId,
@@ -15,15 +15,11 @@ import {
 type StoreSetupDictionary = {
   createTitle: string;
   descriptionLabel: string;
-  existingStoreIdLabel: string;
   helper: string;
-  manualSelect: string;
   nameLabel: string;
-  slugLabel: string;
   phoneLabel: string;
   addressLabel: string;
   currencyLabel: string;
-  openDashboard: string;
   save: string;
   selectedPlanEmpty: string;
   selectedPlanLabel: string;
@@ -45,9 +41,8 @@ export function StoreSetupForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
-  const [existingStoreId, setExistingStoreId] = useState("");
+  const [resolvedStoreId, setResolvedStoreId] = useState("");
   const [pendingPlan, setPendingPlan] = useState<PendingPlanChoice | null>(() =>
     typeof window === "undefined" ? null : getPendingPlanChoice(),
   );
@@ -55,6 +50,14 @@ export function StoreSetupForm({
   const [address, setAddress] = useState("");
   const [currencyCode, setCurrencyCode] = useState("THB");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const currentStoreId = getCurrentStoreId();
+
+    if (currentStoreId) {
+      setResolvedStoreId(currentStoreId);
+    }
+  }, []);
 
   async function applyPendingPlan(storeId: string) {
     if (!pendingPlan?.code) {
@@ -64,24 +67,6 @@ export function StoreSetupForm({
     await updateStoreSubscription(storeId, pendingPlan.code);
     clearPendingPlanId();
     setPendingPlan(null);
-  }
-
-  function handleSelectExistingStore() {
-    if (!existingStoreId.trim()) {
-      return;
-    }
-
-    const storeId = existingStoreId.trim();
-
-    startTransition(async () => {
-      try {
-        saveCurrentStoreId(storeId);
-        await applyPendingPlan(storeId);
-        router.replace(`/${locale}/admin/plans`);
-      } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
-      }
-    });
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -95,13 +80,20 @@ export function StoreSetupForm({
 
     startTransition(async () => {
       try {
+        if (resolvedStoreId.trim()) {
+          const storeId = resolvedStoreId.trim();
+          saveCurrentStoreId(storeId);
+          await applyPendingPlan(storeId);
+          router.replace(`/${locale}/admin/plans`);
+          return;
+        }
+
         const response = await createStore({
           address: address || undefined,
           currency_code: currencyCode || undefined,
           description,
           name,
           phone: phone || undefined,
-          slug,
           subscription_plan_code: pendingPlan.code,
         });
 
@@ -115,7 +107,7 @@ export function StoreSetupForm({
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+    <div className="mx-auto max-w-3xl">
       <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-sky-600">
           {dictionary.title}
@@ -148,18 +140,6 @@ export function StoreSetupForm({
               className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
               onChange={(event) => setName(event.target.value)}
               value={name}
-            />
-          </label>
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">
-              {dictionary.slugLabel}
-            </span>
-            <input
-              className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
-              onChange={(event) => setSlug(event.target.value)}
-              placeholder="kinetic-pos"
-              required
-              value={slug}
             />
           </label>
           <label className="block grid gap-2 lg:grid-cols-3">
@@ -219,32 +199,6 @@ export function StoreSetupForm({
             {isPending ? dictionary.saving : dictionary.save}
           </button>
         </form>
-      </section>
-
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
-        <h2 className="text-2xl font-semibold text-slate-950">
-          {dictionary.manualSelect}
-        </h2>
-        <div className="mt-6 space-y-4">
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">
-              {dictionary.existingStoreIdLabel}
-            </span>
-            <input
-              className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
-              onChange={(event) => setExistingStoreId(event.target.value)}
-              value={existingStoreId}
-            />
-          </label>
-          <button
-            className="inline-flex rounded-2xl border border-sky-200 px-5 py-3 font-semibold text-sky-700 transition hover:bg-sky-50"
-            disabled={isPending}
-            onClick={handleSelectExistingStore}
-            type="button"
-          >
-            {dictionary.openDashboard}
-          </button>
-        </div>
       </section>
     </div>
   );

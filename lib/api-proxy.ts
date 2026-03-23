@@ -44,13 +44,30 @@ export async function proxyApiRequest(
     method,
   });
 
-  const responseText = await response.text();
+  const responseBody = await response.arrayBuffer();
   const contentType = response.headers.get("content-type") ?? "application/json";
+  const contentDisposition = response.headers.get("content-disposition");
+  const cacheControl = response.headers.get("cache-control");
+  const contentLength = response.headers.get("content-length");
 
-  return new Response(responseText, {
-    headers: {
-      "Content-Type": contentType,
-    },
+  const headers = new Headers({
+    "Content-Type": contentType,
+  });
+
+  if (contentDisposition) {
+    headers.set("Content-Disposition", contentDisposition);
+  }
+
+  if (cacheControl) {
+    headers.set("Cache-Control", cacheControl);
+  }
+
+  if (contentLength) {
+    headers.set("Content-Length", contentLength);
+  }
+
+  return new Response(responseBody, {
+    headers,
     status: response.status,
   });
 }

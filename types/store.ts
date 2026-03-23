@@ -21,7 +21,7 @@ export type CreateStoreInput = {
   logo?: File | null;
   name: string;
   phone?: string;
-  slug: string;
+  slug?: string;
   subscription_plan_code: string;
 };
 

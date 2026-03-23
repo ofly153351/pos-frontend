@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import type { SalesDictionary } from "@/components/sales/types";
-import { getInvoiceById, listInvoices } from "@/services/invoices";
+import { downloadInvoicePdf, getInvoiceById, listInvoices } from "@/services/invoices";
 import { getSaleById, listSales } from "@/services/sales";
 import type { Invoice } from "@/types/invoice";
 import type { Sale } from "@/types/sale";
@@ -60,8 +60,14 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
   const [error, setError] = useState("");
   const [receiptError, setReceiptError] = useState("");
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [isPdfDrawerOpen, setIsPdfDrawerOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isReceiptPending, startReceiptTransition] = useTransition();
+  const pdfFrameRef = useRef<HTMLIFrameElement | null>(null);
+  const openDrawerTimerRef = useRef<number | null>(null);
+  const pdfUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     setError("");
@@ -81,6 +87,22 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
       }
     });
   }, [mode]);
+
+  useEffect(() => {
+    pdfUrlRef.current = pdfPreviewUrl;
+  }, [pdfPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (openDrawerTimerRef.current) {
+        window.clearTimeout(openDrawerTimerRef.current);
+      }
+
+      if (pdfUrlRef.current) {
+        URL.revokeObjectURL(pdfUrlRef.current);
+      }
+    };
+  }, []);
 
   const filteredRecords = useMemo(() => {
     const sourceRecords = mode === "pending" ? invoices : sales;
@@ -135,6 +157,72 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
       }
     });
   }
+
+  async function openInvoicePdf(invoiceId: string) {
+    setPdfLoadingId(invoiceId);
+    setIsPdfDrawerOpen(false);
+
+    try {
+      const blob = await downloadInvoicePdf(invoiceId);
+      const pdfUrl = URL.createObjectURL(blob);
+
+      setPdfPreviewUrl((currentUrl) => {
+        if (currentUrl) {
+          URL.revokeObjectURL(currentUrl);
+        }
+
+        return pdfUrl;
+      });
+
+      if (openDrawerTimerRef.current) {
+        window.clearTimeout(openDrawerTimerRef.current);
+      }
+
+      openDrawerTimerRef.current = window.setTimeout(() => {
+        setIsPdfDrawerOpen(true);
+      }, 10);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "Request failed");
+    } finally {
+      setPdfLoadingId(null);
+    }
+  }
+
+  function closePdfDrawer() {
+    setIsPdfDrawerOpen(false);
+  }
+
+  function printPdfPreview() {
+    const frameWindow = pdfFrameRef.current?.contentWindow;
+
+    if (frameWindow) {
+      frameWindow.focus();
+      frameWindow.print();
+      return;
+    }
+
+    if (pdfPreviewUrl) {
+      window.open(pdfPreviewUrl, "_blank", "noopener,noreferrer");
+    }
+  }
+
+  useEffect(() => {
+    if (!isPdfDrawerOpen && pdfPreviewUrl) {
+      const timer = window.setTimeout(() => {
+        setPdfPreviewUrl((currentUrl) => {
+          if (currentUrl) {
+            URL.revokeObjectURL(currentUrl);
+          }
+
+          return null;
+        });
+      }, 300);
+
+      return () => window.clearTimeout(timer);
+    }
+
+    return undefined;
+  }, [isPdfDrawerOpen, pdfPreviewUrl]);
 
   return (
     <>
@@ -196,13 +284,23 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                         {formatCurrency(invoice.total_amount ?? 0)}
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                          onClick={() => openReceipt(invoice.id)}
-                          type="button"
-                        >
-                          {dictionary.viewReceiptButton}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            onClick={() => openReceipt(invoice.id)}
+                            type="button"
+                          >
+                            {dictionary.viewReceiptButton}
+                          </button>
+                          <button
+                            className="rounded-xl border border-sky-200 px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={pdfLoadingId === invoice.id}
+                            onClick={() => openInvoicePdf(invoice.id)}
+                            type="button"
+                          >
+                            {dictionary.pdfButton}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -312,9 +410,9 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                   <p>
                     {dictionary.customerTypeLabel} {dictionary.customerTypeNetwork}
                   </p>
-                  {selectedInvoice.status ? (
-                    <p className="mt-1">
-                      {dictionary.paymentMethodLabel} {selectedInvoice.status}
+                {selectedInvoice.status ? (
+                  <p className="mt-1">
+                    {dictionary.paymentMethodLabel} {selectedInvoice.status}
                     </p>
                   ) : null}
                   {selectedInvoice.due_at ? (
@@ -322,6 +420,17 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                       {dictionary.saleAtLabel} {formatDateTime(selectedInvoice.due_at)}
                     </p>
                   ) : null}
+                </div>
+
+                <div className="mt-4">
+                  <button
+                    className="rounded-xl border border-sky-200 px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={pdfLoadingId === selectedInvoice.id}
+                    onClick={() => openInvoicePdf(selectedInvoice.id)}
+                    type="button"
+                  >
+                    {dictionary.pdfButton}
+                  </button>
                 </div>
 
                 <div className="mt-6 space-y-3">
@@ -349,6 +458,50 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 </div>
               </>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {pdfPreviewUrl ? (
+        <div
+          className={`fixed inset-0 z-[60] flex justify-end bg-slate-950/40 transition-opacity duration-300 ${
+            isPdfDrawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
+          }`}
+          onClick={closePdfDrawer}
+        >
+          <div
+            className={`h-full w-[45vw] min-w-[320px] max-w-[760px] bg-white shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              isPdfDrawerOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <h3 className="text-base font-semibold text-slate-900">{dictionary.pdfPreviewTitle}</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  onClick={printPdfPreview}
+                  type="button"
+                >
+                  {dictionary.printButton || dictionary.viewReceiptButton}
+                </button>
+                <button
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  onClick={closePdfDrawer}
+                  type="button"
+                >
+                  {dictionary.closeReceiptButton}
+                </button>
+              </div>
+            </div>
+            <div className="h-[calc(100%-65px)] bg-slate-100 p-3">
+              <iframe
+                className="h-full w-full rounded-xl border border-slate-200 bg-white"
+                ref={pdfFrameRef}
+                src={pdfPreviewUrl}
+                title={dictionary.pdfPreviewTitle}
+              />
+            </div>
           </div>
         </div>
       ) : null}

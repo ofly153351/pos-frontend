@@ -7,6 +7,7 @@ type RequestOptions = {
   body?: unknown;
   headers?: Record<string, string>;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  responseType?: "arraybuffer" | "blob" | "json" | "text";
 };
 
 export class ApiError extends Error {
@@ -113,6 +114,40 @@ export async function authorizedApiRequest<T>(
     });
 
     return unwrapPayload(response.data, response.status);
+  } catch (error) {
+    throw toApiError(error);
+  }
+}
+
+export async function authorizedRawRequest<T>(
+  path: string,
+  options: RequestOptions = {},
+  authOptions: { requireToken?: boolean } = {},
+) {
+  const { requireToken = true } = authOptions;
+  const token = getToken();
+
+  if (requireToken && !token) {
+    throw new ApiError("Missing access token", 401);
+  }
+
+  const {
+    body,
+    headers,
+    method = "GET",
+    responseType = "json",
+  } = options;
+
+  try {
+    const response = await apiClient.request<T>({
+      data: body,
+      headers: buildHeaders(headers, body, token),
+      method,
+      responseType,
+      url: path,
+    });
+
+    return response.data;
   } catch (error) {
     throw toApiError(error);
   }

@@ -20,8 +20,11 @@ function ensureStoreId() {
 function buildStoreFormData(input: CreateStoreInput) {
   const formData = new FormData();
   formData.set("name", input.name);
-  formData.set("slug", input.slug);
   formData.set("subscription_plan_code", input.subscription_plan_code);
+
+  if (input.slug) {
+    formData.set("slug", input.slug);
+  }
 
   if (input.description) {
     formData.set("description", input.description);

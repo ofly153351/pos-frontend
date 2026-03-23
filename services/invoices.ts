@@ -1,5 +1,5 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
-import { authorizedApiRequest } from "@/services/api";
+import { authorizedApiRequest, authorizedRawRequest } from "@/services/api";
 import type {
   CreateInvoiceInput,
   CreateInvoicePaymentInput,
@@ -50,6 +50,17 @@ export function createInvoicePayment(
         "Content-Type": "application/json",
       },
       method: "POST",
+    },
+  );
+}
+
+export function downloadInvoicePdf(invoiceId: string) {
+  const storeId = ensureStoreId();
+  return authorizedRawRequest<Blob>(
+    `/api/stores/${storeId}/invoices/${invoiceId}/pdf`,
+    {
+      method: "GET",
+      responseType: "blob",
     },
   );
 }
