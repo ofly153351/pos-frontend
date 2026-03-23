@@ -35,13 +35,19 @@ export function ProductTypeModal({
   onNameChange,
   onSubmit,
 }: ProductTypeModalProps) {
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4">
-      <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+    <div
+      className={`fixed inset-0 z-50 bg-slate-900/35 p-4 backdrop-blur-[1px] transition-opacity duration-400 md:p-8 ${
+        isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+      }`}
+      onClick={onClose}
+    >
+      <div
+        className={`ml-auto h-full w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:w-[35vw] ${
+          isOpen ? "translate-x-0" : "translate-x-[105%]"
+        }`}
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold text-slate-950">
             {isEditing
