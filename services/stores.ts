@@ -1,50 +1,11 @@
-import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId } from "@/lib/store-storage";
-import { ApiError } from "@/services/api";
-import type { ApiResponse } from "@/types/auth";
+import { authorizedApiRequest } from "@/services/api";
 import type {
   CreateStoreInput,
   Store,
   StoreSubscription,
   SubscriptionPlan,
 } from "@/types/store";
-
-async function parseResponse<T>(response: Response) {
-  let payload: ApiResponse<T>;
-
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch {
-    throw new ApiError("Unexpected response from server", response.status);
-  }
-
-  if (!response.ok || !payload.success || typeof payload.data === "undefined") {
-    throw new ApiError(payload.message || "Request failed", response.status);
-  }
-
-  return payload as ApiResponse<T> & { data: T };
-}
-
-function getAccessToken() {
-  const session = getAuthSession();
-  return session?.access_token ?? "";
-}
-
-async function authorizedRequest<T>(path: string, init?: RequestInit) {
-  const token = getAccessToken();
-  const headers = new Headers(init?.headers);
-
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  const response = await fetch(path, {
-    ...init,
-    headers,
-  });
-
-  return parseResponse<T>(response);
-}
 
 function ensureStoreId() {
   const storeId = getCurrentStoreId();
@@ -86,42 +47,45 @@ function buildStoreFormData(input: CreateStoreInput) {
 }
 
 export function createStore(input: CreateStoreInput) {
-  return authorizedRequest<Store>("/api/stores", {
+  return authorizedApiRequest<Store>("/api/stores", {
     body: buildStoreFormData(input),
     method: "POST",
-  });
+  }, { requireToken: true });
 }
 
 export function listMyStores() {
-  return authorizedRequest<Store[]>("/api/me/stores");
+  return authorizedApiRequest<Store[]>("/api/me/stores", {}, { requireToken: true });
 }
 
 export function getStoreById(storeId: string) {
   const query = new URLSearchParams({ store_id: storeId });
-  return authorizedRequest<Store>(`/api/stores?${query.toString()}`);
+  return authorizedApiRequest<Store>(`/api/stores?${query.toString()}`, {}, { requireToken: true });
 }
 
 export function listSubscriptionPlans() {
-  return authorizedRequest<SubscriptionPlan[]>("/api/subscriptions/plans");
+  return authorizedApiRequest<SubscriptionPlan[]>("/api/subscriptions/plans", {}, { requireToken: true });
 }
 
 export function getCurrentSubscription() {
   const storeId = ensureStoreId();
-  return authorizedRequest<StoreSubscription>(
+  return authorizedApiRequest<StoreSubscription>(
     `/api/stores/${storeId}/subscription`,
+    {},
+    { requireToken: true },
   );
 }
 
 export function updateStoreSubscription(storeId: string, planCode: string) {
-  return authorizedRequest<StoreSubscription>(
+  return authorizedApiRequest<StoreSubscription>(
     `/api/stores/${storeId}/subscription`,
     {
-      body: JSON.stringify({ plan_code: planCode }),
+      body: { plan_code: planCode },
       headers: {
         "Content-Type": "application/json",
       },
       method: "PUT",
     },
+    { requireToken: true },
   );
 }
 

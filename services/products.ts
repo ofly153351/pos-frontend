@@ -1,7 +1,5 @@
-import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId } from "@/lib/store-storage";
-import { ApiError } from "@/services/api";
-import type { ApiResponse } from "@/types/auth";
+import { authorizedApiRequest } from "@/services/api";
 import type {
   Product,
   ProductInput,
@@ -11,11 +9,6 @@ import type {
   ProductUnitInput,
 } from "@/types/product";
 
-function getAccessToken() {
-  const session = getAuthSession();
-  return session?.access_token ?? "";
-}
-
 function ensureStoreId() {
   const storeId = getCurrentStoreId();
 
@@ -24,40 +17,6 @@ function ensureStoreId() {
   }
 
   return storeId;
-}
-
-async function parseResponse<T>(response: Response) {
-  let payload: ApiResponse<T>;
-
-  try {
-    payload = (await response.json()) as ApiResponse<T>;
-  } catch {
-    throw new ApiError("Unexpected response from server", response.status);
-  }
-
-  if (!response.ok || !payload.success || typeof payload.data === "undefined") {
-    throw new ApiError(payload.message || "Request failed", response.status);
-  }
-
-  return payload as ApiResponse<T> & { data: T };
-}
-
-async function authorizedRequest<T>(path: string, init?: RequestInit) {
-  const token = getAccessToken();
-
-  if (!token) {
-    throw new Error("Missing access token");
-  }
-
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      ...(init?.headers ?? {}),
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  return parseResponse<T>(response);
 }
 
 function buildProductFormData(input: ProductInput) {
@@ -107,7 +66,7 @@ function buildProductFormData(input: ProductInput) {
 
 export function listProductTypes() {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<ProductType[]>(
+  return authorizedApiRequest<ProductType[]>(
     `/api/stores/${currentStoreId}/product-types`,
   );
 }
@@ -115,10 +74,10 @@ export function listProductTypes() {
 export function createProductType(input: ProductTypeInput) {
   const currentStoreId = ensureStoreId();
 
-  return authorizedRequest<ProductType>(
+  return authorizedApiRequest<ProductType>(
     `/api/stores/${currentStoreId}/product-types`,
     {
-      body: JSON.stringify(input),
+      body: input,
       headers: {
         "Content-Type": "application/json",
       },
@@ -130,10 +89,10 @@ export function createProductType(input: ProductTypeInput) {
 export function updateProductType(productTypeId: string, input: ProductTypeInput) {
   const currentStoreId = ensureStoreId();
 
-  return authorizedRequest<ProductType>(
+  return authorizedApiRequest<ProductType>(
     `/api/stores/${currentStoreId}/product-types/${productTypeId}`,
     {
-      body: JSON.stringify(input),
+      body: input,
       headers: {
         "Content-Type": "application/json",
       },
@@ -145,7 +104,7 @@ export function updateProductType(productTypeId: string, input: ProductTypeInput
 export function deleteProductType(productTypeId: string) {
   const currentStoreId = ensureStoreId();
 
-  return authorizedRequest<Record<string, never>>(
+  return authorizedApiRequest<Record<string, never>>(
     `/api/stores/${currentStoreId}/product-types/${productTypeId}`,
     {
       method: "DELETE",
@@ -155,12 +114,12 @@ export function deleteProductType(productTypeId: string) {
 
 export function listProducts() {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<Product[]>(`/api/stores/${currentStoreId}/products`);
+  return authorizedApiRequest<Product[]>(`/api/stores/${currentStoreId}/products`);
 }
 
 export function createProduct(input: ProductInput) {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<Product>(`/api/stores/${currentStoreId}/products`, {
+  return authorizedApiRequest<Product>(`/api/stores/${currentStoreId}/products`, {
     body: buildProductFormData(input),
     method: "POST",
   });
@@ -168,7 +127,7 @@ export function createProduct(input: ProductInput) {
 
 export function updateProduct(productId: string, input: ProductInput) {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<Product>(
+  return authorizedApiRequest<Product>(
     `/api/stores/${currentStoreId}/products/${productId}`,
     {
       body: buildProductFormData(input),
@@ -179,7 +138,7 @@ export function updateProduct(productId: string, input: ProductInput) {
 
 export function deleteProduct(productId: string) {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<Record<string, never>>(
+  return authorizedApiRequest<Record<string, never>>(
     `/api/stores/${currentStoreId}/products/${productId}`,
     {
       method: "DELETE",
@@ -189,17 +148,17 @@ export function deleteProduct(productId: string) {
 
 export function listProductUnits() {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<ProductUnit[]>(
+  return authorizedApiRequest<ProductUnit[]>(
     `/api/stores/${currentStoreId}/product-units`,
   );
 }
 
 export function createProductUnit(input: ProductUnitInput) {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<ProductUnit>(
+  return authorizedApiRequest<ProductUnit>(
     `/api/stores/${currentStoreId}/product-units`,
     {
-      body: JSON.stringify(input),
+      body: input,
       headers: {
         "Content-Type": "application/json",
       },
@@ -210,10 +169,10 @@ export function createProductUnit(input: ProductUnitInput) {
 
 export function updateProductUnit(unitId: string, input: ProductUnitInput) {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<ProductUnit>(
+  return authorizedApiRequest<ProductUnit>(
     `/api/stores/${currentStoreId}/product-units/${unitId}`,
     {
-      body: JSON.stringify(input),
+      body: input,
       headers: {
         "Content-Type": "application/json",
       },
@@ -224,7 +183,7 @@ export function updateProductUnit(unitId: string, input: ProductUnitInput) {
 
 export function deleteProductUnit(unitId: string) {
   const currentStoreId = ensureStoreId();
-  return authorizedRequest<Record<string, never>>(
+  return authorizedApiRequest<Record<string, never>>(
     `/api/stores/${currentStoreId}/product-units/${unitId}`,
     {
       method: "DELETE",

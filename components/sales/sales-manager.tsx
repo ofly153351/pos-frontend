@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import type { SalesDictionary } from "@/components/sales/types";
 import { listCustomerLevelDiscounts, listCustomers } from "@/services/customers";
+import { createInvoice } from "@/services/invoices";
 import { listProducts } from "@/services/products";
 import { createSale, getSaleById } from "@/services/sales";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
@@ -388,21 +389,36 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
     startTransition(async () => {
       try {
+        const mappedItems = cart.map((item) => {
+          const discountValue = Number(item.discountValue || 0);
+
+          return {
+            discount_type: discountValue > 0 ? item.discountType : undefined,
+            discount_value: discountValue > 0 ? discountValue : undefined,
+            product_id: item.product.id,
+            quantity: item.quantity,
+          };
+        });
+
+        if (isInvoiceSettlement) {
+          await createInvoice({
+            customer_id: selectedCustomerId,
+            items: mappedItems,
+            note: note.trim() || undefined,
+          });
+
+          clearCart();
+          setSuccessMessage(dictionary.checkoutSuccess);
+          await reloadData();
+          return;
+        }
+
         const response = await createSale({
           customer_id: selectedCustomerId || undefined,
-          items: cart.map((item) => {
-            const discountValue = Number(item.discountValue || 0);
-
-            return {
-              discount_type: discountValue > 0 ? item.discountType : undefined,
-              discount_value: discountValue > 0 ? discountValue : undefined,
-              product_id: item.product.id,
-              quantity: item.quantity,
-            };
-          }),
+          items: mappedItems,
           note: note.trim() || undefined,
-          paid_amount: isInvoiceSettlement ? 0 : paidAmountValue,
-          payment_method: isInvoiceSettlement ? "invoice" : paymentMethod,
+          paid_amount: paidAmountValue,
+          payment_method: paymentMethod,
         });
 
         clearCart();

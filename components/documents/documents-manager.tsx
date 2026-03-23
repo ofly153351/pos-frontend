@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 
 import type { SalesDictionary } from "@/components/sales/types";
+import { getInvoiceById, listInvoices } from "@/services/invoices";
 import { getSaleById, listSales } from "@/services/sales";
+import type { Invoice } from "@/types/invoice";
 import type { Sale } from "@/types/sale";
 
 type DocumentsManagerProps = {
@@ -21,6 +23,10 @@ function getCustomerDisplayName(sale: Sale, dictionary: SalesDictionary) {
   }
 
   return sale.customer_name?.trim() || dictionary.customerTypeNetwork;
+}
+
+function getInvoiceCustomerDisplayName(invoice: Invoice, dictionary: SalesDictionary) {
+  return invoice.customer_name?.trim() || dictionary.customerTypeNetwork;
 }
 
 function formatCurrency(value: number) {
@@ -47,8 +53,10 @@ function formatDateTime(value: string) {
 
 export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerProps) {
   const [sales, setSales] = useState<Sale[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState("");
   const [receiptError, setReceiptError] = useState("");
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -56,28 +64,46 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
   const [isReceiptPending, startReceiptTransition] = useTransition();
 
   useEffect(() => {
+    setError("");
+
     startTransition(async () => {
       try {
+        if (mode === "pending") {
+          const response = await listInvoices();
+          setInvoices(response.data ?? []);
+          return;
+        }
+
         const response = await listSales();
         setSales(response.data ?? []);
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
     });
-  }, []);
+  }, [mode]);
 
-  const filteredSales = useMemo(() => {
-    const sourceSales =
-      mode === "pending"
-        ? sales.filter((sale) => String(sale.payment_method ?? "").toLowerCase() === "invoice")
-        : sales;
+  const filteredRecords = useMemo(() => {
+    const sourceRecords = mode === "pending" ? invoices : sales;
     const keyword = search.trim().toLowerCase();
 
     if (!keyword) {
-      return sourceSales;
+      return sourceRecords;
     }
 
-    return sourceSales.filter((sale) => {
+    return sourceRecords.filter((record) => {
+      if (mode === "pending") {
+        const invoice = record as Invoice;
+        const customerName = getInvoiceCustomerDisplayName(invoice, dictionary).toLowerCase();
+
+        return (
+          customerName.includes(keyword) ||
+          String(invoice.status ?? "").toLowerCase().includes(keyword) ||
+          String(invoice.created_at ?? "").toLowerCase().includes(keyword) ||
+          String(invoice.due_at ?? "").toLowerCase().includes(keyword)
+        );
+      }
+
+      const sale = record as Sale;
       const customerName = getCustomerDisplayName(sale, dictionary).toLowerCase();
 
       return (
@@ -86,16 +112,23 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
         String(sale.created_at ?? "").toLowerCase().includes(keyword)
       );
     });
-  }, [dictionary, mode, sales, search]);
+  }, [dictionary, mode, invoices, sales, search]);
 
-  async function openReceipt(saleId: string) {
+  async function openReceipt(id: string) {
     setReceiptError("");
     setSelectedSale(null);
+    setSelectedInvoice(null);
     setIsReceiptOpen(true);
 
     startReceiptTransition(async () => {
       try {
-        const response = await getSaleById(saleId);
+        if (mode === "pending") {
+          const response = await getInvoiceById(id);
+          setSelectedInvoice(response.data);
+          return;
+        }
+
+        const response = await getSaleById(id);
         setSelectedSale(response.data);
       } catch (nextError) {
         setReceiptError(nextError instanceof Error ? nextError.message : "Request failed");
@@ -109,7 +142,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-slate-950">{dictionary.historyTitle}</h2>
           <span className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">
-            {dictionary.itemCountLabel} {filteredSales.length}
+            {dictionary.itemCountLabel} {filteredRecords.length}
           </span>
         </div>
 
@@ -140,7 +173,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white text-sm">
-              {!isPending && filteredSales.length === 0 ? (
+              {!isPending && filteredRecords.length === 0 ? (
                 <tr>
                   <td className="px-4 py-6 text-center text-slate-500" colSpan={5}>
                     {dictionary.emptyHistory}
@@ -148,25 +181,55 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 </tr>
               ) : null}
 
-              {filteredSales.map((sale) => (
-                <tr key={sale.id}>
-                  <td className="px-4 py-3 text-slate-700">{sale.payment_method}</td>
-                  <td className="px-4 py-3 text-slate-700">{getCustomerDisplayName(sale, dictionary)}</td>
-                  <td className="px-4 py-3 text-slate-700">{formatDateTime(sale.created_at)}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-900">
-                    {formatCurrency(sale.total_amount ?? 0)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                      onClick={() => openReceipt(sale.id)}
-                      type="button"
-                    >
-                      {dictionary.viewReceiptButton}
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredRecords.map((record) => {
+                if (mode === "pending") {
+                  const invoice = record as Invoice;
+
+                  return (
+                    <tr key={invoice.id}>
+                      <td className="px-4 py-3 text-slate-700">{invoice.status ?? "-"}</td>
+                      <td className="px-4 py-3 text-slate-700">
+                        {getInvoiceCustomerDisplayName(invoice, dictionary)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-700">{formatDateTime(invoice.created_at)}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-900">
+                        {formatCurrency(invoice.total_amount ?? 0)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                          onClick={() => openReceipt(invoice.id)}
+                          type="button"
+                        >
+                          {dictionary.viewReceiptButton}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                }
+
+                const sale = record as Sale;
+
+                return (
+                  <tr key={sale.id}>
+                    <td className="px-4 py-3 text-slate-700">{sale.payment_method}</td>
+                    <td className="px-4 py-3 text-slate-700">{getCustomerDisplayName(sale, dictionary)}</td>
+                    <td className="px-4 py-3 text-slate-700">{formatDateTime(sale.created_at)}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-900">
+                      {formatCurrency(sale.total_amount ?? 0)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                        onClick={() => openReceipt(sale.id)}
+                        type="button"
+                      >
+                        {dictionary.viewReceiptButton}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -194,6 +257,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 onClick={() => {
                   setIsReceiptOpen(false);
                   setSelectedSale(null);
+                  setSelectedInvoice(null);
                   setReceiptError("");
                 }}
                 type="button"
@@ -208,7 +272,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
               </div>
             ) : null}
 
-            {isReceiptPending && !selectedSale ? (
+            {isReceiptPending && !selectedSale && !selectedInvoice ? (
               <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
                 {dictionary.viewReceiptButton}
               </div>
@@ -235,6 +299,50 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                       </div>
                       <p className="text-sm font-semibold text-slate-900">
                         {formatCurrency(item.line_total ?? item.total_amount ?? 0)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : null}
+
+            {selectedInvoice ? (
+              <>
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                  <p>
+                    {dictionary.customerTypeLabel} {dictionary.customerTypeNetwork}
+                  </p>
+                  {selectedInvoice.status ? (
+                    <p className="mt-1">
+                      {dictionary.paymentMethodLabel} {selectedInvoice.status}
+                    </p>
+                  ) : null}
+                  {selectedInvoice.due_at ? (
+                    <p className="mt-1">
+                      {dictionary.saleAtLabel} {formatDateTime(selectedInvoice.due_at)}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="mt-6 space-y-3">
+                  {(selectedInvoice.items ?? []).map((item) => (
+                    <div
+                      key={`${item.product_id}-${item.id ?? item.product_name ?? "item"}`}
+                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
+                    >
+                      <div>
+                        <p className="font-semibold text-slate-900">
+                          {item.product_name ?? dictionary.unavailableProduct}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {dictionary.quantityLabel} {item.quantity}
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {dictionary.unitPriceLabel} {formatCurrency(item.unit_price ?? 0)}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {formatCurrency(item.line_total ?? 0)}
                       </p>
                     </div>
                   ))}
