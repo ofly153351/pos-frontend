@@ -95,73 +95,53 @@
   },
   "sales": {
     "title": "หน้าขาย",
-    "subtitle": "ทำงานหน้าร้านให้เร็วด้วยการเลือกสินค้าไว มองเห็นออเดอร์ชัด และมีจุดชำระเงินที่โฟกัสง่าย",
-    "catalogTitle": "รายการสินค้า",
-    "catalogDescription": "แตะสินค้าเพื่อเพิ่มเข้าออเดอร์ปัจจุบัน",
-    "searchPlaceholder": "ค้นหาสินค้า / สแกนบาร์โค้ด",
+    "searchPlaceholder": "ค้นหาสินค้า",
     "addButton": "เพิ่มลงออเดอร์",
     "cartTitle": "ออเดอร์ปัจจุบัน",
-    "checkoutButton": "ชำระเงิน",
-    "quickKeypadTitle": "แป้นลัด",
+    "checkoutSectionTitle": "ชำระเงิน",
+    "checkoutButton": "สร้างบิลขาย",
+    "confirmPaymentButton": "กำลังสร้างบิล...",
+    "clearCartButton": "ล้างออเดอร์",
+    "emptyCart": "ยังไม่มีสินค้าในออเดอร์นี้",
+    "emptyProducts": "ยังไม่มีสินค้าที่พร้อมขายหรือมีสต็อกคงเหลือ",
+    "emptyHistory": "ยังไม่มีประวัติการขาย",
+    "historyTitle": "ประวัติการขายล่าสุด",
+    "itemCountLabel": "บิล",
+    "paymentMethodLabel": "วิธีชำระเงิน",
+    "paymentMethodCashLabel": "เงินสด",
+    "paymentMethodCash": "เงินสด",
+    "paymentMethodCard": "บัตร",
+    "paymentMethodTransfer": "โอนเงิน",
+    "customerPaymentLabel": "จำนวนเงินที่รับ",
+    "discountAmountLabel": "ลดเป็นเงิน",
+    "discountLabel": "ส่วนลด",
+    "discountPercentLabel": "ลดเป็น %",
+    "discountSummaryLabel": "ลดไป",
+    "discountTypeLabel": "รูปแบบส่วนลด",
+    "discountValueLabel": "ค่าส่วนลด",
+    "totalPaidLabel": "รับเงิน",
+    "changeLabel": "เงินทอน",
+    "noteLabel": "หมายเหตุ",
+    "notePlaceholder": "หมายเหตุเพิ่มเติมสำหรับบิลนี้",
+    "removeItemButton": "ลบ",
+    "stockLabel": "สต็อก",
+    "quantityLabel": "จำนวน",
+    "productCountLabel": "สินค้า",
+    "remainingLabel": "คงเหลือ",
+    "saleAtLabel": "ขายเมื่อ",
+    "receiptTitle": "รายละเอียดใบเสร็จ",
+    "unitPriceLabel": "ราคาต่อหน่วย",
+    "viewReceiptButton": "ดูใบเสร็จ",
+    "closeReceiptButton": "ปิด",
+    "checkoutSuccess": "สร้างบิลขายสำเร็จ",
+    "insufficientPayment": "จำนวนเงินที่รับน้อยกว่ายอดบิล",
+    "productOutOfStock": "สต็อกไม่พอ",
+    "unavailableProduct": "สินค้าไม่พร้อมใช้งาน",
     "summary": {
-      "subtotalLabel": "ยอดก่อนส่วนลด",
-      "subtotalValue": "฿260",
       "discountLabel": "ส่วนลด",
-      "discountValue": "฿20",
-      "totalLabel": "ยอดสุทธิ",
-      "totalValue": "฿240"
-    },
-    "products": [
-      {
-        "category": "กาแฟ",
-        "name": "อเมริกาโนเย็น",
-        "price": "฿80",
-        "stock": "เหลือ 24"
-      },
-      {
-        "category": "กาแฟ",
-        "name": "ลาเต้",
-        "price": "฿95",
-        "stock": "เหลือ 18"
-      },
-      {
-        "category": "เบเกอรี",
-        "name": "ครัวซองต์เนย",
-        "price": "฿65",
-        "stock": "เหลือ 11"
-      },
-      {
-        "category": "ชา",
-        "name": "ชาไทย",
-        "price": "฿85",
-        "stock": "เหลือ 20"
-      },
-      {
-        "category": "ของหวาน",
-        "name": "ชีสเค้ก",
-        "price": "฿110",
-        "stock": "เหลือ 7"
-      },
-      {
-        "category": "เพิ่มพิเศษ",
-        "name": "ช็อตเพิ่ม",
-        "price": "฿30",
-        "stock": "พร้อมขาย"
-      }
-    ],
-    "cartItems": [
-      {
-        "name": "อเมริกาโนเย็น",
-        "meta": "1 x ฿80",
-        "price": "฿80"
-      },
-      {
-        "name": "ลาเต้",
-        "meta": "2 x ฿95",
-        "price": "฿190"
-      }
-    ],
-    "quickKeypad": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "%", "0", "CLR"]
+      "subtotalLabel": "ยอดก่อนส่วนลด",
+      "totalLabel": "ยอดสุทธิ"
+    }
   },
   "admin": {
     "eyebrow": "พื้นที่ผู้ดูแลระบบ",

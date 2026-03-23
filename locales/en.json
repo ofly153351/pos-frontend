@@ -95,73 +95,53 @@
   },
   "sales": {
     "title": "Cashier screen",
-    "subtitle": "Keep the selling flow fast with quick product picks, a visible order summary, and a focused checkout area.",
-    "catalogTitle": "Product catalog",
-    "catalogDescription": "Tap a product to add it into the current bill.",
-    "searchPlaceholder": "Search product / scan barcode",
+    "searchPlaceholder": "Search products",
     "addButton": "Add to cart",
     "cartTitle": "Current order",
-    "checkoutButton": "Charge customer",
-    "quickKeypadTitle": "Quick keypad",
+    "checkoutSectionTitle": "Checkout",
+    "checkoutButton": "Create sale",
+    "confirmPaymentButton": "Processing sale...",
+    "clearCartButton": "Clear order",
+    "emptyCart": "No items in the current order",
+    "emptyProducts": "No active products with stock available",
+    "emptyHistory": "No sales have been recorded yet",
+    "historyTitle": "Recent sales",
+    "itemCountLabel": "Bills",
+    "paymentMethodLabel": "Payment method",
+    "paymentMethodCashLabel": "Cash",
+    "paymentMethodCash": "cash",
+    "paymentMethodCard": "Card",
+    "paymentMethodTransfer": "Transfer",
+    "customerPaymentLabel": "Paid amount",
+    "discountAmountLabel": "Amount",
+    "discountLabel": "Discount",
+    "discountPercentLabel": "Percent",
+    "discountSummaryLabel": "Discount saved",
+    "discountTypeLabel": "Discount type",
+    "discountValueLabel": "Discount value",
+    "totalPaidLabel": "Paid",
+    "changeLabel": "Change",
+    "noteLabel": "Note",
+    "notePlaceholder": "Optional note for this bill",
+    "removeItemButton": "Remove",
+    "stockLabel": "Stock",
+    "quantityLabel": "Qty",
+    "productCountLabel": "Products",
+    "remainingLabel": "Remaining",
+    "saleAtLabel": "Sold at",
+    "receiptTitle": "Receipt details",
+    "unitPriceLabel": "Unit price",
+    "viewReceiptButton": "View receipt",
+    "closeReceiptButton": "Close",
+    "checkoutSuccess": "Sale created successfully",
+    "insufficientPayment": "Paid amount is less than the bill total",
+    "productOutOfStock": "Out of stock",
+    "unavailableProduct": "Unavailable product",
     "summary": {
-      "subtotalLabel": "Subtotal",
-      "subtotalValue": "฿260",
       "discountLabel": "Discount",
-      "discountValue": "฿20",
-      "totalLabel": "Total",
-      "totalValue": "฿240"
-    },
-    "products": [
-      {
-        "category": "Coffee",
-        "name": "Iced Americano",
-        "price": "฿80",
-        "stock": "24 left"
-      },
-      {
-        "category": "Coffee",
-        "name": "Latte",
-        "price": "฿95",
-        "stock": "18 left"
-      },
-      {
-        "category": "Bakery",
-        "name": "Butter Croissant",
-        "price": "฿65",
-        "stock": "11 left"
-      },
-      {
-        "category": "Tea",
-        "name": "Thai Milk Tea",
-        "price": "฿85",
-        "stock": "20 left"
-      },
-      {
-        "category": "Dessert",
-        "name": "Cheesecake Slice",
-        "price": "฿110",
-        "stock": "7 left"
-      },
-      {
-        "category": "Add-on",
-        "name": "Extra Shot",
-        "price": "฿30",
-        "stock": "Always"
-      }
-    ],
-    "cartItems": [
-      {
-        "name": "Iced Americano",
-        "meta": "1 x ฿80",
-        "price": "฿80"
-      },
-      {
-        "name": "Latte",
-        "meta": "2 x ฿95",
-        "price": "฿190"
-      }
-    ],
-    "quickKeypad": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "%", "0", "CLR"]
+      "subtotalLabel": "Subtotal",
+      "totalLabel": "Total"
+    }
   },
   "admin": {
     "eyebrow": "Admin workspace",
