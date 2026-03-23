@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import type { SalesDictionary } from "@/components/sales/types";
 import { listCustomerLevelDiscounts, listCustomers } from "@/services/customers";
@@ -15,6 +15,12 @@ type CartItem = {
   discountValue: string;
   product: Product;
   quantity: number;
+};
+
+type QuantityNumpadState = {
+  max: number;
+  productId: string;
+  value: string;
 };
 
 type SalesManagerProps = {
@@ -82,6 +88,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [note, setNote] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
+  const [quantityNumpad, setQuantityNumpad] = useState<QuantityNumpadState | null>(null);
+  const [isQuantityNumpadOpen, setIsQuantityNumpadOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
   const [error, setError] = useState("");
   const [receiptError, setReceiptError] = useState("");
@@ -89,9 +97,18 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [isReceiptPending, startReceiptTransition] = useTransition();
+  const numpadCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (numpadCloseTimeoutRef.current) {
+        clearTimeout(numpadCloseTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -268,6 +285,88 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
           : item,
       ),
     );
+  }
+
+  function openQuantityNumpad(productId: string, currentQuantity: number, maxQuantity: number) {
+    if (numpadCloseTimeoutRef.current) {
+      clearTimeout(numpadCloseTimeoutRef.current);
+      numpadCloseTimeoutRef.current = null;
+    }
+
+    setQuantityNumpad({
+      max: maxQuantity,
+      productId,
+      value: String(currentQuantity),
+    });
+    setIsQuantityNumpadOpen(true);
+  }
+
+  function closeQuantityNumpad() {
+    setIsQuantityNumpadOpen(false);
+    numpadCloseTimeoutRef.current = setTimeout(() => {
+      setQuantityNumpad(null);
+    }, 260);
+  }
+
+  function appendNumpadDigit(digit: string) {
+    setQuantityNumpad((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const nextValue = current.value === "0" ? digit : `${current.value}${digit}`;
+      return { ...current, value: nextValue.slice(0, 6) };
+    });
+  }
+
+  function clearNumpadValue() {
+    setQuantityNumpad((current) => (current ? { ...current, value: "" } : current));
+  }
+
+  function backspaceNumpadValue() {
+    setQuantityNumpad((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return { ...current, value: current.value.slice(0, -1) };
+    });
+  }
+
+  function onNumpadInputChange(value: string) {
+    const digitsOnly = value.replace(/\D/g, "").slice(0, 6);
+    setQuantityNumpad((current) => (current ? { ...current, value: digitsOnly } : current));
+  }
+
+  function onNumpadInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeQuantityNumpad();
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applyNumpadQuantity();
+    }
+  }
+
+  function applyNumpadQuantity() {
+    if (!quantityNumpad) {
+      return;
+    }
+
+    const parsed = Number.parseInt(quantityNumpad.value, 10);
+
+    if (Number.isNaN(parsed)) {
+      updateCartQuantity(quantityNumpad.productId, 1);
+      closeQuantityNumpad();
+      return;
+    }
+
+    const clamped = Math.min(Math.max(parsed, 1), quantityNumpad.max);
+    updateCartQuantity(quantityNumpad.productId, clamped);
+    closeQuantityNumpad();
   }
 
   function submitSale() {
@@ -486,16 +585,16 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                               inputMode="numeric"
                               max={item.product.quantity}
                               min="1"
-                              onChange={(event) => {
-                                const nextQuantity = Number.parseInt(event.target.value, 10);
-
-                                if (Number.isNaN(nextQuantity)) {
-                                  return;
-                                }
-
-                                updateCartQuantity(item.product.id, nextQuantity);
-                              }}
+                              onClick={() =>
+                                openQuantityNumpad(
+                                  item.product.id,
+                                  item.quantity,
+                                  item.product.quantity,
+                                )
+                              }
+                              onFocus={(event) => event.target.blur()}
                               pattern="[0-9]*"
+                              readOnly
                               step="1"
                               type="number"
                               value={item.quantity}
@@ -820,6 +919,87 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 </div>
               </>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {quantityNumpad ? (
+        <div
+          className={`fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300 sm:items-center ${
+            isQuantityNumpadOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+          }`}
+          onClick={closeQuantityNumpad}
+        >
+          <div
+            className={`w-full max-w-sm rounded-[1.75rem] bg-white p-5 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              isQuantityNumpadOpen ? "translate-y-0" : "translate-y-8"
+            }`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-slate-950">
+              {dictionary.quantityNumpadTitle}
+            </h3>
+            <input
+              autoFocus
+              className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-sky-300"
+              inputMode="numeric"
+              onChange={(event) => onNumpadInputChange(event.target.value)}
+              onKeyDown={onNumpadInputKeyDown}
+              pattern="[0-9]*"
+              type="text"
+              value={quantityNumpad.value}
+            />
+
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
+                <button
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+                  key={digit}
+                  onClick={() => appendNumpadDigit(digit)}
+                  type="button"
+                >
+                  {digit}
+                </button>
+              ))}
+              <button
+                className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={clearNumpadValue}
+                type="button"
+              >
+                {dictionary.quantityNumpadClear}
+              </button>
+              <button
+                className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
+                onClick={() => appendNumpadDigit("0")}
+                type="button"
+              >
+                0
+              </button>
+              <button
+                className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={backspaceNumpadValue}
+                type="button"
+              >
+                {dictionary.quantityNumpadBackspace}
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                className="rounded-xl border border-slate-200 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={closeQuantityNumpad}
+                type="button"
+              >
+                {dictionary.quantityNumpadCancel}
+              </button>
+              <button
+                className="rounded-xl bg-sky-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
+                onClick={applyNumpadQuantity}
+                type="button"
+              >
+                {dictionary.quantityNumpadApply}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

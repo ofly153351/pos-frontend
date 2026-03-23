@@ -34,6 +34,11 @@ export type SalesDictionary = {
   productCountLabel: string;
   productOutOfStock: string;
   quantityLabel: string;
+  quantityNumpadApply: string;
+  quantityNumpadBackspace: string;
+  quantityNumpadCancel: string;
+  quantityNumpadClear: string;
+  quantityNumpadTitle: string;
   receiptTitle: string;
   remainingLabel: string;
   removeItemButton: string;
