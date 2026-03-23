@@ -7,7 +7,7 @@ function getLocaleFromPathname(pathname: string) {
 }
 
 function isWorkspacePath(pathname: string) {
-  return /^\/(en|th)\/(dashboard|sales|stock|customers|admin\/plans)(\/.*)?$/.test(pathname);
+  return /^\/(en|th)\/(dashboard|sales|stock|customers|documents|admin\/plans)(\/.*)?$/.test(pathname);
 }
 
 function isAuthPath(pathname: string) {

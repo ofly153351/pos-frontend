@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { SalesDictionary } from "@/components/sales/types";
 import { listCustomerLevelDiscounts, listCustomers } from "@/services/customers";
 import { listProducts } from "@/services/products";
-import { createSale, getSaleById, listSales } from "@/services/sales";
+import { createSale, getSaleById } from "@/services/sales";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 import type { Product } from "@/types/product";
 import type { Sale, SaleDiscountType, SalePaymentMethod } from "@/types/sale";
@@ -81,11 +81,11 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerLevelDiscounts, setCustomerLevelDiscounts] = useState<CustomerLevelDiscount[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [customerSettlementMode, setCustomerSettlementMode] = useState<"cash_now" | "invoice">("cash_now");
   const [note, setNote] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
   const [quantityNumpad, setQuantityNumpad] = useState<QuantityNumpadState | null>(null);
@@ -114,15 +114,13 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   useEffect(() => {
     startTransition(async () => {
       try {
-        const [productsResponse, salesResponse, customersResponse, discountResponse] = await Promise.all([
+        const [productsResponse, customersResponse, discountResponse] = await Promise.all([
           listProducts(),
-          listSales(),
           listCustomers(),
           listCustomerLevelDiscounts(),
         ]);
 
         setProducts(productsResponse.data ?? []);
-        setSales(salesResponse.data ?? []);
         setCustomers(customersResponse.data ?? []);
         setCustomerLevelDiscounts(discountResponse.data ?? []);
       } catch (nextError) {
@@ -192,20 +190,24 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   }, [cartSummary.total, customerDiscountPercent]);
 
   const payableTotal = Math.max(cartSummary.total - customerDiscountAmount, 0);
+  const isNetworkCustomerSelected = Boolean(selectedCustomerId);
+  const isInvoiceSettlement = isNetworkCustomerSelected && customerSettlementMode === "invoice";
+  const customerTypeLabel = isNetworkCustomerSelected
+    ? dictionary.customerTypeNetwork
+    : dictionary.customerTypeGeneral;
 
   const paidAmountValue = Number(paidAmount || 0);
-  const changeAmount = paidAmountValue - payableTotal;
+  const effectivePaidAmount = isInvoiceSettlement ? 0 : paidAmountValue;
+  const changeAmount = effectivePaidAmount - payableTotal;
 
   async function reloadData() {
-    const [productsResponse, salesResponse, customersResponse, discountResponse] = await Promise.all([
+    const [productsResponse, customersResponse, discountResponse] = await Promise.all([
       listProducts(),
-      listSales(),
       listCustomers(),
       listCustomerLevelDiscounts(),
     ]);
 
     setProducts(productsResponse.data ?? []);
-    setSales(salesResponse.data ?? []);
     setCustomers(customersResponse.data ?? []);
     setCustomerLevelDiscounts(discountResponse.data ?? []);
   }
@@ -213,6 +215,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   function clearCart() {
     setCart([]);
     setSelectedCustomerId("");
+    setCustomerSettlementMode("cash_now");
     setNote("");
     setPaidAmount("");
     setPaymentMethod("cash");
@@ -378,7 +381,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       return;
     }
 
-    if (paidAmountValue < payableTotal) {
+    if (!isInvoiceSettlement && paidAmountValue < payableTotal) {
       setError(dictionary.insufficientPayment);
       return;
     }
@@ -398,8 +401,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
             };
           }),
           note: note.trim() || undefined,
-          paid_amount: paidAmountValue,
-          payment_method: paymentMethod,
+          paid_amount: isInvoiceSettlement ? 0 : paidAmountValue,
+          payment_method: isInvoiceSettlement ? "invoice" : paymentMethod,
         });
 
         clearCart();
@@ -681,46 +684,85 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                     </option>
                   ))}
                 </select>
+                <p className="mt-2 text-xs font-medium text-slate-600">
+                  {dictionary.customerTypeLabel}: {customerTypeLabel}
+                </p>
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  {dictionary.paymentMethodLabel}
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: dictionary.paymentMethodCashLabel, value: "cash" },
-                    { label: dictionary.paymentMethodCard, value: "card" },
-                  ].map((option) => (
+              {isNetworkCustomerSelected ? (
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">
+                    {dictionary.customerSettlementLabel}
+                  </label>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
-                      key={option.value}
                       className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                        paymentMethod === option.value
+                        customerSettlementMode === "cash_now"
                           ? "border-sky-600 bg-sky-600 text-white"
                           : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                       }`}
-                      onClick={() => setPaymentMethod(option.value)}
+                      onClick={() => setCustomerSettlementMode("cash_now")}
                       type="button"
                     >
-                      {option.label}
+                      {dictionary.customerSettlementCashNow}
                     </button>
-                  ))}
+                    <button
+                      className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        customerSettlementMode === "invoice"
+                          ? "border-sky-600 bg-sky-600 text-white"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                      onClick={() => setCustomerSettlementMode("invoice")}
+                      type="button"
+                    >
+                      {dictionary.customerSettlementInvoice}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  {dictionary.customerPaymentLabel}
-                </label>
-                <input
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
-                  inputMode="decimal"
-                  min="0"
-                  onChange={(event) => setPaidAmount(event.target.value)}
-                  placeholder="0.00"
-                  value={paidAmount}
-                />
-              </div>
+              {!isInvoiceSettlement ? (
+                <>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      {dictionary.paymentMethodLabel}
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: dictionary.paymentMethodCashLabel, value: "cash" },
+                        { label: dictionary.paymentMethodCard, value: "card" },
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                            paymentMethod === option.value
+                              ? "border-sky-600 bg-sky-600 text-white"
+                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          }`}
+                          onClick={() => setPaymentMethod(option.value)}
+                          type="button"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      {dictionary.customerPaymentLabel}
+                    </label>
+                    <input
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                      inputMode="decimal"
+                      min="0"
+                      onChange={(event) => setPaidAmount(event.target.value)}
+                      placeholder="0.00"
+                      value={paidAmount}
+                    />
+                  </div>
+                </>
+              ) : null}
 
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -744,6 +786,10 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 <span>{dictionary.summary.discountLabel}</span>
                 <span>{formatCurrency(cartSummary.discountAmount)}</span>
               </div>
+              <div className="flex items-center justify-between">
+                <span>{dictionary.customerTypeLabel}</span>
+                <span>{customerTypeLabel}</span>
+              </div>
               {selectedCustomerId ? (
                 <div className="flex items-center justify-between">
                   <span>
@@ -754,7 +800,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
               ) : null}
               <div className="flex items-center justify-between">
                 <span>{dictionary.totalPaidLabel}</span>
-                <span>{formatCurrency(paidAmountValue)}</span>
+                <span>{formatCurrency(effectivePaidAmount)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>{dictionary.changeLabel}</span>
@@ -776,54 +822,6 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
             </button>
           </section>
 
-          <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-semibold text-slate-950">{dictionary.historyTitle}</h2>
-              <span className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">
-                {dictionary.itemCountLabel} {sales.length}
-              </span>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {sales.length > 0 ? (
-                sales.map((sale) => (
-                  <div
-                    key={sale.id}
-                    className="rounded-[1.25rem] border border-sky-100 bg-sky-50/60 px-4 py-4"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-semibold text-slate-950">{sale.payment_method}</p>
-                        <p className="mt-1 text-sm text-slate-600">
-                          {dictionary.saleAtLabel} {formatDateTime(sale.created_at)}
-                        </p>
-                        {(sale.discount_amount ?? 0) > 0 ? (
-                          <p className="mt-1 text-xs font-medium text-emerald-700">
-                            {dictionary.discountSummaryLabel} {formatCurrency(sale.discount_amount ?? 0)}
-                          </p>
-                        ) : null}
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {formatCurrency(sale.total_amount ?? 0)}
-                      </p>
-                    </div>
-
-                    <button
-                      className="mt-4 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white"
-                      onClick={() => openReceipt(sale.id)}
-                      type="button"
-                    >
-                      {dictionary.viewReceiptButton}
-                    </button>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                  {dictionary.emptyHistory}
-                </div>
-              )}
-            </div>
-          </section>
         </div>
       </section>
 

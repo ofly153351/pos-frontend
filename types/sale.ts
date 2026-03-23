@@ -34,6 +34,8 @@ export type SaleItem = {
 
 export type Sale = {
   change_amount?: number;
+  customer_id?: string | null;
+  customer_name?: string | null;
   created_at: string;
   discount_amount?: number;
   id: string;

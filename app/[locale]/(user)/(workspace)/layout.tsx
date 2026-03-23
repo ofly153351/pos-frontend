@@ -30,6 +30,9 @@ export default async function WorkspaceLayout({
         completeSale: dictionary.stock.shell.completeSale,
         customers: dictionary.stock.shell.customers,
         dashboard: dictionary.workspace.navigation.dashboard,
+        documentBills: dictionary.stock.shell.documentBills,
+        documentPending: dictionary.stock.shell.documentPending,
+        documents: dictionary.stock.shell.documents,
         editProfile: dictionary.stock.shell.editProfile,
         inventory: dictionary.stock.shell.inventory,
         logout: dictionary.stock.shell.logout,
@@ -45,6 +48,7 @@ export default async function WorkspaceLayout({
       titles={{
         customers: dictionary.customers.title,
         dashboard: dictionary.dashboard.title,
+        documents: dictionary.stock.shell.documents,
         sales: dictionary.sales.title,
         stock: dictionary.stock.title,
       }}

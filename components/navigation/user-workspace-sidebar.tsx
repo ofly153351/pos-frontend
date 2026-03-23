@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Boxes, ChevronDown, Layers3, Tags } from "lucide-react";
+import { Boxes, ChevronDown, Clock3, Layers3, ReceiptText, Tags } from "lucide-react";
 
 import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
@@ -16,6 +16,9 @@ type UserWorkspaceSidebarProps = {
   labels: {
     customers: string;
     dashboard: string;
+    documentBills: string;
+    documentPending: string;
+    documents: string;
     inventory: string;
     register: string;
     settings: string;
@@ -44,10 +47,16 @@ export function UserWorkspaceSidebar({
   const [storeAddress, setStoreAddress] = useState("");
   const stockBaseHref = `/${locale}/stock`;
   const stockCategoriesHref = `/${locale}/stock/categories`;
+  const documentsBaseHref = `/${locale}/documents`;
+  const documentsPendingHref = `/${locale}/documents/pending`;
   const isInventoryRoute =
     pathname === stockBaseHref || pathname.startsWith(`${stockBaseHref}/`);
+  const isDocumentsRoute =
+    pathname === documentsBaseHref || pathname.startsWith(`${documentsBaseHref}/`);
   const [inventoryExpanded, setInventoryExpanded] = useState(isInventoryRoute);
+  const [documentsExpanded, setDocumentsExpanded] = useState(isDocumentsRoute);
   const wasInventoryRouteRef = useRef(isInventoryRoute);
+  const wasDocumentsRouteRef = useRef(isDocumentsRoute);
 
   useEffect(() => {
     const session = getAuthSession();
@@ -103,7 +112,10 @@ export function UserWorkspaceSidebar({
   }, [shell.station]);
 
   useEffect(() => {
-    if (collapsed) setInventoryExpanded(false);
+    if (collapsed) {
+      setInventoryExpanded(false);
+      setDocumentsExpanded(false);
+    }
   }, [collapsed]);
 
   useEffect(() => {
@@ -124,6 +136,25 @@ export function UserWorkspaceSidebar({
 
     wasInventoryRouteRef.current = isInventoryRoute;
   }, [collapsed, isInventoryRoute]);
+
+  useEffect(() => {
+    if (collapsed) {
+      wasDocumentsRouteRef.current = isDocumentsRoute;
+      return;
+    }
+
+    const wasDocumentsRoute = wasDocumentsRouteRef.current;
+
+    if (isDocumentsRoute && !wasDocumentsRoute) {
+      setDocumentsExpanded(true);
+    }
+
+    if (!isDocumentsRoute && wasDocumentsRoute) {
+      setDocumentsExpanded(false);
+    }
+
+    wasDocumentsRouteRef.current = isDocumentsRoute;
+  }, [collapsed, isDocumentsRoute]);
 
   const navItems = [
     { href: `/${locale}/sales`, key: "register", label: labels.register },
@@ -158,6 +189,15 @@ export function UserWorkspaceSidebar({
       : "stock-levels";
 
   const inventoryItemClass = isInventoryRoute
+    ? "rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-200/70"
+    : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600";
+  const activeDocumentsKey = !isDocumentsRoute
+    ? ""
+    : pathname === documentsPendingHref
+      ? "pending"
+      : "bills";
+
+  const documentsItemClass = isDocumentsRoute
     ? "rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-200/70"
     : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600";
 
@@ -272,6 +312,98 @@ export function UserWorkspaceSidebar({
                       </Link>
                     );
                   })}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="space-y-1">
+          <div
+            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold transition ${
+              documentsItemClass
+            } ${collapsed ? "justify-center px-2" : ""}`}
+          >
+            <Link
+              className={`flex min-w-0 flex-1 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
+              href={documentsBaseHref}
+            >
+              <span
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+                  isDocumentsRoute
+                    ? "bg-white/15 text-white"
+                    : "bg-blue-100 text-blue-700"
+                }`}
+              >
+                <ReceiptText className="h-4 w-4" />
+              </span>
+              {!collapsed ? <span className="truncate">{labels.documents}</span> : null}
+            </Link>
+            {!collapsed ? (
+              <button
+                aria-expanded={documentsExpanded}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${
+                  isDocumentsRoute
+                    ? "text-white hover:bg-white/10"
+                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
+                }`}
+                onClick={() => setDocumentsExpanded((current) => !current)}
+                type="button"
+              >
+                <ChevronDown
+                  aria-hidden="true"
+                  className={`h-4 w-4 transition-transform duration-300 ${documentsExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+            ) : null}
+          </div>
+
+          {!collapsed ? (
+            <div
+              className={`grid overflow-hidden transition-all duration-300 ease-out ${
+                documentsExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="min-h-0">
+                <div className="space-y-1 pt-1 pl-6">
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition ${
+                      activeDocumentsKey === "bills"
+                        ? "bg-blue-100/80 font-semibold text-blue-700"
+                        : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                    }`}
+                    href={documentsBaseHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activeDocumentsKey === "bills"
+                          ? "bg-blue-200/80 text-blue-700"
+                          : "bg-slate-200 text-slate-500"
+                      }`}
+                    >
+                      <ReceiptText className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.documentBills}</span>
+                  </Link>
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition ${
+                      activeDocumentsKey === "pending"
+                        ? "bg-blue-100/80 font-semibold text-blue-700"
+                        : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                    }`}
+                    href={documentsPendingHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activeDocumentsKey === "pending"
+                          ? "bg-blue-200/80 text-blue-700"
+                          : "bg-slate-200 text-slate-500"
+                      }`}
+                    >
+                      <Clock3 className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.documentPending}</span>
+                  </Link>
                 </div>
               </div>
             </div>

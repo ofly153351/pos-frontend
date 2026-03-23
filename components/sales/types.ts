@@ -10,7 +10,15 @@ export type SalesDictionary = {
   confirmPaymentButton: string;
   customerLabel: string;
   customerDiscountLabel: string;
+  customerColumnLabel: string;
   customerPlaceholder: string;
+  customerSettlementLabel: string;
+  customerSettlementCashNow: string;
+  customerSettlementInvoice: string;
+  customerTypeGeneral: string;
+  customerTypeLabel: string;
+  customerTypeNetwork: string;
+  documentSearchPlaceholder: string;
   customerPaymentLabel: string;
   discountAmountLabel: string;
   discountLabel: string;

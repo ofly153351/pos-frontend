@@ -15,6 +15,9 @@ type UserWorkspaceLayoutProps = {
     completeSale: string;
     customers: string;
     dashboard: string;
+    documentBills: string;
+    documentPending: string;
+    documents: string;
     editProfile: string;
     inventory: string;
     logout: string;
@@ -30,6 +33,7 @@ type UserWorkspaceLayoutProps = {
   titles: {
     customers: string;
     dashboard: string;
+    documents: string;
     sales: string;
     stock: string;
   };
@@ -53,12 +57,16 @@ export function UserWorkspaceLayout({
       return titles.customers;
     }
 
+    if (pathname.includes("/documents")) {
+      return titles.documents;
+    }
+
     if (pathname.includes("/stock")) {
       return titles.stock;
     }
 
     return titles.dashboard;
-  }, [pathname, titles.customers, titles.dashboard, titles.sales, titles.stock]);
+  }, [pathname, titles.customers, titles.dashboard, titles.documents, titles.sales, titles.stock]);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-slate-900">
@@ -67,6 +75,9 @@ export function UserWorkspaceLayout({
         labels={{
           customers: shell.customers,
           dashboard: shell.dashboard,
+          documentBills: shell.documentBills,
+          documentPending: shell.documentPending,
+          documents: shell.documents,
           inventory: shell.inventory,
           register: shell.register,
           settings: shell.settings,
