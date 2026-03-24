@@ -97,6 +97,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customerSettlementMode, setCustomerSettlementMode] = useState<"cash_now" | "invoice">("cash_now");
   const [note, setNote] = useState("");
+  const [billDiscount, setBillDiscount] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
   const [quantityNumpad, setQuantityNumpad] = useState<QuantityNumpadState | null>(null);
   const [isQuantityNumpadOpen, setIsQuantityNumpadOpen] = useState(false);
@@ -218,7 +219,11 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     return cartSummary.total * Math.min(Math.max(customerDiscountPercent, 0), 100) / 100;
   }, [cartSummary.total, customerDiscountPercent]);
 
-  const payableTotal = Math.max(cartSummary.total - customerDiscountAmount, 0);
+  const parsedBillDiscount = Number(billDiscount || 0);
+  const sanitizedBillDiscount = Number.isFinite(parsedBillDiscount) ? parsedBillDiscount : 0;
+  const maxBillDiscount = Math.max(cartSummary.total - customerDiscountAmount, 0);
+  const billDiscountAmount = Math.min(Math.max(sanitizedBillDiscount, 0), maxBillDiscount);
+  const payableTotal = Math.max(cartSummary.total - customerDiscountAmount - billDiscountAmount, 0);
   const vatAmount = vatSummary?.vat_amount ?? 0;
   const settlementTotal = vatSummary?.grand_total ?? payableTotal;
   const isNetworkCustomerSelected = Boolean(selectedCustomerId);
@@ -242,7 +247,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     startTransition(async () => {
       try {
         const response = await calculateVat({
-          discount_bill: customerDiscountAmount,
+          discount_bill: customerDiscountAmount + billDiscountAmount,
           items: cart.map((item) => {
             const line = getCartLine(item);
 
@@ -271,7 +276,13 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     return () => {
       isCancelled = true;
     };
-  }, [applyVat, cart, customerDiscountAmount, startTransition]);
+  }, [applyVat, billDiscountAmount, cart, customerDiscountAmount, startTransition]);
+
+  useEffect(() => {
+    if (isInvoiceSettlement && billDiscount) {
+      setBillDiscount("");
+    }
+  }, [billDiscount, isInvoiceSettlement]);
 
   useEffect(() => {
     if (isInvoiceSettlement) {
@@ -301,6 +312,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     setCart([]);
     setSelectedCustomerId("");
     setCustomerSettlementMode("cash_now");
+    setBillDiscount("");
     setNote("");
     setPaidAmount("");
     setApplyVat(true);
@@ -504,6 +516,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
             customer_id: selectedCustomerId,
             items: mappedItems,
             note: note.trim() || undefined,
+            vat_included: false,
+            vat_percent: applyVat ? 7 : 0,
           });
 
           clearCart();
@@ -514,6 +528,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
         const response = await createSale({
           customer_id: selectedCustomerId || undefined,
+          discount_bill: billDiscountAmount > 0 ? billDiscountAmount : undefined,
           items: mappedItems,
           note: note.trim() || undefined,
           paid_amount: paidAmountValue,
@@ -841,38 +856,16 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
-                      {dictionary.vatToggleLabel}
+                      {dictionary.discountBillLabel}
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                          applyVat
-                            ? "border-sky-600 bg-sky-600 text-white"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                        }`}
-                        onClick={() => {
-                          setApplyVat(true);
-                          setIsPaidAmountTouched(false);
-                        }}
-                        type="button"
-                      >
-                        {dictionary.vatToggleOn}
-                      </button>
-                      <button
-                        className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                          !applyVat
-                            ? "border-sky-600 bg-sky-600 text-white"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                        }`}
-                        onClick={() => {
-                          setApplyVat(false);
-                          setIsPaidAmountTouched(false);
-                        }}
-                        type="button"
-                      >
-                        {dictionary.vatToggleOff}
-                      </button>
-                    </div>
+                    <input
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                      inputMode="decimal"
+                      min="0"
+                      onChange={(event) => setBillDiscount(event.target.value)}
+                      placeholder="0.00"
+                      value={billDiscount}
+                    />
                   </div>
 
                   <div>
@@ -911,6 +904,42 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">
+                  {dictionary.vatToggleLabel}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                      applyVat
+                        ? "border-sky-600 bg-sky-600 text-white"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                    onClick={() => {
+                      setApplyVat(true);
+                      setIsPaidAmountTouched(false);
+                    }}
+                    type="button"
+                  >
+                    {dictionary.vatToggleOn}
+                  </button>
+                  <button
+                    className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                      !applyVat
+                        ? "border-sky-600 bg-sky-600 text-white"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                    onClick={() => {
+                      setApplyVat(false);
+                      setIsPaidAmountTouched(false);
+                    }}
+                    type="button"
+                  >
+                    {dictionary.vatToggleOff}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">
                   {dictionary.noteLabel}
                 </label>
                 <textarea
@@ -943,6 +972,10 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                   <span>-{formatCurrency(customerDiscountAmount)}</span>
                 </div>
               ) : null}
+              <div className="flex items-center justify-between">
+                <span>{dictionary.discountBillLabel}</span>
+                <span>-{formatCurrency(billDiscountAmount)}</span>
+              </div>
               <div className="flex items-center justify-between">
                 <span>{dictionary.vatAmountLabel}</span>
                 <span>{formatCurrency(vatAmount)}</span>

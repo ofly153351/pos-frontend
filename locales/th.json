@@ -152,6 +152,7 @@
     "documentSearchPlaceholder": "ค้นหาลูกค้า วิธีชำระเงิน หรือวันที่ขาย",
     "customerPaymentLabel": "จำนวนเงินที่รับ",
     "discountAmountLabel": "ลดเป็นเงิน",
+    "discountBillLabel": "ส่วนลดท้ายบิล",
     "discountLabel": "ส่วนลด",
     "discountPercentLabel": "ลดเป็น %",
     "discountSummaryLabel": "ลดไป",

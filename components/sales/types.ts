@@ -25,6 +25,7 @@ export type SalesDictionary = {
   documentSearchPlaceholder: string;
   customerPaymentLabel: string;
   discountAmountLabel: string;
+  discountBillLabel: string;
   discountLabel: string;
   discountPercentLabel: string;
   discountSummaryLabel: string;

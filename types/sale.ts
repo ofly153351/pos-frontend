@@ -10,6 +10,7 @@ export type SaleItemInput = {
 
 export type CreateSaleInput = {
   customer_id?: string;
+  discount_bill?: number;
   items: SaleItemInput[];
   note?: string;
   paid_amount: number;
@@ -35,6 +36,7 @@ export type SaleItem = {
 };
 
 export type Sale = {
+  bill_discount_amount?: number;
   change_amount?: number;
   customer_id?: string | null;
   customer_name?: string | null;

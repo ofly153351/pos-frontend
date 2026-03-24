@@ -152,6 +152,7 @@
     "documentSearchPlaceholder": "Search customer, payment method, or date",
     "customerPaymentLabel": "Paid amount",
     "discountAmountLabel": "Amount",
+    "discountBillLabel": "Bill discount",
     "discountLabel": "Discount",
     "discountPercentLabel": "Percent",
     "discountSummaryLabel": "Discount saved",

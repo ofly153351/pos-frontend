@@ -13,6 +13,8 @@ export type CreateInvoiceInput = {
   due_at?: string;
   items: InvoiceItemInput[];
   note?: string;
+  vat_included?: boolean;
+  vat_percent?: number;
 };
 
 export type CreateInvoicePaymentInput = {
@@ -67,4 +69,7 @@ export type Invoice = {
   status?: InvoiceStatus;
   subtotal_amount?: number;
   total_amount?: number;
+  vat_amount?: number;
+  vat_included?: boolean;
+  vat_percent?: number;
 };
