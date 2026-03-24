@@ -1,3 +1,5 @@
+export type ProductViewMode = "grid" | "list";
+
 export type SalesDictionary = {
   addButton: string;
   cartTitle: string;
@@ -42,7 +44,18 @@ export type SalesDictionary = {
   pdfPreviewTitle: string;
   paymentMethodTransfer: string;
   printButton: string;
+  printReceiptAskBody: string;
+  printReceiptAskTitle: string;
+  printReceiptNowButton: string;
+  printReceiptSkipButton: string;
+  printWindowBlockedError: string;
+  receiptPreviewLoading: string;
+  receiptPreviewPrintButton: string;
+  receiptPreviewTitle: string;
+  quickCashLabel: string;
   productCountLabel: string;
+  productViewGrid: string;
+  productViewList: string;
   productOutOfStock: string;
   quantityLabel: string;
   quantityNumpadApply: string;
@@ -65,5 +78,9 @@ export type SalesDictionary = {
   totalPaidLabel: string;
   unitPriceLabel: string;
   unavailableProduct: string;
+  vatAmountLabel: string;
+  vatToggleLabel: string;
+  vatToggleOff: string;
+  vatToggleOn: string;
   viewReceiptButton: string;
 };

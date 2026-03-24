@@ -34,6 +34,16 @@ export type Product = {
   unit_type: ProductUnitType;
 };
 
+export type ProductListPage = {
+  has_next: boolean;
+  has_prev: boolean;
+  items: Product[];
+  limit: number;
+  page: number;
+  total: number;
+  total_pages: number;
+};
+
 export type ProductTypeInput = {
   description?: string;
   is_active?: boolean;

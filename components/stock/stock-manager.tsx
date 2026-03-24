@@ -146,7 +146,7 @@ export function StockManager({
           listProductUnits(),
         ]);
 
-        setProducts(productResponse.data ?? []);
+        setProducts(productResponse.data?.items ?? []);
         setProductTypes(typeResponse.data ?? []);
         setProductUnits(unitResponse.data ?? []);
       } catch (nextError) {
@@ -227,7 +227,7 @@ export function StockManager({
       listProductUnits(),
     ]);
 
-    setProducts(productResponse.data ?? []);
+    setProducts(productResponse.data?.items ?? []);
     setProductTypes(typeResponse.data ?? []);
     setProductUnits(unitResponse.data ?? []);
   }

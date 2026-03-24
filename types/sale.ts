@@ -14,6 +14,8 @@ export type CreateSaleInput = {
   note?: string;
   paid_amount: number;
   payment_method: SalePaymentMethod;
+  vat_included?: boolean;
+  vat_percent?: number;
 };
 
 export type SaleItem = {
@@ -45,4 +47,33 @@ export type Sale = {
   payment_method: SalePaymentMethod;
   subtotal_amount?: number;
   total_amount?: number;
+  vat_amount?: number;
+  vat_included?: boolean;
+  vat_percent?: number;
+};
+
+export type VatCalculateItemInput = {
+  code?: string;
+  discount_per_unit?: number;
+  name?: string;
+  price: number;
+  qty: number;
+};
+
+export type VatCalculateInput = {
+  discount_bill?: number;
+  items: VatCalculateItemInput[];
+  vat_included?: boolean;
+  vat_percent?: number;
+};
+
+export type VatCalculateSummary = {
+  after_discount: number;
+  discount_bill: number;
+  discount_item: number;
+  grand_total: number;
+  subtotal: number;
+  vat_amount: number;
+  vat_included: boolean;
+  vat_percent: number;
 };

@@ -2,14 +2,20 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
-import type { SalesDictionary } from "@/components/sales/types";
+import { ProductBrowser } from "@/components/sales/product-browser";
+import type { ProductViewMode, SalesDictionary } from "@/components/sales/types";
 import { listCustomerLevelDiscounts, listCustomers } from "@/services/customers";
 import { createInvoice } from "@/services/invoices";
 import { listProducts } from "@/services/products";
-import { createSale, getSaleById } from "@/services/sales";
+import {
+  calculateVat,
+  createSale,
+  getSaleById,
+  getSaleReceiptHtml,
+} from "@/services/sales";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 import type { Product } from "@/types/product";
-import type { Sale, SaleDiscountType, SalePaymentMethod } from "@/types/sale";
+import type { Sale, SaleDiscountType, SalePaymentMethod, VatCalculateSummary } from "@/types/sale";
 
 type CartItem = {
   discountType: SaleDiscountType;
@@ -27,6 +33,8 @@ type QuantityNumpadState = {
 type SalesManagerProps = {
   dictionary: SalesDictionary;
 };
+
+const productViewStorageKey = "pos-sales-product-view";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -85,6 +93,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
+  const [productView, setProductView] = useState<ProductViewMode>("grid");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customerSettlementMode, setCustomerSettlementMode] = useState<"cash_now" | "invoice">("cash_now");
   const [note, setNote] = useState("");
@@ -92,17 +101,36 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const [quantityNumpad, setQuantityNumpad] = useState<QuantityNumpadState | null>(null);
   const [isQuantityNumpadOpen, setIsQuantityNumpadOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
+  const [applyVat, setApplyVat] = useState(true);
+  const [isPaidAmountTouched, setIsPaidAmountTouched] = useState(false);
+  const [vatSummary, setVatSummary] = useState<VatCalculateSummary | null>(null);
   const [error, setError] = useState("");
   const [receiptError, setReceiptError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [isPrintPromptOpen, setIsPrintPromptOpen] = useState(false);
+  const [lastCompletedSaleId, setLastCompletedSaleId] = useState<string | null>(null);
+  const [isReceiptPreviewLoading, setIsReceiptPreviewLoading] = useState(false);
+  const [receiptPreviewHtml, setReceiptPreviewHtml] = useState("");
   const [isPending, startTransition] = useTransition();
   const [isReceiptPending, startReceiptTransition] = useTransition();
   const numpadCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const receiptPreviewFrameRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  useEffect(() => {
+    const savedView = window.localStorage.getItem(productViewStorageKey);
+    if (savedView === "grid" || savedView === "list") {
+      setProductView(savedView);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(productViewStorageKey, productView);
+  }, [productView]);
 
   useEffect(() => {
     return () => {
@@ -121,7 +149,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
           listCustomerLevelDiscounts(),
         ]);
 
-        setProducts(productsResponse.data ?? []);
+        setProducts(productsResponse.data?.items ?? []);
         setCustomers(customersResponse.data ?? []);
         setCustomerLevelDiscounts(discountResponse.data ?? []);
       } catch (nextError) {
@@ -191,6 +219,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   }, [cartSummary.total, customerDiscountPercent]);
 
   const payableTotal = Math.max(cartSummary.total - customerDiscountAmount, 0);
+  const vatAmount = vatSummary?.vat_amount ?? 0;
+  const settlementTotal = vatSummary?.grand_total ?? payableTotal;
   const isNetworkCustomerSelected = Boolean(selectedCustomerId);
   const isInvoiceSettlement = isNetworkCustomerSelected && customerSettlementMode === "invoice";
   const customerTypeLabel = isNetworkCustomerSelected
@@ -199,7 +229,61 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
   const paidAmountValue = Number(paidAmount || 0);
   const effectivePaidAmount = isInvoiceSettlement ? 0 : paidAmountValue;
-  const changeAmount = effectivePaidAmount - payableTotal;
+  const changeAmount = effectivePaidAmount - settlementTotal;
+
+  useEffect(() => {
+    if (!applyVat || cart.length === 0) {
+      setVatSummary(null);
+      return;
+    }
+
+    let isCancelled = false;
+
+    startTransition(async () => {
+      try {
+        const response = await calculateVat({
+          discount_bill: customerDiscountAmount,
+          items: cart.map((item) => {
+            const line = getCartLine(item);
+
+            return {
+              code: item.product.sku ?? undefined,
+              discount_per_unit: getDiscountPerUnit(item),
+              name: item.product.name,
+              price: line.unitPrice,
+              qty: item.quantity,
+            };
+          }),
+          vat_included: false,
+          vat_percent: 7,
+        });
+
+        if (!isCancelled) {
+          setVatSummary(response.data.summary);
+        }
+      } catch {
+        if (!isCancelled) {
+          setVatSummary(null);
+        }
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [applyVat, cart, customerDiscountAmount, startTransition]);
+
+  useEffect(() => {
+    if (isInvoiceSettlement) {
+      setPaidAmount("");
+      setIsPaidAmountTouched(false);
+      return;
+    }
+
+    if (!isPaidAmountTouched) {
+      setPaidAmount(settlementTotal.toFixed(2));
+    }
+  }, [isInvoiceSettlement, isPaidAmountTouched, settlementTotal]);
 
   async function reloadData() {
     const [productsResponse, customersResponse, discountResponse] = await Promise.all([
@@ -208,7 +292,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       listCustomerLevelDiscounts(),
     ]);
 
-    setProducts(productsResponse.data ?? []);
+    setProducts(productsResponse.data?.items ?? []);
     setCustomers(customersResponse.data ?? []);
     setCustomerLevelDiscounts(discountResponse.data ?? []);
   }
@@ -219,7 +303,22 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     setCustomerSettlementMode("cash_now");
     setNote("");
     setPaidAmount("");
+    setApplyVat(true);
+    setIsPaidAmountTouched(false);
     setPaymentMethod("cash");
+  }
+
+  function applyQuickCash(addAmount: number) {
+    setPaidAmount((currentValue) => {
+      if (!isPaidAmountTouched) {
+        return String(addAmount);
+      }
+
+      const parsed = Number(currentValue || 0);
+      const base = Number.isFinite(parsed) ? parsed : 0;
+      return String(base + addAmount);
+    });
+    setIsPaidAmountTouched(true);
   }
 
   function addToCart(product: Product) {
@@ -382,7 +481,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       return;
     }
 
-    if (!isInvoiceSettlement && paidAmountValue < payableTotal) {
+    if (!isInvoiceSettlement && paidAmountValue < settlementTotal) {
       setError(dictionary.insufficientPayment);
       return;
     }
@@ -419,6 +518,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
           note: note.trim() || undefined,
           paid_amount: paidAmountValue,
           payment_method: paymentMethod,
+          vat_included: false,
+          vat_percent: applyVat ? 7 : 0,
         });
 
         clearCart();
@@ -426,12 +527,45 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         await reloadData();
 
         if (response.data?.id) {
-          await openReceipt(response.data.id);
+          setLastCompletedSaleId(response.data.id);
+          setReceiptPreviewHtml("");
+          setIsPrintPromptOpen(true);
+          void prepareReceiptPreview(response.data.id);
         }
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
     });
+  }
+
+  async function prepareReceiptPreview(saleId: string) {
+    setIsReceiptPreviewLoading(true);
+
+    try {
+      const html = await getSaleReceiptHtml(saleId);
+      setReceiptPreviewHtml(html);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "Request failed");
+    } finally {
+      setIsReceiptPreviewLoading(false);
+    }
+  }
+
+  async function handlePrintFromPrompt() {
+    const frameWindow = receiptPreviewFrameRef.current?.contentWindow;
+
+    if (!frameWindow) {
+      setError(dictionary.printWindowBlockedError);
+      return;
+    }
+
+    frameWindow.focus();
+    frameWindow.print();
+    setIsPrintPromptOpen(false);
+
+    if (lastCompletedSaleId) {
+      await openReceipt(lastCompletedSaleId);
+    }
   }
 
   async function openReceipt(saleId: string) {
@@ -460,104 +594,20 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   return (
     <>
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-2xl font-semibold text-slate-950">{dictionary.title}</h2>
-            <div className="w-full max-w-sm">
-              <input
-                className="w-full rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder={dictionary.searchPlaceholder}
-                value={search}
-              />
-            </div>
-          </div>
-
-          {error ? (
-            <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {error}
-            </div>
-          ) : null}
-
-          {successMessage ? (
-            <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {successMessage}
-            </div>
-          ) : null}
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {saleableProducts.length > 0 ? (
-              saleableProducts.map((product) => {
-                const currentQuantity =
-                  cart.find((item) => item.product.id === product.id)?.quantity ?? 0;
-
-                return (
-                  <div
-                    key={product.id}
-                    className="rounded-[1.25rem] border border-sky-100 bg-gradient-to-b from-sky-50/70 to-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                  >
-                    <div className="flex justify-center">
-                      {product.image_url ? (
-                        <img
-                          alt={product.name}
-                          className="h-16 w-24 rounded-xl border border-slate-200 bg-white object-cover shadow-sm"
-                          loading="lazy"
-                          src={product.image_url}
-                        />
-                      ) : (
-                        <div className="flex h-16 w-24 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-500 shadow-sm">
-                          {product.name.slice(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-3 text-center">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-600">
-                        {product.product_type_name ?? product.product_type?.name ?? "-"}
-                      </p>
-                      <p className="mt-1 truncate text-base font-semibold text-slate-950">
-                        {product.name}
-                      </p>
-                      <div className="mt-2 flex justify-center">
-                        <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
-                          {dictionary.stockLabel} {product.quantity}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-sm font-semibold text-slate-900">
-                        {formatCurrency(product.effective_price)}
-                      </span>
-                      {currentQuantity > 0 ? (
-                        <span className="rounded-full bg-blue-700 px-2.5 py-0.5 text-[11px] font-semibold text-white">
-                          {dictionary.quantityLabel} {currentQuantity}
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <button
-                      className="mt-3 w-full rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
-                      disabled={currentQuantity >= product.quantity}
-                      onClick={() => addToCart(product)}
-                      type="button"
-                    >
-                      {currentQuantity >= product.quantity
-                        ? dictionary.productOutOfStock
-                        : dictionary.addButton}
-                    </button>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="sm:col-span-2 xl:col-span-3">
-                <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
-                  {dictionary.emptyProducts}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ProductBrowser
+          dictionary={dictionary}
+          error={error}
+          getCartQuantity={(productId) =>
+            cart.find((item) => item.product.id === productId)?.quantity ?? 0
+          }
+          onAddToCart={addToCart}
+          onProductViewChange={setProductView}
+          onSearchChange={setSearch}
+          productView={productView}
+          products={saleableProducts}
+          search={search}
+          successMessage={successMessage}
+        />
 
         <div className="space-y-6">
           <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8">
@@ -791,16 +841,70 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      {dictionary.vatToggleLabel}
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                          applyVat
+                            ? "border-sky-600 bg-sky-600 text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                        onClick={() => {
+                          setApplyVat(true);
+                          setIsPaidAmountTouched(false);
+                        }}
+                        type="button"
+                      >
+                        {dictionary.vatToggleOn}
+                      </button>
+                      <button
+                        className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                          !applyVat
+                            ? "border-sky-600 bg-sky-600 text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                        onClick={() => {
+                          setApplyVat(false);
+                          setIsPaidAmountTouched(false);
+                        }}
+                        type="button"
+                      >
+                        {dictionary.vatToggleOff}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
                       {dictionary.customerPaymentLabel}
                     </label>
                     <input
                       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
                       inputMode="decimal"
                       min="0"
-                      onChange={(event) => setPaidAmount(event.target.value)}
+                      onChange={(event) => {
+                        setPaidAmount(event.target.value);
+                        setIsPaidAmountTouched(true);
+                      }}
                       placeholder="0.00"
                       value={paidAmount}
                     />
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                        {dictionary.quickCashLabel}
+                      </span>
+                      {[100, 500, 1000].map((amount) => (
+                        <button
+                          key={amount}
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                          onClick={() => applyQuickCash(amount)}
+                          type="button"
+                        >
+                          +{amount}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
               ) : null}
@@ -840,6 +944,10 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 </div>
               ) : null}
               <div className="flex items-center justify-between">
+                <span>{dictionary.vatAmountLabel}</span>
+                <span>{formatCurrency(vatAmount)}</span>
+              </div>
+              <div className="flex items-center justify-between">
                 <span>{dictionary.totalPaidLabel}</span>
                 <span>{formatCurrency(effectivePaidAmount)}</span>
               </div>
@@ -849,7 +957,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
               </div>
               <div className="flex items-center justify-between text-base font-semibold text-slate-950">
                 <span>{dictionary.summary.totalLabel}</span>
-                <span>{formatCurrency(payableTotal)}</span>
+                <span>{formatCurrency(settlementTotal)}</span>
               </div>
             </div>
 
@@ -958,6 +1066,58 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 </div>
               </>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {isPrintPromptOpen ? (
+        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300">
+          <div className="w-full max-w-4xl rounded-[1.5rem] bg-white p-6 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-7">
+            <h3 className="text-xl font-semibold text-slate-950">{dictionary.printReceiptAskTitle}</h3>
+            <p className="mt-2 text-sm text-slate-600">{dictionary.printReceiptAskBody}</p>
+
+            <div className="mt-5 h-[52vh] rounded-2xl border border-slate-200 bg-slate-100 p-3">
+              {isReceiptPreviewLoading ? (
+                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500">
+                  {dictionary.receiptPreviewLoading}
+                </div>
+              ) : receiptPreviewHtml ? (
+                <iframe
+                  className="h-full w-full rounded-xl border border-slate-200 bg-white"
+                  ref={receiptPreviewFrameRef}
+                  srcDoc={receiptPreviewHtml}
+                  title={dictionary.receiptPreviewTitle}
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500">
+                  {dictionary.receiptPreviewLoading}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={async () => {
+                  setIsPrintPromptOpen(false);
+                  setReceiptPreviewHtml("");
+                  if (lastCompletedSaleId) {
+                    await openReceipt(lastCompletedSaleId);
+                  }
+                }}
+                type="button"
+              >
+                {dictionary.printReceiptSkipButton}
+              </button>
+              <button
+                className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                disabled={isReceiptPreviewLoading || !receiptPreviewHtml}
+                onClick={handlePrintFromPrompt}
+                type="button"
+              >
+                {dictionary.printReceiptNowButton}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

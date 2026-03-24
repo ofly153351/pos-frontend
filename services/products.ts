@@ -2,6 +2,7 @@ import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest } from "@/services/api";
 import type {
   Product,
+  ProductListPage,
   ProductInput,
   ProductType,
   ProductTypeInput,
@@ -112,9 +113,35 @@ export function deleteProductType(productTypeId: string) {
   );
 }
 
-export function listProducts() {
+type ListProductsOptions = {
+  limit?: number;
+  page?: number;
+};
+
+export async function listProducts(options: ListProductsOptions = {}) {
   const currentStoreId = ensureStoreId();
-  return authorizedApiRequest<Product[]>(`/api/stores/${currentStoreId}/products`);
+  const page = options.page ?? 1;
+  const limit = options.limit ?? 50;
+  const response = await authorizedApiRequest<Product[] | ProductListPage>(
+    `/api/stores/${currentStoreId}/products?page=${page}&limit=${limit}`,
+  );
+
+  const normalizedData: ProductListPage = Array.isArray(response.data)
+    ? {
+        has_next: false,
+        has_prev: false,
+        items: response.data,
+        limit: response.data.length,
+        page: 1,
+        total: response.data.length,
+        total_pages: 1,
+      }
+    : response.data;
+
+  return {
+    ...response,
+    data: normalizedData,
+  };
 }
 
 export function createProduct(input: ProductInput) {

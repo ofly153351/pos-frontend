@@ -38,7 +38,9 @@ export async function proxyApiRequest(
 ) {
   const method = options?.method ?? request.method;
   const body = options?.body;
-  const response = await fetch(`${backendBaseUrl}${endpoint}`, {
+  const incomingUrl = new URL(request.url);
+  const targetUrl = `${backendBaseUrl}${endpoint}${incomingUrl.search}`;
+  const response = await fetch(targetUrl, {
     body,
     headers: buildForwardHeaders(request, body),
     method,
