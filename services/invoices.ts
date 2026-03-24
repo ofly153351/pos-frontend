@@ -42,16 +42,44 @@ export function createInvoicePayment(
   input: CreateInvoicePaymentInput,
 ) {
   const storeId = ensureStoreId();
+  const body = new FormData();
+  body.set("paid_amount", String(input.paid_amount));
+  body.set("payment_method", input.payment_method);
+
+  if (input.note) {
+    body.set("note", input.note);
+  }
+
+  if (input.proof) {
+    body.set("proof", input.proof);
+  }
+
   return authorizedApiRequest<Invoice>(
     `/api/stores/${storeId}/invoices/${invoiceId}/payments`,
     {
-      body: input,
+      body,
+      method: "POST",
+    },
+  );
+}
+
+export function unpayInvoice(invoiceId: string, reason: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<Invoice>(
+    `/api/stores/${storeId}/invoices/${invoiceId}/unpay`,
+    {
+      body: { reason },
       headers: {
         "Content-Type": "application/json",
       },
       method: "POST",
     },
   );
+}
+
+export function getInvoicePaymentProofPath(invoiceId: string, paymentId: string) {
+  const storeId = ensureStoreId();
+  return `/api/stores/${storeId}/invoices/${invoiceId}/payments/${paymentId}/proof`;
 }
 
 export function downloadInvoicePdf(invoiceId: string) {

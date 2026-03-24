@@ -155,7 +155,16 @@ export function ProductBrowser({
             return productView === "grid" ? (
               <div
                 key={product.id}
-                className="rounded-[1.25rem] border border-sky-100 bg-gradient-to-b from-sky-50/70 to-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="rounded-[1.25rem] border border-sky-100 bg-gradient-to-b from-sky-50/70 to-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+                onClick={() => onAddToCart(product)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onAddToCart(product);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
                 <div className="flex justify-center">
                   {product.image_url ? (
@@ -198,7 +207,10 @@ export function ProductBrowser({
                 <button
                   className="mt-3 w-full rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
                   disabled={currentQuantity >= product.quantity}
-                  onClick={() => onAddToCart(product)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onAddToCart(product);
+                  }}
                   type="button"
                 >
                   {currentQuantity >= product.quantity
