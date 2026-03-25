@@ -25,6 +25,14 @@ export type CreateStoreInput = {
   subscription_plan_code: string;
 };
 
+export type UpdateStoreInput = {
+  address?: string;
+  currency_code?: string;
+  logo?: File | null;
+  name?: string;
+  phone?: string;
+};
+
 export type SubscriptionPlan = {
   code?: string;
   description?: string | null;

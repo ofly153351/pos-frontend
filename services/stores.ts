@@ -5,6 +5,7 @@ import type {
   Store,
   StoreSubscription,
   SubscriptionPlan,
+  UpdateStoreInput,
 } from "@/types/store";
 
 function ensureStoreId() {
@@ -49,6 +50,32 @@ function buildStoreFormData(input: CreateStoreInput) {
   return formData;
 }
 
+function buildStoreUpdateFormData(input: UpdateStoreInput) {
+  const formData = new FormData();
+
+  if (typeof input.name === "string") {
+    formData.set("name", input.name);
+  }
+
+  if (typeof input.phone === "string") {
+    formData.set("phone", input.phone);
+  }
+
+  if (typeof input.address === "string") {
+    formData.set("address", input.address);
+  }
+
+  if (typeof input.currency_code === "string") {
+    formData.set("currency_code", input.currency_code);
+  }
+
+  if (input.logo) {
+    formData.set("logo", input.logo);
+  }
+
+  return formData;
+}
+
 export function createStore(input: CreateStoreInput) {
   return authorizedApiRequest<Store>("/api/stores", {
     body: buildStoreFormData(input),
@@ -61,8 +88,18 @@ export function listMyStores() {
 }
 
 export function getStoreById(storeId: string) {
-  const query = new URLSearchParams({ store_id: storeId });
-  return authorizedApiRequest<Store>(`/api/stores?${query.toString()}`, {}, { requireToken: true });
+  return authorizedApiRequest<Store>(`/api/stores/${storeId}`, {}, { requireToken: true });
+}
+
+export function updateStoreById(storeId: string, input: UpdateStoreInput) {
+  return authorizedApiRequest<Store>(
+    `/api/stores/${storeId}`,
+    {
+      body: buildStoreUpdateFormData(input),
+      method: "PUT",
+    },
+    { requireToken: true },
+  );
 }
 
 export function listSubscriptionPlans() {

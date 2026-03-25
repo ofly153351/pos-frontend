@@ -35,6 +35,7 @@ type UserWorkspaceLayoutProps = {
     dashboard: string;
     documents: string;
     sales: string;
+    settings: string;
     stock: string;
   };
 };
@@ -65,8 +66,12 @@ export function UserWorkspaceLayout({
       return titles.stock;
     }
 
+    if (pathname.includes("/settings")) {
+      return titles.settings;
+    }
+
     return titles.dashboard;
-  }, [pathname, titles.customers, titles.dashboard, titles.documents, titles.sales, titles.stock]);
+  }, [pathname, titles.customers, titles.dashboard, titles.documents, titles.sales, titles.settings, titles.stock]);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-slate-900">

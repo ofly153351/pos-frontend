@@ -53,10 +53,10 @@ export function UserWorkspaceSidebar({
   shell,
 }: UserWorkspaceSidebarProps) {
   const pathname = usePathname();
-  const [role, setRole] = useState<string | null>(null);
   const [storeName, setStoreName] = useState(shell.station);
   const [storeDescription, setStoreDescription] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
+  const [storeLogoUrl, setStoreLogoUrl] = useState("");
   const stockBaseHref = `/${locale}/stock`;
   const stockCategoriesHref = `/${locale}/stock/categories`;
   const documentsBaseHref = `/${locale}/documents`;
@@ -69,11 +69,6 @@ export function UserWorkspaceSidebar({
   const [documentsExpanded, setDocumentsExpanded] = useState(isDocumentsRoute);
   const wasInventoryRouteRef = useRef(isInventoryRoute);
   const wasDocumentsRouteRef = useRef(isDocumentsRoute);
-
-  useEffect(() => {
-    const session = getAuthSession();
-    setRole(session?.user?.role ?? null);
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -91,6 +86,7 @@ export function UserWorkspaceSidebar({
             setStoreName(response.data.name);
             setStoreDescription(response.data.description ?? "");
             setStoreAddress(response.data.address ?? "");
+            setStoreLogoUrl(response.data.logo_url ?? "");
           }
 
           return;
@@ -106,12 +102,14 @@ export function UserWorkspaceSidebar({
         setStoreName(firstStore.name);
         setStoreDescription(firstStore.description ?? "");
         setStoreAddress(firstStore.address ?? "");
+        setStoreLogoUrl(firstStore.logo_url ?? "");
         saveCurrentStoreId(firstStore.id);
       } catch {
         if (isMounted) {
           setStoreName(shell.station);
           setStoreDescription("");
           setStoreAddress("");
+          setStoreLogoUrl("");
         }
       }
     }
@@ -172,9 +170,7 @@ export function UserWorkspaceSidebar({
     { href: `/${locale}/sales`, key: "register", label: labels.register },
     { href: `/${locale}/customers`, key: "customers", label: labels.customers },
     { href: `/${locale}/dashboard`, key: "transactions", label: labels.transactions },
-    ...(role === "admin"
-      ? [{ href: `/${locale}/admin/plans`, key: "settings", label: labels.settings }]
-      : []),
+    { href: `/${locale}/settings`, key: "settings", label: labels.settings },
   ];
   const [firstNavItem, ...trailingNavItems] = navItems;
 
@@ -462,14 +458,33 @@ export function UserWorkspaceSidebar({
           }`}
         >
           {collapsed ? (
-            <span className="block truncate text-center text-xs font-semibold text-slate-600">
-              {storeName.slice(0, 2).toUpperCase()}
-            </span>
+            <div className="flex items-center justify-center">
+              {storeLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt={storeName}
+                  className="h-8 w-8 rounded-lg object-cover"
+                  src={storeLogoUrl}
+                />
+              ) : (
+                <span className="block truncate text-center text-xs font-semibold text-slate-600">
+                  {storeName.slice(0, 2).toUpperCase()}
+                </span>
+              )}
+            </div>
           ) : (
             <>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
                 {shell.storeLabel}
               </p>
+              {storeLogoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt={storeName}
+                  className="mt-2 h-10 w-10 rounded-xl border border-slate-200 object-cover"
+                  src={storeLogoUrl}
+                />
+              ) : null}
               <p className="truncate text-sm font-semibold text-slate-700">{storeName}</p>
               {storeDescription ? (
                 <p className="mt-1 truncate text-xs text-slate-500">{storeDescription}</p>

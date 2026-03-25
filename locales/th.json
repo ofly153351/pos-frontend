@@ -318,6 +318,39 @@
       }
     ]
   },
+  "storeManagement": {
+    "pageTitle": "ตั้งค่าร้านค้า",
+    "switchSectionTitle": "จัดการหลายร้านในบัญชีเดียว",
+    "pageDescription": "สร้างร้านใหม่ แก้ไขข้อมูลร้าน อัปโหลดโลโก้ และสลับร้านที่ใช้งานในบัญชีนี้",
+    "selectStoreLabel": "ร้านที่เลือก",
+    "switchStoreAction": "สลับร้าน",
+    "switchStoreHint": "เมื่อสลับร้าน ระบบจะรีโหลดข้อมูล workspace ตามร้านที่เลือก",
+    "switchedSuccess": "สลับร้านเรียบร้อยแล้ว",
+    "updateStoreTitle": "แก้ไขร้านที่เลือก",
+    "updateSubmit": "บันทึกการเปลี่ยนแปลง",
+    "updating": "กำลังบันทึก...",
+    "updateSuccess": "อัปเดตร้านสำเร็จ",
+    "createStoreTitle": "สร้างร้านเพิ่ม",
+    "createSubmit": "สร้างร้าน",
+    "creating": "กำลังสร้าง...",
+    "createSuccess": "สร้างร้านสำเร็จ",
+    "nameLabel": "ชื่อร้าน",
+    "nameRequired": "กรุณากรอกชื่อร้าน",
+    "phoneLabel": "เบอร์โทร",
+    "addressLabel": "ที่อยู่",
+    "currencyLabel": "รหัสสกุลเงิน",
+    "planLabel": "แผนสมาชิก",
+    "logoLabel": "โลโก้ร้าน",
+    "logoPreviewLabel": "ตัวอย่างโลโก้",
+    "noLogoLabel": "ไม่มีโลโก้",
+    "emptyStores": "ยังไม่มีร้าน",
+    "errorFallback": "คำขอล้มเหลว",
+    "plans": {
+      "starter": "Starter",
+      "growth": "Growth",
+      "pro": "Pro"
+    }
+  },
   "stock": {
     "title": "จัดการสต็อก",
     "subtitle": "ติดตามสุขภาพของคลังสินค้า เตรียมงานรับเข้า และทำให้หน้าร้านมีของพร้อมขายก่อนสินค้าหมด",
@@ -336,7 +369,7 @@
       "stockLevels": "ระดับสต็อก",
       "stockCategories": "หมวดหมู่",
       "transactions": "ธุรกรรม",
-      "settings": "แผนผู้ใช้",
+      "settings": "ตั้งค่าร้านค้า",
       "completeSale": "ปิดการขาย",
       "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า..."
     },

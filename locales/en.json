@@ -318,6 +318,39 @@
       }
     ]
   },
+  "storeManagement": {
+    "pageTitle": "Store Settings",
+    "switchSectionTitle": "Manage stores for this account",
+    "pageDescription": "Create new stores, update store profile, upload logo, and switch active store on this account.",
+    "selectStoreLabel": "Selected store",
+    "switchStoreAction": "Switch store",
+    "switchStoreHint": "Switching store reloads the current workspace context.",
+    "switchedSuccess": "Active store changed",
+    "updateStoreTitle": "Edit selected store",
+    "updateSubmit": "Save store changes",
+    "updating": "Saving...",
+    "updateSuccess": "Store updated successfully",
+    "createStoreTitle": "Create another store",
+    "createSubmit": "Create store",
+    "creating": "Creating...",
+    "createSuccess": "Store created successfully",
+    "nameLabel": "Store name",
+    "nameRequired": "Store name is required",
+    "phoneLabel": "Phone",
+    "addressLabel": "Address",
+    "currencyLabel": "Currency code",
+    "planLabel": "Subscription plan",
+    "logoLabel": "Store logo",
+    "logoPreviewLabel": "Logo preview",
+    "noLogoLabel": "No logo",
+    "emptyStores": "No store available",
+    "errorFallback": "Request failed",
+    "plans": {
+      "starter": "Starter",
+      "growth": "Growth",
+      "pro": "Pro"
+    }
+  },
   "stock": {
     "title": "Stock management",
     "subtitle": "Monitor inventory health, prepare receiving work, and keep the storefront supplied before items run out.",
@@ -336,7 +369,7 @@
       "stockLevels": "Stock Levels",
       "stockCategories": "Categories",
       "transactions": "Transactions",
-      "settings": "User Plans",
+      "settings": "Store Settings",
       "completeSale": "Complete Sale",
       "searchPlaceholder": "Search Barcode or Name..."
     },

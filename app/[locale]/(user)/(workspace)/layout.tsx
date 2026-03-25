@@ -50,6 +50,7 @@ export default async function WorkspaceLayout({
         dashboard: dictionary.dashboard.title,
         documents: dictionary.stock.shell.documents,
         sales: dictionary.sales.title,
+        settings: dictionary.storeManagement.pageTitle,
         stock: dictionary.stock.title,
       }}
     >
