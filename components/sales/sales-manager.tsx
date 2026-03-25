@@ -58,6 +58,10 @@ function formatDateTime(value: string) {
   }).format(parsedDate);
 }
 
+function roundCurrency(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
 function getDiscountPerUnit(item: CartItem) {
   const unitPrice = Number(item.product.effective_price ?? 0);
   const rawValue = Number(item.discountValue || 0);
@@ -224,15 +228,22 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const maxBillDiscount = Math.max(cartSummary.total - customerDiscountAmount, 0);
   const billDiscountAmount = Math.min(Math.max(sanitizedBillDiscount, 0), maxBillDiscount);
   const payableTotal = Math.max(cartSummary.total - customerDiscountAmount - billDiscountAmount, 0);
-  const vatAmount = vatSummary?.vat_amount ?? 0;
-  const settlementTotal = vatSummary?.grand_total ?? payableTotal;
+  const fallbackNetBeforeVat = applyVat ? roundCurrency(payableTotal / 1.07) : roundCurrency(payableTotal);
+  const fallbackVatAmount = applyVat ? roundCurrency(payableTotal - fallbackNetBeforeVat) : 0;
+  const vatAmount = applyVat
+    ? roundCurrency(vatSummary?.vat_amount ?? fallbackVatAmount)
+    : 0;
+  const settlementTotal = applyVat
+    ? roundCurrency(vatSummary?.grand_total ?? payableTotal)
+    : roundCurrency(payableTotal);
   const isNetworkCustomerSelected = Boolean(selectedCustomerId);
   const isInvoiceSettlement = isNetworkCustomerSelected && customerSettlementMode === "invoice";
   const customerTypeLabel = isNetworkCustomerSelected
     ? dictionary.customerTypeNetwork
     : dictionary.customerTypeGeneral;
 
-  const paidAmountValue = Number(paidAmount || 0);
+  const parsedPaidAmount = Number(paidAmount || 0);
+  const paidAmountValue = Number.isFinite(parsedPaidAmount) ? parsedPaidAmount : 0;
   const effectivePaidAmount = isInvoiceSettlement ? 0 : paidAmountValue;
   const changeAmount = effectivePaidAmount - settlementTotal;
 
@@ -259,7 +270,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
               qty: item.quantity,
             };
           }),
-          vat_included: false,
+          vat_included: true,
           vat_percent: 7,
         });
 
@@ -516,7 +527,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
             customer_id: selectedCustomerId,
             items: mappedItems,
             note: note.trim() || undefined,
-            vat_included: false,
+            vat_included: applyVat,
             vat_percent: applyVat ? 7 : 0,
           });
 
@@ -533,7 +544,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
           note: note.trim() || undefined,
           paid_amount: paidAmountValue,
           payment_method: paymentMethod,
-          vat_included: false,
+          vat_included: applyVat,
           vat_percent: applyVat ? 7 : 0,
         });
 
