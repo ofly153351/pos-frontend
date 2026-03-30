@@ -37,8 +37,12 @@ export function StockManager({
   dictionary,
   initialSection = "stock-levels",
 }: StockManagerProps) {
+  const [productPageSize, setProductPageSize] = useState(20);
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [productPage, setProductPage] = useState(1);
+  const [productTotalPages, setProductTotalPages] = useState(1);
+  const [productTotal, setProductTotal] = useState(0);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [productUnits, setProductUnits] = useState<ProductUnit[]>([]);
   const [search, setSearch] = useState("");
@@ -140,13 +144,11 @@ export function StockManager({
   useEffect(() => {
     startTransition(async () => {
       try {
-        const [productResponse, typeResponse, unitResponse] = await Promise.all([
-          listProducts(),
+        const [typeResponse, unitResponse] = await Promise.all([
           listProductTypes(),
           listProductUnits(),
         ]);
 
-        setProducts(productResponse.data?.items ?? []);
         setProductTypes(typeResponse.data ?? []);
         setProductUnits(unitResponse.data ?? []);
       } catch (nextError) {
@@ -154,6 +156,31 @@ export function StockManager({
       }
     });
   }, []);
+
+  useEffect(() => {
+    startTransition(async () => {
+      try {
+        const productResponse = await listProducts({
+          limit: productPageSize,
+          page: productPage,
+        });
+
+        const nextData = productResponse.data;
+        const nextTotalPages = Math.max(nextData.total_pages ?? 1, 1);
+
+        if (productPage > nextTotalPages) {
+          setProductPage(nextTotalPages);
+          return;
+        }
+
+        setProducts(nextData.items ?? []);
+        setProductTotal(nextData.total ?? 0);
+        setProductTotalPages(nextTotalPages);
+      } catch (nextError) {
+        setError(nextError instanceof Error ? nextError.message : "Request failed");
+      }
+    });
+  }, [productPage, productPageSize]);
 
   if (!hasMounted) {
     return (
@@ -220,14 +247,30 @@ export function StockManager({
           },
         ];
 
-  async function reloadData() {
-    const [productResponse, typeResponse, unitResponse] = await Promise.all([
-      listProducts(),
+  async function reloadProductsPage(page = productPage) {
+    const productResponse = await listProducts({
+      limit: productPageSize,
+      page,
+    });
+    const nextData = productResponse.data;
+    const nextTotalPages = Math.max(nextData.total_pages ?? 1, 1);
+
+    if (page > nextTotalPages) {
+      setProductPage(nextTotalPages);
+      return;
+    }
+
+    setProducts(nextData.items ?? []);
+    setProductTotal(nextData.total ?? 0);
+    setProductTotalPages(nextTotalPages);
+  }
+
+  async function reloadCatalogData() {
+    const [typeResponse, unitResponse] = await Promise.all([
       listProductTypes(),
       listProductUnits(),
     ]);
 
-    setProducts(productResponse.data?.items ?? []);
     setProductTypes(typeResponse.data ?? []);
     setProductUnits(unitResponse.data ?? []);
   }
@@ -338,7 +381,7 @@ export function StockManager({
           await createProductType(payload);
         }
 
-        await reloadData();
+        await reloadCatalogData();
         closeTypeModal();
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
@@ -357,7 +400,7 @@ export function StockManager({
           name: productType.name,
         });
 
-        await reloadData();
+        await reloadCatalogData();
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -370,7 +413,7 @@ export function StockManager({
     startTypeTransition(async () => {
       try {
         await deleteProductType(productTypeId);
-        await reloadData();
+        await reloadCatalogData();
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -399,7 +442,7 @@ export function StockManager({
           await createProductUnit(payload);
         }
 
-        await reloadData();
+        await reloadCatalogData();
         closeUnitModal();
       } catch (nextError) {
         setUnitError(nextError instanceof Error ? nextError.message : "Request failed");
@@ -418,7 +461,7 @@ export function StockManager({
           name: unit.name,
         });
 
-        await reloadData();
+        await reloadCatalogData();
       } catch (nextError) {
         setUnitError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -431,7 +474,7 @@ export function StockManager({
     startUnitTransition(async () => {
       try {
         await deleteProductUnit(unitId);
-        await reloadData();
+        await reloadCatalogData();
       } catch (nextError) {
         setUnitError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -450,7 +493,7 @@ export function StockManager({
           await createProduct(formState);
         }
 
-        await reloadData();
+        await reloadProductsPage();
         closeProductModal();
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
@@ -464,7 +507,7 @@ export function StockManager({
     startTransition(async () => {
       try {
         await deleteProduct(productId);
-        await reloadData();
+        await reloadProductsPage();
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -506,10 +549,19 @@ export function StockManager({
           loadingLabel={dictionary.loading}
           lowStockCount={lowStockCount}
           managementDictionary={managementDictionary}
+          onPageChange={setProductPage}
+          onPageSizeChange={(size) => {
+            setProductPageSize(size);
+            setProductPage(1);
+          }}
           onDelete={handleDelete}
           onEdit={openEditModal}
           onOpenCreateModal={openCreateModal}
           onSearchChange={setSearch}
+          paginationCurrentPage={productPage}
+          paginationPageSize={productPageSize}
+          paginationTotalItems={productTotal}
+          paginationTotalPages={productTotalPages}
           productTypesCount={productTypes.length}
           search={search}
         />

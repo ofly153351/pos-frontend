@@ -1,5 +1,7 @@
 "use client";
 
+import { Pencil, Trash2 } from "lucide-react";
+
 import type { ManagementDictionary, UnitsDictionary } from "@/components/stock/types";
 import type { ProductType, ProductUnit } from "@/types/product";
 
@@ -129,11 +131,13 @@ export function CatalogSetupSection({
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
-                        className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                        aria-label={managementDictionary.editLabel}
+                        className="rounded-lg border border-slate-200 p-1.5 text-slate-700 transition hover:bg-slate-100"
                         onClick={() => onEditType(productType)}
+                        title={managementDictionary.editLabel}
                         type="button"
                       >
-                        {managementDictionary.editLabel}
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
@@ -145,11 +149,13 @@ export function CatalogSetupSection({
                           : unitsDictionary.activateLabel}
                       </button>
                       <button
-                        className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                        aria-label={unitsDictionary.deleteLabel}
+                        className="rounded-lg border border-rose-200 p-1.5 text-rose-600 transition hover:bg-rose-50"
                         onClick={() => onDeleteType(productType.id)}
+                        title={unitsDictionary.deleteLabel}
                         type="button"
                       >
-                        {unitsDictionary.deleteLabel}
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
@@ -212,11 +218,13 @@ export function CatalogSetupSection({
 
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
-                        className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                        aria-label={managementDictionary.editLabel}
+                        className="rounded-lg border border-slate-200 p-1.5 text-slate-700 transition hover:bg-slate-100"
                         onClick={() => onEditUnit(unit)}
+                        title={managementDictionary.editLabel}
                         type="button"
                       >
-                        {managementDictionary.editLabel}
+                        <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
@@ -228,11 +236,13 @@ export function CatalogSetupSection({
                           : unitsDictionary.activateLabel}
                       </button>
                       <button
-                        className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                        aria-label={unitsDictionary.deleteLabel}
+                        className="rounded-lg border border-rose-200 p-1.5 text-rose-600 transition hover:bg-rose-50"
                         onClick={() => onDeleteUnit(unit.id)}
+                        title={unitsDictionary.deleteLabel}
                         type="button"
                       >
-                        {unitsDictionary.deleteLabel}
+                        <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>

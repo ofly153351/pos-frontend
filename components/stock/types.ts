@@ -92,6 +92,7 @@ export type StockManagerDictionary = {
   pagination: {
     activePage: string;
     next: string;
+    perPage: string;
     pages: string[];
     previous: string;
     summary: string;

@@ -1,7 +1,10 @@
 "use client";
 
 import { ProductsTable } from "@/components/stock/products-table";
-import type { ManagementDictionary, StockManagerDictionary } from "@/components/stock/types";
+import type {
+  ManagementDictionary,
+  StockManagerDictionary,
+} from "@/components/stock/types";
 import type { Product } from "@/types/product";
 
 type StockLevelsSectionProps = {
@@ -13,10 +16,16 @@ type StockLevelsSectionProps = {
   loadingLabel: string;
   lowStockCount: number;
   managementDictionary: ManagementDictionary;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
   onDelete: (productId: string) => void;
   onEdit: (product: Product) => void;
   onOpenCreateModal: () => void;
   onSearchChange: (value: string) => void;
+  paginationCurrentPage: number;
+  paginationPageSize: number;
+  paginationTotalItems: number;
+  paginationTotalPages: number;
   productTypesCount: number;
   search: string;
 };
@@ -30,13 +39,26 @@ export function StockLevelsSection({
   loadingLabel,
   lowStockCount,
   managementDictionary,
+  onPageChange,
+  onPageSizeChange,
   onDelete,
   onEdit,
   onOpenCreateModal,
   onSearchChange,
+  paginationCurrentPage,
+  paginationPageSize,
+  paginationTotalItems,
+  paginationTotalPages,
   productTypesCount,
   search,
 }: StockLevelsSectionProps) {
+  const startPage = Math.max(paginationCurrentPage - 2, 1);
+  const endPage = Math.min(startPage + 4, paginationTotalPages);
+  const pageNumbers = Array.from(
+    { length: Math.max(endPage - startPage + 1, 0) },
+    (_, index) => startPage + index,
+  );
+
   return (
     <>
       <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
@@ -45,27 +67,33 @@ export function StockLevelsSection({
             {dictionary.stats.totalProductsLabel}
           </span>
           <p className="mt-2 text-3xl font-extrabold text-blue-700">
-            {filteredProducts.length}
+            {paginationTotalItems}
           </p>
         </div>
         <div className="rounded-xl border-b-2 border-rose-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
             {dictionary.stats.lowStockLabel}
           </span>
-          <p className="mt-2 text-3xl font-extrabold text-rose-600">{lowStockCount}</p>
+          <p className="mt-2 text-3xl font-extrabold text-rose-600">
+            {lowStockCount}
+          </p>
         </div>
         <div className="rounded-xl border-b-2 border-amber-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
             {dictionary.stats.categoriesLabel}
           </span>
-          <p className="mt-2 text-3xl font-extrabold text-amber-700">{productTypesCount}</p>
+          <p className="mt-2 text-3xl font-extrabold text-amber-700">
+            {productTypesCount}
+          </p>
         </div>
         <div className="relative overflow-hidden rounded-xl bg-blue-700 p-6 text-white shadow-xl">
           <div className="relative z-10">
             <span className="text-xs font-bold uppercase tracking-widest opacity-80">
               {dictionary.quickAction.label}
             </span>
-            <h3 className="mt-1 text-xl font-bold">{dictionary.quickAction.title}</h3>
+            <h3 className="mt-1 text-xl font-bold">
+              {dictionary.quickAction.title}
+            </h3>
             <button
               className="mt-4 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold backdrop-blur-sm transition hover:bg-white/30"
               onClick={onOpenCreateModal}
@@ -104,18 +132,32 @@ export function StockLevelsSection({
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label
+              className="text-xs font-semibold text-slate-500"
+              htmlFor="stock-page-size"
+            >
+              {dictionary.pagination.perPage}
+            </label>
+            <select
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              id="stock-page-size"
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+              value={paginationPageSize}
+            >
+              {[5, 10, 15, 25, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </div>
           <input
             className="rounded-lg border-none bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-0 focus:ring-2 focus:ring-blue-500/20"
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={dictionary.searchPlaceholder}
             value={search}
           />
-          <button
-            className="rounded-lg p-2 text-slate-400 transition hover:text-blue-600"
-            type="button"
-          >
-            {dictionary.filters.gridView}
-          </button>
           <button
             className="rounded-lg bg-white p-2 text-blue-700 shadow-sm"
             type="button"
@@ -141,6 +183,53 @@ export function StockLevelsSection({
         products={filteredProducts}
         tableDictionary={dictionary.table}
       />
+
+      {paginationTotalPages > 1 ? (
+        <section className="flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <button
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={paginationCurrentPage <= 1 || isPending}
+              onClick={() =>
+                onPageChange(Math.max(paginationCurrentPage - 1, 1))
+              }
+              type="button"
+            >
+              {dictionary.pagination.previous}
+            </button>
+
+            {pageNumbers.map((page) => (
+              <button
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                  page === paginationCurrentPage
+                    ? "bg-blue-700 text-white"
+                    : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                }`}
+                key={page}
+                onClick={() => onPageChange(page)}
+                type="button"
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={
+                paginationCurrentPage >= paginationTotalPages || isPending
+              }
+              onClick={() =>
+                onPageChange(
+                  Math.min(paginationCurrentPage + 1, paginationTotalPages),
+                )
+              }
+              type="button"
+            >
+              {dictionary.pagination.next}
+            </button>
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { Pencil, Trash2 } from "lucide-react";
+
 import type { ManagementDictionary } from "@/components/stock/types";
 import type { Product } from "@/types/product";
 
@@ -106,20 +108,24 @@ export function ProductsTable({
                 </div>
               </td>
               <td className="px-6 py-4 text-right">
-                <div className="flex items-center justify-end gap-2 opacity-0 transition group-hover:opacity-100">
+                <div className="flex items-center justify-end gap-2">
                   <button
                     className="rounded-lg p-2 text-blue-700 transition hover:bg-blue-50"
+                    aria-label={tableDictionary.editAction}
                     onClick={() => onEdit(product)}
+                    title={tableDictionary.editAction}
                     type="button"
                   >
-                    {tableDictionary.editAction}
+                    <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     className="rounded-lg p-2 text-rose-600 transition hover:bg-rose-50"
+                    aria-label={tableDictionary.deleteAction}
                     onClick={() => onDelete(product.id)}
+                    title={tableDictionary.deleteAction}
                     type="button"
                   >
-                    {tableDictionary.deleteAction}
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </td>
