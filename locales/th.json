@@ -67,6 +67,55 @@
       "stockTitle": "ตรวจห้องสต็อก",
       "stockDescription": "เปิดหน้าจัดการสต็อกฝั่งหลังบ้านเพื่อตรวจสินค้าที่ใกล้หมดและของรอรับเข้า"
     },
+    "loading": "กำลังโหลดแดชบอร์ด...",
+    "empty": "ไม่มีข้อมูลในช่วงเวลาที่เลือก",
+    "requestFailedLabel": "คำขอล้มเหลว",
+    "filters": {
+      "periodLabel": "ช่วงเวลา",
+      "periodToday": "วันนี้",
+      "period7d": "7 วันล่าสุด",
+      "period30d": "30 วันล่าสุด",
+      "periodCustom": "กำหนดเอง",
+      "fromLabel": "จากวันที่",
+      "toLabel": "ถึงวันที่",
+      "topLimitLabel": "จำนวนสินค้าขายดี",
+      "recentLimitLabel": "จำนวนบิลล่าสุด",
+      "lowStockLimitLabel": "จำนวนสินค้าใกล้หมด",
+      "lowStockThresholdLabel": "เกณฑ์สต็อกต่ำ",
+      "apply": "ใช้ตัวกรอง",
+      "refresh": "รีเฟรช"
+    },
+    "sections": {
+      "range": "ช่วงเวลาที่ใช้งาน",
+      "paymentBreakdown": "สรุปตามวิธีชำระเงิน",
+      "topProducts": "สินค้าขายดี",
+      "lowStockProducts": "สินค้าใกล้หมด",
+      "recentSales": "บิลล่าสุด"
+    },
+    "summary": {
+      "revenue": "ยอดขายรวม",
+      "salesCount": "จำนวนบิล",
+      "totalItems": "จำนวนสินค้าที่ขาย",
+      "averageTicket": "ยอดเฉลี่ยต่อบิล",
+      "discountAmount": "ส่วนลดรวม",
+      "vatAmount": "ภาษีมูลค่าเพิ่ม"
+    },
+    "table": {
+      "productName": "สินค้า",
+      "quantity": "จำนวน",
+      "price": "ราคา",
+      "amount": "ยอดเงิน",
+      "sku": "SKU",
+      "stock": "สต็อก",
+      "saleNumber": "เลขที่บิล",
+      "paymentMethod": "ชำระด้วย",
+      "cashier": "แคชเชียร์",
+      "customer": "ลูกค้า",
+      "soldAt": "เวลาขาย"
+    },
+    "validation": {
+      "customRangeRequired": "กรุณาเลือกวันที่เริ่มต้นและสิ้นสุดให้ครบ"
+    },
     "activityTitle": "ความเคลื่อนไหวล่าสุด",
     "activityItems": [
       {
@@ -138,9 +187,9 @@
     "receiptPreviewLoading": "กำลังโหลดตัวอย่างใบเสร็จ...",
     "requestFailedLabel": "คำขอล้มเหลว",
     "quickCashLabel": "ยอดรับด่วน",
-    "customerLabel": "ลูกค้าในเครือ",
+    "customerLabel": "ลูกค้า",
     "customerColumnLabel": "ลูกค้า",
-    "customerDiscountLabel": "ส่วนลดลูกค้าในเครือ",
+    "customerDiscountLabel": "ส่วนลดลูกค้า",
     "amountPlaceholder": "0.00",
     "customerPlaceholder": "ลูกค้าทั่วไป (ไม่เลือก)",
     "customerSettlementLabel": "รูปแบบชำระเงิน",
@@ -148,7 +197,7 @@
     "customerSettlementInvoice": "ออกบิลค้างชำระ",
     "customerTypeLabel": "ประเภทลูกค้า",
     "customerTypeGeneral": "ลูกค้าทั่วไป",
-    "customerTypeNetwork": "ลูกค้าในเครือ",
+    "customerTypeNetwork": "ลูกค้า",
     "documentSearchPlaceholder": "ค้นหาลูกค้า วิธีชำระเงิน หรือวันที่ขาย",
     "customerPaymentLabel": "จำนวนเงินที่รับ",
     "discountAmountLabel": "ลดเป็นเงิน",
@@ -198,8 +247,8 @@
     }
   },
   "customers": {
-    "title": "ลูกค้าในเครือ",
-    "subtitle": "สร้างและจัดการลูกค้าด้วยระดับลูกค้า (level) สำหรับการขายให้ร้านค้าในเครือ",
+    "title": "ลูกค้า",
+    "subtitle": "สร้างและจัดการลูกค้าด้วยระดับลูกค้า (level) สำหรับการขายให้ร้านค้า",
     "closeLabel": "ปิด",
     "createTitle": "สร้างลูกค้า",
     "fullNameLabel": "ชื่อลูกค้า",
@@ -364,7 +413,7 @@
       "documents": "เอกสาร",
       "documentBills": "บิล",
       "documentPending": "บิลค้างชำระ",
-      "customers": "ลูกค้าเครือข่าย",
+      "customers": "ลูกค้า",
       "inventory": "คลังสินค้า",
       "stockLevels": "ระดับสต็อก",
       "stockCategories": "หมวดหมู่",

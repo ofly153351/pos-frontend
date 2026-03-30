@@ -168,16 +168,16 @@ export function UserWorkspaceSidebar({
   }, [collapsed, isDocumentsRoute]);
 
   const navItems = [
-    { href: `/${locale}/sales`, key: "register", label: labels.register },
-    { href: `/${locale}/customers`, key: "customers", label: labels.customers },
     {
       href: `/${locale}/dashboard`,
-      key: "transactions",
-      label: labels.transactions,
+      key: "dashboard",
+      label: labels.dashboard,
     },
+    { href: `/${locale}/sales`, key: "register", label: labels.register },
+    { href: `/${locale}/customers`, key: "customers", label: labels.customers },
     { href: `/${locale}/settings`, key: "settings", label: labels.settings },
   ];
-  const [firstNavItem, ...trailingNavItems] = navItems;
+  const [topNavItems, trailingNavItems] = [navItems.slice(0, 2), navItems.slice(2)];
 
   const inventoryItems = useMemo(
     () => [
@@ -223,10 +223,10 @@ export function UserWorkspaceSidebar({
     const className = "h-4 w-4";
 
     const iconByKey = {
+      dashboard: <LayoutDashboard className={className} />,
       customers: <Users className={className} />,
       register: <CircleDollarSign className={className} />,
       settings: <Settings2 className={className} />,
-      transactions: <LayoutDashboard className={className} />,
     } as const;
 
     return (
@@ -255,19 +255,24 @@ export function UserWorkspaceSidebar({
       </div>
 
       <nav className="flex-1 space-y-1">
-        {firstNavItem ? (
-          <Link
-            className={`flex items-center gap-3 px-4 py-3 text-sm transition ${
-              pathname === firstNavItem.href
-                ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
-                : "font-medium text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
-            } ${collapsed ? "justify-center px-2" : ""}`}
-            href={firstNavItem.href}
-          >
-            {getNavIcon(firstNavItem.key, pathname === firstNavItem.href)}
-            {!collapsed ? <span>{firstNavItem.label}</span> : null}
-          </Link>
-        ) : null}
+        {topNavItems.map((item) => {
+          const isActive = pathname === item.href;
+
+          return (
+            <Link
+              key={item.key}
+              className={`flex items-center gap-3 px-4 py-3 text-sm transition ${
+                isActive
+                  ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
+                  : "font-medium text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
+              } ${collapsed ? "justify-center px-2" : ""}`}
+              href={item.href}
+            >
+              {getNavIcon(item.key, isActive)}
+              {!collapsed ? <span>{item.label}</span> : null}
+            </Link>
+          );
+        })}
 
         <div className="space-y-1">
           <div

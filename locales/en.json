@@ -67,6 +67,55 @@
       "stockTitle": "Review stock room",
       "stockDescription": "Open the back-office stock page to inspect low inventory and incoming items."
     },
+    "loading": "Loading dashboard...",
+    "empty": "No data in selected range",
+    "requestFailedLabel": "Request failed",
+    "filters": {
+      "periodLabel": "Period",
+      "periodToday": "Today",
+      "period7d": "Last 7 days",
+      "period30d": "Last 30 days",
+      "periodCustom": "Custom range",
+      "fromLabel": "From",
+      "toLabel": "To",
+      "topLimitLabel": "Top products",
+      "recentLimitLabel": "Recent sales",
+      "lowStockLimitLabel": "Low stock list",
+      "lowStockThresholdLabel": "Low stock threshold",
+      "apply": "Apply filters",
+      "refresh": "Refresh"
+    },
+    "sections": {
+      "range": "Time range",
+      "paymentBreakdown": "Payment breakdown",
+      "topProducts": "Top products",
+      "lowStockProducts": "Low stock products",
+      "recentSales": "Recent sales"
+    },
+    "summary": {
+      "revenue": "Revenue",
+      "salesCount": "Sales count",
+      "totalItems": "Items sold",
+      "averageTicket": "Average ticket",
+      "discountAmount": "Discount amount",
+      "vatAmount": "VAT amount"
+    },
+    "table": {
+      "productName": "Product",
+      "quantity": "Qty",
+      "price": "Price",
+      "amount": "Amount",
+      "sku": "SKU",
+      "stock": "Stock",
+      "saleNumber": "Sale number",
+      "paymentMethod": "Payment",
+      "cashier": "Cashier",
+      "customer": "Customer",
+      "soldAt": "Sold at"
+    },
+    "validation": {
+      "customRangeRequired": "Please select both from and to dates."
+    },
     "activityTitle": "Recent activity",
     "activityItems": [
       {
