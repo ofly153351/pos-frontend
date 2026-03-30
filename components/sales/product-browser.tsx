@@ -3,7 +3,10 @@
 import { useMemo, useState } from "react";
 import { LayoutGrid, List, Search } from "lucide-react";
 
-import type { ProductViewMode, SalesDictionary } from "@/components/sales/types";
+import type {
+  ProductViewMode,
+  SalesDictionary,
+} from "@/components/sales/types";
 import type { Product } from "@/types/product";
 
 type ProductBrowserProps = {
@@ -51,9 +54,11 @@ export function ProductBrowser({
   }, [products, search]);
 
   return (
-    <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8">
+    <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-semibold text-slate-950">{dictionary.title}</h2>
+        <h2 className="text-2xl font-semibold text-slate-950">
+          {dictionary.title}
+        </h2>
         <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row sm:items-center sm:justify-end">
           <div className="inline-flex items-center gap-1 self-start rounded-xl border border-slate-200 bg-white p-1">
             <button
@@ -119,7 +124,9 @@ export function ProductBrowser({
                       </div>
                     )}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900">{product.name}</p>
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {product.name}
+                      </p>
                       <p className="mt-0.5 text-xs text-slate-500">
                         {dictionary.stockLabel} {product.quantity}
                       </p>
@@ -147,7 +154,9 @@ export function ProductBrowser({
         </div>
       ) : null}
 
-      <div className={`mt-6 ${productView === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3"}`}>
+      <div
+        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3"}`}
+      >
         {products.length > 0 ? (
           products.map((product) => {
             const currentQuantity = getCartQuantity(product.id);
@@ -155,7 +164,7 @@ export function ProductBrowser({
             return productView === "grid" ? (
               <div
                 key={product.id}
-                className="rounded-[1.25rem] border border-sky-100 bg-gradient-to-b from-sky-50/70 to-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+                className="flex h-[205px] cursor-pointer flex-col rounded-[1.1rem] border border-sky-100 bg-gradient-to-b from-sky-50/70 to-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 onClick={() => onAddToCart(product)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -166,46 +175,43 @@ export function ProductBrowser({
                 role="button"
                 tabIndex={0}
               >
-                <div className="flex justify-center">
+                <div className="relative">
+                  <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm">
+                    {dictionary.stockLabel} {product.quantity}
+                  </span>
                   {product.image_url ? (
                     <img
                       alt={product.name}
-                      className="h-16 w-24 rounded-xl border border-slate-200 bg-white object-cover shadow-sm"
+                      className="h-24 w-full rounded-lg border border-slate-200 bg-white object-cover shadow-sm"
                       loading="lazy"
                       src={product.image_url}
                     />
                   ) : (
-                    <div className="flex h-16 w-24 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-slate-500 shadow-sm">
-                      {product.name.slice(0, 2).toUpperCase()}
+                    <div className="flex h-24 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
+                      <span className="line-clamp-2">{product.name}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-3 text-center">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-sky-600">
-                    {product.product_type_name ?? product.product_type?.name ?? "-"}
+                {product.image_url ? (
+                  <p className="mt-1.5 truncate text-center text-xs font-semibold text-slate-800">
+                    {product.name}
                   </p>
-                  <p className="mt-1 truncate text-base font-semibold text-slate-950">{product.name}</p>
-                  <div className="mt-2 flex justify-center">
-                    <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
-                      {dictionary.stockLabel} {product.quantity}
-                    </span>
-                  </div>
-                </div>
+                ) : null}
 
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-900">
+                <div className="mt-auto flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-semibold text-slate-900">
                     {formatCurrency(product.effective_price)}
                   </span>
                   {currentQuantity > 0 ? (
-                    <span className="rounded-full bg-blue-700 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                    <span className="rounded-full bg-blue-700 px-2 py-0.5 text-[10px] font-semibold text-white">
                       {dictionary.quantityLabel} {currentQuantity}
                     </span>
                   ) : null}
                 </div>
 
                 <button
-                  className="mt-3 w-full rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                  className="mt-2 w-full rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
                   disabled={currentQuantity >= product.quantity}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -245,9 +251,13 @@ export function ProductBrowser({
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-950">{product.name}</p>
+                  <p className="truncate text-sm font-semibold text-slate-950">
+                    {product.name}
+                  </p>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {product.product_type_name ?? product.product_type?.name ?? "-"}
+                    {product.product_type_name ??
+                      product.product_type?.name ??
+                      "-"}
                   </p>
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-600">
                     <span>
@@ -282,7 +292,11 @@ export function ProductBrowser({
             );
           })
         ) : (
-          <div className={productView === "grid" ? "sm:col-span-2 xl:col-span-3" : ""}>
+          <div
+            className={
+              productView === "grid" ? "sm:col-span-2 xl:col-span-3" : ""
+            }
+          >
             <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
               {dictionary.emptyProducts}
             </div>

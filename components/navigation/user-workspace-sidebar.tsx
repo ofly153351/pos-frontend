@@ -64,7 +64,8 @@ export function UserWorkspaceSidebar({
   const isInventoryRoute =
     pathname === stockBaseHref || pathname.startsWith(`${stockBaseHref}/`);
   const isDocumentsRoute =
-    pathname === documentsBaseHref || pathname.startsWith(`${documentsBaseHref}/`);
+    pathname === documentsBaseHref ||
+    pathname.startsWith(`${documentsBaseHref}/`);
   const [inventoryExpanded, setInventoryExpanded] = useState(isInventoryRoute);
   const [documentsExpanded, setDocumentsExpanded] = useState(isDocumentsRoute);
   const wasInventoryRouteRef = useRef(isInventoryRoute);
@@ -169,7 +170,11 @@ export function UserWorkspaceSidebar({
   const navItems = [
     { href: `/${locale}/sales`, key: "register", label: labels.register },
     { href: `/${locale}/customers`, key: "customers", label: labels.customers },
-    { href: `/${locale}/dashboard`, key: "transactions", label: labels.transactions },
+    {
+      href: `/${locale}/dashboard`,
+      key: "transactions",
+      label: labels.transactions,
+    },
     { href: `/${locale}/settings`, key: "settings", label: labels.settings },
   ];
   const [firstNavItem, ...trailingNavItems] = navItems;
@@ -187,7 +192,12 @@ export function UserWorkspaceSidebar({
         label: labels.stockCategories,
       },
     ],
-    [labels.stockCategories, labels.stockLevels, stockBaseHref, stockCategoriesHref],
+    [
+      labels.stockCategories,
+      labels.stockLevels,
+      stockBaseHref,
+      stockCategoriesHref,
+    ],
   );
 
   const activeInventoryKey = !isInventoryRoute
@@ -225,7 +235,9 @@ export function UserWorkspaceSidebar({
           isActive ? "bg-white/15 text-white" : "bg-blue-100 text-blue-700"
         }`}
       >
-        {iconByKey[key as keyof typeof iconByKey] ?? <FileText className={className} />}
+        {iconByKey[key as keyof typeof iconByKey] ?? (
+          <FileText className={className} />
+        )}
       </span>
     );
   }
@@ -276,7 +288,9 @@ export function UserWorkspaceSidebar({
               >
                 <Boxes className="h-4 w-4" />
               </span>
-              {!collapsed ? <span className="truncate">{labels.inventory}</span> : null}
+              {!collapsed ? (
+                <span className="truncate">{labels.inventory}</span>
+              ) : null}
             </Link>
             {!collapsed ? (
               <button
@@ -300,7 +314,9 @@ export function UserWorkspaceSidebar({
           {!collapsed ? (
             <div
               className={`grid overflow-hidden transition-all duration-300 ease-out ${
-                inventoryExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                inventoryExpanded
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
               }`}
             >
               <div className="min-h-0">
@@ -308,9 +324,11 @@ export function UserWorkspaceSidebar({
                   {inventoryItems.map((item) => {
                     const isActive = activeInventoryKey === item.key;
                     const itemIcon =
-                      item.key === "categories"
-                        ? <Tags className="h-3.5 w-3.5" />
-                        : <Layers3 className="h-3.5 w-3.5" />;
+                      item.key === "categories" ? (
+                        <Tags className="h-3.5 w-3.5" />
+                      ) : (
+                        <Layers3 className="h-3.5 w-3.5" />
+                      );
 
                     return (
                       <Link
@@ -324,7 +342,9 @@ export function UserWorkspaceSidebar({
                       >
                         <span
                           className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
-                            isActive ? "bg-blue-200/80 text-blue-700" : "bg-slate-200 text-slate-500"
+                            isActive
+                              ? "bg-blue-200/80 text-blue-700"
+                              : "bg-slate-200 text-slate-500"
                           }`}
                         >
                           {itemIcon}
@@ -358,7 +378,9 @@ export function UserWorkspaceSidebar({
               >
                 <ReceiptText className="h-4 w-4" />
               </span>
-              {!collapsed ? <span className="truncate">{labels.documents}</span> : null}
+              {!collapsed ? (
+                <span className="truncate">{labels.documents}</span>
+              ) : null}
             </Link>
             {!collapsed ? (
               <button
@@ -382,7 +404,9 @@ export function UserWorkspaceSidebar({
           {!collapsed ? (
             <div
               className={`grid overflow-hidden transition-all duration-300 ease-out ${
-                documentsExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                documentsExpanded
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
               }`}
             >
               <div className="min-h-0">
@@ -477,21 +501,37 @@ export function UserWorkspaceSidebar({
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
                 {shell.storeLabel}
               </p>
-              {storeLogoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  alt={storeName}
-                  className="mt-2 h-10 w-10 rounded-xl border border-slate-200 object-cover"
-                  src={storeLogoUrl}
-                />
-              ) : null}
-              <p className="truncate text-sm font-semibold text-slate-700">{storeName}</p>
-              {storeDescription ? (
-                <p className="mt-1 truncate text-xs text-slate-500">{storeDescription}</p>
-              ) : null}
-              {storeAddress ? (
-                <p className="mt-1 truncate text-xs text-slate-500">{storeAddress}</p>
-              ) : null}
+              <div className="mt-2 flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  {storeLogoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt={storeName}
+                      className="h-full w-full object-cover"
+                      src={storeLogoUrl}
+                    />
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-600">
+                      {storeName.slice(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-700">
+                    {storeName}
+                  </p>
+                  {storeDescription ? (
+                    <p className="mt-1 truncate text-xs text-slate-500">
+                      {storeDescription}
+                    </p>
+                  ) : null}
+                  {storeAddress ? (
+                    <p className="mt-1 truncate text-xs text-slate-500">
+                      {storeAddress}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
             </>
           )}
         </div>

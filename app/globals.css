@@ -1,5 +1,75 @@
 @import "tailwindcss";
 
+.pretty-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+.pretty-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.pretty-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pretty-scroll::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
+.pretty-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: #94a3b8;
+}
+
+@keyframes smooth-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes smooth-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.smooth-fade-up {
+  animation: smooth-fade-up 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.smooth-fade {
+  animation: smooth-fade 220ms ease-out both;
+}
+
+.smooth-delay-1 {
+  animation-delay: 60ms;
+}
+
+.smooth-delay-2 {
+  animation-delay: 120ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smooth-fade-up,
+  .smooth-fade,
+  .smooth-delay-1,
+  .smooth-delay-2 {
+    animation: none !important;
+  }
+}
+
 /* :root {
   --background: #ffffff;
   --foreground: #171717;
