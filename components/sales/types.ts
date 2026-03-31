@@ -29,6 +29,7 @@ export type SalesDictionary = {
   discountLabel: string;
   discountPercentLabel: string;
   discountSummaryLabel: string;
+  totalDiscountLabel: string;
   discountTypeLabel: string;
   discountValueLabel: string;
   emptyCart: string;
@@ -69,6 +70,9 @@ export type SalesDictionary = {
   receiptPreviewTitle: string;
   requestFailedLabel: string;
   quickCashLabel: string;
+  quickCashExactAmountLabel: string;
+  discountBillToggleShowLabel: string;
+  discountBillToggleHideLabel: string;
   productCountLabel: string;
   productViewGrid: string;
   productViewList: string;
@@ -92,6 +96,7 @@ export type SalesDictionary = {
   };
   title: string;
   totalPaidLabel: string;
+  netTotalLabel: string;
   unitPriceLabel: string;
   unavailableProduct: string;
   vatAmountLabel: string;

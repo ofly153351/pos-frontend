@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Trash2 } from "lucide-react";
+import { ChevronDown, Trash2 } from "lucide-react";
 
 import { ProductBrowser } from "@/components/sales/product-browser";
-import type { ProductViewMode, SalesDictionary } from "@/components/sales/types";
-import { listCustomerLevelDiscounts, listCustomers } from "@/services/customers";
+import type {
+  ProductViewMode,
+  SalesDictionary,
+} from "@/components/sales/types";
+import {
+  listCustomerLevelDiscounts,
+  listCustomers,
+} from "@/services/customers";
 import { createInvoice } from "@/services/invoices";
 import { listProducts } from "@/services/products";
 import {
@@ -16,7 +22,12 @@ import {
 } from "@/services/sales";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 import type { Product } from "@/types/product";
-import type { Sale, SaleDiscountType, SalePaymentMethod, VatCalculateSummary } from "@/types/sale";
+import type {
+  Sale,
+  SaleDiscountType,
+  SalePaymentMethod,
+  VatCalculateSummary,
+} from "@/types/sale";
 
 type CartItem = {
   discountType: SaleDiscountType;
@@ -52,6 +63,13 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatAmount(value: number) {
+  return new Intl.NumberFormat("th-TH", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  }).format(value);
+}
+
 function formatDateTime(value: string) {
   const parsedDate = new Date(value);
 
@@ -69,13 +87,23 @@ function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
 
+function parsePaidAmountAsCeilInt(value: string) {
+  const parsed = Number(value || 0);
+
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  return Math.max(Math.ceil(parsed), 0);
+}
+
 function getDiscountPerUnit(item: CartItem) {
   const unitPrice = Number(item.product.effective_price ?? 0);
   const rawValue = Number(item.discountValue || 0);
   const discountValue = Number.isFinite(rawValue) ? rawValue : 0;
 
   if (item.discountType === "percent") {
-    return unitPrice * Math.min(Math.max(discountValue, 0), 100) / 100;
+    return (unitPrice * Math.min(Math.max(discountValue, 0), 100)) / 100;
   }
 
   return Math.min(Math.max(discountValue, 0), unitPrice);
@@ -100,41 +128,62 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customerLevelDiscounts, setCustomerLevelDiscounts] = useState<CustomerLevelDiscount[]>([]);
+  const [customerLevelDiscounts, setCustomerLevelDiscounts] = useState<
+    CustomerLevelDiscount[]
+  >([]);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
   const [productView, setProductView] = useState<ProductViewMode>("grid");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
-  const [customerSettlementMode, setCustomerSettlementMode] = useState<"cash_now" | "invoice">("cash_now");
+  const [customerSettlementMode, setCustomerSettlementMode] = useState<
+    "cash_now" | "invoice"
+  >("cash_now");
   const [note, setNote] = useState("");
   const [billDiscount, setBillDiscount] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
-  const [quantityNumpad, setQuantityNumpad] = useState<QuantityNumpadState | null>(null);
+  const [quantityNumpad, setQuantityNumpad] =
+    useState<QuantityNumpadState | null>(null);
   const [isQuantityNumpadOpen, setIsQuantityNumpadOpen] = useState(false);
-  const [amountNumpad, setAmountNumpad] = useState<AmountNumpadState | null>(null);
+  const [amountNumpad, setAmountNumpad] = useState<AmountNumpadState | null>(
+    null,
+  );
   const [isAmountNumpadOpen, setIsAmountNumpadOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
   const [applyVat, setApplyVat] = useState(true);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
-  const [discountEditorProductId, setDiscountEditorProductId] = useState<string | null>(null);
+  const [discountEditorProductId, setDiscountEditorProductId] = useState<
+    string | null
+  >(null);
   const [showVatControls, setShowVatControls] = useState(false);
   const [showNoteField, setShowNoteField] = useState(false);
+  const [isBillDiscountFieldOpen, setIsBillDiscountFieldOpen] = useState(false);
+  const [billDiscountType, setBillDiscountType] = useState<
+    "amount" | "percent"
+  >("amount");
   const [isPaidAmountTouched, setIsPaidAmountTouched] = useState(false);
-  const [lastQuickCashAmount, setLastQuickCashAmount] = useState<number | null>(null);
-  const [vatSummary, setVatSummary] = useState<VatCalculateSummary | null>(null);
+  const [lastQuickCashAmount, setLastQuickCashAmount] = useState<number | null>(
+    null,
+  );
+  const [vatSummary, setVatSummary] = useState<VatCalculateSummary | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [receiptError, setReceiptError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isPrintPromptOpen, setIsPrintPromptOpen] = useState(false);
-  const [lastCompletedSaleId, setLastCompletedSaleId] = useState<string | null>(null);
+  const [lastCompletedSaleId, setLastCompletedSaleId] = useState<string | null>(
+    null,
+  );
   const [isReceiptPreviewLoading, setIsReceiptPreviewLoading] = useState(false);
   const [receiptPreviewHtml, setReceiptPreviewHtml] = useState("");
   const [isPending, startTransition] = useTransition();
   const [isReceiptPending, startReceiptTransition] = useTransition();
-  const numpadCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const numpadCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const receiptPreviewFrameRef = useRef<HTMLIFrameElement | null>(null);
   const barcodeBufferRef = useRef("");
   const barcodeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -169,17 +218,20 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   useEffect(() => {
     startTransition(async () => {
       try {
-        const [productsResponse, customersResponse, discountResponse] = await Promise.all([
-          listProducts(),
-          listCustomers(),
-          listCustomerLevelDiscounts(),
-        ]);
+        const [productsResponse, customersResponse, discountResponse] =
+          await Promise.all([
+            listProducts(),
+            listCustomers(),
+            listCustomerLevelDiscounts(),
+          ]);
 
         setProducts(productsResponse.data?.items ?? []);
         setCustomers(customersResponse.data ?? []);
         setCustomerLevelDiscounts(discountResponse.data ?? []);
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
+        setError(
+          nextError instanceof Error ? nextError.message : "Request failed",
+        );
       }
     });
   }, []);
@@ -238,7 +290,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   }, [cart]);
 
   const selectedCustomer = useMemo(() => {
-    return customers.find((customer) => customer.id === selectedCustomerId) ?? null;
+    return (
+      customers.find((customer) => customer.id === selectedCustomerId) ?? null
+    );
   }, [customers, selectedCustomerId]);
 
   const customerDiscountPercent = useMemo(() => {
@@ -247,22 +301,50 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     }
 
     const customerLevel = Number(selectedCustomer.level ?? 1);
-    const matchedRule = customerLevelDiscounts.find((rule) => rule.level === customerLevel);
+    const matchedRule = customerLevelDiscounts.find(
+      (rule) => rule.level === customerLevel,
+    );
 
     return Number(matchedRule?.discount_percent ?? 0);
   }, [customerLevelDiscounts, selectedCustomer]);
 
   const customerDiscountAmount = useMemo(() => {
-    return cartSummary.total * Math.min(Math.max(customerDiscountPercent, 0), 100) / 100;
+    return (
+      (cartSummary.total *
+        Math.min(Math.max(customerDiscountPercent, 0), 100)) /
+      100
+    );
   }, [cartSummary.total, customerDiscountPercent]);
 
   const parsedBillDiscount = Number(billDiscount || 0);
-  const sanitizedBillDiscount = Number.isFinite(parsedBillDiscount) ? parsedBillDiscount : 0;
-  const maxBillDiscount = Math.max(cartSummary.total - customerDiscountAmount, 0);
-  const billDiscountAmount = Math.min(Math.max(sanitizedBillDiscount, 0), maxBillDiscount);
-  const payableTotal = Math.max(cartSummary.total - customerDiscountAmount - billDiscountAmount, 0);
-  const fallbackNetBeforeVat = applyVat ? roundCurrency(payableTotal / 1.07) : roundCurrency(payableTotal);
-  const fallbackVatAmount = applyVat ? roundCurrency(payableTotal - fallbackNetBeforeVat) : 0;
+  const sanitizedBillDiscount = Number.isFinite(parsedBillDiscount)
+    ? parsedBillDiscount
+    : 0;
+  const billDiscountBase = Math.max(
+    cartSummary.total - customerDiscountAmount,
+    0,
+  );
+  const billDiscountPercent = Math.min(Math.max(sanitizedBillDiscount, 0), 100);
+  const maxBillDiscount = billDiscountBase;
+  const billDiscountAmount =
+    billDiscountType === "percent"
+      ? Math.min(
+          (billDiscountBase * billDiscountPercent) / 100,
+          maxBillDiscount,
+        )
+      : Math.min(Math.max(sanitizedBillDiscount, 0), maxBillDiscount);
+  const totalDiscountAmount =
+    cartSummary.discountAmount + customerDiscountAmount + billDiscountAmount;
+  const payableTotal = Math.max(
+    cartSummary.total - customerDiscountAmount - billDiscountAmount,
+    0,
+  );
+  const fallbackNetBeforeVat = applyVat
+    ? roundCurrency(payableTotal / 1.07)
+    : roundCurrency(payableTotal);
+  const fallbackVatAmount = applyVat
+    ? roundCurrency(payableTotal - fallbackNetBeforeVat)
+    : 0;
   const vatAmount = applyVat
     ? roundCurrency(vatSummary?.vat_amount ?? fallbackVatAmount)
     : 0;
@@ -270,31 +352,39 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     ? roundCurrency(vatSummary?.grand_total ?? payableTotal)
     : roundCurrency(payableTotal);
   const isNetworkCustomerSelected = Boolean(selectedCustomerId);
-  const isInvoiceSettlement = isNetworkCustomerSelected && customerSettlementMode === "invoice";
+  const isInvoiceSettlement =
+    isNetworkCustomerSelected && customerSettlementMode === "invoice";
   const customerTypeLabel = isNetworkCustomerSelected
     ? dictionary.customerTypeNetwork
     : dictionary.customerTypeGeneral;
 
-  const parsedPaidAmount = Number(paidAmount || 0);
-  const paidAmountValue = Number.isFinite(parsedPaidAmount) ? parsedPaidAmount : 0;
+  const paidAmountValue = parsePaidAmountAsCeilInt(paidAmount);
   const effectivePaidAmount = isInvoiceSettlement ? 0 : paidAmountValue;
   const changeAmount = effectivePaidAmount - settlementTotal;
   const quickCashOptions = useMemo(() => {
-    const baseOptions = [100, 500, 1000];
+    const baseOptions = [5, 10, 20, 50, 100, 500, 1000];
     const settlementQuickAmount = Math.ceil(Math.max(settlementTotal, 0));
 
-    if (settlementQuickAmount > 0 && !baseOptions.includes(settlementQuickAmount)) {
-      return [...baseOptions, settlementQuickAmount];
+    if (
+      settlementQuickAmount > 0 &&
+      !baseOptions.includes(settlementQuickAmount)
+    ) {
+      return [
+        ...baseOptions.map((amount) => ({ amount, isExact: false })),
+        { amount: settlementQuickAmount, isExact: true },
+      ];
     }
 
-    return baseOptions;
+    return baseOptions.map((amount) => ({ amount, isExact: false }));
   }, [settlementTotal]);
   const discountEditorItem = useMemo(() => {
     if (!discountEditorProductId) {
       return null;
     }
 
-    return cart.find((item) => item.product.id === discountEditorProductId) ?? null;
+    return (
+      cart.find((item) => item.product.id === discountEditorProductId) ?? null
+    );
   }, [cart, discountEditorProductId]);
 
   useEffect(() => {
@@ -337,7 +427,13 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     return () => {
       isCancelled = true;
     };
-  }, [applyVat, billDiscountAmount, cart, customerDiscountAmount, startTransition]);
+  }, [
+    applyVat,
+    billDiscountAmount,
+    cart,
+    customerDiscountAmount,
+    startTransition,
+  ]);
 
   useEffect(() => {
     if (isInvoiceSettlement && billDiscount) {
@@ -354,17 +450,18 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     }
 
     if (!isPaidAmountTouched) {
-      setPaidAmount(settlementTotal.toFixed(2));
+      setPaidAmount(String(Math.ceil(Math.max(settlementTotal, 0))));
       setLastQuickCashAmount(null);
     }
   }, [isInvoiceSettlement, isPaidAmountTouched, settlementTotal]);
 
   async function reloadData() {
-    const [productsResponse, customersResponse, discountResponse] = await Promise.all([
-      listProducts(),
-      listCustomers(),
-      listCustomerLevelDiscounts(),
-    ]);
+    const [productsResponse, customersResponse, discountResponse] =
+      await Promise.all([
+        listProducts(),
+        listCustomers(),
+        listCustomerLevelDiscounts(),
+      ]);
 
     setProducts(productsResponse.data?.items ?? []);
     setCustomers(customersResponse.data ?? []);
@@ -384,6 +481,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     setDiscountEditorProductId(null);
     setShowVatControls(false);
     setShowNoteField(false);
+    setIsBillDiscountFieldOpen(false);
+    setBillDiscountType("amount");
     setIsPaidAmountTouched(false);
     setLastQuickCashAmount(null);
     setPaymentMethod("cash");
@@ -399,8 +498,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         return String(addAmount);
       }
 
-      const parsed = Number(currentValue || 0);
-      const base = Number.isFinite(parsed) ? parsed : 0;
+      const base = parsePaidAmountAsCeilInt(currentValue);
       return String(base + addAmount);
     });
     setLastQuickCashAmount(addAmount);
@@ -411,7 +509,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     setError("");
     setSuccessMessage("");
     setCart((currentCart) => {
-      const existingItem = currentCart.find((item) => item.product.id === product.id);
+      const existingItem = currentCart.find(
+        (item) => item.product.id === product.id,
+      );
 
       if (!existingItem) {
         return [
@@ -534,12 +634,13 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     });
   }
 
-  function updateCartDiscountType(productId: string, discountType: SaleDiscountType) {
+  function updateCartDiscountType(
+    productId: string,
+    discountType: SaleDiscountType,
+  ) {
     setCart((currentCart) =>
       currentCart.map((item) =>
-        item.product.id === productId
-          ? { ...item, discountType }
-          : item,
+        item.product.id === productId ? { ...item, discountType } : item,
       ),
     );
   }
@@ -547,9 +648,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   function updateCartDiscountValue(productId: string, discountValue: string) {
     setCart((currentCart) =>
       currentCart.map((item) =>
-        item.product.id === productId
-          ? { ...item, discountValue }
-          : item,
+        item.product.id === productId ? { ...item, discountValue } : item,
       ),
     );
   }
@@ -559,13 +658,19 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       return;
     }
 
-    const stillExists = cart.some((item) => item.product.id === discountEditorProductId);
+    const stillExists = cart.some(
+      (item) => item.product.id === discountEditorProductId,
+    );
     if (!stillExists) {
       setDiscountEditorProductId(null);
     }
   }, [cart, discountEditorProductId]);
 
-  function openQuantityNumpad(productId: string, currentQuantity: number, maxQuantity: number) {
+  function openQuantityNumpad(
+    productId: string,
+    currentQuantity: number,
+    maxQuantity: number,
+  ) {
     if (numpadCloseTimeoutRef.current) {
       clearTimeout(numpadCloseTimeoutRef.current);
       numpadCloseTimeoutRef.current = null;
@@ -592,13 +697,16 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         return current;
       }
 
-      const nextValue = current.value === "0" ? digit : `${current.value}${digit}`;
+      const nextValue =
+        current.value === "0" ? digit : `${current.value}${digit}`;
       return { ...current, value: nextValue.slice(0, 6) };
     });
   }
 
   function clearNumpadValue() {
-    setQuantityNumpad((current) => (current ? { ...current, value: "" } : current));
+    setQuantityNumpad((current) =>
+      current ? { ...current, value: "" } : current,
+    );
   }
 
   function backspaceNumpadValue() {
@@ -613,7 +721,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
   function onNumpadInputChange(value: string) {
     const digitsOnly = value.replace(/\D/g, "").slice(0, 6);
-    setQuantityNumpad((current) => (current ? { ...current, value: digitsOnly } : current));
+    setQuantityNumpad((current) =>
+      current ? { ...current, value: digitsOnly } : current,
+    );
   }
 
   function onNumpadInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -668,7 +778,10 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       }
 
       const nextValue = `${current.value}${digit}`;
-      if (!/^\d*(\.\d{0,2})?$/.test(nextValue)) {
+      const pattern =
+        current.field === "paid_amount" ? /^\d*$/ : /^\d*(\.\d{0,2})?$/;
+
+      if (!pattern.test(nextValue)) {
         return current;
       }
 
@@ -678,7 +791,11 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
   function appendAmountNumpadDecimal() {
     setAmountNumpad((current) => {
-      if (!current || current.value.includes(".")) {
+      if (
+        !current ||
+        current.field === "paid_amount" ||
+        current.value.includes(".")
+      ) {
         return current;
       }
 
@@ -687,7 +804,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   }
 
   function clearAmountNumpadValue() {
-    setAmountNumpad((current) => (current ? { ...current, value: "" } : current));
+    setAmountNumpad((current) =>
+      current ? { ...current, value: "" } : current,
+    );
   }
 
   function backspaceAmountNumpadValue() {
@@ -701,11 +820,97 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   }
 
   function onAmountNumpadInputChange(value: string) {
+    setAmountNumpad((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const pattern =
+        current.field === "paid_amount" ? /^\d*$/ : /^\d*(\.\d{0,2})?$/;
+      if (!pattern.test(value)) {
+        return current;
+      }
+
+      return { ...current, value };
+    });
+  }
+
+  function appendDiscountEditorDigit(digit: string) {
+    if (!discountEditorItem) {
+      return;
+    }
+
+    const current = discountEditorItem.discountValue || "";
+    const nextValue = current === "0" ? digit : `${current}${digit}`;
+    if (!/^\d*(\.\d{0,2})?$/.test(nextValue)) {
+      return;
+    }
+
+    updateCartDiscountValue(discountEditorItem.product.id, nextValue);
+  }
+
+  function appendDiscountEditorDecimal() {
+    if (!discountEditorItem) {
+      return;
+    }
+
+    const current = discountEditorItem.discountValue || "";
+    if (current.includes(".")) {
+      return;
+    }
+
+    const nextValue = current ? `${current}.` : "0.";
+    updateCartDiscountValue(discountEditorItem.product.id, nextValue);
+  }
+
+  function clearDiscountEditorValue() {
+    if (!discountEditorItem) {
+      return;
+    }
+
+    updateCartDiscountValue(discountEditorItem.product.id, "");
+  }
+
+  function backspaceDiscountEditorValue() {
+    if (!discountEditorItem) {
+      return;
+    }
+
+    updateCartDiscountValue(
+      discountEditorItem.product.id,
+      (discountEditorItem.discountValue || "").slice(0, -1),
+    );
+  }
+
+  function onDiscountEditorInputChange(value: string) {
+    if (!discountEditorItem) {
+      return;
+    }
+
     if (!/^\d*(\.\d{0,2})?$/.test(value)) {
       return;
     }
 
-    setAmountNumpad((current) => (current ? { ...current, value } : current));
+    updateCartDiscountValue(discountEditorItem.product.id, value);
+  }
+
+  function onDiscountEditorInputKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setDiscountEditorProductId(null);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      setDiscountEditorProductId(null);
+    }
+  }
+
+  function applyDiscountEditor() {
+    setDiscountEditorProductId(null);
   }
 
   function applyAmountNumpad() {
@@ -716,7 +921,11 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     if (amountNumpad.field === "bill_discount") {
       setBillDiscount(amountNumpad.value);
     } else {
-      setPaidAmount(amountNumpad.value);
+      setPaidAmount(
+        amountNumpad.value
+          ? String(parsePaidAmountAsCeilInt(amountNumpad.value))
+          : "",
+      );
       setIsPaidAmountTouched(true);
       setLastQuickCashAmount(null);
     }
@@ -768,7 +977,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
         const response = await createSale({
           customer_id: selectedCustomerId || undefined,
-          discount_bill: billDiscountAmount > 0 ? billDiscountAmount : undefined,
+          discount_bill:
+            billDiscountAmount > 0 ? billDiscountAmount : undefined,
           items: mappedItems,
           note: note.trim() || undefined,
           paid_amount: paidAmountValue,
@@ -788,7 +998,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
           void prepareReceiptPreview(response.data.id);
         }
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
+        setError(
+          nextError instanceof Error ? nextError.message : "Request failed",
+        );
       }
     });
   }
@@ -800,7 +1012,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       const html = await getSaleReceiptHtml(saleId);
       setReceiptPreviewHtml(html);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Request failed");
+      setError(
+        nextError instanceof Error ? nextError.message : "Request failed",
+      );
     } finally {
       setIsReceiptPreviewLoading(false);
     }
@@ -833,7 +1047,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         const response = await getSaleById(saleId);
         setSelectedSale(response.data);
       } catch (nextError) {
-        setReceiptError(nextError instanceof Error ? nextError.message : "Request failed");
+        setReceiptError(
+          nextError instanceof Error ? nextError.message : "Request failed",
+        );
       }
     });
   }
@@ -867,7 +1083,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         <div className="space-y-6 xl:h-full xl:min-h-0">
           <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-2xl font-semibold text-slate-950">{dictionary.cartTitle}</h2>
+              <h2 className="text-2xl font-semibold text-slate-950">
+                {dictionary.cartTitle}
+              </h2>
               <button
                 aria-label={dictionary.actionsLabel}
                 className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
@@ -877,119 +1095,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 <span className="text-xl leading-none">...</span>
               </button>
             </div>
-
-            <div className="pretty-scroll mt-6 space-y-4 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1">
-              {cart.length > 0 ? (
-                cart.map((item) => {
-                  const line = getCartLine(item);
-
-                  return (
-                    <div
-                      key={item.product.id}
-                      className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-start gap-2.5">
-                          {item.product.image_url ? (
-                            <img
-                              alt={item.product.name}
-                              className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 bg-white object-cover"
-                              loading="lazy"
-                              src={item.product.image_url}
-                            />
-                          ) : null}
-                          <div className="min-w-0">
-                          <p className="text-sm font-semibold text-slate-950">{item.product.name}</p>
-                          <p className="mt-0.5 text-xs text-slate-600">
-                            {dictionary.unitPriceLabel} {formatCurrency(line.unitPrice)}
-                          </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-slate-900">
-                            {formatCurrency(line.lineTotal)}
-                          </p>
-                          {line.lineDiscount > 0 ? (
-                            <p className="mt-0.5 text-[11px] font-medium text-emerald-700">
-                              {dictionary.discountLabel} {formatCurrency(line.lineDiscount)}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap items-end justify-between gap-2.5">
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2">
-                          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                            {dictionary.quantityLabel}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <button
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                              onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
-                              type="button"
-                            >
-                              -
-                            </button>
-                            <input
-                              className="h-8 w-14 rounded-lg border border-slate-200 bg-white px-2 text-center text-xs font-semibold text-slate-900 outline-none transition focus:border-sky-300"
-                              inputMode="numeric"
-                              max={item.product.quantity}
-                              min="1"
-                              onClick={() =>
-                                openQuantityNumpad(
-                                  item.product.id,
-                                  item.quantity,
-                                  item.product.quantity,
-                                )
-                              }
-                              onFocus={(event) => event.target.blur()}
-                              pattern="[0-9]*"
-                              readOnly
-                              step="1"
-                              type="number"
-                              value={item.quantity}
-                            />
-                            <button
-                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                              onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
-                              type="button"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="flex items-end gap-1.5">
-                          <button
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                            onClick={() => setDiscountEditorProductId(item.product.id)}
-                            title={dictionary.discountTypeLabel}
-                            type="button"
-                          >
-                            ...
-                          </button>
-                          <button
-                            aria-label={dictionary.removeItemButton}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50"
-                            onClick={() => updateCartQuantity(item.product.id, 0)}
-                            title={dictionary.removeItemButton}
-                            type="button"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                  {dictionary.emptyCart}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-6 space-y-4 border-t border-sky-100 pt-5">
+            <div className="mt-6 space-y-2">
               {showVatControls ? (
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -1028,6 +1134,71 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 </div>
               ) : null}
 
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <hr className="flex-1 border-t border-dashed border-slate-200" />
+                  <button
+                    aria-label={dictionary.discountBillLabel}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-slate-200 bg-white text-slate-600 transition-all duration-200 ease-out hover:scale-105 hover:bg-slate-50"
+                    onClick={() =>
+                      setIsBillDiscountFieldOpen((current) => !current)
+                    }
+                    type="button"
+                  >
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 transition-transform duration-200 ease-out ${
+                        isBillDiscountFieldOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <hr className="flex-1 border-t border-dashed border-slate-200" />
+                </div>
+
+                {isBillDiscountFieldOpen ? (
+                  <div className="mt-2">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                      {dictionary.discountBillLabel}
+                    </label>
+                    <div className="flex items-stretch">
+                      <input
+                        className="w-full rounded-l-xl rounded-r-none border border-r-0 border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                        inputMode="decimal"
+                        min="0"
+                        onClick={() => openAmountNumpad("bill_discount")}
+                        onFocus={(event) => event.target.blur()}
+                        placeholder="0.00"
+                        readOnly
+                        value={billDiscount}
+                      />
+                      <div className="flex items-center gap-1 rounded-r-xl border border-slate-200 bg-gradient-to-b from-slate-100 to-slate-50 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        <button
+                          className={`h-7 min-w-9 rounded-lg px-2 text-[11px] font-extrabold tracking-wide transition-all duration-200 ease-out ${
+                            billDiscountType === "amount"
+                              ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-[0_2px_8px_rgba(2,132,199,0.35)]"
+                              : "text-slate-600 hover:bg-white/90 hover:text-slate-800"
+                          }`}
+                          onClick={() => setBillDiscountType("amount")}
+                          type="button"
+                        >
+                          ฿
+                        </button>
+                        <button
+                          className={`h-7 min-w-9 rounded-lg px-2 text-[11px] font-extrabold tracking-wide transition-all duration-200 ease-out ${
+                            billDiscountType === "percent"
+                              ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-[0_2px_8px_rgba(2,132,199,0.35)]"
+                              : "text-slate-600 hover:bg-white/90 hover:text-slate-800"
+                          }`}
+                          onClick={() => setBillDiscountType("percent")}
+                          type="button"
+                        >
+                          %
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
               {showNoteField ? (
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -1041,18 +1212,130 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                   />
                 </div>
               ) : null}
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 mb-0">
+                <div className="flex items-center justify-between">
+                  <span>{dictionary.summary.subtotalLabel}</span>
+                  <span>{formatAmount(cartSummary.subtotal)}</span>
+                </div>
+                <div className="mt-1 flex items-center justify-between">
+                  <span>{dictionary.totalDiscountLabel}</span>
+                  <span>-{formatAmount(totalDiscountAmount)}</span>
+                </div>
+                <div className="my-2 border-t border-dashed border-slate-300" />
+                <div className="flex items-center justify-between font-semibold text-slate-900">
+                  <span>{dictionary.netTotalLabel}</span>
+                  <span>{formatAmount(payableTotal)}</span>
+                </div>
+              </div>
+              <button
+                className="mt-2 w-full rounded-2xl bg-sky-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                disabled={cart.length === 0 || isPending}
+                onClick={() => setIsCheckoutSummaryOpen(true)}
+                type="button"
+              >
+                {dictionary.checkoutButton}
+              </button>
             </div>
+            <div className="pretty-scroll mt-6 space-y-4 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1">
+              {cart.length > 0 ? (
+                cart.map((item) => {
+                  const line = getCartLine(item);
 
-            <button
-              className="mt-6 w-full rounded-2xl bg-sky-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
-              disabled={cart.length === 0 || isPending}
-              onClick={() => setIsCheckoutSummaryOpen(true)}
-              type="button"
-            >
-              {dictionary.checkoutButton}
-            </button>
+                  return (
+                    <div
+                      key={item.product.id}
+                      className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-2.5">
+                          {item.product.image_url ? (
+                            <img
+                              alt={item.product.name}
+                              className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 bg-white object-cover"
+                              loading="lazy"
+                              src={item.product.image_url}
+                            />
+                          ) : null}
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-950">
+                              {item.product.name}
+                            </p>
+                            <p className="mt-0.5 text-xs text-slate-600">
+                              {dictionary.unitPriceLabel}{" "}
+                              {formatCurrency(line.unitPrice)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex justify-center items-center gap-1.5">
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-slate-900">
+                              {formatCurrency(line.lineTotal)}
+                            </p>
+                            {line.lineDiscount > 0 ? (
+                              <p className="mt-0.5 text-[11px] font-medium text-emerald-700">
+                                {dictionary.discountLabel}{" "}
+                                {formatCurrency(line.lineDiscount)}
+                              </p>
+                            ) : null}
+                          </div>
+                          <input
+                            className="h-7 w-14 rounded-lg border border-slate-200 bg-white px-2 text-center text-xs font-semibold text-slate-900 outline-none transition focus:border-sky-300"
+                            inputMode="numeric"
+                            max={item.product.quantity}
+                            min="1"
+                            onClick={() =>
+                              openQuantityNumpad(
+                                item.product.id,
+                                item.quantity,
+                                item.product.quantity,
+                              )
+                            }
+                            onFocus={(event) => event.target.blur()}
+                            pattern="[0-9]*"
+                            readOnly
+                            step="1"
+                            type="number"
+                            value={item.quantity}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex items-end justify-end">
+                        <div className="flex items-end gap-1.5">
+                          <button
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                            onClick={() =>
+                              setDiscountEditorProductId(item.product.id)
+                            }
+                            title={dictionary.discountTypeLabel}
+                            type="button"
+                          >
+                            ...
+                          </button>
+                          <button
+                            aria-label={dictionary.removeItemButton}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50"
+                            onClick={() =>
+                              updateCartQuantity(item.product.id, 0)
+                            }
+                            title={dictionary.removeItemButton}
+                            type="button"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="rounded-[1.25rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                  {dictionary.emptyCart}
+                </div>
+              )}
+            </div>
           </section>
-
         </div>
       </section>
 
@@ -1060,7 +1343,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
           <div className="w-full max-w-sm rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-950">{dictionary.actionsLabel}</h3>
+              <h3 className="text-lg font-semibold text-slate-950">
+                {dictionary.actionsLabel}
+              </h3>
               <button
                 className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 onClick={() => setIsActionsMenuOpen(false)}
@@ -1118,7 +1403,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
           <div className="w-full max-w-4xl rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-950">{dictionary.checkoutSectionTitle}</h3>
+              <h3 className="text-lg font-semibold text-slate-950">
+                {dictionary.checkoutSectionTitle}
+              </h3>
               <button
                 className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 onClick={() => setIsCheckoutSummaryOpen(false)}
@@ -1136,13 +1423,19 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                   </label>
                   <select
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
-                    onChange={(event) => setSelectedCustomerId(event.target.value)}
+                    onChange={(event) =>
+                      setSelectedCustomerId(event.target.value)
+                    }
                     value={selectedCustomerId}
                   >
                     <option value="">{dictionary.customerPlaceholder}</option>
                     {customers.map((customer) => (
                       <option key={customer.id} value={customer.id}>
-                        {customer.full_name} (L{customer.level ?? 1} • {customerLevelDiscounts.find((rule) => rule.level === Number(customer.level ?? 1))?.discount_percent ?? 0}%)
+                        {customer.full_name} (L{customer.level ?? 1} •{" "}
+                        {customerLevelDiscounts.find(
+                          (rule) => rule.level === Number(customer.level ?? 1),
+                        )?.discount_percent ?? 0}
+                        %)
                       </option>
                     ))}
                   </select>
@@ -1190,7 +1483,10 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { label: dictionary.paymentMethodCashLabel, value: "cash" },
+                        {
+                          label: dictionary.paymentMethodCashLabel,
+                          value: "cash",
+                        },
                         { label: dictionary.paymentMethodCard, value: "card" },
                       ].map((option) => (
                         <button
@@ -1212,57 +1508,45 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
                 {!isInvoiceSettlement ? (
                   <div className="flex flex-col gap-3">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                          {dictionary.discountBillLabel}
-                        </label>
-                        <input
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
-                          inputMode="decimal"
-                          min="0"
-                          onClick={() => openAmountNumpad("bill_discount")}
-                          onFocus={(event) => event.target.blur()}
-                          placeholder="0.00"
-                          readOnly
-                          value={billDiscount}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-slate-700">
-                          {dictionary.customerPaymentLabel}
-                        </label>
-                        <input
-                          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
-                          inputMode="decimal"
-                          min="0"
-                          onClick={() => openAmountNumpad("paid_amount")}
-                          onFocus={(event) => event.target.blur()}
-                          placeholder="0.00"
-                          readOnly
-                          value={paidAmount}
-                        />
-                      </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-slate-700">
+                        {dictionary.customerPaymentLabel}
+                      </label>
+                      <input
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                        inputMode="numeric"
+                        min="0"
+                        onClick={() => openAmountNumpad("paid_amount")}
+                        onFocus={(event) => event.target.blur()}
+                        placeholder="0"
+                        readOnly
+                        value={paidAmount}
+                      />
                     </div>
 
                     <div>
-                      <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                         {dictionary.quickCashLabel}
                       </span>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {quickCashOptions.map((amount) => (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {quickCashOptions.map((option) => (
                           <button
-                            key={amount}
-                            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                              lastQuickCashAmount === amount
+                            key={
+                              option.isExact
+                                ? `exact-${option.amount}`
+                                : option.amount
+                            }
+                            className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition ${
+                              lastQuickCashAmount === option.amount
                                 ? "border-sky-600 bg-sky-600 text-white"
                                 : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                             }`}
-                            onClick={() => applyQuickCash(amount)}
+                            onClick={() => applyQuickCash(option.amount)}
                             type="button"
                           >
-                            +{amount}
+                            {option.isExact
+                              ? dictionary.quickCashExactAmountLabel
+                              : `+${option.amount}`}
                           </button>
                         ))}
                       </div>
@@ -1271,46 +1555,54 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 ) : null}
               </div>
 
-              <div className="space-y-3 border-t border-sky-100 pt-4 text-sm text-slate-600 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                <div className="flex items-center justify-between">
-                  <span>{dictionary.summary.subtotalLabel}</span>
-                  <span>{formatCurrency(cartSummary.subtotal)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{dictionary.summary.discountLabel}</span>
-                  <span>{formatCurrency(cartSummary.discountAmount)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{dictionary.customerTypeLabel}</span>
-                  <span>{customerTypeLabel}</span>
-                </div>
-                {selectedCustomerId ? (
+              <div className="flex flex-col-reverse lg:flex-col">
+                <div className="space-y-2.5 border-t border-sky-100 pt-3 text-xs text-slate-600 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
                   <div className="flex items-center justify-between">
-                    <span>
-                      {dictionary.customerDiscountLabel} ({customerDiscountPercent}%)
-                    </span>
-                    <span>-{formatCurrency(customerDiscountAmount)}</span>
+                    <span>{dictionary.summary.subtotalLabel}</span>
+                    <span>{formatCurrency(cartSummary.subtotal)}</span>
                   </div>
-                ) : null}
-                <div className="flex items-center justify-between">
-                  <span>{dictionary.discountBillLabel}</span>
-                  <span>-{formatCurrency(billDiscountAmount)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{dictionary.vatAmountLabel}</span>
-                  <span>{formatCurrency(vatAmount)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{dictionary.totalPaidLabel}</span>
-                  <span>{formatCurrency(effectivePaidAmount)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>{dictionary.changeLabel}</span>
-                  <span>{formatCurrency(Math.max(changeAmount, 0))}</span>
-                </div>
-                <div className="flex items-center justify-between text-base font-semibold text-slate-950">
-                  <span>{dictionary.summary.totalLabel}</span>
-                  <span>{formatCurrency(settlementTotal)}</span>
+                  <div className="flex items-center justify-between">
+                    <span>{dictionary.summary.discountLabel}</span>
+                    <span>{formatCurrency(cartSummary.discountAmount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>{dictionary.discountBillLabel}</span>
+                    <span>
+                      -{formatCurrency(billDiscountAmount)}
+                      {billDiscountType === "percent"
+                        ? ` (${billDiscountPercent}%)`
+                        : ""}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>{dictionary.customerTypeLabel}</span>
+                    <span>{customerTypeLabel}</span>
+                  </div>
+                  {selectedCustomerId ? (
+                    <div className="flex items-center justify-between">
+                      <span>
+                        {dictionary.customerDiscountLabel} (
+                        {customerDiscountPercent}%)
+                      </span>
+                      <span>-{formatCurrency(customerDiscountAmount)}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex items-center justify-between">
+                    <span>{dictionary.vatAmountLabel}</span>
+                    <span>{formatCurrency(vatAmount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>{dictionary.totalPaidLabel}</span>
+                    <span>{formatCurrency(effectivePaidAmount)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>{dictionary.changeLabel}</span>
+                    <span>{formatCurrency(Math.max(changeAmount, 0))}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm font-semibold text-slate-950">
+                    <span>{dictionary.summary.totalLabel}</span>
+                    <span>{formatCurrency(settlementTotal)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1334,7 +1626,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
           <div className="w-full max-w-sm rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-950">{discountEditorItem.product.name}</h3>
+              <h3 className="text-lg font-semibold text-slate-950">
+                {discountEditorItem.product.name}
+              </h3>
               <button
                 className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 onClick={() => setDiscountEditorProductId(null)}
@@ -1351,20 +1645,34 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 </span>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: dictionary.discountAmountLabel, value: "amount" as const },
-                    { label: dictionary.discountPercentLabel, value: "percent" as const },
+                    {
+                      icon: "฿",
+                      label: dictionary.discountAmountLabel,
+                      value: "amount" as const,
+                    },
+                    {
+                      icon: "%",
+                      label: dictionary.discountPercentLabel,
+                      value: "percent" as const,
+                    },
                   ].map((option) => (
                     <button
+                      aria-label={option.label}
                       key={option.value}
-                      className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                      className={`rounded-xl border px-3 py-2 text-base font-bold transition ${
                         discountEditorItem.discountType === option.value
                           ? "border-sky-600 bg-sky-600 text-white"
                           : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                       }`}
-                      onClick={() => updateCartDiscountType(discountEditorItem.product.id, option.value)}
+                      onClick={() =>
+                        updateCartDiscountType(
+                          discountEditorItem.product.id,
+                          option.value,
+                        )
+                      }
                       type="button"
                     >
-                      {option.label}
+                      {option.icon}
                     </button>
                   ))}
                 </div>
@@ -1375,16 +1683,68 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                   {dictionary.discountValueLabel}
                 </span>
                 <input
+                  autoFocus
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-300"
                   inputMode="decimal"
                   min="0"
                   onChange={(event) =>
-                    updateCartDiscountValue(discountEditorItem.product.id, event.target.value)
+                    onDiscountEditorInputChange(event.target.value)
                   }
+                  onKeyDown={onDiscountEditorInputKeyDown}
                   placeholder="0"
                   value={discountEditorItem.discountValue}
                 />
               </label>
+
+              <div className="grid grid-cols-3 gap-2">
+                {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
+                  <button
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                    key={digit}
+                    onClick={() => appendDiscountEditorDigit(digit)}
+                    type="button"
+                  >
+                    {digit}
+                  </button>
+                ))}
+                <button
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  onClick={clearDiscountEditorValue}
+                  type="button"
+                >
+                  {dictionary.quantityNumpadClear}
+                </button>
+                <button
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                  onClick={() => appendDiscountEditorDigit("0")}
+                  type="button"
+                >
+                  0
+                </button>
+                <button
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                  onClick={appendDiscountEditorDecimal}
+                  type="button"
+                >
+                  .
+                </button>
+              </div>
+
+              <button
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={backspaceDiscountEditorValue}
+                type="button"
+              >
+                {dictionary.quantityNumpadBackspace}
+              </button>
+
+              <button
+                className="w-full rounded-xl bg-sky-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+                onClick={applyDiscountEditor}
+                type="button"
+              >
+                {dictionary.quantityNumpadApply}
+              </button>
             </div>
           </div>
         </div>
@@ -1395,10 +1755,13 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
           <div className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h3 className="text-2xl font-semibold text-slate-950">{dictionary.receiptTitle}</h3>
+                <h3 className="text-2xl font-semibold text-slate-950">
+                  {dictionary.receiptTitle}
+                </h3>
                 {selectedSale ? (
                   <p className="mt-2 text-sm text-slate-600">
-                    {dictionary.saleAtLabel} {formatDateTime(selectedSale.created_at)}
+                    {dictionary.saleAtLabel}{" "}
+                    {formatDateTime(selectedSale.created_at)}
                   </p>
                 ) : null}
               </div>
@@ -1443,16 +1806,20 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                           {dictionary.quantityLabel} {item.quantity}
                         </p>
                         <p className="mt-1 text-sm text-slate-500">
-                          {dictionary.unitPriceLabel} {formatCurrency(item.unit_price ?? 0)}
+                          {dictionary.unitPriceLabel}{" "}
+                          {formatCurrency(item.unit_price ?? 0)}
                         </p>
                         {(item.line_discount_total ?? 0) > 0 ? (
                           <p className="mt-1 text-sm text-emerald-700">
-                            {dictionary.discountLabel} {formatCurrency(item.line_discount_total ?? 0)}
+                            {dictionary.discountLabel}{" "}
+                            {formatCurrency(item.line_discount_total ?? 0)}
                           </p>
                         ) : null}
                       </div>
                       <p className="text-sm font-semibold text-slate-900">
-                        {formatCurrency(item.line_total ?? item.total_amount ?? 0)}
+                        {formatCurrency(
+                          item.line_total ?? item.total_amount ?? 0,
+                        )}
                       </p>
                     </div>
                   ))}
@@ -1461,15 +1828,21 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 <div className="mt-6 space-y-3 border-t border-slate-200 pt-5 text-sm text-slate-600">
                   <div className="flex items-center justify-between">
                     <span>{dictionary.summary.subtotalLabel}</span>
-                    <span>{formatCurrency(selectedSale.subtotal_amount ?? 0)}</span>
+                    <span>
+                      {formatCurrency(selectedSale.subtotal_amount ?? 0)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>{dictionary.summary.discountLabel}</span>
-                    <span>{formatCurrency(selectedSale.discount_amount ?? 0)}</span>
+                    <span>
+                      {formatCurrency(selectedSale.discount_amount ?? 0)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>{dictionary.summary.totalLabel}</span>
-                    <span>{formatCurrency(selectedSale.total_amount ?? 0)}</span>
+                    <span>
+                      {formatCurrency(selectedSale.total_amount ?? 0)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>{dictionary.totalPaidLabel}</span>
@@ -1477,7 +1850,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                   </div>
                   <div className="flex items-center justify-between">
                     <span>{dictionary.changeLabel}</span>
-                    <span>{formatCurrency(selectedSale.change_amount ?? 0)}</span>
+                    <span>
+                      {formatCurrency(selectedSale.change_amount ?? 0)}
+                    </span>
                   </div>
                 </div>
               </>
@@ -1489,8 +1864,12 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       {isPrintPromptOpen ? (
         <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300">
           <div className="w-full max-w-4xl rounded-[1.5rem] bg-white p-6 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-7">
-            <h3 className="text-xl font-semibold text-slate-950">{dictionary.printReceiptAskTitle}</h3>
-            <p className="mt-2 text-sm text-slate-600">{dictionary.printReceiptAskBody}</p>
+            <h3 className="text-xl font-semibold text-slate-950">
+              {dictionary.printReceiptAskTitle}
+            </h3>
+            <p className="mt-2 text-sm text-slate-600">
+              {dictionary.printReceiptAskBody}
+            </p>
 
             <div className="mt-5 h-[52vh] rounded-2xl border border-slate-200 bg-slate-100 p-3">
               {isReceiptPreviewLoading ? (
@@ -1541,7 +1920,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       {quantityNumpad ? (
         <div
           className={`fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300 sm:items-center ${
-            isQuantityNumpadOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+            isQuantityNumpadOpen
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0"
           }`}
           onClick={closeQuantityNumpad}
         >
@@ -1622,7 +2003,9 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       {amountNumpad ? (
         <div
           className={`fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300 sm:items-center ${
-            isAmountNumpadOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
+            isAmountNumpadOpen
+              ? "pointer-events-auto opacity-100"
+              : "pointer-events-none opacity-0"
           }`}
           onClick={closeAmountNumpad}
         >
@@ -1640,9 +2023,17 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
             <input
               autoFocus
               className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-sky-300"
-              inputMode="decimal"
-              onChange={(event) => onAmountNumpadInputChange(event.target.value)}
-              pattern="^\d*(\.\d{0,2})?$"
+              inputMode={
+                amountNumpad.field === "paid_amount" ? "numeric" : "decimal"
+              }
+              onChange={(event) =>
+                onAmountNumpadInputChange(event.target.value)
+              }
+              pattern={
+                amountNumpad.field === "paid_amount"
+                  ? "^\\d*$"
+                  : "^\\d*(\\.\\d{0,2})?$"
+              }
               type="text"
               value={amountNumpad.value}
             />
@@ -1676,6 +2067,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-base font-semibold text-slate-800 transition hover:bg-slate-50"
                 onClick={appendAmountNumpadDecimal}
                 type="button"
+                disabled={amountNumpad.field === "paid_amount"}
               >
                 .
               </button>
