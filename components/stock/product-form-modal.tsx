@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 import type {
@@ -298,13 +299,30 @@ export function ProductFormModal({
   quickActionLabel,
   unitOptions,
 }: ProductFormModalProps) {
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   return (
     <div
       aria-hidden={!isOpen}
       className={`fixed inset-0 z-50 transition-opacity duration-300 ease-out ${
         isOpen ? "pointer-events-auto bg-slate-950/45 opacity-100" : "pointer-events-none bg-slate-950/0 opacity-0"
       }`}
-      onClick={onClose}
     >
       <div
         className={`absolute right-0 top-0 h-full w-full overflow-hidden bg-white shadow-2xl transition-transform duration-300 ease-out md:w-[35vw] ${
