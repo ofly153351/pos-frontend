@@ -41,6 +41,7 @@ export type SalesDictionary = {
   noteLabel: string;
   notePlaceholder: string;
   paymentMethodCard: string;
+  paymentMethodPromptPay: string;
   paymentMethodCash: string;
   paymentMethodCashLabel: string;
   paymentMethodLabel: string;

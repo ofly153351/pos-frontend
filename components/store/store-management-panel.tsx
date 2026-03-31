@@ -25,6 +25,7 @@ type StoreManagementDictionary = {
   pageDescription: string;
   pageTitle: string;
   phoneLabel: string;
+  promptPayLabel: string;
   planLabel: string;
   plans: {
     growth: string;
@@ -69,6 +70,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
 
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editPromptPayId, setEditPromptPayId] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editCurrencyCode, setEditCurrencyCode] = useState("THB");
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
@@ -77,6 +79,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
 
   const [createName, setCreateName] = useState("");
   const [createPhone, setCreatePhone] = useState("");
+  const [createPromptPayId, setCreatePromptPayId] = useState("");
   const [createAddress, setCreateAddress] = useState("");
   const [createCurrencyCode, setCreateCurrencyCode] = useState("THB");
   const [createPlanCode, setCreatePlanCode] = useState<(typeof availablePlanCodes)[number]>("starter");
@@ -199,6 +202,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
           setCurrentStore(preferredStore);
           setEditName(preferredStore.name ?? "");
           setEditPhone(preferredStore.phone ?? "");
+          setEditPromptPayId(preferredStore.promptpay_id ?? "");
           setEditAddress(preferredStore.address ?? "");
           setEditCurrencyCode(preferredStore.currency_code ?? "THB");
           return;
@@ -213,6 +217,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
         setCurrentStore(storeResponse.data);
         setEditName(storeResponse.data.name ?? "");
         setEditPhone(storeResponse.data.phone ?? "");
+        setEditPromptPayId(storeResponse.data.promptpay_id ?? "");
         setEditAddress(storeResponse.data.address ?? "");
         setEditCurrencyCode(storeResponse.data.currency_code ?? "THB");
       } catch (nextError) {
@@ -237,6 +242,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
     setCurrentStore(nextStore);
     setEditName(nextStore?.name ?? "");
     setEditPhone(nextStore?.phone ?? "");
+    setEditPromptPayId(nextStore?.promptpay_id ?? "");
     setEditAddress(nextStore?.address ?? "");
     setEditCurrencyCode(nextStore?.currency_code ?? "THB");
     setEditLogoFile(null);
@@ -278,6 +284,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
           logo: editLogoFile,
           name: editName,
           phone: editPhone,
+          promptpay_id: editPromptPayId.trim(),
         });
 
         const updatedStore = response.data;
@@ -316,6 +323,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
           logo: createLogoFile,
           name: createName,
           phone: createPhone,
+          promptpay_id: createPromptPayId.trim(),
           subscription_plan_code: createPlanCode,
         });
 
@@ -323,6 +331,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
         setStores((currentStores) => [...currentStores, nextStore]);
         setCreateName("");
         setCreatePhone("");
+        setCreatePromptPayId("");
         setCreateAddress("");
         setCreateCurrencyCode("THB");
         setCreatePlanCode("starter");
@@ -331,6 +340,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
         setCurrentStore(nextStore);
         setEditName(nextStore.name ?? "");
         setEditPhone(nextStore.phone ?? "");
+        setEditPromptPayId(nextStore.promptpay_id ?? "");
         setEditAddress(nextStore.address ?? "");
         setEditCurrencyCode(nextStore.currency_code ?? "THB");
         saveCurrentStoreId(nextStore.id);
@@ -432,6 +442,14 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
               />
             </label>
             <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.promptPayLabel}</span>
+              <input
+                className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
+                onChange={(event) => setEditPromptPayId(event.target.value)}
+                value={editPromptPayId}
+              />
+            </label>
+            <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.addressLabel}</span>
               <textarea
                 className="min-h-24 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
@@ -519,6 +537,14 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
                   className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
                   onChange={(event) => setCreatePhone(event.target.value)}
                   value={createPhone}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.promptPayLabel}</span>
+                <input
+                  className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
+                  onChange={(event) => setCreatePromptPayId(event.target.value)}
+                  value={createPromptPayId}
                 />
               </label>
               <label className="block">

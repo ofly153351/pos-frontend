@@ -8,6 +8,7 @@ export type Store = {
   name: string;
   owner_user_id?: string;
   phone?: string | null;
+  promptpay_id?: string | null;
   slug?: string | null;
   subscription_period_end?: string | null;
   subscription_plan_code?: string | null;
@@ -21,6 +22,7 @@ export type CreateStoreInput = {
   logo?: File | null;
   name: string;
   phone?: string;
+  promptpay_id?: string;
   slug?: string;
   subscription_plan_code: string;
 };
@@ -31,6 +33,7 @@ export type UpdateStoreInput = {
   logo?: File | null;
   name?: string;
   phone?: string;
+  promptpay_id?: string;
 };
 
 export type SubscriptionPlan = {

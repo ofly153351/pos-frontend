@@ -47,6 +47,10 @@ function buildStoreFormData(input: CreateStoreInput) {
     formData.set("currency_code", input.currency_code);
   }
 
+  if (typeof input.promptpay_id === "string") {
+    formData.set("promptpay_id", input.promptpay_id);
+  }
+
   return formData;
 }
 
@@ -67,6 +71,10 @@ function buildStoreUpdateFormData(input: UpdateStoreInput) {
 
   if (typeof input.currency_code === "string") {
     formData.set("currency_code", input.currency_code);
+  }
+
+  if (typeof input.promptpay_id === "string") {
+    formData.set("promptpay_id", input.promptpay_id);
   }
 
   if (input.logo) {

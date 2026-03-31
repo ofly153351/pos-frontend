@@ -185,6 +185,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     null,
   );
   const receiptPreviewFrameRef = useRef<HTMLIFrameElement | null>(null);
+  const cartScrollRef = useRef<HTMLDivElement | null>(null);
+  const previousCartLengthRef = useRef(0);
   const barcodeBufferRef = useRef("");
   const barcodeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -386,6 +388,22 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       cart.find((item) => item.product.id === discountEditorProductId) ?? null
     );
   }, [cart, discountEditorProductId]);
+
+  useEffect(() => {
+    const previousLength = previousCartLengthRef.current;
+
+    if (cart.length > previousLength) {
+      const scrollContainer = cartScrollRef.current;
+      if (scrollContainer) {
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }
+
+    previousCartLengthRef.current = cart.length;
+  }, [cart.length]);
 
   useEffect(() => {
     if (!applyVat || cart.length === 0) {
@@ -736,6 +754,12 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     if (event.key === "Enter") {
       event.preventDefault();
       applyNumpadQuantity();
+      return;
+    }
+
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      backspaceNumpadValue();
     }
   }
 
@@ -835,6 +859,25 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     });
   }
 
+  function onAmountNumpadInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeAmountNumpad();
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applyAmountNumpad();
+      return;
+    }
+
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      backspaceAmountNumpadValue();
+    }
+  }
+
   function appendDiscountEditorDigit(digit: string) {
     if (!discountEditorItem) {
       return;
@@ -906,6 +949,12 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     if (event.key === "Enter") {
       event.preventDefault();
       setDiscountEditorProductId(null);
+      return;
+    }
+
+    if (event.key === "Backspace") {
+      event.preventDefault();
+      backspaceDiscountEditorValue();
     }
   }
 
@@ -1216,16 +1265,16 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 mb-0">
                 <div className="flex items-center justify-between">
                   <span>{dictionary.summary.subtotalLabel}</span>
-                  <span>{formatAmount(cartSummary.subtotal)}</span>
+                  <span>฿{formatAmount(cartSummary.subtotal)}</span>
                 </div>
                 <div className="mt-1 flex items-center justify-between">
                   <span>{dictionary.totalDiscountLabel}</span>
-                  <span>-{formatAmount(totalDiscountAmount)}</span>
+                  <span>-฿{formatAmount(totalDiscountAmount)}</span>
                 </div>
                 <div className="my-2 border-t border-dashed border-slate-300" />
                 <div className="flex items-center justify-between font-semibold text-slate-900">
                   <span>{dictionary.netTotalLabel}</span>
-                  <span>{formatAmount(payableTotal)}</span>
+                  <span>฿{formatAmount(payableTotal)}</span>
                 </div>
               </div>
               <button
@@ -1237,7 +1286,10 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                 {dictionary.checkoutButton}
               </button>
             </div>
-            <div className="pretty-scroll mt-6 space-y-4 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1">
+            <div
+              className="pretty-scroll mt-6 space-y-4 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1"
+              ref={cartScrollRef}
+            >
               {cart.length > 0 ? (
                 cart.map((item) => {
                   const line = getCartLine(item);
@@ -1247,8 +1299,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                       key={item.product.id}
                       className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
                     >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-start gap-2.5">
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                        <div className="flex min-w-0 flex-1 items-start gap-2.5">
                           {item.product.image_url ? (
                             <img
                               alt={item.product.name}
@@ -1257,8 +1309,11 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                               src={item.product.image_url}
                             />
                           ) : null}
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-950">
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className="w-full overflow-hidden break-all text-sm font-semibold text-slate-950 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                              title={item.product.name}
+                            >
                               {item.product.name}
                             </p>
                             <p className="mt-0.5 text-xs text-slate-600">
@@ -1267,7 +1322,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                             </p>
                           </div>
                         </div>
-                        <div className="flex justify-center items-center gap-1.5">
+                        <div className="flex shrink-0 items-center justify-center gap-1.5">
                           <div className="text-right">
                             <p className="text-sm font-semibold text-slate-900">
                               {formatCurrency(line.lineTotal)}
@@ -1279,25 +1334,51 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                               </p>
                             ) : null}
                           </div>
-                          <input
-                            className="h-7 w-14 rounded-lg border border-slate-200 bg-white px-2 text-center text-xs font-semibold text-slate-900 outline-none transition focus:border-sky-300"
-                            inputMode="numeric"
-                            max={item.product.quantity}
-                            min="1"
-                            onClick={() =>
-                              openQuantityNumpad(
-                                item.product.id,
-                                item.quantity,
-                                item.product.quantity,
-                              )
-                            }
-                            onFocus={(event) => event.target.blur()}
-                            pattern="[0-9]*"
-                            readOnly
-                            step="1"
-                            type="number"
-                            value={item.quantity}
-                          />
+                          <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+                            <button
+                              className="flex h-7 w-7 items-center justify-center border-r border-slate-200 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                              onClick={() =>
+                                updateCartQuantity(
+                                  item.product.id,
+                                  item.quantity - 1,
+                                )
+                              }
+                              type="button"
+                            >
+                              -
+                            </button>
+                            <input
+                              className="h-7 w-14 bg-white px-2 text-center text-xs font-semibold text-slate-900 outline-none"
+                              inputMode="numeric"
+                              max={item.product.quantity}
+                              min="1"
+                              onClick={() =>
+                                openQuantityNumpad(
+                                  item.product.id,
+                                  item.quantity,
+                                  item.product.quantity,
+                                )
+                              }
+                              onFocus={(event) => event.target.blur()}
+                              pattern="[0-9]*"
+                              readOnly
+                              step="1"
+                              type="number"
+                              value={item.quantity}
+                            />
+                            <button
+                              className="flex h-7 w-7 items-center justify-center border-l border-slate-200 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                              onClick={() =>
+                                updateCartQuantity(
+                                  item.product.id,
+                                  item.quantity + 1,
+                                )
+                              }
+                              type="button"
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -1487,7 +1568,10 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                           label: dictionary.paymentMethodCashLabel,
                           value: "cash",
                         },
-                        { label: dictionary.paymentMethodCard, value: "card" },
+                        {
+                          label: dictionary.paymentMethodPromptPay,
+                          value: "transfer",
+                        },
                       ].map((option) => (
                         <button
                           key={option.value}
@@ -1508,20 +1592,44 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
 
                 {!isInvoiceSettlement ? (
                   <div className="flex flex-col gap-3">
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-slate-700">
-                        {dictionary.customerPaymentLabel}
-                      </label>
-                      <input
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition focus:border-sky-300"
-                        inputMode="numeric"
-                        min="0"
-                        onClick={() => openAmountNumpad("paid_amount")}
-                        onFocus={(event) => event.target.blur()}
-                        placeholder="0"
-                        readOnly
-                        value={paidAmount}
-                      />
+                    <div
+                      className={`grid gap-3 ${
+                        paymentMethod === "transfer"
+                          ? "grid-cols-1"
+                          : "grid-cols-2"
+                      }`}
+                    >
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-slate-700">
+                          {dictionary.customerPaymentLabel}
+                        </label>
+                        <input
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                          inputMode="numeric"
+                          min="0"
+                          onClick={() => openAmountNumpad("paid_amount")}
+                          onFocus={(event) => event.target.blur()}
+                          placeholder="0"
+                          readOnly
+                          value={
+                            paidAmount
+                              ? `฿${formatAmount(parsePaidAmountAsCeilInt(paidAmount))}`
+                              : ""
+                          }
+                        />
+                      </div>
+                      {paymentMethod !== "transfer" ? (
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-slate-700">
+                            {dictionary.changeLabel}
+                          </label>
+                          <input
+                            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-right text-xs font-semibold text-slate-700 outline-none"
+                            readOnly
+                            value={formatCurrency(Math.max(changeAmount, 0))}
+                          />
+                        </div>
+                      ) : null}
                     </div>
 
                     <div>
@@ -1546,7 +1654,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
                           >
                             {option.isExact
                               ? dictionary.quickCashExactAmountLabel
-                              : `+${option.amount}`}
+                              : `+฿${option.amount}`}
                           </button>
                         ))}
                       </div>
@@ -1750,117 +1858,6 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         </div>
       ) : null}
 
-      {isReceiptOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
-          <div className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-2xl font-semibold text-slate-950">
-                  {dictionary.receiptTitle}
-                </h3>
-                {selectedSale ? (
-                  <p className="mt-2 text-sm text-slate-600">
-                    {dictionary.saleAtLabel}{" "}
-                    {formatDateTime(selectedSale.created_at)}
-                  </p>
-                ) : null}
-              </div>
-              <button
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                onClick={() => {
-                  setIsReceiptOpen(false);
-                  setSelectedSale(null);
-                  setReceiptError("");
-                }}
-                type="button"
-              >
-                {dictionary.closeReceiptButton}
-              </button>
-            </div>
-
-            {receiptError ? (
-              <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {receiptError}
-              </div>
-            ) : null}
-
-            {isReceiptPending && !selectedSale ? (
-              <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                {dictionary.viewReceiptButton}
-              </div>
-            ) : null}
-
-            {selectedSale ? (
-              <>
-                <div className="mt-6 space-y-3">
-                  {(selectedSale.items ?? []).map((item) => (
-                    <div
-                      key={`${item.product_id}-${item.id ?? item.product_name ?? "item"}`}
-                      className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4"
-                    >
-                      <div>
-                        <p className="font-semibold text-slate-900">
-                          {item.product_name ?? dictionary.unavailableProduct}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {dictionary.quantityLabel} {item.quantity}
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {dictionary.unitPriceLabel}{" "}
-                          {formatCurrency(item.unit_price ?? 0)}
-                        </p>
-                        {(item.line_discount_total ?? 0) > 0 ? (
-                          <p className="mt-1 text-sm text-emerald-700">
-                            {dictionary.discountLabel}{" "}
-                            {formatCurrency(item.line_discount_total ?? 0)}
-                          </p>
-                        ) : null}
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {formatCurrency(
-                          item.line_total ?? item.total_amount ?? 0,
-                        )}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 space-y-3 border-t border-slate-200 pt-5 text-sm text-slate-600">
-                  <div className="flex items-center justify-between">
-                    <span>{dictionary.summary.subtotalLabel}</span>
-                    <span>
-                      {formatCurrency(selectedSale.subtotal_amount ?? 0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>{dictionary.summary.discountLabel}</span>
-                    <span>
-                      {formatCurrency(selectedSale.discount_amount ?? 0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>{dictionary.summary.totalLabel}</span>
-                    <span>
-                      {formatCurrency(selectedSale.total_amount ?? 0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>{dictionary.totalPaidLabel}</span>
-                    <span>{formatCurrency(selectedSale.paid_amount ?? 0)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>{dictionary.changeLabel}</span>
-                    <span>
-                      {formatCurrency(selectedSale.change_amount ?? 0)}
-                    </span>
-                  </div>
-                </div>
-              </>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
       {isPrintPromptOpen ? (
         <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300">
           <div className="w-full max-w-4xl rounded-[1.5rem] bg-white p-6 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-7">
@@ -2029,6 +2026,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
               onChange={(event) =>
                 onAmountNumpadInputChange(event.target.value)
               }
+              onKeyDown={onAmountNumpadInputKeyDown}
               pattern={
                 amountNumpad.field === "paid_amount"
                   ? "^\\d*$"

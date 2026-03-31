@@ -37,15 +37,15 @@ export function ProductsTable({
 }: ProductsTableProps) {
   return (
     <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
-      <table className="w-full border-collapse text-left">
+      <table className="w-full table-fixed border-collapse text-left">
         <thead>
           <tr className="bg-slate-100 text-xs uppercase tracking-widest text-slate-500">
-            <th className="px-6 py-4 font-bold">{tableDictionary.productDetails}</th>
-            <th className="px-6 py-4 font-bold">{tableDictionary.category}</th>
-            <th className="px-6 py-4 font-bold">{tableDictionary.sku}</th>
-            <th className="px-6 py-4 font-bold">{tableDictionary.price}</th>
-            <th className="px-6 py-4 font-bold">{tableDictionary.stock}</th>
-            <th className="px-6 py-4 text-right font-bold">{tableDictionary.actions}</th>
+            <th className="w-[34%] px-6 py-4 font-bold">{tableDictionary.productDetails}</th>
+            <th className="w-[16%] px-6 py-4 font-bold">{tableDictionary.category}</th>
+            <th className="w-[18%] px-6 py-4 font-bold">{tableDictionary.sku}</th>
+            <th className="w-[10%] px-6 py-4 font-bold">{tableDictionary.price}</th>
+            <th className="w-[8%] px-6 py-4 font-bold">{tableDictionary.stock}</th>
+            <th className="w-[14%] px-6 py-4 text-right font-bold">{tableDictionary.actions}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -62,7 +62,7 @@ export function ProductsTable({
               className={`${index % 2 === 1 ? "bg-slate-50/50" : "bg-white"} group transition hover:bg-slate-50`}
             >
               <td className="px-6 py-4">
-                <div className="flex items-center gap-4">
+                <div className="flex min-w-0 items-center gap-4">
                   {product.image_url ? (
                     <img
                       alt={product.name}
@@ -75,8 +75,13 @@ export function ProductsTable({
                       {product.name.slice(0, 2).toUpperCase()}
                     </div>
                   )}
-                  <div className="flex flex-col">
-                    <span className="text-sm font-bold text-slate-900">{product.name}</span>
+                  <div className="flex min-w-0 flex-col">
+                    <span
+                      className="overflow-hidden break-all text-sm font-bold text-slate-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                      title={product.name}
+                    >
+                      {product.name}
+                    </span>
                     <div className="mt-1 flex items-center gap-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
@@ -94,11 +99,18 @@ export function ProductsTable({
                 </div>
               </td>
               <td className="px-6 py-4">
-                <span className="rounded px-2 py-1 text-[11px] font-bold uppercase text-blue-800">
+                <span
+                  className="block truncate rounded px-2 py-1 text-[11px] font-bold uppercase text-blue-800"
+                  title={product.product_type_name ?? product.product_type?.name ?? "-"}
+                >
                   {product.product_type_name ?? product.product_type?.name ?? "-"}
                 </span>
               </td>
-              <td className="px-6 py-4 text-sm text-slate-500">{product.sku ?? "-"}</td>
+              <td className="px-6 py-4 text-sm text-slate-500">
+                <span className="block truncate" title={product.sku ?? "-"}>
+                  {product.sku ?? "-"}
+                </span>
+              </td>
               <td className="px-6 py-4 text-sm font-bold text-blue-700">
                 {product.effective_price}
               </td>
