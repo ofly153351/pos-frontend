@@ -148,5 +148,5 @@ export const initialProductFormState: ProductInput = {
   quantity: "0",
   sku: "",
   special_price: "",
-  unit_type: "piece",
+  unit_id: "",
 };

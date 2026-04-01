@@ -34,8 +34,8 @@ function buildProductFormData(input: ProductInput) {
     formData.set("product_type_id", input.product_type_id);
   }
 
-  if (input.unit_type) {
-    formData.set("unit_type", input.unit_type);
+  if (input.unit_id) {
+    formData.set("unit_id", input.unit_id);
   }
 
   if (typeof input.quantity === "string") {

@@ -443,13 +443,14 @@ export function ProductFormModal({
                   onChange={(value) =>
                     onFormStateChange((current) => ({
                       ...current,
-                      unit_type: value as ProductInput["unit_type"],
+                      unit_id: value,
                     }))
                   }
-                  value={formState.unit_type ?? unitOptions[0].code}
+                  value={formState.unit_id ?? ""}
                 >
+                  <option value="">-</option>
                   {unitOptions.map((unit) => (
-                    <option key={unit.id} value={unit.code}>
+                    <option key={unit.id} value={unit.id}>
                       {unit.name}
                     </option>
                   ))}
@@ -492,7 +493,7 @@ export function ProductFormModal({
               title={formLabels.setupSection}
               unitLabel={formLabels.unitTypeLabel}
               unitValue={
-                unitOptions.find((unit) => unit.code === formState.unit_type)?.name ?? "-"
+                unitOptions.find((unit) => unit.id === formState.unit_id)?.name ?? "-"
               }
             />
 

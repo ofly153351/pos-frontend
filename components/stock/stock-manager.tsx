@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { CatalogSetupSection } from "@/components/stock/catalog-setup-section";
 import { ProductFormModal } from "@/components/stock/product-form-modal";
@@ -37,14 +38,13 @@ export function StockManager({
   dictionary,
   initialSection = "stock-levels",
 }: StockManagerProps) {
+  const queryClient = useQueryClient();
   const [productPageSize, setProductPageSize] = useState(20);
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [productPage, setProductPage] = useState(1);
   const [productTotalPages, setProductTotalPages] = useState(1);
   const [productTotal, setProductTotal] = useState(0);
-  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
-  const [productUnits, setProductUnits] = useState<ProductUnit[]>([]);
   const [search, setSearch] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
   const [error, setError] = useState("");
@@ -141,21 +141,29 @@ export function StockManager({
     setHasMounted(true);
   }, []);
 
-  useEffect(() => {
-    startTransition(async () => {
-      try {
-        const [typeResponse, unitResponse] = await Promise.all([
-          listProductTypes(),
-          listProductUnits(),
-        ]);
+  const {
+    data: productTypes = [],
+    error: productTypesQueryError,
+  } = useQuery<ProductType[]>({
+    enabled: hasMounted,
+    queryFn: async () => {
+      const response = await listProductTypes();
+      return response.data ?? [];
+    },
+    queryKey: ["stock", "product-types"],
+  });
 
-        setProductTypes(typeResponse.data ?? []);
-        setProductUnits(unitResponse.data ?? []);
-      } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
-      }
-    });
-  }, []);
+  const {
+    data: productUnits = [],
+    error: productUnitsQueryError,
+  } = useQuery<ProductUnit[]>({
+    enabled: hasMounted,
+    queryFn: async () => {
+      const response = await listProductUnits();
+      return response.data ?? [];
+    },
+    queryKey: ["stock", "product-units"],
+  });
 
   useEffect(() => {
     startTransition(async () => {
@@ -226,26 +234,13 @@ export function StockManager({
     );
   });
 
-  const activeUnits = productUnits.filter((unit) => unit.is_active);
-  const unitOptions =
-    activeUnits.length > 0
-      ? activeUnits
-      : [
-          {
-            code: "piece",
-            description: unitsDictionary.descriptionLabel,
-            id: "unit-piece",
-            is_active: true,
-            name: dictionary.form.unitPiece,
-          },
-          {
-            code: "pair",
-            description: unitsDictionary.descriptionLabel,
-            id: "unit-pair",
-            is_active: true,
-            name: dictionary.form.unitPair,
-          },
-        ];
+  const resolvedTypeError =
+    typeError ||
+    (productTypesQueryError instanceof Error ? productTypesQueryError.message : "");
+  const resolvedUnitError =
+    unitError ||
+    (productUnitsQueryError instanceof Error ? productUnitsQueryError.message : "");
+  const unitOptions = productUnits;
 
   async function reloadProductsPage(page = productPage) {
     const productResponse = await listProducts({
@@ -263,16 +258,6 @@ export function StockManager({
     setProducts(nextData.items ?? []);
     setProductTotal(nextData.total ?? 0);
     setProductTotalPages(nextTotalPages);
-  }
-
-  async function reloadCatalogData() {
-    const [typeResponse, unitResponse] = await Promise.all([
-      listProductTypes(),
-      listProductUnits(),
-    ]);
-
-    setProductTypes(typeResponse.data ?? []);
-    setProductUnits(unitResponse.data ?? []);
   }
 
   function resetProductForm() {
@@ -297,11 +282,20 @@ export function StockManager({
   }
 
   function openCreateModal() {
-    resetProductForm();
+    setEditingProductId(null);
+    setFormState({
+      ...initialProductFormState,
+      unit_id: productUnits[0]?.id ?? "",
+    });
     setIsProductModalOpen(true);
   }
 
   function openEditModal(product: Product) {
+    const legacyUnitId =
+      product.unit_type
+        ? productUnits.find((unit) => unit.code === product.unit_type)?.id
+        : undefined;
+
     setEditingProductId(product.id);
     setFormState({
       base_price: String(product.base_price ?? ""),
@@ -311,7 +305,7 @@ export function StockManager({
       quantity: String(product.quantity ?? 0),
       sku: product.sku ?? "",
       special_price: product.special_price ? String(product.special_price) : "",
-      unit_type: product.unit_type,
+      unit_id: product.product_unit_id ?? product.unit_id ?? legacyUnitId ?? "",
     });
     setIsProductModalOpen(true);
   }
@@ -381,7 +375,7 @@ export function StockManager({
           await createProductType(payload);
         }
 
-        await reloadCatalogData();
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-types"] });
         closeTypeModal();
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
@@ -400,7 +394,7 @@ export function StockManager({
           name: productType.name,
         });
 
-        await reloadCatalogData();
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-types"] });
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -413,7 +407,7 @@ export function StockManager({
     startTypeTransition(async () => {
       try {
         await deleteProductType(productTypeId);
-        await reloadCatalogData();
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-types"] });
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -442,7 +436,7 @@ export function StockManager({
           await createProductUnit(payload);
         }
 
-        await reloadCatalogData();
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-units"] });
         closeUnitModal();
       } catch (nextError) {
         setUnitError(nextError instanceof Error ? nextError.message : "Request failed");
@@ -461,7 +455,7 @@ export function StockManager({
           name: unit.name,
         });
 
-        await reloadCatalogData();
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-units"] });
       } catch (nextError) {
         setUnitError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -474,7 +468,7 @@ export function StockManager({
     startUnitTransition(async () => {
       try {
         await deleteProductUnit(unitId);
-        await reloadCatalogData();
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-units"] });
       } catch (nextError) {
         setUnitError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -533,8 +527,8 @@ export function StockManager({
           productTypes={filteredCatalogTypes}
           productUnits={filteredCatalogUnits}
           searchPlaceholder={dictionary.searchPlaceholder}
-          typeError={typeError}
-          unitError={unitError}
+          typeError={resolvedTypeError}
+          unitError={resolvedUnitError}
           unitsDictionary={unitsDictionary}
         />
       ) : null}

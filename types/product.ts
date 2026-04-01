@@ -1,7 +1,5 @@
-export type ProductUnitType = string;
-
 export type ProductUnit = {
-  code: string;
+  code?: string;
   description?: string | null;
   id: string;
   is_active: boolean;
@@ -31,7 +29,10 @@ export type Product = {
   special_price?: number | null;
   special_price_end_at?: string | null;
   special_price_start_at?: string | null;
-  unit_type: ProductUnitType;
+  unit_id: string;
+  product_unit_id?: string | null;
+  product_unit_name?: string | null;
+  unit_type?: string | null;
 };
 
 export type ProductListPage = {
@@ -62,7 +63,7 @@ export type ProductInput = {
   special_price?: string;
   special_price_end_at?: string;
   special_price_start_at?: string;
-  unit_type?: ProductUnitType;
+  unit_id?: string;
 };
 
 export type ProductUnitInput = {
