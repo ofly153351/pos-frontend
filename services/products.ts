@@ -108,6 +108,7 @@ export function deleteProductType(productTypeId: string) {
   return authorizedApiRequest<Record<string, never>>(
     `/api/stores/${currentStoreId}/product-types/${productTypeId}`,
     {
+      allowEmptyData: true,
       method: "DELETE",
     },
   );
@@ -168,6 +169,7 @@ export function deleteProduct(productId: string) {
   return authorizedApiRequest<Record<string, never>>(
     `/api/stores/${currentStoreId}/products/${productId}`,
     {
+      allowEmptyData: true,
       method: "DELETE",
     },
   );
@@ -213,6 +215,7 @@ export function deleteProductUnit(unitId: string) {
   return authorizedApiRequest<Record<string, never>>(
     `/api/stores/${currentStoreId}/product-units/${unitId}`,
     {
+      allowEmptyData: true,
       method: "DELETE",
     },
   );

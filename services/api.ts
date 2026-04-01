@@ -4,6 +4,7 @@ import { getAuthSession } from "@/lib/auth-storage";
 import type { ApiResponse } from "@/types/auth";
 
 type RequestOptions = {
+  allowEmptyData?: boolean;
   body?: unknown;
   headers?: Record<string, string>;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
@@ -41,8 +42,12 @@ function toApiError(error: unknown) {
   return new ApiError("Request failed", 500);
 }
 
-function unwrapPayload<T>(payload: ApiResponse<T>, status: number) {
-  if (!payload.success || typeof payload.data === "undefined") {
+function unwrapPayload<T>(
+  payload: ApiResponse<T>,
+  status: number,
+  allowEmptyData = false,
+) {
+  if (!payload.success || (!allowEmptyData && typeof payload.data === "undefined")) {
     throw new ApiError(payload.message || "Request failed", status);
   }
 
@@ -75,7 +80,12 @@ function buildHeaders(
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}) {
-  const { body, headers, method = "GET" } = options;
+  const {
+    allowEmptyData = false,
+    body,
+    headers,
+    method = "GET",
+  } = options;
 
   try {
     const response = await apiClient.request<ApiResponse<T>>({
@@ -85,7 +95,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}) 
       url: path,
     });
 
-    return unwrapPayload(response.data, response.status);
+    return unwrapPayload(response.data, response.status, allowEmptyData);
   } catch (error) {
     throw toApiError(error);
   }
@@ -103,7 +113,12 @@ export async function authorizedApiRequest<T>(
     throw new ApiError("Missing access token", 401);
   }
 
-  const { body, headers, method = "GET" } = options;
+  const {
+    allowEmptyData = false,
+    body,
+    headers,
+    method = "GET",
+  } = options;
 
   try {
     const response = await apiClient.request<ApiResponse<T>>({
@@ -113,7 +128,7 @@ export async function authorizedApiRequest<T>(
       url: path,
     });
 
-    return unwrapPayload(response.data, response.status);
+    return unwrapPayload(response.data, response.status, allowEmptyData);
   } catch (error) {
     throw toApiError(error);
   }

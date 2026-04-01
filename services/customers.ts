@@ -52,6 +52,7 @@ export function updateCustomer(customerId: string, input: UpdateCustomerInput) {
 export function deleteCustomer(customerId: string) {
   const storeId = ensureStoreId();
   return authorizedApiRequest<Record<string, never>>(`/api/stores/${storeId}/customers/${customerId}`, {
+    allowEmptyData: true,
     method: "DELETE",
   });
 }
@@ -75,6 +76,7 @@ export function upsertCustomerLevelDiscount(level: number, discountPercent: numb
 export function deleteCustomerLevelDiscount(level: number) {
   const storeId = ensureStoreId();
   return authorizedApiRequest<Record<string, never>>(`/api/stores/${storeId}/customer-level-discounts/${level}`, {
+    allowEmptyData: true,
     method: "DELETE",
   });
 }

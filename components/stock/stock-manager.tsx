@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import { CatalogSetupSection } from "@/components/stock/catalog-setup-section";
 import { ProductFormModal } from "@/components/stock/product-form-modal";
@@ -38,6 +39,7 @@ export function StockManager({
   dictionary,
   initialSection = "stock-levels",
 }: StockManagerProps) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [productPageSize, setProductPageSize] = useState(20);
   const [hasMounted, setHasMounted] = useState(false);
@@ -408,6 +410,8 @@ export function StockManager({
       try {
         await deleteProductType(productTypeId);
         await queryClient.invalidateQueries({ queryKey: ["stock", "product-types"] });
+        router.refresh();
+        window.location.assign(window.location.href);
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -469,6 +473,8 @@ export function StockManager({
       try {
         await deleteProductUnit(unitId);
         await queryClient.invalidateQueries({ queryKey: ["stock", "product-units"] });
+        router.refresh();
+        window.location.assign(window.location.href);
       } catch (nextError) {
         setUnitError(nextError instanceof Error ? nextError.message : "Request failed");
       }
