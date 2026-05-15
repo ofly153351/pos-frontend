@@ -44,6 +44,15 @@ export function ProductsTable({
   products,
   tableDictionary,
 }: ProductsTableProps) {
+  function formatCurrency(value: number) {
+    return new Intl.NumberFormat("th-TH", {
+      currency: "THB",
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+      style: "currency",
+    }).format(value);
+  }
+
   const [previewSku, setPreviewSku] = useState<string | null>(null);
 
   function isOutOfStock(product: Product) {
@@ -202,6 +211,14 @@ export function ProductsTable({
                     >
                       {product.name}
                     </span>
+                    {product.brand_name || product.brand ? (
+                      <span
+                        className="mt-0.5 truncate text-xs font-medium text-slate-500"
+                        title={product.brand_name ?? product.brand ?? ""}
+                      >
+                        {product.brand_name ?? product.brand}
+                      </span>
+                    ) : null}
                     <div className="mt-1 flex items-center gap-2">
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
@@ -232,7 +249,7 @@ export function ProductsTable({
                 </span>
               </td>
               <td className="px-6 py-4 text-sm font-bold text-blue-700">
-                {product.effective_price}
+                {formatCurrency(Number(product.effective_price ?? 0))}
               </td>
               <td className="px-6 py-4">
                 <div className="flex flex-col">

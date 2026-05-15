@@ -90,6 +90,7 @@
       "paymentBreakdown": "Payment breakdown",
       "topProducts": "Top products",
       "lowStockProducts": "Low stock products",
+      "highStockProducts": "High stock products",
       "recentSales": "Recent sales"
     },
     "summary": {
@@ -438,6 +439,8 @@
       "totalProductsLabel": "Total Products",
       "totalProductsValue": "1,284",
       "lowStockLabel": "Low Stock",
+      "lowStockListLabel": "Low Stock Items",
+      "highStockListLabel": "High Stock Items",
       "lowStockValue": "12",
       "categoriesLabel": "Categories",
       "categoriesValue": "18"
@@ -543,6 +546,8 @@
       "titleEdit": "Edit product",
       "nameLabel": "Product name",
       "nameHint": "Use the customer-facing product name shown in the POS and reports.",
+      "brandLabel": "Brand",
+      "brandHint": "Optional brand name for grouping and search, for example Acme or Nike.",
       "skuLabel": "Barcode",
       "skuHint": "Optional barcode or internal code for scanning, search, or stock lookup.",
       "quantityLabel": "Quantity",
@@ -597,10 +602,13 @@
       "unitsCountLabel": "Product units",
       "createTypeButton": "Create product type",
       "createUnitButton": "Create product unit",
+      "createBrandButton": "Create product brand",
       "typeTitle": "Product types",
       "unitTitle": "Product units",
+      "brandTitle": "Product brands",
       "typeEmpty": "No product types defined yet",
       "unitEmpty": "No product units defined yet",
+      "brandEmpty": "No product brands defined yet",
       "descriptionLabel": "Description",
       "activeLabel": "Active",
       "inactiveLabel": "Inactive",
@@ -611,11 +619,16 @@
       "editTypeTitle": "Edit product type",
       "createUnitTitle": "Create product unit",
       "editUnitTitle": "Edit product unit",
+      "createBrandTitle": "Create product brand",
+      "editBrandTitle": "Edit product brand",
       "typeNameLabel": "Type name",
+      "brandNameLabel": "Brand name",
       "typeSlugLabel": "Type slug",
       "typeRequiredError": "Name is required",
       "saveTypeButton": "Save type",
-      "saveUnitButton": "Save unit"
+      "saveUnitButton": "Save unit",
+      "saveBrandButton": "Save brand",
+      "brandsCountLabel": "Product brands"
     }
   }
 }

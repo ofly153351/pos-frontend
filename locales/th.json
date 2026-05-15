@@ -90,6 +90,7 @@
       "paymentBreakdown": "สรุปตามวิธีชำระเงิน",
       "topProducts": "สินค้าขายดี",
       "lowStockProducts": "สินค้าใกล้หมด",
+      "highStockProducts": "รายการสินค้าคงเหลือเยอะ",
       "recentSales": "บิลล่าสุด"
     },
     "summary": {
@@ -438,6 +439,8 @@
       "totalProductsLabel": "จำนวนสินค้าทั้งหมด",
       "totalProductsValue": "1,284",
       "lowStockLabel": "สินค้าใกล้หมด",
+      "lowStockListLabel": "รายการสินค้าใกล้หมด",
+      "highStockListLabel": "รายการสินค้าคงเหลือเยอะ",
       "lowStockValue": "12",
       "categoriesLabel": "หมวดหมู่",
       "categoriesValue": "18"
@@ -543,6 +546,8 @@
       "titleEdit": "แก้ไขสินค้า",
       "nameLabel": "ชื่อสินค้า",
       "nameHint": "ใช้ชื่อสินค้าที่จะแสดงให้พนักงานและลูกค้าเห็นในหน้าขายและรายงาน",
+      "brandLabel": "แบรนด์",
+      "brandHint": "ชื่อแบรนด์ (ไม่บังคับ) สำหรับจัดกลุ่มและค้นหา เช่น Acme หรือ Nike",
       "skuLabel": "Barcode",
       "skuHint": "บาร์โค้ดหรือรหัสอ้างอิงภายในสำหรับค้นหา สแกน หรือเช็กสต็อก",
       "quantityLabel": "จำนวนคงเหลือ",
@@ -597,10 +602,13 @@
       "unitsCountLabel": "หน่วยสินค้า",
       "createTypeButton": "สร้างประเภทสินค้า",
       "createUnitButton": "สร้างหน่วยสินค้า",
+      "createBrandButton": "สร้างแบรนด์สินค้า",
       "typeTitle": "ประเภทสินค้า",
       "unitTitle": "หน่วยสินค้า",
+      "brandTitle": "แบรนด์สินค้า",
       "typeEmpty": "ยังไม่มีประเภทสินค้า",
       "unitEmpty": "ยังไม่มีหน่วยสินค้า",
+      "brandEmpty": "ยังไม่มีแบรนด์สินค้า",
       "descriptionLabel": "รายละเอียด",
       "activeLabel": "เปิดใช้งาน",
       "inactiveLabel": "ปิดใช้งาน",
@@ -611,11 +619,16 @@
       "editTypeTitle": "แก้ไขประเภทสินค้า",
       "createUnitTitle": "สร้างหน่วยสินค้า",
       "editUnitTitle": "แก้ไขหน่วยสินค้า",
+      "createBrandTitle": "สร้างแบรนด์สินค้า",
+      "editBrandTitle": "แก้ไขแบรนด์สินค้า",
       "typeNameLabel": "ชื่อประเภทสินค้า",
+      "brandNameLabel": "ชื่อแบรนด์",
       "typeSlugLabel": "Slug ประเภทสินค้า",
       "typeRequiredError": "กรุณาระบุชื่อ",
       "saveTypeButton": "บันทึกประเภทสินค้า",
-      "saveUnitButton": "บันทึกหน่วยสินค้า"
+      "saveUnitButton": "บันทึกหน่วยสินค้า",
+      "saveBrandButton": "บันทึกแบรนด์",
+      "brandsCountLabel": "แบรนด์สินค้า"
     }
   }
 }

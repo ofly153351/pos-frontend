@@ -6,6 +6,13 @@ export type ProductUnit = {
   name: string;
 };
 
+export type ProductBrand = {
+  description?: string | null;
+  id: string;
+  is_active: boolean;
+  name: string;
+};
+
 export type ProductType = {
   description?: string | null;
   id: string;
@@ -16,6 +23,9 @@ export type ProductType = {
 
 export type Product = {
   base_price: number;
+  brand?: string | null;
+  brand_id?: string | null;
+  brand_name?: string | null;
   effective_price: number;
   id: string;
   image_url?: string | null;
@@ -54,6 +64,7 @@ export type ProductTypeInput = {
 
 export type ProductInput = {
   base_price: string;
+  brand_id?: string;
   image?: File | null;
   is_active?: boolean;
   name: string;

@@ -7,7 +7,12 @@ import type {
   ManagementDictionary,
   ProductFormLabels,
 } from "@/components/stock/types";
-import type { ProductInput, ProductType, ProductUnit } from "@/types/product";
+import type {
+  ProductBrand,
+  ProductInput,
+  ProductType,
+  ProductUnit,
+} from "@/types/product";
 
 type ProductFormModalProps = {
   closeLabel: string;
@@ -20,6 +25,7 @@ type ProductFormModalProps = {
   onClose: () => void;
   onFormStateChange: (updater: (current: ProductInput) => ProductInput) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  productBrands: ProductBrand[];
   productTypes: ProductType[];
   quickActionLabel: string;
   unitOptions: ProductUnit[];
@@ -263,6 +269,7 @@ export function ProductFormModal({
   onClose,
   onFormStateChange,
   onSubmit,
+  productBrands,
   productTypes,
   quickActionLabel,
   unitOptions,
@@ -383,9 +390,37 @@ export function ProductFormModal({
                     type="number"
                     value={formState.quantity ?? "0"}
                   />
+                  <ProductActiveToggle
+                    checked={Boolean(formState.is_active)}
+                    label={formLabels.activeLabel}
+                    onChange={(checked) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        is_active: checked,
+                      }))
+                    }
+                  />
                 </div>
 
                 <div className="space-y-5">
+                  <ProductSelectField
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.brandLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        brand_id: value,
+                      }))
+                    }
+                    value={formState.brand_id ?? ""}
+                  >
+                    <option value="">-</option>
+                    {productBrands.map((brand) => (
+                      <option key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </option>
+                    ))}
+                  </ProductSelectField>
                   <ProductTextInput
                     badgeText={formLabels.optionalLabel}
                     label={formLabels.skuLabel}
@@ -445,16 +480,7 @@ export function ProductFormModal({
                       }))
                     }
                   />
-                  <ProductActiveToggle
-                    checked={Boolean(formState.is_active)}
-                    label={formLabels.activeLabel}
-                    onChange={(checked) =>
-                      onFormStateChange((current) => ({
-                        ...current,
-                        is_active: checked,
-                      }))
-                    }
-                  />
+
                   <ProductSummaryCard
                     activeLabel={formLabels.activeLabel}
                     activeValue={

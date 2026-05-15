@@ -2,6 +2,7 @@ import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest } from "@/services/api";
 import type {
   Product,
+  ProductBrand,
   ProductListPage,
   ProductInput,
   ProductType,
@@ -25,6 +26,10 @@ function buildProductFormData(input: ProductInput) {
 
   formData.set("name", input.name);
   formData.set("base_price", input.base_price);
+
+  if (input.brand_id) {
+    formData.set("brand_id", input.brand_id);
+  }
 
   if (input.sku) {
     formData.set("sku", input.sku);
@@ -214,6 +219,59 @@ export function deleteProductUnit(unitId: string) {
   const currentStoreId = ensureStoreId();
   return authorizedApiRequest<Record<string, never>>(
     `/api/stores/${currentStoreId}/product-units/${unitId}`,
+    {
+      allowEmptyData: true,
+      method: "DELETE",
+    },
+  );
+}
+
+export function listProductBrands() {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<ProductBrand[]>(
+    `/api/stores/${currentStoreId}/product-brands`,
+  );
+}
+
+export function createProductBrand(input: {
+  description?: string;
+  is_active?: boolean;
+  name: string;
+}) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<ProductBrand>(
+    `/api/stores/${currentStoreId}/product-brands`,
+    {
+      body: input,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+}
+
+export function updateProductBrand(
+  brandId: string,
+  input: { description?: string; is_active?: boolean; name: string },
+) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<ProductBrand>(
+    `/api/stores/${currentStoreId}/product-brands/${brandId}`,
+    {
+      body: input,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "PATCH",
+    },
+  );
+}
+
+export function deleteProductBrand(brandId: string) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<Record<string, never>>(
+    `/api/stores/${currentStoreId}/product-brands/${brandId}`,
     {
       allowEmptyData: true,
       method: "DELETE",

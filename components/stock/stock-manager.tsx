@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { CatalogSetupSection } from "@/components/stock/catalog-setup-section";
+import { ProductBrandModal } from "@/components/stock/product-brand-modal";
 import { ProductFormModal } from "@/components/stock/product-form-modal";
 import { ProductTypeModal } from "@/components/stock/product-type-modal";
 import { ProductUnitModal } from "@/components/stock/product-unit-modal";
@@ -16,19 +17,24 @@ import {
 } from "@/components/stock/types";
 import {
   createProduct,
+  createProductBrand,
   createProductType,
   createProductUnit,
   deleteProduct,
+  deleteProductBrand,
   deleteProductType,
   deleteProductUnit,
+  listProductBrands,
   listProductTypes,
   listProductUnits,
   listProducts,
   updateProduct,
+  updateProductBrand,
   updateProductType,
   updateProductUnit,
 } from "@/services/products";
 import type {
+  ProductBrand,
   Product,
   ProductInput,
   ProductType,
@@ -62,23 +68,30 @@ export function StockManager({
   const [selectedStockStatus, setSelectedStockStatus] =
     useState<ProductStockStatus>("all");
   const [error, setError] = useState("");
+  const [brandError, setBrandError] = useState("");
   const [typeError, setTypeError] = useState("");
   const [unitError, setUnitError] = useState("");
 
+  const [isBrandPending, startBrandTransition] = useTransition();
   const [isPending, startTransition] = useTransition();
   const [isTypePending, startTypeTransition] = useTransition();
   const [isUnitPending, startUnitTransition] = useTransition();
 
+  const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isTypeModalOpen, setIsTypeModalOpen] = useState(false);
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
 
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [editingTypeId, setEditingTypeId] = useState<string | null>(null);
   const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
 
   const [formState, setFormState] = useState<ProductInput>(initialProductFormState);
 
+  const [brandName, setBrandName] = useState("");
+  const [brandDescription, setBrandDescription] = useState("");
+  const [brandIsActive, setBrandIsActive] = useState(true);
   const [typeName, setTypeName] = useState("");
   const [typeDescription, setTypeDescription] = useState("");
   const [typeIsActive, setTypeIsActive] = useState(true);
@@ -105,6 +118,8 @@ export function StockManager({
     activeLabel: dictionary.form.activeLabel,
     createTypeButton: dictionary.form.createType,
     createTypeTitle: dictionary.form.createType,
+    createBrandButton: unitsDictionary.createButton,
+    createBrandTitle: unitsDictionary.title,
     createUnitButton: unitsDictionary.createButton,
     createUnitTitle: unitsDictionary.title,
     descriptionLabel: unitsDictionary.descriptionLabel,
@@ -113,17 +128,23 @@ export function StockManager({
     collapseLabel: dictionary.form.cancel,
     editTypeTitle: dictionary.form.save,
     editUnitTitle: dictionary.form.save,
+    editBrandTitle: dictionary.form.save,
     helper: unitsDictionary.helper,
     inactiveLabel: dictionary.table.actions,
     saveTypeButton: dictionary.form.save,
     saveUnitButton: dictionary.form.save,
+    saveBrandButton: dictionary.form.save,
     title: dictionary.form.categoryLabel,
     typeEmpty: dictionary.emptyState,
     typeNameLabel: dictionary.form.productTypeNameLabel,
+    brandNameLabel: dictionary.form.brandLabel,
     typeRequiredError: dictionary.form.productTypeNameLabel,
     typeSlugLabel: dictionary.form.productTypeSlugLabel,
     typeTitle: dictionary.form.categoryLabel,
     typesCountLabel: dictionary.stats.categoriesLabel,
+    brandTitle: dictionary.form.brandLabel,
+    brandsCountLabel: dictionary.form.brandLabel,
+    brandEmpty: dictionary.emptyState,
     unitEmpty: unitsDictionary.empty,
     unitTitle: unitsDictionary.title,
     unitsCountLabel: unitsDictionary.title,
@@ -154,6 +175,18 @@ export function StockManager({
   useEffect(() => {
     setHasMounted(true);
   }, []);
+
+  const {
+    data: productBrands = [],
+    error: productBrandsQueryError,
+  } = useQuery<ProductBrand[]>({
+    enabled: hasMounted,
+    queryFn: async () => {
+      const response = await listProductBrands();
+      return response.data ?? [];
+    },
+    queryKey: ["stock", "product-brands"],
+  });
 
   const {
     data: productTypes = [],
@@ -275,7 +308,17 @@ export function StockManager({
       (unit.description ?? "").toLowerCase().includes(catalogKeyword)
     );
   });
+  const filteredCatalogBrands = productBrands.filter((brand) => {
+    if (!catalogKeyword) return true;
+    return (
+      brand.name.toLowerCase().includes(catalogKeyword) ||
+      (brand.description ?? "").toLowerCase().includes(catalogKeyword)
+    );
+  });
 
+  const resolvedBrandError =
+    brandError ||
+    (productBrandsQueryError instanceof Error ? productBrandsQueryError.message : "");
   const resolvedTypeError =
     typeError ||
     (productTypesQueryError instanceof Error ? productTypesQueryError.message : "");
@@ -306,6 +349,13 @@ export function StockManager({
     setEditingProductId(null);
     setFormState(initialProductFormState);
   }
+  function resetBrandForm() {
+    setEditingBrandId(null);
+    setBrandName("");
+    setBrandDescription("");
+    setBrandIsActive(true);
+    setBrandError("");
+  }
 
   function resetTypeForm() {
     setEditingTypeId(null);
@@ -327,6 +377,7 @@ export function StockManager({
     setEditingProductId(null);
     setFormState({
       ...initialProductFormState,
+      brand_id: productBrands[0]?.id ?? "",
       unit_id: productUnits[0]?.id ?? "",
     });
     setIsProductModalOpen(true);
@@ -341,6 +392,7 @@ export function StockManager({
     setEditingProductId(product.id);
     setFormState({
       base_price: String(product.base_price ?? ""),
+      brand_id: product.brand_id ?? "",
       is_active: product.is_active,
       name: product.name,
       product_type_id: product.product_type_id ?? "",
@@ -361,6 +413,10 @@ export function StockManager({
     resetTypeForm();
     setIsTypeModalOpen(true);
   }
+  function openCreateBrandModal() {
+    resetBrandForm();
+    setIsBrandModalOpen(true);
+  }
 
   function openEditTypeModal(productType: ProductType) {
     setEditingTypeId(productType.id);
@@ -374,6 +430,18 @@ export function StockManager({
   function closeTypeModal() {
     setIsTypeModalOpen(false);
     resetTypeForm();
+  }
+  function openEditBrandModal(brand: ProductBrand) {
+    setEditingBrandId(brand.id);
+    setBrandName(brand.name);
+    setBrandDescription(brand.description ?? "");
+    setBrandIsActive(brand.is_active);
+    setBrandError("");
+    setIsBrandModalOpen(true);
+  }
+  function closeBrandModal() {
+    setIsBrandModalOpen(false);
+    resetBrandForm();
   }
 
   function openCreateUnitModal() {
@@ -454,6 +522,59 @@ export function StockManager({
         window.location.assign(window.location.href);
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
+      }
+    });
+  }
+  async function handleSaveBrand() {
+    setBrandError("");
+    if (!brandName.trim()) {
+      setBrandError(unitsDictionary.requiredError);
+      return;
+    }
+    startBrandTransition(async () => {
+      try {
+        const payload = {
+          description: brandDescription.trim() || undefined,
+          is_active: brandIsActive,
+          name: brandName.trim(),
+        };
+        if (editingBrandId) {
+          await updateProductBrand(editingBrandId, payload);
+        } else {
+          await createProductBrand(payload);
+        }
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-brands"] });
+        closeBrandModal();
+      } catch (nextError) {
+        setBrandError(nextError instanceof Error ? nextError.message : "Request failed");
+      }
+    });
+  }
+  async function handleToggleBrand(brand: ProductBrand) {
+    setBrandError("");
+    startBrandTransition(async () => {
+      try {
+        await updateProductBrand(brand.id, {
+          description: brand.description ?? undefined,
+          is_active: !brand.is_active,
+          name: brand.name,
+        });
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-brands"] });
+      } catch (nextError) {
+        setBrandError(nextError instanceof Error ? nextError.message : "Request failed");
+      }
+    });
+  }
+  async function handleDeleteBrand(brandId: string) {
+    setBrandError("");
+    startBrandTransition(async () => {
+      try {
+        await deleteProductBrand(brandId);
+        await queryClient.invalidateQueries({ queryKey: ["stock", "product-brands"] });
+        router.refresh();
+        window.location.assign(window.location.href);
+      } catch (nextError) {
+        setBrandError(nextError instanceof Error ? nextError.message : "Request failed");
       }
     });
   }
@@ -558,18 +679,24 @@ export function StockManager({
     <div className="space-y-8">
       {isCategoriesView ? (
         <CatalogSetupSection
+          brandError={resolvedBrandError}
           catalogSearch={catalogSearch}
           isCategoriesView={isCategoriesView}
           managementDictionary={managementDictionary}
+          onDeleteBrand={handleDeleteBrand}
           onDeleteType={handleDeleteType}
           onDeleteUnit={handleDeleteUnit}
+          onEditBrand={openEditBrandModal}
           onEditType={openEditTypeModal}
           onEditUnit={openEditUnitModal}
+          onOpenCreateBrandModal={openCreateBrandModal}
           onOpenCreateTypeModal={openCreateTypeModal}
           onOpenCreateUnitModal={openCreateUnitModal}
           onSearchChange={setCatalogSearch}
+          onToggleBrand={handleToggleBrand}
           onToggleType={handleToggleType}
           onToggleUnit={handleToggleUnit}
+          productBrands={filteredCatalogBrands}
           productTypes={filteredCatalogTypes}
           productUnits={filteredCatalogUnits}
           searchPlaceholder={dictionary.searchPlaceholder}
@@ -667,6 +794,28 @@ export function StockManager({
         }
         unitsDictionary={unitsDictionary}
       />
+      <ProductBrandModal
+        activeLabel={dictionary.form.activeLabel}
+        cancelLabel={dictionary.form.cancel}
+        description={brandDescription}
+        error={brandError}
+        isActive={brandIsActive}
+        isOpen={isBrandModalOpen}
+        isPending={isBrandPending}
+        name={brandName}
+        onActiveChange={setBrandIsActive}
+        onClose={closeBrandModal}
+        onDescriptionChange={setBrandDescription}
+        onNameChange={setBrandName}
+        onSubmit={handleSaveBrand}
+        submitLabel={
+          editingBrandId ? managementDictionary.saveBrandButton : managementDictionary.createBrandButton
+        }
+        title={
+          editingBrandId ? managementDictionary.editBrandTitle : managementDictionary.createBrandTitle
+        }
+        unitsDictionary={unitsDictionary}
+      />
 
       <ProductFormModal
         closeLabel={formLabels.cancel}
@@ -679,6 +828,7 @@ export function StockManager({
         onClose={closeProductModal}
         onFormStateChange={setFormState}
         onSubmit={handleSubmit}
+        productBrands={productBrands}
         productTypes={productTypes}
         quickActionLabel={dictionary.quickAction.label}
         unitOptions={unitOptions}

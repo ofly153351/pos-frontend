@@ -2,52 +2,50 @@
 
 import { useEffect } from "react";
 
-import type { ManagementDictionary } from "@/components/stock/types";
+import type { UnitsDictionary } from "@/components/stock/types";
 
-type ProductTypeModalProps = {
+type ProductBrandModalProps = {
+  activeLabel: string;
   cancelLabel: string;
   description: string;
   error: string;
   isActive: boolean;
   isOpen: boolean;
   isPending: boolean;
-  isEditing: boolean;
-  managementDictionary: ManagementDictionary;
   name: string;
   onActiveChange: (checked: boolean) => void;
   onClose: () => void;
   onDescriptionChange: (value: string) => void;
   onNameChange: (value: string) => void;
   onSubmit: () => void;
+  submitLabel: string;
+  title: string;
+  unitsDictionary: UnitsDictionary;
 };
 
-export function ProductTypeModal({
+export function ProductBrandModal({
+  activeLabel,
   cancelLabel,
   description,
   error,
   isActive,
-  isEditing,
   isOpen,
   isPending,
-  managementDictionary,
   name,
   onActiveChange,
   onClose,
   onDescriptionChange,
   onNameChange,
   onSubmit,
-}: ProductTypeModalProps) {
+  submitLabel,
+  title,
+  unitsDictionary,
+}: ProductBrandModalProps) {
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
+    if (!isOpen) return;
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
+      if (event.key === "Escape") onClose();
     }
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
@@ -66,11 +64,7 @@ export function ProductTypeModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-slate-950">
-            {isEditing
-              ? managementDictionary.editTypeTitle
-              : managementDictionary.createTypeTitle}
-          </h2>
+          <h2 className="text-2xl font-semibold text-slate-950">{title}</h2>
           <button
             className="rounded-lg px-3 py-2 text-sm text-slate-500 transition hover:bg-slate-100"
             onClick={onClose}
@@ -89,7 +83,7 @@ export function ProductTypeModal({
         >
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-slate-700">
-              {managementDictionary.typeNameLabel}
+              {unitsDictionary.nameLabel}
             </span>
             <input
               className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500"
@@ -100,7 +94,7 @@ export function ProductTypeModal({
 
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-slate-700">
-              {managementDictionary.descriptionLabel}
+              {unitsDictionary.descriptionLabel}
             </span>
             <input
               className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500"
@@ -115,9 +109,7 @@ export function ProductTypeModal({
               onChange={(event) => onActiveChange(event.target.checked)}
               type="checkbox"
             />
-            <span className="text-sm font-medium text-slate-700">
-              {managementDictionary.activeLabel}
-            </span>
+            <span className="text-sm font-medium text-slate-700">{activeLabel}</span>
           </label>
 
           {error ? (
@@ -139,9 +131,7 @@ export function ProductTypeModal({
               disabled={isPending}
               type="submit"
             >
-              {isEditing
-                ? managementDictionary.saveTypeButton
-                : managementDictionary.createTypeButton}
+              {submitLabel}
             </button>
           </div>
         </form>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import type { UnitsDictionary } from "@/components/stock/types";
 
 type ProductUnitModalProps = {
@@ -41,6 +43,21 @@ export function ProductUnitModal({
   title,
   unitsDictionary,
 }: ProductUnitModalProps) {
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   return (
     <div
       className={`fixed inset-0 z-50 bg-slate-900/35 p-4 backdrop-blur-[1px] transition-opacity duration-400 md:p-8 ${

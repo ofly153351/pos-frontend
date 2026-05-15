@@ -25,6 +25,8 @@ export type StockManagerDictionary = {
     amountLabel: string;
     basePriceLabel: string;
     basePriceHint: string;
+    brandHint: string;
+    brandLabel: string;
     cancel: string;
     categoryLabel: string;
     categoryHint: string;
@@ -75,20 +77,25 @@ export type StockManagerDictionary = {
     createTypeButton: string;
     createTypeTitle: string;
     createUnitButton: string;
+    createBrandButton: string;
     createUnitTitle: string;
+    createBrandTitle: string;
     descriptionLabel: string;
     editLabel: string;
     expandLabel: string;
     collapseLabel: string;
     editTypeTitle: string;
     editUnitTitle: string;
+    editBrandTitle: string;
     helper: string;
     inactiveLabel: string;
     saveTypeButton: string;
     saveUnitButton: string;
+    saveBrandButton: string;
     title: string;
     typeEmpty: string;
     typeNameLabel: string;
+    brandNameLabel: string;
     typeRequiredError: string;
     typeSlugLabel: string;
     typeTitle: string;
@@ -96,6 +103,9 @@ export type StockManagerDictionary = {
     unitEmpty: string;
     unitTitle: string;
     unitsCountLabel: string;
+    brandTitle: string;
+    brandsCountLabel: string;
+    brandEmpty: string;
   };
   pagination: {
     activePage: string;
@@ -113,6 +123,8 @@ export type StockManagerDictionary = {
   searchPlaceholder: string;
   stats: {
     categoriesLabel: string;
+    highStockListLabel: string;
+    lowStockListLabel: string;
     lowStockLabel: string;
     totalProductsLabel: string;
   };
@@ -155,6 +167,7 @@ export type ManagementDictionary = NonNullable<StockManagerDictionary["managemen
 export type UnitsDictionary = NonNullable<StockManagerDictionary["units"]>;
 export const initialProductFormState: ProductInput = {
   base_price: "",
+  brand_id: "",
   is_active: true,
   name: "",
   quantity: "0",

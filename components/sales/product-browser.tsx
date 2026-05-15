@@ -155,7 +155,7 @@ export function ProductBrowser({
       ) : null}
 
       <div
-        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3"}`}
+        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-4" : "space-y-3"}`}
       >
         {products.length > 0 ? (
           products.map((product) => {
@@ -180,26 +180,25 @@ export function ProductBrowser({
                     {dictionary.stockLabel} {product.quantity}
                   </span>
                   {product.image_url ? (
-                    <img
-                      alt={product.name}
-                      className="h-24 w-full rounded-lg border border-slate-200 bg-white object-cover shadow-sm"
-                      loading="lazy"
-                      src={product.image_url}
-                    />
+                    <div className="relative">
+                      <img
+                        alt={product.name}
+                        className="h-32 w-full rounded-lg border border-slate-200 bg-white object-contain shadow-sm"
+                        loading="lazy"
+                        src={product.image_url}
+                      />
+                      <span className="absolute bottom-1.5 right-1.5 max-w-[85%] truncate rounded bg-slate-950/75 px-2 py-0.5 text-[10px] font-semibold text-white">
+                        {product.name}
+                      </span>
+                    </div>
                   ) : (
-                    <div className="flex h-24 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
+                    <div className="flex h-32 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
                       <span className="line-clamp-2">{product.name}</span>
                     </div>
                   )}
                 </div>
 
-                {product.image_url ? (
-                  <p className="mt-1.5 truncate text-center text-xs font-semibold text-slate-800">
-                    {product.name}
-                  </p>
-                ) : null}
-
-                <div className="mt-auto flex items-center justify-between gap-2">
+                <div className="mt-0.5 flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-semibold text-slate-900">
                     {formatCurrency(product.effective_price)}
                   </span>
@@ -294,7 +293,7 @@ export function ProductBrowser({
         ) : (
           <div
             className={
-              productView === "grid" ? "sm:col-span-2 xl:col-span-3" : ""
+              productView === "grid" ? "sm:col-span-2 xl:col-span-4" : ""
             }
           >
             <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
