@@ -35,6 +35,8 @@ type InvoiceStatus = "unpaid" | "partially_paid" | "paid";
 const DEFAULT_PAYMENT_METHOD = "cash";
 const DRAWER_OPEN_DELAY_MS = 10;
 const DRAWER_CLOSE_CLEANUP_DELAY_MS = 300;
+const DEFAULT_PAGE_SIZE = 10;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const TABLE_COLUMN_COUNT = 6;
 
 const invoiceStatusClassName: Record<InvoiceStatus, string> = {
@@ -129,6 +131,8 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
   const [sales, setSales] = useState<Sale[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState("");
@@ -224,6 +228,26 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
       );
     });
   }, [dictionary, mode, invoices, sales, search]);
+
+  const totalPages = Math.max(Math.ceil(filteredRecords.length / pageSize), 1);
+  const startPage = Math.max(currentPage - 2, 1);
+  const endPage = Math.min(startPage + 4, totalPages);
+  const pageNumbers = Array.from(
+    { length: Math.max(endPage - startPage + 1, 0) },
+    (_, index) => startPage + index,
+  );
+  const paginatedRecords = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredRecords.slice(startIndex, startIndex + pageSize);
+  }, [currentPage, filteredRecords, pageSize]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [mode, pageSize, search]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   useEffect(() => {
     if (!selectedInvoice) {
@@ -583,7 +607,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 </tr>
               ) : null}
 
-              {filteredRecords.map((record) => {
+              {paginatedRecords.map((record) => {
                 if (mode === "pending") {
                   const invoice = record as Invoice;
                   const normalizedStatus = normalizeInvoiceStatus(invoice.status);
@@ -680,6 +704,68 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             </tbody>
           </table>
         </div>
+
+        {filteredRecords.length > 0 ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <label
+                className="text-xs font-semibold text-slate-500"
+                htmlFor="documents-page-size"
+              >
+                {dictionary.pagination.perPage}
+              </label>
+              <select
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-sky-300"
+                id="documents-page-size"
+                onChange={(event) => setPageSize(Number(event.target.value))}
+                value={pageSize}
+              >
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {totalPages > 1 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={currentPage <= 1 || isPending}
+                  onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+                  type="button"
+                >
+                  {dictionary.pagination.previous}
+                </button>
+
+                {pageNumbers.map((page) => (
+                  <button
+                    className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                      page === currentPage
+                        ? "bg-sky-600 text-white"
+                        : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    type="button"
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={currentPage >= totalPages || isPending}
+                  onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
+                  type="button"
+                >
+                  {dictionary.pagination.next}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       {isReceiptOpen ? (

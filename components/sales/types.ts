@@ -38,6 +38,11 @@ export type SalesDictionary = {
   historyTitle: string;
   insufficientPayment: string;
   itemCountLabel: string;
+  pagination: {
+    next: string;
+    perPage: string;
+    previous: string;
+  };
   noteLabel: string;
   notePlaceholder: string;
   paymentMethodCard: string;

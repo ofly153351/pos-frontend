@@ -157,6 +157,11 @@
     "emptyHistory": "No sales have been recorded yet",
     "historyTitle": "Recent sales",
     "itemCountLabel": "Bills",
+    "pagination": {
+      "previous": "Prev",
+      "next": "Next",
+      "perPage": "Rows per page"
+    },
     "paymentMethodLabel": "Payment method",
     "paymentMethodCashLabel": "Cash",
     "paymentMethodCash": "cash",

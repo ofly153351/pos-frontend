@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Printer, Trash2, X } from "lucide-react";
 
 import { ProductBrowser } from "@/components/sales/product-browser";
 import type {
@@ -17,13 +17,11 @@ import { listProducts } from "@/services/products";
 import {
   calculateVat,
   createSale,
-  getSaleById,
-  getSaleReceiptHtml,
+  getSaleReceiptPreviewHtml,
 } from "@/services/sales";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 import type { Product } from "@/types/product";
 import type {
-  Sale,
   SaleDiscountType,
   SalePaymentMethod,
   VatCalculateSummary,
@@ -97,6 +95,66 @@ function parsePaidAmountAsCeilInt(value: string) {
   return Math.max(Math.ceil(parsed), 0);
 }
 
+function removeReceiptPreviewToolbar(html: string) {
+  const document = new DOMParser().parseFromString(html, "text/html");
+  document.querySelector(".toolbar")?.remove();
+  const style = document.createElement("style");
+  style.textContent = `
+    :root {
+      --receipt-paper-width: 360px;
+    }
+
+    html,
+    body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      background: #f8fafc !important;
+      margin: 0 !important;
+      width: auto !important;
+    }
+
+    .stage {
+      box-sizing: border-box;
+      max-width: 100%;
+      overflow-x: hidden;
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .paper {
+      box-sizing: border-box;
+      max-width: 100%;
+      overflow: visible !important;
+      width: min(var(--receipt-paper-width), 100%) !important;
+    }
+
+    .paper > style,
+    .paper > meta,
+    .paper > title {
+      display: none !important;
+    }
+
+    @media (max-width: 383px) {
+      .stage {
+        transform: scale(calc((100vw - 24px) / 384));
+        transform-origin: top center;
+        width: 384px;
+      }
+    }
+
+    img,
+    table {
+      max-width: 100%;
+    }
+  `;
+  document.head.appendChild(style);
+
+  return document.documentElement.outerHTML;
+}
+
 function getDiscountPerUnit(item: CartItem) {
   const unitPrice = Number(item.product.effective_price ?? 0);
   const rawValue = Number(item.discountValue || 0);
@@ -131,7 +189,6 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
   const [customerLevelDiscounts, setCustomerLevelDiscounts] = useState<
     CustomerLevelDiscount[]
   >([]);
-  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
   const [productView, setProductView] = useState<ProductViewMode>("grid");
@@ -170,17 +227,11 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     null,
   );
   const [error, setError] = useState("");
-  const [receiptError, setReceiptError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isPrintPromptOpen, setIsPrintPromptOpen] = useState(false);
-  const [lastCompletedSaleId, setLastCompletedSaleId] = useState<string | null>(
-    null,
-  );
   const [isReceiptPreviewLoading, setIsReceiptPreviewLoading] = useState(false);
   const [receiptPreviewHtml, setReceiptPreviewHtml] = useState("");
   const [isPending, startTransition] = useTransition();
-  const [isReceiptPending, startReceiptTransition] = useTransition();
   const numpadCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -1041,7 +1092,6 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
         await reloadData();
 
         if (response.data?.id) {
-          setLastCompletedSaleId(response.data.id);
           setReceiptPreviewHtml("");
           setIsPrintPromptOpen(true);
           void prepareReceiptPreview(response.data.id);
@@ -1058,8 +1108,8 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     setIsReceiptPreviewLoading(true);
 
     try {
-      const html = await getSaleReceiptHtml(saleId);
-      setReceiptPreviewHtml(html);
+      const html = await getSaleReceiptPreviewHtml(saleId);
+      setReceiptPreviewHtml(removeReceiptPreviewToolbar(html));
     } catch (nextError) {
       setError(
         nextError instanceof Error ? nextError.message : "Request failed",
@@ -1080,27 +1130,11 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     frameWindow.focus();
     frameWindow.print();
     setIsPrintPromptOpen(false);
-
-    if (lastCompletedSaleId) {
-      await openReceipt(lastCompletedSaleId);
-    }
   }
 
-  async function openReceipt(saleId: string) {
-    setReceiptError("");
-    setSelectedSale(null);
-    setIsReceiptOpen(true);
-
-    startReceiptTransition(async () => {
-      try {
-        const response = await getSaleById(saleId);
-        setSelectedSale(response.data);
-      } catch (nextError) {
-        setReceiptError(
-          nextError instanceof Error ? nextError.message : "Request failed",
-        );
-      }
-    });
+  function closeReceiptPreview() {
+    setIsPrintPromptOpen(false);
+    setReceiptPreviewHtml("");
   }
 
   if (!hasMounted) {
@@ -1859,55 +1893,58 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
       ) : null}
 
       {isPrintPromptOpen ? (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300">
-          <div className="w-full max-w-4xl rounded-[1.5rem] bg-white p-6 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-7">
-            <h3 className="text-xl font-semibold text-slate-950">
-              {dictionary.printReceiptAskTitle}
-            </h3>
-            <p className="mt-2 text-sm text-slate-600">
-              {dictionary.printReceiptAskBody}
-            </p>
+        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-950/45 px-4 py-5 backdrop-blur-[2px] transition-opacity duration-300">
+          <div className="relative flex max-h-[94dvh] w-fit max-w-[calc(100vw-2rem)] flex-col rounded-[1.75rem] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] ring-1 ring-white/70 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-6">
+            <button
+              aria-label={dictionary.closeReceiptButton}
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-sky-50 text-sky-400 shadow-sm transition hover:bg-sky-100 hover:text-sky-600"
+              onClick={closeReceiptPreview}
+              type="button"
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-            <div className="mt-5 h-[52vh] rounded-2xl border border-slate-200 bg-slate-100 p-3">
+            <div className="min-h-0 w-[384px] max-w-[calc(100vw-4rem)] flex-1 rounded-[1.35rem] bg-slate-50 p-0 shadow-inner sm:max-w-[calc(100vw-5rem)]">
               {isReceiptPreviewLoading ? (
-                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500">
-                  {dictionary.receiptPreviewLoading}
+                <div className="flex h-[70dvh] max-h-[35rem] min-h-[30rem] w-full items-center justify-center rounded-[1.1rem] border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 shadow-sm">
+                  <span className="rounded-full bg-slate-50 px-4 py-2">
+                    {dictionary.receiptPreviewLoading}
+                  </span>
                 </div>
               ) : receiptPreviewHtml ? (
-                <iframe
-                  className="h-full w-full rounded-xl border border-slate-200 bg-white"
-                  ref={receiptPreviewFrameRef}
-                  srcDoc={receiptPreviewHtml}
-                  title={dictionary.receiptPreviewTitle}
-                />
+                <div className="rounded-[1.1rem] bg-white shadow-[0_12px_34px_rgba(15,23,42,0.12)] ring-1 ring-slate-200/70">
+                  <iframe
+                    className="h-[70dvh] max-h-[35rem] min-h-[30rem] w-full border-0 bg-white"
+                    ref={receiptPreviewFrameRef}
+                    srcDoc={receiptPreviewHtml}
+                    title={dictionary.receiptPreviewTitle}
+                  />
+                </div>
               ) : (
-                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500">
-                  {dictionary.receiptPreviewLoading}
+                <div className="flex h-[70dvh] max-h-[35rem] min-h-[30rem] w-full items-center justify-center rounded-[1.1rem] border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 shadow-sm">
+                  <span className="rounded-full bg-slate-50 px-4 py-2">
+                    {dictionary.receiptPreviewLoading}
+                  </span>
                 </div>
               )}
             </div>
 
-            <div className="mt-6 flex items-center justify-end gap-3">
+            <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-3">
               <button
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                onClick={async () => {
-                  setIsPrintPromptOpen(false);
-                  setReceiptPreviewHtml("");
-                  if (lastCompletedSaleId) {
-                    await openReceipt(lastCompletedSaleId);
-                  }
-                }}
-                type="button"
-              >
-                {dictionary.printReceiptSkipButton}
-              </button>
-              <button
-                className="rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300 disabled:shadow-none"
                 disabled={isReceiptPreviewLoading || !receiptPreviewHtml}
                 onClick={handlePrintFromPrompt}
                 type="button"
               >
+                <Printer className="h-4 w-4" />
                 {dictionary.printReceiptNowButton}
+              </button>
+              <button
+                className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                onClick={closeReceiptPreview}
+                type="button"
+              >
+                {dictionary.closeReceiptButton}
               </button>
             </div>
           </div>

@@ -157,6 +157,11 @@
     "emptyHistory": "ยังไม่มีประวัติการขาย",
     "historyTitle": "ประวัติการขายล่าสุด",
     "itemCountLabel": "บิล",
+    "pagination": {
+      "previous": "ก่อนหน้า",
+      "next": "ถัดไป",
+      "perPage": "รายการต่อหน้า"
+    },
     "paymentMethodLabel": "วิธีชำระเงิน",
     "paymentMethodCashLabel": "เงินสด",
     "paymentMethodCash": "เงินสด",
