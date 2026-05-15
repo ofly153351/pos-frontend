@@ -5,7 +5,14 @@ import type {
   ManagementDictionary,
   StockManagerDictionary,
 } from "@/components/stock/types";
-import type { Product } from "@/types/product";
+import type { Product, ProductType, ProductUnit } from "@/types/product";
+
+type ProductStockStatus =
+  | "all"
+  | "active"
+  | "inactive"
+  | "low_stock"
+  | "out_of_stock";
 
 type StockLevelsSectionProps = {
   dictionary: StockManagerDictionary;
@@ -21,13 +28,21 @@ type StockLevelsSectionProps = {
   onDelete: (productId: string) => void;
   onEdit: (product: Product) => void;
   onOpenCreateModal: () => void;
+  onProductTypeFilterChange: (productTypeId: string) => void;
+  onProductUnitFilterChange: (productUnitId: string) => void;
   onSearchChange: (value: string) => void;
+  onStockStatusFilterChange: (status: ProductStockStatus) => void;
   paginationCurrentPage: number;
   paginationPageSize: number;
   paginationTotalItems: number;
   paginationTotalPages: number;
+  productTypeFilter: string;
   productTypesCount: number;
+  productTypes: ProductType[];
+  productUnitFilter: string;
+  productUnits: ProductUnit[];
   search: string;
+  stockStatusFilter: ProductStockStatus;
 };
 
 export function StockLevelsSection({
@@ -44,13 +59,21 @@ export function StockLevelsSection({
   onDelete,
   onEdit,
   onOpenCreateModal,
+  onProductTypeFilterChange,
+  onProductUnitFilterChange,
   onSearchChange,
+  onStockStatusFilterChange,
   paginationCurrentPage,
   paginationPageSize,
   paginationTotalItems,
   paginationTotalPages,
+  productTypeFilter,
   productTypesCount,
+  productTypes,
+  productUnitFilter,
+  productUnits,
   search,
+  stockStatusFilter,
 }: StockLevelsSectionProps) {
   const startPage = Math.max(paginationCurrentPage - 2, 1);
   const endPage = Math.min(startPage + 4, paginationTotalPages);
@@ -112,23 +135,82 @@ export function StockLevelsSection({
         className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-100 p-4"
         id="stock-levels"
       >
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col">
-            <label className="ml-1 text-[10px] font-bold uppercase tracking-tight text-slate-500">
+            <label
+              className="ml-1 text-[10px] font-bold uppercase tracking-tight text-slate-500"
+              htmlFor="stock-product-type-filter"
+            >
               {dictionary.filters.categoryLabel}
             </label>
-            <div className="rounded-lg px-2 py-1 text-sm font-semibold text-slate-700">
-              {productTypesCount}
-            </div>
+            <select
+              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              id="stock-product-type-filter"
+              onChange={(event) =>
+                onProductTypeFilterChange(event.target.value)
+              }
+              value={productTypeFilter}
+            >
+              <option value="">{dictionary.filters.allCategories}</option>
+              {productTypes.map((productType) => (
+                <option key={productType.id} value={productType.id}>
+                  {productType.name}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="h-8 w-px bg-slate-200" />
           <div className="flex flex-col">
-            <label className="ml-1 text-[10px] font-bold uppercase tracking-tight text-slate-500">
+            <label
+              className="ml-1 text-[10px] font-bold uppercase tracking-tight text-slate-500"
+              htmlFor="stock-product-unit-filter"
+            >
+              {dictionary.filters.typeLabel}
+            </label>
+            <select
+              className="min-w-32 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              id="stock-product-unit-filter"
+              onChange={(event) =>
+                onProductUnitFilterChange(event.target.value)
+              }
+              value={productUnitFilter}
+            >
+              <option value="">{dictionary.filters.allTypes}</option>
+              {productUnits.map((productUnit) => (
+                <option key={productUnit.id} value={productUnit.id}>
+                  {productUnit.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label
+              className="ml-1 text-[10px] font-bold uppercase tracking-tight text-slate-500"
+              htmlFor="stock-status-filter"
+            >
               {dictionary.filters.statusLabel}
             </label>
-            <div className="rounded-lg px-2 py-1 text-sm font-semibold text-slate-700">
-              {isPending ? dictionary.loading : filteredProducts.length}
-            </div>
+            <select
+              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              id="stock-status-filter"
+              onChange={(event) =>
+                onStockStatusFilterChange(
+                  event.target.value as ProductStockStatus,
+                )
+              }
+              value={stockStatusFilter}
+            >
+              <option value="all">{dictionary.filters.allStatuses}</option>
+              <option value="active">{dictionary.filters.activeStatus}</option>
+              <option value="inactive">
+                {dictionary.filters.inactiveStatus}
+              </option>
+              <option value="low_stock">
+                {dictionary.filters.lowStockStatus}
+              </option>
+              <option value="out_of_stock">
+                {dictionary.filters.outOfStockStatus}
+              </option>
+            </select>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -158,12 +240,6 @@ export function StockLevelsSection({
             placeholder={dictionary.searchPlaceholder}
             value={search}
           />
-          <button
-            className="rounded-lg bg-white p-2 text-blue-700 shadow-sm"
-            type="button"
-          >
-            {dictionary.filters.listView}
-          </button>
         </div>
       </section>
 
@@ -180,6 +256,8 @@ export function StockLevelsSection({
         managementDictionary={managementDictionary}
         onDelete={onDelete}
         onEdit={onEdit}
+        lowStockLabel={dictionary.filters.lowStockStatus}
+        outOfStockLabel={dictionary.filters.outOfStockStatus}
         products={filteredProducts}
         tableDictionary={dictionary.table}
       />

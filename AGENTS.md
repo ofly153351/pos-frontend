@@ -79,6 +79,7 @@ Example:
 - Clean POS layout
 - Fast interaction (important)
 - Use smooth, purposeful animations/transitions for interactive UI (drawer, modal, submenu, toggle) with consistent easing and duration.
+- All popups/modals/drawers must support closing with the `Escape` key.
 - Mobile responsive
 - Use a white-blue theme as the default visual direction
 - Watch hydration: avoid browser-only branches or browser-only data (window/date/random) inside server-rendered components so the markup stays deterministic between server/client.

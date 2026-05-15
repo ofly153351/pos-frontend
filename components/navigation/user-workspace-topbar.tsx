@@ -98,9 +98,15 @@ export function UserWorkspaceTopbar({
         <div className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
           {storeLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img alt={storeName || title} className="h-full w-full object-cover" src={storeLogoUrl} />
+            <img
+              alt={storeName || title}
+              className="h-full w-full object-cover"
+              src={storeLogoUrl}
+            />
           ) : (
-            <span className="text-xs font-bold text-slate-500">{(storeName || title).slice(0, 2).toUpperCase()}</span>
+            <span className="text-xs font-bold text-slate-500">
+              {(storeName || title).slice(0, 2).toUpperCase()}
+            </span>
           )}
         </div>
         <div className="text-lg font-bold text-slate-900">{title}</div>
@@ -110,7 +116,9 @@ export function UserWorkspaceTopbar({
         <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1">
           <button
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-              locale === "th" ? "bg-sky-600 text-white" : "text-slate-700 hover:bg-slate-100"
+              locale === "th"
+                ? "bg-sky-600 text-white"
+                : "text-slate-700 hover:bg-slate-100"
             }`}
             onClick={() => switchLocale("th")}
             type="button"
@@ -119,7 +127,9 @@ export function UserWorkspaceTopbar({
           </button>
           <button
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-              locale === "en" ? "bg-sky-600 text-white" : "text-slate-700 hover:bg-slate-100"
+              locale === "en"
+                ? "bg-sky-600 text-white"
+                : "text-slate-700 hover:bg-slate-100"
             }`}
             onClick={() => switchLocale("en")}
             type="button"
@@ -127,25 +137,12 @@ export function UserWorkspaceTopbar({
             EN
           </button>
         </div>
-        <div className="flex items-center gap-3 text-slate-500">
-          <button
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-blue-50 hover:text-blue-600"
-            type="button"
-          >
-            N
-          </button>
-          <button
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-blue-50 hover:text-blue-600"
-            type="button"
-          >
-            ?
-          </button>
-          <UserProfileMenu
-            editProfileLabel={editProfileLabel}
-            locale={locale}
-            logoutLabel={logoutLabel}
-          />
-        </div>
+
+        <UserProfileMenu
+          editProfileLabel={editProfileLabel}
+          locale={locale}
+          logoutLabel={logoutLabel}
+        />
       </div>
     </header>
   );

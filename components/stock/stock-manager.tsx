@@ -35,6 +35,14 @@ import type {
   ProductUnit,
 } from "@/types/product";
 
+type ProductStockStatus = "all" | "active" | "inactive" | "low_stock" | "out_of_stock";
+
+const LOW_STOCK_THRESHOLD = 10;
+
+function isLowStockProduct(product: Product) {
+  return product.quantity > 0 && product.quantity <= LOW_STOCK_THRESHOLD;
+}
+
 export function StockManager({
   dictionary,
   initialSection = "stock-levels",
@@ -49,6 +57,10 @@ export function StockManager({
   const [productTotal, setProductTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
+  const [selectedProductTypeId, setSelectedProductTypeId] = useState("");
+  const [selectedProductUnitId, setSelectedProductUnitId] = useState("");
+  const [selectedStockStatus, setSelectedStockStatus] =
+    useState<ProductStockStatus>("all");
   const [error, setError] = useState("");
   const [typeError, setTypeError] = useState("");
   const [unitError, setUnitError] = useState("");
@@ -206,18 +218,46 @@ export function StockManager({
   const filteredProducts = products.filter((product) => {
     const keyword = search.trim().toLowerCase();
 
-    if (!keyword) {
-      return true;
+    if (
+      selectedProductTypeId &&
+      product.product_type_id !== selectedProductTypeId
+    ) {
+      return false;
     }
 
-    return (
-      product.name.toLowerCase().includes(keyword) ||
-      (product.sku ?? "").toLowerCase().includes(keyword)
-    );
+    const productUnitId = product.product_unit_id ?? product.unit_id;
+    if (selectedProductUnitId && productUnitId !== selectedProductUnitId) {
+      return false;
+    }
+
+    if (selectedStockStatus === "active" && !product.is_active) {
+      return false;
+    }
+
+    if (selectedStockStatus === "inactive" && product.is_active) {
+      return false;
+    }
+
+    if (selectedStockStatus === "low_stock" && !isLowStockProduct(product)) {
+      return false;
+    }
+
+    if (selectedStockStatus === "out_of_stock" && product.quantity > 0) {
+      return false;
+    }
+
+    if (keyword) {
+      return (
+        product.name.toLowerCase().includes(keyword) ||
+        (product.sku ?? "").toLowerCase().includes(keyword)
+      );
+    }
+
+    return true;
   });
 
   const lowStockCount = filteredProducts.filter((product) => {
-    return Number(product.effective_price ?? 0) > 0 && (product.sku ?? "").length > 0;
+    return isLowStockProduct(product);
   }).length;
   const isCategoriesView = initialSection === "categories";
   const catalogKeyword = catalogSearch.trim().toLowerCase();
@@ -557,13 +597,33 @@ export function StockManager({
           onDelete={handleDelete}
           onEdit={openEditModal}
           onOpenCreateModal={openCreateModal}
-          onSearchChange={setSearch}
+          onProductTypeFilterChange={(value) => {
+            setSelectedProductTypeId(value);
+            setProductPage(1);
+          }}
+          onProductUnitFilterChange={(value) => {
+            setSelectedProductUnitId(value);
+            setProductPage(1);
+          }}
+          onSearchChange={(value) => {
+            setSearch(value);
+            setProductPage(1);
+          }}
+          onStockStatusFilterChange={(value) => {
+            setSelectedStockStatus(value);
+            setProductPage(1);
+          }}
           paginationCurrentPage={productPage}
           paginationPageSize={productPageSize}
           paginationTotalItems={productTotal}
           paginationTotalPages={productTotalPages}
           productTypesCount={productTypes.length}
+          productTypeFilter={selectedProductTypeId}
+          productTypes={productTypes}
+          productUnitFilter={selectedProductUnitId}
+          productUnits={productUnits}
           search={search}
+          stockStatusFilter={selectedStockStatus}
         />
       ) : null}
 

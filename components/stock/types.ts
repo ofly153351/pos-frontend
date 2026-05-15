@@ -6,10 +6,18 @@ export type StockManagerDictionary = {
   };
   emptyState: string;
   filters: {
+    activeStatus: string;
+    allCategories: string;
+    allStatuses: string;
+    allTypes: string;
     categoryLabel: string;
     gridView: string;
+    inactiveStatus: string;
     listView: string;
+    lowStockStatus: string;
+    outOfStockStatus: string;
     statusLabel: string;
+    typeLabel: string;
   };
   form: {
     activeLabel: string;
@@ -110,9 +118,13 @@ export type StockManagerDictionary = {
   };
   table: {
     actions: string;
+    barcodeAction: string;
+    barcodePreviewTitle: string;
     category: string;
     deleteAction: string;
     editAction: string;
+    invalidBarcodeLabel: string;
+    noBarcodeLabel: string;
     price: string;
     productDetails: string;
     sku: string;
