@@ -46,7 +46,10 @@ type ProductStockStatus = "all" | "active" | "inactive" | "low_stock" | "out_of_
 const LOW_STOCK_THRESHOLD = 10;
 
 function isLowStockProduct(product: Product) {
-  return product.quantity > 0 && product.quantity <= LOW_STOCK_THRESHOLD;
+  if (product.quantity <= 0) return false;
+  if (product.max_stock != null && product.quantity < product.max_stock / 2) return true;
+  if (product.min_stock != null && product.min_stock > 0 && product.quantity <= product.min_stock) return true;
+  return (product.min_stock == null || product.min_stock === 0) && product.max_stock == null && product.quantity > 0 && product.quantity <= 10;
 }
 
 export function StockManager({
@@ -164,6 +167,10 @@ export function StockManager({
     pricingSection: dictionary.form.pricingSection || dictionary.form.amountLabel || dictionary.form.basePriceLabel,
     pricingSectionHint: dictionary.form.pricingSectionHint || dictionary.form.basePriceHint || dictionary.form.basePriceLabel,
     quantityHint: dictionary.form.quantityHint || dictionary.form.quantityLabel,
+    minStockHint: dictionary.form.minStockHint || dictionary.form.minStockLabel,
+    minStockLabel: dictionary.form.minStockLabel || "Min stock",
+    maxStockHint: dictionary.form.maxStockHint || dictionary.form.maxStockLabel,
+    maxStockLabel: dictionary.form.maxStockLabel || "Max stock",
     requiredLabel: dictionary.form.requiredLabel || "*",
     setupSection: dictionary.form.setupSection || dictionary.form.categoryLabel,
     setupSectionHint: dictionary.form.setupSectionHint || dictionary.form.categoryHint || dictionary.form.categoryLabel,
@@ -242,7 +249,13 @@ export function StockManager({
       <div className="space-y-8">
         <section className="rounded-2xl bg-white p-6 shadow-sm" id="categories">
           <h3 className="text-lg font-bold text-slate-900">{managementDictionary.title}</h3>
-          <p className="mt-3 text-sm text-slate-500">{dictionary.loading}</p>
+          <p className="mt-3 inline-flex items-center gap-3 text-sm text-slate-500">
+            <svg aria-hidden="true" className="h-5 w-5 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
+            </svg>
+            <span className="animate-pulse">{dictionary.loading}</span>
+          </p>
         </section>
       </div>
     );
@@ -397,6 +410,8 @@ export function StockManager({
       name: product.name,
       product_type_id: product.product_type_id ?? "",
       quantity: String(product.quantity ?? 0),
+      min_stock: product.min_stock != null ? String(product.min_stock) : "",
+      max_stock: product.max_stock != null ? String(product.max_stock) : "",
       sku: product.sku ?? "",
       special_price: product.special_price ? String(product.special_price) : "",
       unit_id: product.product_unit_id ?? product.unit_id ?? legacyUnitId ?? "",

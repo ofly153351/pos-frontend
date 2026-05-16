@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Barcode, Pencil, Trash2, X } from "lucide-react";
+import { AlertTriangle, Barcode, Pencil, Printer, Trash2, X } from "lucide-react";
 
 import type { ManagementDictionary } from "@/components/stock/types";
 import type { Product } from "@/types/product";
@@ -20,6 +20,7 @@ type ProductsTableProps = {
     actions: string;
     barcodeAction: string;
     barcodePreviewTitle: string;
+    barcodePrintLabel: string;
     category: string;
     deleteAction: string;
     editAction: string;
@@ -60,7 +61,73 @@ export function ProductsTable({
   }
 
   function isLowStock(product: Product) {
-    return product.quantity > 0 && product.quantity <= 20;
+    if (product.quantity <= 0) return false;
+    if (product.max_stock != null && product.quantity < product.max_stock / 2) return true;
+    if (product.min_stock != null && product.min_stock > 0 && product.quantity <= product.min_stock) return true;
+    return (product.min_stock == null || product.min_stock === 0) && product.max_stock == null && product.quantity <= 20;
+  }
+
+  function printBarcode(svgContent: string, sku: string | null) {
+    if (!svgContent || !sku) return;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+
+    const printWindow = window.open(
+      "",
+      "barcode-print",
+      `width=${width},height=${height},left=${left},top=${top}`,
+    );
+    if (!printWindow) return;
+
+    const encodedSvg = encodeURIComponent(svgContent);
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Print Barcode - ${sku}</title>
+        <style>
+          @page {
+            margin: 0;
+            size: auto;
+          }
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            background: white;
+          }
+          .barcode-wrapper {
+            display: inline-block;
+            padding: 8px;
+          }
+          .barcode-wrapper img {
+            display: block;
+            max-width: none;
+            height: auto;
+          }
+          @media print {
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="barcode-wrapper">
+          <img src="data:image/svg+xml;utf8,${encodedSvg}" alt="${sku}" />
+        </div>
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 300);
+          };
+        <\/script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
   }
 
   function encodeCode128B(value: string) {
@@ -181,7 +248,17 @@ export function ProductsTable({
           {products.length === 0 ? (
             <tr>
               <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={6}>
-                {isPending ? loadingLabel : emptyState}
+                {isPending ? (
+                  <span className="inline-flex items-center gap-3">
+                    <svg aria-hidden="true" className="h-5 w-5 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
+                    </svg>
+                    <span className="animate-pulse">{loadingLabel}</span>
+                  </span>
+                ) : (
+                  emptyState
+                )}
               </td>
             </tr>
           ) : null}
@@ -262,20 +339,48 @@ export function ProductsTable({
                           : "text-slate-900"
                     }`}
                   >
-                    {isOutOfStock(product) || isLowStock(product) ? (
-                      <AlertTriangle
-                        aria-label={
-                          isOutOfStock(product)
-                            ? outOfStockLabel
-                            : lowStockLabel
-                        }
-                        className={`h-4 w-4 ${
-                          isOutOfStock(product) ? "text-rose-500" : "text-amber-500"
-                        }`}
-                      />
-                    ) : null}
-                    {product.quantity}
+                    {isOutOfStock(product) ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                        <svg aria-hidden="true" className="h-3.5 w-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                        {outOfStockLabel}
+                      </span>
+                    ) : (
+                      <>
+                        {isLowStock(product) ? (
+                          <AlertTriangle
+                            aria-label={lowStockLabel}
+                            className="h-4 w-4 text-amber-500"
+                          />
+                        ) : null}
+                        <span>
+                          {product.max_stock != null
+                            ? `${product.quantity} / ${product.max_stock}`
+                            : product.quantity}
+                          {product.product_unit_name
+                            ? ` ${product.product_unit_name}`
+                            : ""}
+                        </span>
+                      </>
+                    )}
                   </span>
+                  {product.min_stock != null && product.min_stock > 0 || product.max_stock != null ? (
+                    <span
+                      className={`mt-0.5 text-[11px] ${
+                        isOutOfStock(product)
+                          ? "text-rose-400"
+                          : isLowStock(product)
+                            ? "text-amber-400"
+                            : "text-slate-400"
+                      }`}
+                    >  {product.min_stock != null && product.min_stock > 0
+                        ? `Min ${product.min_stock}`
+                        : ""}{" "}
+                      {product.min_stock != null && product.min_stock > 0 && product.max_stock != null ? "/ " : ""}
+                      {product.max_stock != null ? `Max ${product.max_stock}` : ""}
+                    </span>
+                  ) : null}
                 </div>
               </td>
               <td className="px-6 py-4 text-right">
@@ -323,14 +428,24 @@ export function ProductsTable({
               <h3 className="text-base font-semibold text-slate-900">
                 {tableDictionary.barcodePreviewTitle}
               </h3>
-              <button
-                aria-label={tableDictionary.barcodePreviewTitle}
-                className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
-                onClick={() => setPreviewSku(null)}
-                type="button"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                  onClick={() => printBarcode(previewBarcodeSvg, previewSku)}
+                  type="button"
+                >
+                  <Printer className="h-4 w-4" />
+                  {tableDictionary.barcodePrintLabel}
+                </button>
+                <button
+                  aria-label={tableDictionary.barcodePreviewTitle}
+                  className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+                  onClick={() => setPreviewSku(null)}
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
@@ -338,6 +453,7 @@ export function ProductsTable({
                 <img
                   alt={`${tableDictionary.barcodeAction} ${previewSku}`}
                   className="mx-auto h-auto max-w-full"
+                  id="barcode-preview-img"
                   src={`data:image/svg+xml;utf8,${encodeURIComponent(previewBarcodeSvg)}`}
                 />
               ) : (

@@ -44,6 +44,10 @@ export type StockManagerDictionary = {
     productTypeSlugLabel: string;
     quantityLabel: string;
     quantityHint: string;
+    minStockLabel: string;
+    minStockHint: string;
+    maxStockLabel: string;
+    maxStockHint: string;
     optionalLabel: string;
     requiredLabel: string;
     save: string;
@@ -132,6 +136,7 @@ export type StockManagerDictionary = {
     actions: string;
     barcodeAction: string;
     barcodePreviewTitle: string;
+    barcodePrintLabel: string;
     category: string;
     deleteAction: string;
     editAction: string;
@@ -169,6 +174,8 @@ export const initialProductFormState: ProductInput = {
   base_price: "",
   brand_id: "",
   is_active: true,
+  max_stock: "",
+  min_stock: "",
   name: "",
   quantity: "0",
   sku: "",

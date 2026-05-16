@@ -219,11 +219,21 @@ function ProductModalFooter({
           {cancelLabel}
         </button>
         <button
-          className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:bg-blue-400"
+          className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:bg-blue-400"
           disabled={isPending}
           type="submit"
         >
-          {submitLabel}
+          {isPending ? (
+            <>
+              <svg aria-hidden="true" className="h-5 w-5 animate-spin text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
+              </svg>
+              <span>{submitLabel}</span>
+            </>
+          ) : (
+            submitLabel
+          )}
         </button>
       </div>
     </div>
@@ -389,6 +399,34 @@ export function ProductFormModal({
                     step="1"
                     type="number"
                     value={formState.quantity ?? "0"}
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.minStockLabel}
+                    min="0"
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        min_stock: value,
+                      }))
+                    }
+                    step="1"
+                    type="number"
+                    value={formState.min_stock ?? "0"}
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.maxStockLabel}
+                    min="0"
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        max_stock: value,
+                      }))
+                    }
+                    step="1"
+                    type="number"
+                    value={formState.max_stock ?? "0"}
                   />
                   <ProductActiveToggle
                     checked={Boolean(formState.is_active)}

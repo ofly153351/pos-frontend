@@ -47,6 +47,14 @@ function buildProductFormData(input: ProductInput) {
     formData.set("quantity", input.quantity);
   }
 
+  if (typeof input.min_stock === "string" && input.min_stock) {
+    formData.set("min_stock", input.min_stock);
+  }
+
+  if (typeof input.max_stock === "string" && input.max_stock) {
+    formData.set("max_stock", input.max_stock);
+  }
+
   if (input.special_price) {
     formData.set("special_price", input.special_price);
   }
