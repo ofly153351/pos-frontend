@@ -15,6 +15,7 @@ import {
   Settings2,
   Tags,
   Users,
+  Warehouse,
 } from "lucide-react";
 
 import { getAuthSession } from "@/lib/auth-storage";
@@ -36,6 +37,7 @@ type UserWorkspaceSidebarProps = {
     settings: string;
     stockCategories: string;
     stockLevels: string;
+    stockWarehouses: string;
     transactions: string;
   };
   shell: {
@@ -59,6 +61,7 @@ export function UserWorkspaceSidebar({
   const [storeLogoUrl, setStoreLogoUrl] = useState("");
   const stockBaseHref = `/${locale}/stock`;
   const stockCategoriesHref = `/${locale}/stock/categories`;
+  const stockWarehousesHref = `/${locale}/stock/warehouses`;
   const documentsBaseHref = `/${locale}/documents`;
   const documentsPendingHref = `/${locale}/documents/pending`;
   const isInventoryRoute =
@@ -191,12 +194,19 @@ export function UserWorkspaceSidebar({
         key: "categories",
         label: labels.stockCategories,
       },
+      {
+        href: stockWarehousesHref,
+        key: "warehouses",
+        label: labels.stockWarehouses,
+      },
     ],
     [
       labels.stockCategories,
       labels.stockLevels,
+      labels.stockWarehouses,
       stockBaseHref,
       stockCategoriesHref,
+      stockWarehousesHref,
     ],
   );
 
@@ -204,7 +214,9 @@ export function UserWorkspaceSidebar({
     ? ""
     : pathname === stockCategoriesHref
       ? "categories"
-      : "stock-levels";
+      : pathname === stockWarehousesHref
+        ? "warehouses"
+        : "stock-levels";
 
   const inventoryItemClass = isInventoryRoute
     ? "rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-200/70"
@@ -331,6 +343,8 @@ export function UserWorkspaceSidebar({
                     const itemIcon =
                       item.key === "categories" ? (
                         <Tags className="h-3.5 w-3.5" />
+                      ) : item.key === "warehouses" ? (
+                        <Warehouse className="h-3.5 w-3.5" />
                       ) : (
                         <Layers3 className="h-3.5 w-3.5" />
                       );

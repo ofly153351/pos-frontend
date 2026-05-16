@@ -27,6 +27,7 @@ type UserWorkspaceLayoutProps = {
     storeLabel: string;
     stockCategories: string;
     stockLevels: string;
+    stockWarehouses: string;
     station: string;
     transactions: string;
   };
@@ -87,6 +88,7 @@ export function UserWorkspaceLayout({
           register: shell.register,
           settings: shell.settings,
           stockCategories: shell.stockCategories,
+          stockWarehouses: shell.stockWarehouses,
           stockLevels: shell.stockLevels,
           transactions: shell.transactions,
         }}
