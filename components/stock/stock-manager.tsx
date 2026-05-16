@@ -175,6 +175,8 @@ export function StockManager({
     setupSection: dictionary.form.setupSection || dictionary.form.categoryLabel,
     setupSectionHint: dictionary.form.setupSectionHint || dictionary.form.categoryHint || dictionary.form.categoryLabel,
     skuHint: dictionary.form.skuHint || dictionary.form.skuLabel,
+    barcodeHint: dictionary.form.barcodeHint || dictionary.form.barcodeLabel,
+    barcodeLabel: dictionary.form.barcodeLabel || "Barcode",
     specialPriceHint: dictionary.form.specialPriceHint || dictionary.form.specialPriceLabel,
     unitTypeHint: dictionary.form.unitTypeHint || dictionary.form.unitTypeLabel,
   };
@@ -413,6 +415,7 @@ export function StockManager({
       min_stock: product.min_stock != null ? String(product.min_stock) : "",
       max_stock: product.max_stock != null ? String(product.max_stock) : "",
       sku: product.sku ?? "",
+      barcode: product.barcode ?? "",
       special_price: product.special_price ? String(product.special_price) : "",
       unit_id: product.product_unit_id ?? product.unit_id ?? legacyUnitId ?? "",
     });

@@ -36,12 +36,22 @@ export type WarehouseProduct = {
   quantity: number;
   product_name: string;
   product_sku?: string | null;
+  product_barcode?: string | null;
   product_price: number;
   image_url?: string | null;
+  product_type_name?: string | null;
+  product_unit_name?: string | null;
+  product_min_stock?: number | null;
+  product_max_stock?: number | null;
+  product_quantity?: number | null;
   created_at: string;
 };
 
 export type AddWarehouseProductInput = {
   product_id: string;
+  quantity: number;
+};
+
+export type UpdateWarehouseProductInput = {
   quantity: number;
 };

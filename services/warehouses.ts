@@ -4,6 +4,7 @@ import type {
   AddWarehouseProductInput,
   CreateWarehouseInput,
   UpdateWarehouseInput,
+  UpdateWarehouseProductInput,
   Warehouse,
   WarehouseProduct,
 } from "@/types/warehouse";
@@ -97,6 +98,18 @@ export function removeWarehouseProduct(warehouseId: string, productId: string) {
   return authorizedApiRequest<void>(
     `/api/stores/${storeId}/warehouses/${warehouseId}/products/${productId}`,
     { method: "DELETE" },
+    { requireToken: true },
+  );
+}
+
+export function updateWarehouseProductQuantity(warehouseId: string, productId: string, quantity: number) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<WarehouseProduct>(
+    `/api/stores/${storeId}/warehouses/${warehouseId}/products/${productId}`,
+    {
+      body: { quantity } satisfies UpdateWarehouseProductInput,
+      method: "PUT",
+    },
     { requireToken: true },
   );
 }

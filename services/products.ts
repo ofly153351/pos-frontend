@@ -35,6 +35,10 @@ function buildProductFormData(input: ProductInput) {
     formData.set("sku", input.sku);
   }
 
+  if (input.barcode) {
+    formData.set("barcode", input.barcode);
+  }
+
   if (input.product_type_id) {
     formData.set("product_type_id", input.product_type_id);
   }

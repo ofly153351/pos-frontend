@@ -55,6 +55,8 @@ export type StockManagerDictionary = {
     setupSectionHint: string;
     skuLabel: string;
     skuHint: string;
+    barcodeLabel: string;
+    barcodeHint: string;
     specialPriceLabel: string;
     specialPriceHint: string;
     titleCreate: string;
@@ -140,8 +142,11 @@ export type StockManagerDictionary = {
     category: string;
     deleteAction: string;
     editAction: string;
+    exportLabel: string;
+    importLabel: string;
     invalidBarcodeLabel: string;
     noBarcodeLabel: string;
+    barcode: string;
     price: string;
     productDetails: string;
     sku: string;
@@ -179,6 +184,7 @@ export const initialProductFormState: ProductInput = {
   name: "",
   quantity: "0",
   sku: "",
+  barcode: "",
   special_price: "",
   unit_id: "",
 };

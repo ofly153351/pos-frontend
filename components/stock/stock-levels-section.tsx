@@ -1,6 +1,8 @@
 "use client";
 
 import { ProductsTable } from "@/components/stock/products-table";
+import { createProduct } from "@/services/products";
+import { useRef, useState } from "react";
 import type {
   ManagementDictionary,
   StockManagerDictionary,
@@ -81,6 +83,8 @@ export function StockLevelsSection({
     { length: Math.max(endPage - startPage + 1, 0) },
     (_, index) => startPage + index,
   );
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   return (
     <>
@@ -240,6 +244,16 @@ export function StockLevelsSection({
             placeholder={dictionary.searchPlaceholder}
             value={search}
           />
+          <button
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+            onClick={() => setIsImportModalOpen(true)}
+            type="button"
+          >
+            <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            {dictionary.table.importLabel}
+          </button>
         </div>
       </section>
 
@@ -256,11 +270,151 @@ export function StockLevelsSection({
         managementDictionary={managementDictionary}
         onDelete={onDelete}
         onEdit={onEdit}
+        onExport={(selectedIds) => {
+          const selectedProducts = filteredProducts.filter((p) =>
+            selectedIds.includes(p.id),
+          );
+          const headers = [
+            "Name", "SKU", "Category", "Price", "Stock",
+            "Min Stock", "Max Stock", "Unit", "Active",
+          ];
+          const rows = selectedProducts.map((p) => [
+            `"${(p.name ?? "").replace(/"/g, '""')}"`,
+            `"${(p.sku ?? "").replace(/"/g, '""')}"`,
+            `"${(p.product_type_name ?? "").replace(/"/g, '""')}"`,
+            p.effective_price ?? 0,
+            p.quantity ?? 0,
+            p.min_stock ?? 0,
+            p.max_stock ?? "",
+            `"${(p.product_unit_name ?? "").replace(/"/g, '""')}"`,
+            p.is_active ? "Yes" : "No",
+          ]);
+          const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+          const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `products-export-${new Date().toISOString().slice(0, 10)}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }}
         lowStockLabel={dictionary.filters.lowStockStatus}
         outOfStockLabel={dictionary.filters.outOfStockStatus}
         products={filteredProducts}
         tableDictionary={dictionary.table}
       />
+
+      {isImportModalOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6"
+          onClick={() => setIsImportModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-slate-900">{dictionary.table.importLabel}</h3>
+            <p className="mt-2 text-sm text-slate-500">
+              ดาวน์โหลด Template แล้วกรอกข้อมูลสินค้าที่ต้องการนำเข้า
+            </p>
+
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={() => {
+                  const template = [
+                    "Name,SKU,Price,Stock,Min Stock,Max Stock,Active",
+                    "ตัวอย่างสินค้า,BRC-001,100.00,50,10,100,Yes",
+                    "ตัวอย่างสินค้า 2,BRC-002,200.00,30,5,60,Yes",
+                  ].join("\n");
+                  const blob = new Blob(["\ufeff" + template], { type: "text/csv;charset=utf-8;" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "product-import-template.csv";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0-3-3m3 3 3-3m2 8H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
+                </svg>
+                ดาวน์โหลด Template
+              </button>
+
+              <button
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                onClick={() => importFileRef.current?.click()}
+                type="button"
+              >
+                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                อัปโหลดไฟล์ CSV
+              </button>
+            </div>
+
+            <input
+              accept=".csv"
+              className="hidden"
+              ref={importFileRef}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                e.target.value = "";
+
+                const text = await file.text();
+                const lines = text.split("\n").filter(Boolean);
+                const [headerLine, ...dataLines] = lines;
+                const headers = headerLine.split(",").map((h) => h.trim().toLowerCase());
+                const nameIdx = headers.indexOf("name");
+                const skuIdx = headers.indexOf("sku");
+                const priceIdx = headers.indexOf("price");
+                const stockIdx = headers.indexOf("stock");
+                const minStockIdx = headers.indexOf("min stock");
+                const maxStockIdx = headers.indexOf("max stock");
+                const activeIdx = headers.indexOf("active");
+
+                let successCount = 0;
+                let errorCount = 0;
+
+                for (const line of dataLines) {
+                  const cols = line.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+                  try {
+                    await createProduct({
+                      name: cols[nameIdx] || "",
+                      base_price: cols[priceIdx] || "0",
+                      quantity: cols[stockIdx] || "0",
+                      sku: skuIdx >= 0 ? cols[skuIdx] || "" : "",
+                      min_stock: minStockIdx >= 0 ? cols[minStockIdx] || "0" : "0",
+                      max_stock: maxStockIdx >= 0 ? cols[maxStockIdx] || "" : "",
+                      is_active: activeIdx >= 0 ? cols[activeIdx]?.toLowerCase() === "yes" : true,
+                      unit_id: productUnits[0]?.id ?? "",
+                    });
+                    successCount++;
+                  } catch {
+                    errorCount++;
+                  }
+                }
+
+                setIsImportModalOpen(false);
+                onPageChange(1);
+                alert(`นำเข้า: ${successCount} รายการสำเร็จ${errorCount > 0 ? `, ${errorCount} รายการล้มเหลว` : ""}`);
+              }}
+              type="file"
+            />
+
+            <button
+              className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              onClick={() => setIsImportModalOpen(false)}
+              type="button"
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {paginationTotalPages > 1 ? (
         <section className="flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">

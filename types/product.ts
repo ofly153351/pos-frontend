@@ -38,6 +38,7 @@ export type Product = {
   min_stock?: number;
   quantity: number;
   sku?: string | null;
+  barcode?: string | null;
   special_price?: number | null;
   special_price_end_at?: string | null;
   special_price_start_at?: string | null;
@@ -75,6 +76,7 @@ export type ProductInput = {
   product_type_id?: string;
   quantity?: string;
   sku?: string;
+  barcode?: string;
   special_price?: string;
   special_price_end_at?: string;
   special_price_start_at?: string;

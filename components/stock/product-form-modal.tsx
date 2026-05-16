@@ -178,18 +178,25 @@ function ProductActiveToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-      <input
-        checked={checked}
-        className="mt-1"
-        onChange={(event) => onChange(event.target.checked)}
-        type="checkbox"
-      />
-      <span className="block">
-        <span className="block text-sm font-medium text-slate-700">
-          {label}
-        </span>
-      </span>
+    <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      {label && (
+        <span className="text-sm font-medium text-slate-700">{label}</span>
+      )}
+      <button
+        aria-checked={checked}
+        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+          checked ? "bg-blue-700" : "bg-slate-300"
+        } ${label ? "" : "ml-auto"}`}
+        onClick={() => onChange(!checked)}
+        role="switch"
+        type="button"
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
     </label>
   );
 }
@@ -428,16 +435,6 @@ export function ProductFormModal({
                     type="number"
                     value={formState.max_stock ?? "0"}
                   />
-                  <ProductActiveToggle
-                    checked={Boolean(formState.is_active)}
-                    label={formLabels.activeLabel}
-                    onChange={(checked) =>
-                      onFormStateChange((current) => ({
-                        ...current,
-                        is_active: checked,
-                      }))
-                    }
-                  />
                 </div>
 
                 <div className="space-y-5">
@@ -469,6 +466,17 @@ export function ProductFormModal({
                       }))
                     }
                     value={formState.sku}
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.barcodeLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        barcode: value,
+                      }))
+                    }
+                    value={formState.barcode ?? ""}
                   />
                   <ProductSelectField
                     badgeText={formLabels.optionalLabel}
@@ -518,6 +526,22 @@ export function ProductFormModal({
                       }))
                     }
                   />
+
+                  <ProductField
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.activeLabel}
+                  >
+                    <ProductActiveToggle
+                      checked={Boolean(formState.is_active)}
+                      label=""
+                      onChange={(checked) =>
+                        onFormStateChange((current) => ({
+                          ...current,
+                          is_active: checked,
+                        }))
+                      }
+                    />
+                  </ProductField>
 
                   <ProductSummaryCard
                     activeLabel={formLabels.activeLabel}
