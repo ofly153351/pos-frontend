@@ -667,7 +667,17 @@
       "searchProductLabel": "Search products...",
       "noProductsLabel": "No products available",
       "addLabel": "+ Add",
-      "noProductsInWarehouseLabel": "No products in this warehouse"
+      "noProductsInWarehouseLabel": "No products in this warehouse",
+      "addStandaloneLabel": "Add new product",
+      "fromStockLabel": "From stock",
+      "newProductLabel": "New product",
+      "standaloneNameLabel": "Product name",
+      "standaloneSkuLabel": "SKU",
+      "standaloneBarcodeLabel": "Barcode",
+      "standalonePriceLabel": "Price",
+      "standaloneUnitLabel": "Unit",
+      "standaloneTypeLabel": "Category",
+      "standaloneNameRequired": "Product name is required"
     }
   }
 }

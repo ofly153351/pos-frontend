@@ -667,7 +667,17 @@
       "searchProductLabel": "ค้นหาสินค้า...",
       "noProductsLabel": "ไม่มีสินค้าที่สามารถเพิ่มได้",
       "addLabel": "+ เพิ่ม",
-      "noProductsInWarehouseLabel": "ยังไม่มีสินค้าในคลังนี้"
+      "noProductsInWarehouseLabel": "ยังไม่มีสินค้าในคลังนี้",
+      "addStandaloneLabel": "เพิ่มสินค้าใหม่",
+      "fromStockLabel": "จากสต็อก",
+      "newProductLabel": "สินค้าใหม่",
+      "standaloneNameLabel": "ชื่อสินค้า",
+      "standaloneSkuLabel": "SKU",
+      "standaloneBarcodeLabel": "บาร์โค้ด",
+      "standalonePriceLabel": "ราคา",
+      "standaloneUnitLabel": "หน่วย",
+      "standaloneTypeLabel": "หมวดหมู่",
+      "standaloneNameRequired": "กรุณาระบุชื่อสินค้า"
     }
   }
 }

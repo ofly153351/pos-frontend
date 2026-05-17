@@ -18,6 +18,7 @@ import {
 
 import {
   addWarehouseProduct,
+  createStandaloneWarehouseProduct,
   createWarehouse,
   deleteWarehouse,
   listWarehouseProducts,
@@ -29,6 +30,7 @@ import {
 import { listProducts } from "@/services/products";
 import type {
   AddWarehouseProductInput,
+  CreateStandaloneWarehouseProductInput,
   CreateWarehouseInput,
   UpdateWarehouseInput,
   Warehouse,
@@ -63,6 +65,16 @@ type WarehouseSectionDictionary = {
   noProductsLabel: string;
   addLabel: string;
   noProductsInWarehouseLabel: string;
+  addStandaloneLabel: string;
+  fromStockLabel: string;
+  newProductLabel: string;
+  standaloneNameLabel: string;
+  standaloneSkuLabel: string;
+  standaloneBarcodeLabel: string;
+  standalonePriceLabel: string;
+  standaloneUnitLabel: string;
+  standaloneTypeLabel: string;
+  standaloneNameRequired: string;
 };
 
 type WarehouseSectionProps = {
@@ -78,6 +90,16 @@ type WarehouseFormState = {
   is_active: boolean;
 };
 
+type StandaloneFormState = {
+  name: string;
+  sku: string;
+  barcode: string;
+  price: string;
+  unit_name: string;
+  type_name: string;
+  quantity: string;
+};
+
 const initialFormState: WarehouseFormState = {
   name: "",
   code: "",
@@ -85,6 +107,16 @@ const initialFormState: WarehouseFormState = {
   phone: "",
   contact_name: "",
   is_active: true,
+};
+
+const initialStandaloneForm: StandaloneFormState = {
+  name: "",
+  sku: "",
+  barcode: "",
+  price: "",
+  unit_name: "",
+  type_name: "",
+  quantity: "1",
 };
 
 export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
@@ -101,10 +133,15 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 
   // Add product panel
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [addMode, setAddMode] = useState<"stock" | "standalone">("stock");
   const [productSearch, setProductSearch] = useState("");
   const [addingProductIds, setAddingProductIds] = useState<Set<string>>(new Set());
   const [addProductQuantity, setAddProductQuantity] = useState(1);
   const [addError, setAddError] = useState("");
+
+  // Standalone form
+  const [standaloneForm, setStandaloneForm] = useState<StandaloneFormState>(initialStandaloneForm);
+  const [isStandaloneSaving, setIsStandaloneSaving] = useState(false);
 
   // Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -176,7 +213,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const { data: allProductsData } = useQuery({
     queryKey: ["all-products"],
     queryFn: () => listProducts({ limit: 200 }),
-    enabled: showAddProduct,
+    enabled: showAddProduct && addMode === "stock",
   });
 
   const warehouseProducts = warehouseProductsData?.data ?? [];
@@ -205,9 +242,12 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   // Reset add product panel
   const resetAddPanel = useCallback(() => {
     setShowAddProduct(false);
+    setAddMode("stock");
     setProductSearch("");
     setAddingProductIds(new Set());
     setAddError("");
+    setStandaloneForm(initialStandaloneForm);
+    setIsStandaloneSaving(false);
   }, []);
 
   // Warehouse CRUD
@@ -297,6 +337,39 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
     },
     [queryClient, dictionary.nameRequired, selectedWarehouseId],
   );
+
+  const isStandaloneFormValid = standaloneForm.name.trim().length > 0;
+
+  const handleStandaloneSave = useCallback(async () => {
+    if (!selectedWarehouse || !isStandaloneFormValid) {
+      setAddError(dictionary.standaloneNameRequired);
+      return;
+    }
+
+    setIsStandaloneSaving(true);
+    setAddError("");
+
+    try {
+      const input: CreateStandaloneWarehouseProductInput = {
+        name: standaloneForm.name.trim(),
+        sku: standaloneForm.sku.trim() || undefined,
+        barcode: standaloneForm.barcode.trim() || undefined,
+        price: standaloneForm.price ? parseFloat(standaloneForm.price) || 0 : 0,
+        unit_name: standaloneForm.unit_name.trim() || undefined,
+        type_name: standaloneForm.type_name.trim() || undefined,
+        quantity: Math.max(0, parseInt(standaloneForm.quantity || "1", 10) || 0),
+      };
+      await createStandaloneWarehouseProduct(selectedWarehouse.id, input);
+      await queryClient.invalidateQueries({
+        queryKey: ["warehouse-products", selectedWarehouse.id],
+      });
+      setStandaloneForm(initialStandaloneForm);
+    } catch (err: any) {
+      setAddError(err?.message || "Failed to add product");
+    } finally {
+      setIsStandaloneSaving(false);
+    }
+  }, [selectedWarehouse, standaloneForm, isStandaloneFormValid, queryClient, dictionary.standaloneNameRequired]);
 
   const handleAddProduct = useCallback(
     async (productId: string) => {
@@ -440,89 +513,260 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         {/* Add Product Panel */}
         {showAddProduct && selectedWarehouse && (
           <div className="mt-4 border-t border-slate-200 pt-4">
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                onChange={(e) => setProductSearch(e.target.value)}
-                placeholder={dictionary.searchProductLabel}
-                value={productSearch}
-              />
-            </div>
-            <div className="mb-3 flex items-center gap-3">
-              <label className="text-xs font-medium text-slate-600">จำนวน:</label>
-              <input
-                className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-center outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                min={0}
-                onChange={(e) => setAddProductQuantity(Math.max(0, Number(e.target.value) || 0))}
-                type="number"
-                value={addProductQuantity}
-              />
+            {/* Mode Tabs */}
+            <div className="mb-4 flex gap-2">
               <button
-                className="ml-auto rounded-lg px-2 py-1 text-xs text-slate-400 transition hover:text-slate-600"
-                onClick={resetAddPanel}
+                className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+                  addMode === "stock"
+                    ? "bg-blue-700 text-white shadow-sm"
+                    : "bg-white text-slate-600 hover:bg-slate-100"
+                }`}
+                onClick={() => setAddMode("stock")}
                 type="button"
               >
-                {dictionary.cancel}
+                {dictionary.fromStockLabel}
+              </button>
+              <button
+                className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
+                  addMode === "standalone"
+                    ? "bg-blue-700 text-white shadow-sm"
+                    : "bg-white text-slate-600 hover:bg-slate-100"
+                }`}
+                onClick={() => setAddMode("standalone")}
+                type="button"
+              >
+                {dictionary.newProductLabel}
               </button>
             </div>
-            {addError && (
-              <div className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">
-                {addError}
-              </div>
-            )}
-            <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
-              {filteredAvailable.length === 0 ? (
-                <p className="py-4 text-center text-sm text-slate-400">
-                  {dictionary.noProductsLabel}
-                </p>
-              ) : (
-                filteredAvailable.map((product) => (
+
+            {addMode === "stock" ? (
+              <>
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder={dictionary.searchProductLabel}
+                    value={productSearch}
+                  />
+                </div>
+                <div className="mb-3 flex items-center gap-3">
+                  <label className="text-xs font-medium text-slate-600">จำนวน:</label>
+                  <input
+                    className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-center outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                    min={0}
+                    onChange={(e) => setAddProductQuantity(Math.max(0, Number(e.target.value) || 0))}
+                    type="number"
+                    value={addProductQuantity}
+                  />
                   <button
-                    key={product.id}
-                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-all hover:bg-blue-50"
-                    onClick={() => handleAddProduct(product.id)}
+                    className="ml-auto rounded-lg px-2 py-1 text-xs text-slate-400 transition hover:text-slate-600"
+                    onClick={resetAddPanel}
                     type="button"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="shrink-0">
-                        {product.image_url ? (
-                          <img
-                            alt={product.name}
-                            className="h-7 w-7 shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover"
-                            src={product.image_url}
-                          />
-                        ) : (
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500">
-                            {product.name.slice(0, 2).toUpperCase()}
+                    {dictionary.cancel}
+                  </button>
+                </div>
+                {addError && (
+                  <div className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                    {addError}
+                  </div>
+                )}
+                <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+                  {filteredAvailable.length === 0 ? (
+                    <p className="py-4 text-center text-sm text-slate-400">
+                      {dictionary.noProductsLabel}
+                    </p>
+                  ) : (
+                    filteredAvailable.map((product) => (
+                      <button
+                        key={product.id}
+                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-all hover:bg-blue-50"
+                        onClick={() => handleAddProduct(product.id)}
+                        type="button"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="shrink-0">
+                            {product.image_url ? (
+                              <img
+                                alt={product.name}
+                                className="h-7 w-7 shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover"
+                                src={product.image_url}
+                              />
+                            ) : (
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500">
+                                {product.name.slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 text-left">
-                        <span className="block truncate font-medium text-slate-700">
-                          {product.name}
+                          <div className="min-w-0 text-left">
+                            <span className="block truncate font-medium text-slate-700">
+                              {product.name}
+                            </span>
+                            {product.sku && (
+                              <span className="block truncate text-xs text-slate-400">
+                                {product.sku}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <span className="shrink-0 text-xs font-medium text-blue-600">
+                          {addingProductIds.has(product.id) ? (
+                            <svg aria-hidden="true" className="h-4 w-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
+                            </svg>
+                          ) : (
+                            dictionary.addLabel
+                          )}
                         </span>
-                        {product.sku && (
-                          <span className="block truncate text-xs text-slate-400">
-                            {product.sku}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="shrink-0 text-xs font-medium text-blue-600">
-                      {addingProductIds.has(product.id) ? (
-                        <svg aria-hidden="true" className="h-4 w-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      </button>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              /* Standalone product form */
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* Name (required) */}
+                  <label className="block sm:col-span-2">
+                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
+                      <span>{dictionary.standaloneNameLabel}</span>
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-blue-700">required</span>
+                    </span>
+                    <input
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder={dictionary.standaloneNameLabel}
+                      value={standaloneForm.name}
+                    />
+                  </label>
+
+                  {/* SKU */}
+                  <label className="block">
+                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
+                      <span>{dictionary.standaloneSkuLabel}</span>
+                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
+                    </span>
+                    <input
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, sku: e.target.value }))}
+                      placeholder={dictionary.standaloneSkuLabel}
+                      value={standaloneForm.sku}
+                    />
+                  </label>
+
+                  {/* Barcode */}
+                  <label className="block">
+                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
+                      <span>{dictionary.standaloneBarcodeLabel}</span>
+                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
+                    </span>
+                    <input
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, barcode: e.target.value }))}
+                      placeholder={dictionary.standaloneBarcodeLabel}
+                      value={standaloneForm.barcode}
+                    />
+                  </label>
+
+                  {/* Price */}
+                  <label className="block">
+                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
+                      <span>{dictionary.standalonePriceLabel}</span>
+                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
+                    </span>
+                    <input
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, price: e.target.value }))}
+                      placeholder="0.00"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={standaloneForm.price}
+                    />
+                  </label>
+
+                  {/* Unit */}
+                  <label className="block">
+                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
+                      <span>{dictionary.standaloneUnitLabel}</span>
+                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
+                    </span>
+                    <input
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, unit_name: e.target.value }))}
+                      placeholder={dictionary.standaloneUnitLabel}
+                      value={standaloneForm.unit_name}
+                    />
+                  </label>
+
+                  {/* Category/Type */}
+                  <label className="block">
+                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
+                      <span>{dictionary.standaloneTypeLabel}</span>
+                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
+                    </span>
+                    <input
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, type_name: e.target.value }))}
+                      placeholder={dictionary.standaloneTypeLabel}
+                      value={standaloneForm.type_name}
+                    />
+                  </label>
+
+                  {/* Quantity */}
+                  <label className="block">
+                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
+                      <span>จำนวน</span>
+                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
+                    </span>
+                    <input
+                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, quantity: e.target.value }))}
+                      min={0}
+                      type="number"
+                      value={standaloneForm.quantity}
+                    />
+                  </label>
+                </div>
+
+                {addError && (
+                  <div className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                    {addError}
+                  </div>
+                )}
+
+                <div className="mt-4 flex items-center justify-between">
+                  <button
+                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-400 transition hover:text-slate-600"
+                    onClick={resetAddPanel}
+                    type="button"
+                  >
+                    {dictionary.cancel}
+                  </button>
+                  <button
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-700 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-200/70 transition hover:bg-blue-800 disabled:bg-blue-400"
+                    disabled={!isStandaloneFormValid || isStandaloneSaving}
+                    onClick={handleStandaloneSave}
+                    type="button"
+                  >
+                    {isStandaloneSaving ? (
+                      <>
+                        <svg aria-hidden="true" className="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
                         </svg>
-                      ) : (
-                        dictionary.addLabel
-                      )}
-                    </span>
+                        <span>{dictionary.saveButton}</span>
+                      </>
+                    ) : (
+                      dictionary.addStandaloneLabel
+                    )}
                   </button>
-                ))
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -622,7 +866,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       />
                     ) : (
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 shadow-inner">
-                        {wp.product_name.slice(0, 2).toUpperCase()}
+                        {(wp.product_name || wp.standalone_name || "?").slice(0, 2).toUpperCase()}
                       </div>
                     )}
                   </td>
@@ -630,33 +874,33 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     <div className="flex min-w-0 flex-col">
                       <span
                         className="overflow-hidden break-all text-sm font-bold text-slate-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-                        title={wp.product_name}
+                        title={wp.product_name || wp.standalone_name}
                       >
-                        {wp.product_name}
+                        {wp.product_name || wp.standalone_name || "-"}
                       </span>
-                      {wp.product_sku ? (
-                        <span className="mt-0.5 truncate text-xs text-slate-400" title={wp.product_sku}>
-                          {wp.product_sku}
+                      {(wp.product_sku || wp.standalone_sku) ? (
+                        <span className="mt-0.5 truncate text-xs text-slate-400" title={wp.product_sku || wp.standalone_sku}>
+                          {wp.product_sku || wp.standalone_sku}
                         </span>
                       ) : null}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500">
-                    <span className="block truncate font-mono" title={wp.product_barcode ?? "-"}>
-                      {wp.product_barcode ?? "-"}
+                    <span className="block truncate font-mono" title={wp.product_barcode || wp.standalone_barcode || "-"}>
+                      {wp.product_barcode || wp.standalone_barcode || "-"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span
                       className="block truncate rounded px-2 py-1 text-[11px] font-bold uppercase text-blue-800"
-                      title={wp.product_type_name ?? "-"}
+                      title={wp.product_type_name || wp.standalone_type_name || "-"}
                     >
-                      {wp.product_type_name ?? "-"}
+                      {wp.product_type_name || wp.standalone_type_name || "-"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm font-bold text-blue-700">
-                    {wp.product_price > 0
-                      ? `฿${wp.product_price.toLocaleString()}`
+                    {(wp.product_price || wp.standalone_price || 0) > 0
+                      ? `฿${((wp.product_price || wp.standalone_price) || 0).toLocaleString()}`
                       : "—"}
                   </td>
                   <td className="px-2 py-4">
@@ -706,7 +950,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                                   {wp.product_max_stock != null
                                     ? `${wp.quantity} / ${wp.product_max_stock}`
                                     : wp.quantity}
-                                  {wp.product_unit_name ? ` ${wp.product_unit_name}` : ""}
+                                  {wp.product_unit_name || wp.standalone_unit_name ? ` ${wp.product_unit_name || wp.standalone_unit_name}` : ""}
                                 </span>
                               </>
                             )}
