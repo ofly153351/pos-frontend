@@ -3,17 +3,19 @@
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
+  Barcode,
   Boxes,
   ChevronDown,
   Package,
+  Pencil,
   Plus,
+  Printer,
   Search,
   Settings2,
   Trash2,
   Warehouse as WarehouseIcon,
   X,
-  Pencil,
-  AlertTriangle,
 } from "lucide-react";
 
 import {
@@ -181,6 +183,148 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
     },
     [selectedWarehouseId, editingQtyValues, queryClient, cancelQtyEdit],
   );
+
+  // Barcode preview
+  const [previewSku, setPreviewSku] = useState<string | null>(null);
+
+  function generateBarcodeSvg(sku: string): string {
+    const normalized = sku.trim().toUpperCase();
+    const code128Patterns = [
+      "212222","222122","222221","121223","121322","131222","122213","122312",
+      "132212","221213","221312","231212","112232","122132","122231","113222",
+      "123122","123221","223211","221132","221231","213212","223112","312131",
+      "311222","321122","321221","312212","322112","322211","212123","212321",
+      "232121","111323","131123","131321","112313","132113","132311","211313",
+      "231113","231311","112133","112331","132131","113123","113321","133121",
+      "313121","211331","231131","213113","213311","213131","311123","311321",
+      "331121","312113","312311","332111","314111","221411","431111","111224",
+      "111422","121124","121421","141122","141221","112214","112412","122114",
+      "122411","142112","142211","241211","221114","413111","241112","134111",
+      "111242","121142","121241","114212","124112","124211","411212","421112",
+      "421211","212141","214121","412121","111143","111341","131141","114113",
+      "114311","411113","411311","113141","114131","311141","411131","211412",
+      "211214","211232","2331112",
+    ];
+
+    const encodedValues = encodeCode128B(normalized);
+    if (!encodedValues) return "";
+
+    const moduleWidth = 2;
+    const quietZone = 20;
+    const barTop = 16;
+    const barHeight = 92;
+    let x = quietZone;
+    let bars = "";
+
+    for (const encodedValue of encodedValues) {
+      const pattern = code128Patterns[encodedValue];
+      if (!pattern) return "";
+
+      let isBar = true;
+      for (const unitChar of pattern) {
+        const unit = Number(unitChar);
+        const width = unit * moduleWidth;
+        if (isBar) {
+          bars += `<rect x="${x}" y="${barTop}" width="${width}" height="${barHeight}" fill="#0f172a" />`;
+        }
+        x += width;
+        isBar = !isBar;
+      }
+    }
+
+    const totalWidth = x + quietZone;
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="146" viewBox="0 0 ${totalWidth} 146" role="img" aria-label="barcode">
+        <rect width="${totalWidth}" height="146" fill="white"/>
+        ${bars}
+        <text x="${totalWidth / 2}" y="132" text-anchor="middle" font-family="monospace" font-size="14" fill="#0f172a">${normalized}</text>
+      </svg>
+    `.trim();
+  }
+
+  const previewBarcodeSvg = useMemo(() => {
+    if (!previewSku) return "";
+    return generateBarcodeSvg(previewSku);
+  }, [previewSku]);
+
+  function encodeCode128B(text: string): number[] | null {
+    const code128B = {
+      " ": 0, "!": 1, "\"": 2, "#": 3, "$": 4, "%": 5, "&": 6, "'": 7, "(": 8, ")": 9,
+      "*": 10, "+": 11, ",": 12, "-": 13, ".": 14, "/": 15, "0": 16, "1": 17, "2": 18, "3": 19,
+      "4": 20, "5": 21, "6": 22, "7": 23, "8": 24, "9": 25, ":": 26, ";": 27, "<": 28, "=": 29,
+      ">": 30, "?": 31, "@": 32, "A": 33, "B": 34, "C": 35, "D": 36, "E": 37, "F": 38, "G": 39,
+      "H": 40, "I": 41, "J": 42, "K": 43, "L": 44, "M": 45, "N": 46, "O": 47, "P": 48, "Q": 49,
+      "R": 50, "S": 51, "T": 52, "U": 53, "V": 54, "W": 55, "X": 56, "Y": 57, "Z": 58, "[": 59,
+      "\\": 60, "]": 61, "^": 62, "_": 63, "`": 64, "a": 65, "b": 66, "c": 67, "d": 68, "e": 69,
+      "f": 70, "g": 71, "h": 72, "i": 73, "j": 74, "k": 75, "l": 76, "m": 77, "n": 78, "o": 79,
+      "p": 80, "q": 81, "r": 82, "s": 83, "t": 84, "u": 85, "v": 86, "w": 87, "x": 88, "y": 89,
+      "z": 90, "{": 91, "|": 92, "}": 93, "~": 94, "DEL": 95, "FNC3": 96, "FNC2": 97, "SHIFT": 98, "CODE_C": 99,
+      "CODE_B": 100, "FNC4": 101, "FNC1": 102, "START_A": 103, "START_B": 104, "START_C": 105, "STOP": 106,
+    } as Record<string, number>;
+
+    const values: number[] = [];
+    for (const char of text) {
+      const code = code128B[char];
+      if (code === undefined) return null;
+      values.push(code);
+    }
+    if (values.length === 0) return null;
+
+    const startCode = 104; // Code B
+    let checksum = startCode;
+    for (let i = 0; i < values.length; i++) {
+      checksum += values[i] * (i + 1);
+    }
+    checksum = checksum % 103;
+    values.unshift(startCode);
+    values.push(checksum);
+    values.push(106); // Stop
+
+    return values;
+  }
+
+  function printBarcode(svgContent: string, sku: string | null) {
+    if (!svgContent || !sku) return;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const left = (screen.width - width) / 2;
+    const top = (screen.height - height) / 2;
+
+    const printWindow = window.open(
+      "",
+      "barcode-print",
+      `width=${width},height=${height},left=${left},top=${top}`,
+    );
+    if (!printWindow) return;
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Print Barcode</title>
+  <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .barcode-grid { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px; }
+  .barcode-item { text-align: center; }
+  .barcode-label { font-size: 11px; font-weight: 600; color: #1e293b; margin-bottom: 4px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .barcode-item img { display: block; max-width: none; height: auto; }
+  .barcode-fallback { font-family: monospace; font-size: 13px; color: #64748b; padding: 8px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <div class="barcode-grid">
+    <div class="barcode-item">
+      <div class="barcode-label">${sku}</div>
+      <img src="data:image/svg+xml;utf8,${encodeURIComponent(svgContent)}" alt="barcode" />
+    </div>
+  </div>
+  <script>window.onload=function(){setTimeout(function(){window.print()},300)};<\/script>
+</body>
+</html>`);
+    printWindow.document.close();
+  }
 
   // Manage warehouses modal
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
@@ -1020,6 +1164,15 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                         <>
                           <button
                             className="rounded-lg p-2 text-slate-500 transition hover:bg-blue-50 hover:text-blue-600"
+                            disabled={!(wp.product_barcode || wp.standalone_barcode)}
+                            onClick={() => setPreviewSku(wp.product_barcode || wp.standalone_barcode || null)}
+                            title="บาร์โค้ด"
+                            type="button"
+                          >
+                            <Barcode className="h-4 w-4" />
+                          </button>
+                          <button
+                            className="rounded-lg p-2 text-slate-500 transition hover:bg-blue-50 hover:text-blue-600"
                             onClick={() => startQtyEdit(wp)}
                             title="แก้ไขจำนวน"
                             type="button"
@@ -1044,6 +1197,53 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </table>
         </div>
       )}
+
+      {/* Barcode Preview Modal */}
+      {previewSku ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6">
+          <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-base font-semibold text-slate-900">
+                พรีวิวบาร์โค้ด
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                  onClick={() => printBarcode(previewBarcodeSvg, previewSku)}
+                  type="button"
+                >
+                  <Printer className="h-4 w-4" />
+                  พิมพ์
+                </button>
+                <button
+                  aria-label="ปิด"
+                  className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
+                  onClick={() => setPreviewSku(null)}
+                  type="button"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+              {previewBarcodeSvg ? (
+                <img
+                  alt={`บาร์โค้ด ${previewSku}`}
+                  className="mx-auto h-auto max-w-full"
+                  src={`data:image/svg+xml;utf8,${encodeURIComponent(previewBarcodeSvg)}`}
+                />
+              ) : (
+                <p className="text-center text-sm text-slate-500">
+                  {previewSku?.trim()
+                    ? "ไม่สามารถสร้างบาร์โค้ดสำหรับค่านี้ได้"
+                    : "ไม่มีบาร์โค้ด"}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Create/Edit Warehouse Modal */}
       {isModalOpen && (
