@@ -27,7 +27,7 @@ import {
   updateWarehouse,
   updateWarehouseProductQuantity,
 } from "@/services/warehouses";
-import { listProducts } from "@/services/products";
+import { listProducts, listProductTypes, listProductUnits } from "@/services/products";
 import type {
   AddWarehouseProductInput,
   CreateStandaloneWarehouseProductInput,
@@ -36,7 +36,7 @@ import type {
   Warehouse,
   WarehouseProduct,
 } from "@/types/warehouse";
-import type { Product } from "@/types/product";
+import type { Product, ProductType, ProductUnit } from "@/types/product";
 
 type WarehouseSectionDictionary = {
   title: string;
@@ -215,6 +215,21 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
     queryFn: () => listProducts({ limit: 200 }),
     enabled: showAddProduct && addMode === "stock",
   });
+
+  const { data: productTypesData } = useQuery({
+    queryKey: ["product-types"],
+    queryFn: () => listProductTypes(),
+    enabled: showAddProduct && addMode === "standalone",
+  });
+
+  const { data: productUnitsData } = useQuery({
+    queryKey: ["product-units"],
+    queryFn: () => listProductUnits(),
+    enabled: showAddProduct && addMode === "standalone",
+  });
+
+  const productTypes: ProductType[] = productTypesData?.data ?? [];
+  const productUnits: ProductUnit[] = productUnitsData?.data ?? [];
 
   const warehouseProducts = warehouseProductsData?.data ?? [];
   const allProducts: Product[] = allProductsData?.data
@@ -694,12 +709,16 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       <span>{dictionary.standaloneUnitLabel}</span>
                       <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
                     </span>
-                    <input
+                    <select
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                       onChange={(e) => setStandaloneForm((prev) => ({ ...prev, unit_name: e.target.value }))}
-                      placeholder={dictionary.standaloneUnitLabel}
                       value={standaloneForm.unit_name}
-                    />
+                    >
+                      <option value="">{dictionary.standaloneUnitLabel}</option>
+                      {productUnits.map((u) => (
+                        <option key={u.id} value={u.name}>{u.name}</option>
+                      ))}
+                    </select>
                   </label>
 
                   {/* Category/Type */}
@@ -708,12 +727,16 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       <span>{dictionary.standaloneTypeLabel}</span>
                       <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
                     </span>
-                    <input
+                    <select
                       className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                       onChange={(e) => setStandaloneForm((prev) => ({ ...prev, type_name: e.target.value }))}
-                      placeholder={dictionary.standaloneTypeLabel}
                       value={standaloneForm.type_name}
-                    />
+                    >
+                      <option value="">{dictionary.standaloneTypeLabel}</option>
+                      {productTypes.map((t) => (
+                        <option key={t.id} value={t.name}>{t.name}</option>
+                      ))}
+                    </select>
                   </label>
 
                   {/* Quantity */}
