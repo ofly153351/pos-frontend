@@ -125,6 +125,7 @@ function ProductSelectField({
   onChange,
   options: opts,
   value,
+  noResultsLabel = "ไม่พบรายการ",
 }: {
   badgeText?: string;
   badgeTone?: "optional" | "required";
@@ -132,6 +133,7 @@ function ProductSelectField({
   onChange: (value: string) => void;
   options: { id: string; name: string }[];
   value: string;
+  noResultsLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(() => {
@@ -189,7 +191,7 @@ function ProductSelectField({
         {open && opts.length > 0 && (
           <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
             {filtered.length === 0 ? (
-              <div className="px-4 py-2.5 text-xs text-slate-400">ไม่พบรายการ</div>
+              <div className="px-4 py-2.5 text-xs text-slate-400">{noResultsLabel}</div>
             ) : (
               filtered.map((opt) => (
                 <button

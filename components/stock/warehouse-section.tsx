@@ -79,6 +79,34 @@ type WarehouseSectionDictionary = {
   standaloneUnitLabel: string;
   standaloneTypeLabel: string;
   standaloneNameRequired: string;
+  totalStockLabel: string;
+  totalValueLabel: string;
+  manageLabel: string;
+  exportLabel: string;
+  perPageLabel: string;
+  prevLabel: string;
+  nextLabel: string;
+  showingLabel: string;
+  fromLabel: string;
+  itemsLabel: string;
+  barcodeTitle: string;
+  printLabel: string;
+  closeLabel: string;
+  invalidBarcodeLabel: string;
+  noBarcodeLabel: string;
+  barcodeTooltip: string;
+  tableImageCol: string;
+  tableDetailsCol: string;
+  tableBarcodeCol: string;
+  tableCategoryCol: string;
+  tablePriceCol: string;
+  tableStockCol: string;
+  tableActionsCol: string;
+  qtyLabel: string;
+  saveLabel: string;
+  outOfStockLabel: string;
+  lowStockLabel: string;
+  editQtyTitle: string;
 };
 
 type WarehouseSectionProps = {
@@ -131,6 +159,7 @@ function ComboBoxSelect<T>({
   placeholder,
   getLabel,
   getKey,
+  noResultsLabel = "ไม่พบรายการ",
 }: {
   options: T[];
   value: string;
@@ -138,6 +167,7 @@ function ComboBoxSelect<T>({
   placeholder: string;
   getLabel: (item: T) => string;
   getKey: (item: T) => string;
+  noResultsLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState(value);
@@ -180,7 +210,7 @@ function ComboBoxSelect<T>({
       {open && options.length > 0 && (
         <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
           {filtered.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-slate-400">ไม่พบรายการ</div>
+            <div className="px-3 py-2 text-xs text-slate-400">{noResultsLabel}</div>
           ) : (
             filtered.map((item) => (
               <button
@@ -694,7 +724,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="rounded-xl border-b-2 border-blue-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            รายการสินค้า
+            {dictionary.productsLabel}
           </span>
           <p className="mt-2 text-3xl font-extrabold text-blue-700">
             {warehouseProducts.length}
@@ -702,7 +732,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         </div>
         <div className="rounded-xl border-b-2 border-amber-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            จำนวนรวม
+            {dictionary.totalStockLabel}
           </span>
           <p className="mt-2 text-3xl font-extrabold text-amber-700">
             {totalUnits.toLocaleString()}
@@ -710,7 +740,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         </div>
         <div className="rounded-xl border-b-2 border-emerald-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            มูลค่ารวม
+            {dictionary.totalValueLabel}
           </span>
           <p className="mt-2 text-3xl font-extrabold text-emerald-600">
             ฿{totalValue.toLocaleString()}
@@ -768,7 +798,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               type="button"
             >
               <Settings2 className="h-3.5 w-3.5" />
-              จัดการ
+              {dictionary.manageLabel}
             </button>
             <button
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
@@ -799,7 +829,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               type="button"
             >
               <Download className="h-3.5 w-3.5" />
-              ส่งออก
+              {dictionary.exportLabel}
             </button>
           </div>
         </div>
@@ -845,7 +875,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   />
                 </div>
                 <div className="mb-3 flex items-center gap-3">
-                  <label className="text-xs font-medium text-slate-600">จำนวน:</label>
+                  <label className="text-xs font-medium text-slate-600">{dictionary.qtyLabel}:</label>
                   <input
                     className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-center outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     min={0}
@@ -1017,7 +1047,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   {/* Quantity */}
                   <label className="block">
                     <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                      <span>จำนวน</span>
+                      <span>{dictionary.qtyLabel}</span>
                       <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
                     </span>
                     <input
@@ -1136,13 +1166,13 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     type="checkbox"
                   />
                 </th>
-                <th className="w-[10%] px-6 py-4 text-center font-bold">รูป</th>
-                <th className="w-[25%] px-6 py-4 font-bold">รายละเอียดสินค้า</th>
-                <th className="w-[13%] px-6 py-4 font-bold">บาร์โค้ด</th>
-                <th className="w-[14%] px-6 py-4 font-bold">หมวดหมู่</th>
-                <th className="w-[10%] px-6 py-4 font-bold">ราคา</th>
-                <th className="w-[8%] px-2 py-4 font-bold">สต็อก</th>
-                <th className="w-[15%] px-6 py-4 text-right font-bold">การจัดการ</th>
+                <th className="w-[10%] px-6 py-4 text-center font-bold">{dictionary.tableImageCol}</th>
+                <th className="w-[25%] px-6 py-4 font-bold">{dictionary.tableDetailsCol}</th>
+                <th className="w-[13%] px-6 py-4 font-bold">{dictionary.tableBarcodeCol}</th>
+                <th className="w-[14%] px-6 py-4 font-bold">{dictionary.tableCategoryCol}</th>
+                <th className="w-[10%] px-6 py-4 font-bold">{dictionary.tablePriceCol}</th>
+                <th className="w-[8%] px-2 py-4 font-bold">{dictionary.tableStockCol}</th>
+                <th className="w-[15%] px-6 py-4 text-right font-bold">{dictionary.tableActionsCol}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1248,13 +1278,13 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                             {(wp.product_quantity ?? wp.quantity) <= 0 ? (
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
                                 <X className="h-3.5 w-3.5" />
-                                หมด
+                                {dictionary.outOfStockLabel}
                               </span>
                             ) : (
                               <>
                                 {wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock ? (
                                   <AlertTriangle
-                                    aria-label="สต็อกต่ำ"
+                                    aria-label={dictionary.lowStockLabel}
                                     className="h-4 w-4 text-amber-500"
                                   />
                                 ) : null}
@@ -1295,14 +1325,14 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                             onClick={() => confirmQtyEdit(wp.product_id)}
                             type="button"
                           >
-                            บันทึก
+                            {dictionary.saveLabel}
                           </button>
                           <button
                             className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
                             onClick={() => cancelQtyEdit(wp.product_id)}
                             type="button"
                           >
-                            ยกเลิก
+                            {dictionary.cancel}
                           </button>
                         </>
                       ) : (
@@ -1311,7 +1341,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                             className="rounded-lg p-2 text-slate-500 transition hover:bg-blue-50 hover:text-blue-600"
                             disabled={!(wp.product_barcode || wp.standalone_barcode)}
                             onClick={() => setPreviewSku(wp.product_barcode || wp.standalone_barcode || null)}
-                            title="บาร์โค้ด"
+                            title={dictionary.barcodeTooltip}
                             type="button"
                           >
                             <Barcode className="h-4 w-4" />
@@ -1319,7 +1349,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                           <button
                             className="rounded-lg p-2 text-slate-500 transition hover:bg-blue-50 hover:text-blue-600"
                             onClick={() => startQtyEdit(wp)}
-                            title="แก้ไขจำนวน"
+                            title={dictionary.editQtyTitle}
                             type="button"
                           >
                             <Pencil className="h-4 w-4" />
@@ -1347,11 +1377,11 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       {whTotal > 0 && (
         <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span>แสดง {whStart + 1}-{Math.min(whEnd, whTotal)} จาก {whTotal} รายการ</span>
+            <span>{dictionary.showingLabel} {whStart + 1}-{Math.min(whEnd, whTotal)} {dictionary.fromLabel} {whTotal} {dictionary.itemsLabel}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-slate-500" htmlFor="wh-page-size">ต่อหน้า</label>
+              <label className="text-xs font-semibold text-slate-500" htmlFor="wh-page-size">{dictionary.perPageLabel}</label>
               <select
                 className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
                 id="wh-page-size"
@@ -1374,7 +1404,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 onClick={() => setWhPage((p) => Math.max(p - 1, 1))}
                 type="button"
               >
-                ก่อนหน้า
+                {dictionary.prevLabel}
               </button>
               {(() => {
                 const startPage = Math.max(whPage - 2, 1);
@@ -1402,7 +1432,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 onClick={() => setWhPage((p) => Math.min(p + 1, whTotalPages))}
                 type="button"
               >
-                ถัดไป
+                {dictionary.nextLabel}
               </button>
             </div>
           </div>
@@ -1415,7 +1445,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base font-semibold text-slate-900">
-                พรีวิวบาร์โค้ด
+                {dictionary.barcodeTitle}
               </h3>
               <div className="flex items-center gap-2">
                 <button
@@ -1424,10 +1454,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   type="button"
                 >
                   <Printer className="h-4 w-4" />
-                  พิมพ์
+                  {dictionary.printLabel}
                 </button>
                 <button
-                  aria-label="ปิด"
+                  aria-label={dictionary.closeLabel}
                   className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
                   onClick={() => setPreviewSku(null)}
                   type="button"
@@ -1440,15 +1470,15 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
               {previewBarcodeSvg ? (
                 <img
-                  alt={`บาร์โค้ด ${previewSku}`}
+                  alt={`${dictionary.barcodeTooltip} ${previewSku}`}
                   className="mx-auto h-auto max-w-full"
                   src={`data:image/svg+xml;utf8,${encodeURIComponent(previewBarcodeSvg)}`}
                 />
               ) : (
                 <p className="text-center text-sm text-slate-500">
                   {previewSku?.trim()
-                    ? "ไม่สามารถสร้างบาร์โค้ดสำหรับค่านี้ได้"
-                    : "ไม่มีบาร์โค้ด"}
+                    ? dictionary.invalidBarcodeLabel
+                    : dictionary.noBarcodeLabel}
                 </p>
               )}
             </div>
