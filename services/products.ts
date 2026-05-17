@@ -31,12 +31,14 @@ function buildProductFormData(input: ProductInput) {
     formData.set("brand_id", input.brand_id);
   }
 
-  if (input.sku) {
-    formData.set("sku", input.sku);
+  formData.set("sku", input.sku ?? "");
+  if (!input.sku) {
+    formData.set("clear_sku", "true");
   }
 
-  if (input.barcode) {
-    formData.set("barcode", input.barcode);
+  formData.set("barcode", input.barcode ?? "");
+  if (!input.barcode) {
+    formData.set("clear_barcode", "true");
   }
 
   if (input.product_type_id) {

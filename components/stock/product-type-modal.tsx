@@ -57,7 +57,7 @@ export function ProductTypeModal({
       className={`fixed inset-0 z-50 bg-slate-900/35 p-4 backdrop-blur-[1px] transition-opacity duration-400 md:p-8 ${
         isOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
       }`}
-      onClick={onClose}
+      onClick={(event) => event.target === event.currentTarget ? onClose() : undefined}
     >
       <div
         className={`ml-auto h-full w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] md:w-[35vw] ${

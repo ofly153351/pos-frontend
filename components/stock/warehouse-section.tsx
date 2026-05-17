@@ -607,6 +607,24 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   // Manage warehouses modal
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
+  // Close modals on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (isModalOpen) {
+        setIsModalOpen(false);
+        setError("");
+        setEditingId(null);
+        setForm(initialFormState);
+      }
+      if (isManageModalOpen) setIsManageModalOpen(false);
+      if (previewSku) setPreviewSku(null);
+    };
+    if (!isModalOpen && !isManageModalOpen && !previewSku) return;
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen, isManageModalOpen, previewSku]);
+
   // Fetch warehouses
   const { data: warehousesData, isLoading: warehousesLoading } = useQuery({
     queryKey: ["warehouses"],
@@ -1653,11 +1671,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       {/* Create/Edit Warehouse Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45"
-          onClick={() => { setIsModalOpen(false); resetForm(); }}
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/45"
         >
           <div
-            className="h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            className="h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl z-[60]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b border-slate-200 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white">
@@ -1818,13 +1835,12 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       {isManageModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45"
-          onClick={() => setIsManageModalOpen(false)}
         >
           <div
             className="flex h-[80vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-6 py-5 text-white">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-6 py-5 text-white rounded-t-2xl">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
                   {dictionary.title}

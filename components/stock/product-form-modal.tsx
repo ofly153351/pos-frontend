@@ -388,7 +388,6 @@ export function ProductFormModal({
           ? "pointer-events-auto bg-slate-950/45 opacity-100"
           : "pointer-events-none bg-slate-950/0 opacity-0"
       }`}
-      onClick={onClose}
     >
       <div
         className={`h-[92vh] w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-2xl transition-all duration-300 ease-out ${
