@@ -497,6 +497,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   );
 
   const totalUnits = warehouseProducts.reduce((sum, wp) => sum + wp.quantity, 0);
+  const totalValue = warehouseProducts.reduce((sum, wp) => sum + ((wp.product_price || wp.standalone_price || 0) * wp.quantity), 0);
 
   const isFormValid = form.name.trim().length > 0;
 
@@ -693,26 +694,26 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="rounded-xl border-b-2 border-blue-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {dictionary.title}
+            รายการสินค้า
           </span>
           <p className="mt-2 text-3xl font-extrabold text-blue-700">
-            {warehouses.length}
+            {warehouseProducts.length}
           </p>
         </div>
         <div className="rounded-xl border-b-2 border-amber-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {dictionary.productsLabel}
+            จำนวนรวม
           </span>
           <p className="mt-2 text-3xl font-extrabold text-amber-700">
-            {warehouseProducts.length}
+            {totalUnits.toLocaleString()}
           </p>
         </div>
         <div className="rounded-xl border-b-2 border-emerald-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Units
+            มูลค่ารวม
           </span>
           <p className="mt-2 text-3xl font-extrabold text-emerald-600">
-            {totalUnits}
+            ฿{totalValue.toLocaleString()}
           </p>
         </div>
       </section>
