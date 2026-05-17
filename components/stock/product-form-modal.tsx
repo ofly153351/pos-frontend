@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import type {
@@ -121,27 +121,96 @@ function ProductTextInput({
 function ProductSelectField({
   badgeText,
   badgeTone,
-  children,
   label,
   onChange,
+  options: opts,
   value,
 }: {
   badgeText?: string;
   badgeTone?: "optional" | "required";
-  children: ReactNode;
   label: string;
   onChange: (value: string) => void;
+  options: { id: string; name: string }[];
   value: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState(() => {
+    const found = opts.find((o) => o.id === value);
+    return found ? found.name : "";
+  });
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = useMemo(() => {
+    if (!search) return opts;
+    const q = search.toLowerCase();
+    return opts.filter((o) => o.name.toLowerCase().includes(q));
+  }, [opts, search]);
+
+  // Sync search when value changes externally
+  useEffect(() => {
+    const found = opts.find((o) => o.id === value);
+    setSearch(found ? found.name : "");
+  }, [value, opts]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
-      <select
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-blue-500"
-        onChange={(event) => onChange(event.target.value)}
-        value={value}
-      >
-        {children}
-      </select>
+      <div className="relative" ref={ref}>
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+        <input
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-10 outline-none transition focus:border-blue-500"
+          onChange={(e) => {
+            setSearch(e.target.value);
+            onChange(""); // clear ID, user is typing free-text
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder={label}
+          value={search}
+        />
+        {open && opts.length > 0 && (
+          <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+            {filtered.length === 0 ? (
+              <div className="px-4 py-2.5 text-xs text-slate-400">ไม่พบรายการ</div>
+            ) : (
+              filtered.map((opt) => (
+                <button
+                  key={opt.id}
+                  className={`w-full px-4 py-2.5 text-left text-sm transition hover:bg-blue-50 ${
+                    opt.id === value ? "bg-blue-50 font-medium text-blue-700" : "text-slate-700"
+                  }`}
+                  onClick={() => {
+                    onChange(opt.id);
+                    setSearch(opt.name);
+                    setOpen(false);
+                  }}
+                  type="button"
+                >
+                  {opt.name}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
     </ProductField>
   );
 }
@@ -447,15 +516,9 @@ export function ProductFormModal({
                         brand_id: value,
                       }))
                     }
+                    options={productBrands.map((b) => ({ id: b.id, name: b.name }))}
                     value={formState.brand_id ?? ""}
-                  >
-                    <option value="">-</option>
-                    {productBrands.map((brand) => (
-                      <option key={brand.id} value={brand.id}>
-                        {brand.name}
-                      </option>
-                    ))}
-                  </ProductSelectField>
+                  />
                   <ProductTextInput
                     badgeText={formLabels.optionalLabel}
                     label={formLabels.skuLabel}
@@ -487,15 +550,9 @@ export function ProductFormModal({
                         product_type_id: value,
                       }))
                     }
+                    options={productTypes.map((t) => ({ id: t.id, name: t.name }))}
                     value={formState.product_type_id ?? ""}
-                  >
-                    <option value="">-</option>
-                    {productTypes.map((type) => (
-                      <option key={type.id} value={type.id}>
-                        {type.name}
-                      </option>
-                    ))}
-                  </ProductSelectField>
+                  />
 
                   <ProductSelectField
                     badgeText={formLabels.requiredLabel}
@@ -507,15 +564,9 @@ export function ProductFormModal({
                         unit_id: value,
                       }))
                     }
+                    options={unitOptions.map((u) => ({ id: u.id, name: u.name }))}
                     value={formState.unit_id ?? ""}
-                  >
-                    <option value="">-</option>
-                    {unitOptions.map((unit) => (
-                      <option key={unit.id} value={unit.id}>
-                        {unit.name}
-                      </option>
-                    ))}
-                  </ProductSelectField>
+                  />
                   <ProductFileField
                     badgeText={formLabels.optionalLabel}
                     label={formLabels.imageLabel}
