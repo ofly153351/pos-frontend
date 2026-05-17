@@ -245,7 +245,7 @@ function WarehouseComboBox({
   inactiveLabel,
   noResultsLabel,
 }: {
-  warehouses: { id: string; name: string; code: string | null; is_active: boolean }[];
+  warehouses: { id: string; name: string; code?: string | null; is_active: boolean }[];
   value: string;
   onChange: (id: string) => void;
   emptyLabel: string;

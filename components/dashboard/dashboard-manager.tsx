@@ -1,7 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Package, TrendingUp } from "lucide-react";
+import {
+  AlertTriangle,
+  BarChart3,
+  Package,
+  PieChart,
+  TrendingUp,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart as RechartsPieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { getDashboard } from "@/services/dashboard";
 import type {
@@ -121,46 +141,6 @@ function formatDateTime(value: string, locale: string) {
     month: "short",
     year: "numeric",
   }).format(date);
-}
-
-function paymentColor(index: number) {
-  const colors = [
-    "from-sky-500 to-blue-600",
-    "from-emerald-500 to-teal-600",
-    "from-amber-500 to-orange-500",
-    "from-fuchsia-500 to-pink-600",
-  ];
-
-  return colors[index % colors.length];
-}
-
-function buildSparklinePath(values: number[], width: number, height: number, padding: number) {
-  if (values.length === 0) {
-    return { areaPath: "", linePath: "" };
-  }
-
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
-  const span = Math.max(max - min, 1);
-  const usableWidth = width - padding * 2;
-  const usableHeight = height - padding * 2;
-
-  const points = values.map((value, index) => {
-    const x =
-      values.length === 1
-        ? width / 2
-        : padding + (index / (values.length - 1)) * usableWidth;
-    const y = padding + ((max - value) / span) * usableHeight;
-    return { x, y };
-  });
-
-  const linePath = points
-    .map((point, index) => `${index === 0 ? "M" : "L"}${point.x.toFixed(2)},${point.y.toFixed(2)}`)
-    .join(" ");
-
-  const areaPath = `${linePath} L${(width - padding).toFixed(2)},${(height - padding).toFixed(2)} L${padding.toFixed(2)},${(height - padding).toFixed(2)} Z`;
-
-  return { areaPath, linePath };
 }
 
 function normalizeRecentSalesSeries(recentSales: DashboardRecentSale[]) {
@@ -284,10 +264,16 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
 
   const recentSeries = useMemo(() => normalizeRecentSalesSeries(data?.recent_sales ?? []), [data?.recent_sales]);
 
-  const sparkline = useMemo(() => {
-    const values = recentSeries.map((sale) => sale.total_amount ?? 0);
-    return buildSparklinePath(values, 560, 200, 16);
-  }, [recentSeries]);
+  const chartData = useMemo(() => {
+    return recentSeries.map((sale) => ({
+      name: new Date(sale.sold_at).toLocaleDateString(toLocaleTag(locale), {
+        day: "numeric",
+        month: "short",
+      }),
+      amount: sale.total_amount ?? 0,
+      fullDate: sale.sold_at,
+    }));
+  }, [recentSeries, locale]);
 
   const paymentBreakdown = useMemo(() => {
     const total = (data?.payment_breakdown ?? []).reduce((sum, item) => sum + item.amount, 0);
@@ -299,7 +285,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
   }, [data?.payment_breakdown]);
 
   const topProducts = data?.top_products ?? [];
-  const topProductMaxAmount = Math.max(...topProducts.map((item) => item.amount), 1);
   const lowStockProducts = [...(data?.low_stock_products ?? [])]
     .sort((a, b) => a.quantity - b.quantity)
     .slice(0, 5);
@@ -483,28 +468,87 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
         <article className="rounded-[1.75rem] border border-sky-100 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-950">{dictionary.summary.revenue}</h2>
-            <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-bold text-slate-900">{dictionary.summary.revenue}</h2>
+              <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                {dictionary.sections.range}
+              </span>
+            </div>
+            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
               {compactCurrency(data?.summary.revenue ?? 0, locale)}
             </span>
           </div>
 
-          <div className="mt-4 h-[220px] rounded-2xl bg-gradient-to-b from-sky-100/60 to-white p-3">
+          <div className="mt-4 h-[300px] rounded-2xl bg-gradient-to-b from-sky-100/60 to-white p-3">
             {isLoading ? (
               <div className="flex h-full items-center justify-center text-sm text-slate-500">{dictionary.loading}</div>
             ) : recentSeries.length === 0 ? (
               <div className="flex h-full items-center justify-center text-sm text-slate-500">{dictionary.empty}</div>
             ) : (
-              <svg aria-label={dictionary.summary.revenue} className="h-full w-full" viewBox="0 0 560 200">
-                <defs>
-                  <linearGradient id="salesArea" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.35" />
-                    <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
-                <path d={sparkline.areaPath} fill="url(#salesArea)" />
-                <path d={sparkline.linePath} fill="none" stroke="#0284c7" strokeLinecap="round" strokeWidth="3" />
-              </svg>
+              <ResponsiveContainer className="h-full w-full" height="100%" width="100%">
+                <AreaChart data={chartData} margin={{ bottom: 4, left: 0, right: 4, top: 4 }}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="4 4"
+                    stroke="#e2e8f0"
+                    vertical={false}
+                  />
+                  <XAxis
+                    axisLine={false}
+                    dataKey="name"
+                    fontSize={10}
+                    interval="preserveStartEnd"
+                    minTickGap={40}
+                    stroke="#94a3b8"
+                    tick={{ fill: "#94a3b8", fontSize: 9 }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    fontSize={10}
+                    stroke="#94a3b8"
+                    tick={{ fill: "#94a3b8", fontSize: 9 }}
+                    tickFormatter={(v: number) => compactCurrency(v, locale)}
+                    tickLine={false}
+                    width={44}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      return (
+                        <div className="rounded-lg bg-slate-900 px-3 py-2 text-white shadow-lg">
+                          <p className="text-[10px] text-slate-300">
+                            {new Date(d.fullDate).toLocaleDateString(toLocaleTag(locale), {
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              month: "short",
+                            })}
+                          </p>
+                          <p className="text-sm font-bold">
+                            {formatCurrency(d.amount, locale)}
+                          </p>
+                        </div>
+                      );
+                    }}
+                    cursor={false}
+                  />
+                  <Area
+                    activeDot={{ fill: "#0ea5e9", r: 5, stroke: "#fff", strokeWidth: 2 }}
+                    dataKey="amount"
+                    fill="url(#revenueGradient)"
+                    stroke="#0284c7"
+                    strokeWidth={2.5}
+                    type="monotone"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             )}
           </div>
         </article>
@@ -517,20 +561,75 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             ) : paymentBreakdown.length === 0 ? (
               <p className="text-sm text-slate-500">{dictionary.empty}</p>
             ) : (
-              paymentBreakdown.map((item, index) => (
-                <div key={`${item.payment_method}-${item.amount}`}>
-                  <div className="mb-1.5 flex items-center justify-between text-xs">
-                    <span className="font-semibold capitalize text-slate-700">{item.payment_method}</span>
-                    <span className="font-medium text-slate-500">{item.ratio.toFixed(0)}%</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-slate-100">
-                    <div
-                      className={`h-2 rounded-full bg-gradient-to-r ${paymentColor(index)} transition-all duration-500`}
-                      style={{ width: `${Math.max(item.ratio, 6)}%` }}
-                    />
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="shrink-0">
+                  <ResponsiveContainer height={140} width={140}>
+                    <RechartsPieChart>
+                      <Pie
+                        cx="50%"
+                        cy="50%"
+                        data={paymentBreakdown}
+                        dataKey="amount"
+                        endAngle={-270}
+                        innerRadius={34}
+                        nameKey="payment_method"
+                        outerRadius={60}
+                        paddingAngle={2}
+                        startAngle={90}
+                        stroke="none"
+                      >
+                        {paymentBreakdown.map((_item, i) => (
+                          <Cell
+                            key={`cell-${i}`}
+                            fill={["#0ea5e9","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][i % 6]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null;
+                          const d = payload[0].payload;
+                          return (
+                            <div className="rounded-lg bg-slate-900 px-3 py-2 text-white shadow-lg">
+                              <p className="text-xs font-semibold capitalize">{d.payment_method}</p>
+                              <p className="text-sm font-bold">{formatCurrency(d.amount, locale)}</p>
+                              <p className="text-[10px] text-slate-300">{d.ratio.toFixed(1)}%</p>
+                            </div>
+                          );
+                        }}
+                        cursor={false}
+                      />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
                 </div>
-              ))
+                <div className="flex-1 space-y-2.5">
+                  {paymentBreakdown.map((item, index) => (
+                    <div key={`${item.payment_method}`}>
+                      <div className="mb-0.5 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-block h-2.5 w-2.5 rounded-full"
+                            style={{
+                              background: `linear-gradient(135deg, ${["#0ea5e9","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][index % 6]}, ${["#0284c7","#059669","#d97706","#c026d3","#7c3aed","#dc2626"][index % 6]})`,
+                            }}
+                          />
+                          <span className="font-semibold capitalize text-slate-700">{item.payment_method}</span>
+                        </div>
+                        <span className="text-xs text-slate-500">{item.ratio.toFixed(0)}%</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-slate-100">
+                        <div
+                          className="h-1.5 rounded-full transition-all duration-500"
+                          style={{
+                            background: `linear-gradient(90deg, ${["#0ea5e9","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][index % 6]}, ${["#0284c7","#059669","#d97706","#c026d3","#7c3aed","#dc2626"][index % 6]})`,
+                            width: `${Math.max(item.ratio, 4)}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </article>
@@ -545,24 +644,66 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             ) : topProducts.length === 0 ? (
               <p className="text-sm text-slate-500">{dictionary.empty}</p>
             ) : (
-              topProducts.map((product, index) => {
-                const ratio = (product.amount / topProductMaxAmount) * 100;
-
-                return (
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3" key={product.product_id}>
-                    <div className="mb-2 flex items-center justify-between gap-3">
-                      <p className="truncate text-sm font-semibold text-slate-900">{product.product_name}</p>
-                      <p className="text-xs font-semibold text-slate-500">{product.quantity_sold}</p>
-                    </div>
-                    <div className="h-2 rounded-full bg-white">
-                      <div
-                        className={`h-2 rounded-full bg-gradient-to-r ${paymentColor(index)} transition-all duration-500`}
-                        style={{ width: `${Math.max(ratio, 6)}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })
+              <div className="h-[280px]">
+                <ResponsiveContainer className="h-full w-full" height="100%" width="100%">
+                  <BarChart
+                    barCategoryGap={8}
+                    barGap={2}
+                    data={topProducts.slice(0, 8)}
+                    layout="vertical"
+                    margin={{ bottom: 4, left: 0, right: 8, top: 4 }}
+                  >
+                    <CartesianGrid horizontal={false} stroke="#f1f5f9" />
+                    <XAxis
+                      axisLine={false}
+                      dataKey="amount"
+                      fontSize={9}
+                      stroke="#94a3b8"
+                      tick={{ fill: "#94a3b8", fontSize: 9 }}
+                      tickFormatter={(v: number) => compactCurrency(v, locale)}
+                      tickLine={false}
+                      type="number"
+                    />
+                    <YAxis
+                      axisLine={false}
+                      dataKey="product_name"
+                      fontSize={10}
+                      stroke="#94a3b8"
+                      tick={{ fill: "#1e293b", fontSize: 10 }}
+                      tickLine={false}
+                      type="category"
+                      width={100}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div className="rounded-lg bg-slate-900 px-3 py-2 text-white shadow-lg">
+                            <p className="text-xs font-semibold">{d.product_name}</p>
+                            <p className="text-sm font-bold">{formatCurrency(d.amount, locale)}</p>
+                            <p className="text-[10px] text-slate-300">sold {d.quantity_sold}</p>
+                          </div>
+                        );
+                      }}
+                      cursor={false}
+                    />
+                    <Bar
+                      dataKey="amount"
+                      maxBarSize={16}
+                      radius={[0, 4, 4, 0]}
+                    >
+                      {topProducts.slice(0, 8).map((_entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={["#0ea5e9","#14b8a6","#f59e0b","#8b5cf6","#ef4444","#ec4899","#06b6d4","#10b981"][index % 8]}
+                          fillOpacity={0.85}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
         </article>
