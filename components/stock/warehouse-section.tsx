@@ -287,12 +287,13 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       const quantity = parseInt(value ?? "", 10);
       if (isNaN(quantity) || quantity < 0) return;
 
+      setError("");
       try {
         await updateWarehouseProductQuantity(selectedWarehouseId, productId, quantity);
         await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
         cancelQtyEdit(productId);
-      } catch {
-        // Error handled silently
+      } catch (nextErr: any) {
+        setError(nextErr?.message || "ไม่สามารถอัปเดตจำนวนได้");
       }
     },
     [selectedWarehouseId, editingQtyValues, queryClient, cancelQtyEdit],
