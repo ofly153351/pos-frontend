@@ -18,6 +18,6 @@ export async function PUT(request: Request, context: RouteContext) {
   return proxyApiRequest(
     request,
     `/api/v1/stores/${storeId}/warehouses/${warehouseId}/products/${productId}`,
-    { method: "PUT" },
+    { body: await request.text(), method: "PUT" },
   );
 }
