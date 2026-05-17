@@ -107,6 +107,7 @@ type WarehouseSectionDictionary = {
   outOfStockLabel: string;
   lowStockLabel: string;
   editQtyTitle: string;
+  exportBarcodeLabel: string;
 };
 
 type WarehouseSectionProps = {
@@ -226,6 +227,105 @@ function ComboBoxSelect<T>({
                 type="button"
               >
                 {getLabel(item)}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Warehouse combobox: searchable dropdown by name/code
+function WarehouseComboBox({
+  warehouses,
+  value,
+  onChange,
+  emptyLabel,
+  inactiveLabel,
+  noResultsLabel,
+}: {
+  warehouses: { id: string; name: string; code: string | null; is_active: boolean }[];
+  value: string;
+  onChange: (id: string) => void;
+  emptyLabel: string;
+  inactiveLabel: string;
+  noResultsLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  const selected = warehouses.find((w) => w.id === value);
+
+  // Sync search with selected warehouse name
+  useEffect(() => {
+    if (selected) {
+      const label = selected.name + (selected.code ? ` (${selected.code})` : "");
+      setSearch(label);
+    } else if (!value) {
+      setSearch("");
+    }
+  }, [value, selected]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (!search) return warehouses;
+    const q = search.toLowerCase();
+    return warehouses.filter(
+      (w) =>
+        w.name.toLowerCase().includes(q) ||
+        (w.code && w.code.toLowerCase().includes(q)),
+    );
+  }, [warehouses, search]);
+
+  const getDisplayLabel = (w: (typeof warehouses)[number]) =>
+    w.name + (w.code ? ` (${w.code})` : "") + (!w.is_active ? ` — ${inactiveLabel}` : "");
+
+  return (
+    <div className="relative min-w-[220px]" ref={ref}>
+      <input
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        onChange={(e) => {
+          setSearch(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        placeholder={emptyLabel}
+        value={search}
+      />
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      {open && (
+        <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+          {warehouses.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-slate-400">{emptyLabel}</div>
+          ) : filtered.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-slate-400">{noResultsLabel}</div>
+          ) : (
+            filtered.map((w) => (
+              <button
+                key={w.id}
+                className={`flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition hover:bg-blue-50 ${
+                  w.id === value ? "bg-blue-50 font-semibold text-blue-700" : "text-slate-700"
+                }`}
+                onClick={() => {
+                  onChange(w.id);
+                  setSearch(getDisplayLabel(w));
+                  setOpen(false);
+                }}
+                type="button"
+              >
+                <WarehouseIcon className="h-4 w-4 shrink-0 text-slate-400" />
+                <span className="truncate">{getDisplayLabel(w)}</span>
               </button>
             ))
           )}
@@ -439,6 +539,69 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 </body>
 </html>`);
     printWindow.document.close();
+  }
+
+  function exportSelectedBarcodes() {
+    const target = warehouseProducts.filter((wp) => selectedIds.has(wp.product_id));
+
+    if (target.length === 0) {
+      setError(dictionary.exportBarcodeLabel + ": " + dictionary.noBarcodeLabel);
+      return;
+    }
+
+    const labelRows = target
+      .filter((wp) => wp.product_barcode || wp.standalone_barcode)
+      .map((wp) => {
+        const barcode = (wp.product_barcode || wp.standalone_barcode || "").trim().toUpperCase();
+        const name = wp.product_name || wp.standalone_name || "";
+        const sku = wp.product_sku || wp.standalone_sku || "";
+        const label = sku ? `${name} (${sku})` : name;
+        return { barcode, label };
+      });
+
+    if (labelRows.length === 0) {
+      setError(dictionary.noBarcodeLabel);
+      return;
+    }
+
+    const labelSvgs = labelRows.map((r) => {
+      const svg = generateBarcodeSvg(r.barcode);
+      return `<div class="barcode-label-item"><div class="barcode-label-name">${r.label}</div><img src="data:image/svg+xml;utf8,${encodeURIComponent(svg)}" alt="${r.barcode}" /></div>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Export Barcodes</title>
+  <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { padding: 20px; font-family: -apple-system, system-ui, sans-serif; }
+  .barcode-label-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .barcode-label-item { text-align: center; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px; page-break-inside: avoid; }
+  .barcode-label-name { font-size: 10px; font-weight: 600; color: #1e293b; margin-bottom: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .barcode-label-item img { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .barcode-label-item { border: none; }
+    .barcode-label-grid { gap: 12px; }
+  }
+  </style>
+</head>
+<body>
+  <div class="barcode-label-grid">${labelSvgs}</div>
+  <div style="margin-top:20px;text-align:center;">
+    <p style="font-size:11px;color:#94a3b8;">${labelRows.length} barcode labels</p>
+  </div>
+  <script>window.onload=function(){setTimeout(function(){window.print()},300)};<\/script>
+</body>
+</html>`;
+
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const pw = window.open("", "barcode-export", `width=${w},height=${h},left=${(screen.width-w)/2},top=${(screen.height-h)/2}`);
+    if (!pw) return;
+    pw.document.write(html);
+    pw.document.close();
   }
 
   // Manage warehouses modal
@@ -757,27 +920,18 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             {warehousesLoading ? (
               <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-200" />
             ) : (
-              <div className="relative">
-                <select
-                  className="min-w-[220px] appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                  onChange={(e) => {
-                    setSelectedWarehouseId(e.target.value);
-                    setWhPage(1);
-                    resetAddPanel();
-                  }}
-                  value={selectedWarehouseId}
-                >
-                  {warehouses.length === 0 && (
-                    <option value="">{dictionary.empty}</option>
-                  )}
-                  {warehouses.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name}{w.code ? ` (${w.code})` : ""}{!w.is_active ? ` — ${dictionary.inactiveLabel}` : ""}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              </div>
+              <WarehouseComboBox
+                warehouses={warehouses}
+                value={selectedWarehouseId}
+                onChange={(id) => {
+                  setSelectedWarehouseId(id);
+                  setWhPage(1);
+                  resetAddPanel();
+                }}
+                emptyLabel={dictionary.empty}
+                inactiveLabel={dictionary.inactiveLabel}
+                noResultsLabel={dictionary.noProductsLabel}
+              />
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -831,6 +985,15 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             >
               <Download className="h-3.5 w-3.5" />
               {dictionary.exportLabel}
+            </button>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+              disabled={selectedIds.size === 0 || warehouseProducts.filter((wp) => selectedIds.has(wp.product_id) && (wp.product_barcode || wp.standalone_barcode)).length === 0}
+              onClick={exportSelectedBarcodes}
+              type="button"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              {dictionary.exportBarcodeLabel}
             </button>
           </div>
         </div>

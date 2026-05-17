@@ -682,6 +682,7 @@
       "totalValueLabel": "Total Value",
       "manageLabel": "Manage",
       "exportLabel": "Export",
+      "exportBarcodeLabel": "Export Barcodes",
       "perPageLabel": "Per page",
       "prevLabel": "Previous",
       "nextLabel": "Next",
