@@ -12,3 +12,12 @@ export async function DELETE(request: Request, context: RouteContext) {
     { method: "DELETE" },
   );
 }
+
+export async function PUT(request: Request, context: RouteContext) {
+  const { productId, warehouseId, storeId } = await context.params;
+  return proxyApiRequest(
+    request,
+    `/api/v1/stores/${storeId}/warehouses/${warehouseId}/products/${productId}`,
+    { method: "PUT" },
+  );
+}
