@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Barcode,
   Boxes,
   ChevronDown,
+  Download,
   Package,
+  Upload,
   Pencil,
   Plus,
   Printer,
@@ -120,6 +122,88 @@ const initialStandaloneForm: StandaloneFormState = {
   type_name: "",
   quantity: "1",
 };
+
+// Combobox: text input with filtered dropdown
+function ComboBoxSelect<T>({
+  options,
+  value,
+  onChange,
+  placeholder,
+  getLabel,
+  getKey,
+}: {
+  options: T[];
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  getLabel: (item: T) => string;
+  getKey: (item: T) => string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState(value);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const filtered = useMemo(() => {
+    if (!search) return options;
+    const q = search.toLowerCase();
+    return options.filter((o) => getLabel(o).toLowerCase().includes(q));
+  }, [options, search, getLabel]);
+
+  useEffect(() => {
+    setSearch(value);
+  }, [value]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <input
+        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+        onChange={(e) => {
+          setSearch(e.target.value);
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        value={search}
+      />
+      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      {open && options.length > 0 && (
+        <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-slate-400">ไม่พบรายการ</div>
+          ) : (
+            filtered.map((item) => (
+              <button
+                key={getKey(item)}
+                className={`w-full px-3 py-2 text-left text-sm transition hover:bg-blue-50 ${
+                  getLabel(item) === value ? "bg-blue-50 font-medium text-blue-700" : "text-slate-700"
+                }`}
+                onClick={() => {
+                  onChange(getLabel(item));
+                  setSearch(getLabel(item));
+                  setOpen(false);
+                }}
+                type="button"
+              >
+                {getLabel(item)}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const queryClient = useQueryClient();
@@ -666,6 +750,37 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               <Settings2 className="h-3.5 w-3.5" />
               จัดการ
             </button>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+              disabled={selectedIds.size === 0}
+              onClick={() => {
+                const selectedProducts = warehouseProducts.filter((wp) => selectedIds.has(wp.product_id));
+                if (selectedProducts.length === 0) return;
+                const rows = selectedProducts.map((wp) => [
+                  wp.product_name || wp.standalone_name || '',
+                  wp.product_sku || wp.standalone_sku || '',
+                  wp.product_barcode || wp.standalone_barcode || '',
+                  wp.product_type_name || wp.standalone_type_name || '',
+                  (wp.product_price || wp.standalone_price || 0).toString(),
+                  String(wp.quantity),
+                ]);
+                const header = [['ชื่อ', 'SKU', 'บาร์โค้ด', 'หมวดหมู่', 'ราคา', 'จำนวน']];
+                const csv = [...header, ...rows]
+                  .map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(','))
+                  .join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'warehouse-products.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              type="button"
+            >
+              <Download className="h-3.5 w-3.5" />
+              ส่งออก
+            </button>
           </div>
         </div>
 
@@ -853,16 +968,14 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       <span>{dictionary.standaloneUnitLabel}</span>
                       <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
                     </span>
-                    <select
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, unit_name: e.target.value }))}
+                    <ComboBoxSelect
+                      getKey={(u: ProductUnit) => u.id}
+                      getLabel={(u: ProductUnit) => u.name}
+                      onChange={(v) => setStandaloneForm((prev) => ({ ...prev, unit_name: v }))}
+                      options={productUnits}
+                      placeholder={dictionary.standaloneUnitLabel}
                       value={standaloneForm.unit_name}
-                    >
-                      <option value="">{dictionary.standaloneUnitLabel}</option>
-                      {productUnits.map((u) => (
-                        <option key={u.id} value={u.name}>{u.name}</option>
-                      ))}
-                    </select>
+                    />
                   </label>
 
                   {/* Category/Type */}
@@ -871,16 +984,14 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       <span>{dictionary.standaloneTypeLabel}</span>
                       <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
                     </span>
-                    <select
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, type_name: e.target.value }))}
+                    <ComboBoxSelect
+                      getKey={(t: ProductType) => t.id}
+                      getLabel={(t: ProductType) => t.name}
+                      onChange={(v) => setStandaloneForm((prev) => ({ ...prev, type_name: v }))}
+                      options={productTypes}
+                      placeholder={dictionary.standaloneTypeLabel}
                       value={standaloneForm.type_name}
-                    >
-                      <option value="">{dictionary.standaloneTypeLabel}</option>
-                      {productTypes.map((t) => (
-                        <option key={t.id} value={t.name}>{t.name}</option>
-                      ))}
-                    </select>
+                    />
                   </label>
 
                   {/* Quantity */}
@@ -990,7 +1101,21 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           <table className="w-full table-fixed border-collapse text-left">
             <thead>
               <tr className="bg-slate-100 text-xs uppercase tracking-widest text-slate-500">
-                <th className="w-[5%] px-4 py-4 text-center font-bold"></th>
+                <th className="w-[5%] px-4 py-4 text-center font-bold">
+                  <input
+                    aria-label="Select all"
+                    checked={warehouseProducts.length > 0 && selectedIds.size === warehouseProducts.length}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-500"
+                    onChange={() => {
+                      if (selectedIds.size === warehouseProducts.length) {
+                        setSelectedIds(new Set());
+                      } else {
+                        setSelectedIds(new Set(warehouseProducts.map((wp) => wp.product_id)));
+                      }
+                    }}
+                    type="checkbox"
+                  />
+                </th>
                 <th className="w-[10%] px-6 py-4 text-center font-bold">รูป</th>
                 <th className="w-[25%] px-6 py-4 font-bold">รายละเอียดสินค้า</th>
                 <th className="w-[13%] px-6 py-4 font-bold">บาร์โค้ด</th>
