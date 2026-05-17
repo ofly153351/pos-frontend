@@ -58,7 +58,16 @@ export function StockManager({
 }: StockManagerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [productPageSize, setProductPageSize] = useState(20);
+  const [productPageSize, setProductPageSize] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("stock-page-size");
+      if (stored) {
+        const parsed = parseInt(stored, 10);
+        if ([5, 10, 15, 25, 50, 100].includes(parsed)) return parsed;
+      }
+    }
+    return 5;
+  });
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [productPage, setProductPage] = useState(1);
@@ -738,6 +747,7 @@ export function StockManager({
           onPageSizeChange={(size) => {
             setProductPageSize(size);
             setProductPage(1);
+            localStorage.setItem("stock-page-size", String(size));
           }}
           onDelete={handleDelete}
           onEdit={openEditModal}

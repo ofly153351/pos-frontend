@@ -459,7 +459,25 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const productTypes: ProductType[] = productTypesData?.data ?? [];
   const productUnits: ProductUnit[] = productUnitsData?.data ?? [];
 
+  // Warehouse pagination state (client-side)
+  const [whPage, setWhPage] = useState(1);
+  const [whPageSize, setWhPageSize] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("warehouse-page-size");
+      if (stored) {
+        const parsed = parseInt(stored, 10);
+        if ([5, 10, 15, 25, 50, 100].includes(parsed)) return parsed;
+      }
+    }
+    return 5;
+  });
+
   const warehouseProducts = warehouseProductsData?.data ?? [];
+  const whTotal = warehouseProducts.length;
+  const whTotalPages = Math.max(Math.ceil(whTotal / whPageSize), 1);
+  const whStart = (whPage - 1) * whPageSize;
+  const whEnd = whStart + whPageSize;
+  const whPageProducts = warehouseProducts.slice(whStart, whEnd);
   const allProducts: Product[] = allProductsData?.data
     ? Array.isArray(allProductsData.data)
       ? allProductsData.data
@@ -712,6 +730,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   className="min-w-[220px] appearance-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   onChange={(e) => {
                     setSelectedWarehouseId(e.target.value);
+                    setWhPage(1);
                     resetAddPanel();
                   }}
                   value={selectedWarehouseId}
@@ -1080,7 +1099,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             <span className="animate-pulse">{dictionary.helper}...</span>
           </span>
         </div>
-      ) : warehouseProducts.length === 0 ? (
+      ) : whTotal === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white px-6 py-16">
           <Boxes className="mb-4 h-12 w-12 text-slate-300" />
           <p className="text-sm font-medium text-slate-500">{dictionary.noProductsInWarehouseLabel}</p>
@@ -1104,13 +1123,13 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 <th className="w-[5%] px-4 py-4 text-center font-bold">
                   <input
                     aria-label="Select all"
-                    checked={warehouseProducts.length > 0 && selectedIds.size === warehouseProducts.length}
+                    checked={whPageProducts.length > 0 && selectedIds.size === warehouseProducts.length}
                     className="h-4 w-4 rounded border-slate-300 text-blue-700 focus:ring-blue-500"
                     onChange={() => {
                       if (selectedIds.size === warehouseProducts.length) {
                         setSelectedIds(new Set());
                       } else {
-                        setSelectedIds(new Set(warehouseProducts.map((wp) => wp.product_id)));
+                        setSelectedIds(new Set(whPageProducts.map((wp) => wp.product_id)));
                       }
                     }}
                     type="checkbox"
@@ -1126,7 +1145,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {warehouseProducts.map((wp, index) => (
+              {whPageProducts.map((wp, index) => (
                 <tr
                   key={wp.id}
                   className={`${index % 2 === 1 ? "bg-slate-50/50" : "bg-white"} group transition hover:bg-slate-50`}
@@ -1321,6 +1340,72 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination */}
+      {whTotal > 0 && (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span>แสดง {whStart + 1}-{Math.min(whEnd, whTotal)} จาก {whTotal} รายการ</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-semibold text-slate-500" htmlFor="wh-page-size">ต่อหน้า</label>
+              <select
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+                id="wh-page-size"
+                onChange={(e) => {
+                  setWhPageSize(Number(e.target.value));
+                  setWhPage(1);
+                  localStorage.setItem("warehouse-page-size", e.target.value);
+                }}
+                value={whPageSize}
+              >
+                {[5, 10, 15, 25, 50, 100].map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={whPage <= 1}
+                onClick={() => setWhPage((p) => Math.max(p - 1, 1))}
+                type="button"
+              >
+                ก่อนหน้า
+              </button>
+              {(() => {
+                const startPage = Math.max(whPage - 2, 1);
+                const endPage = Math.min(startPage + 4, whTotalPages);
+                const pages = [];
+                for (let i = startPage; i <= endPage; i++) pages.push(i);
+                return pages.map((page) => (
+                  <button
+                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                      page === whPage
+                        ? "bg-blue-700 text-white"
+                        : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                    }`}
+                    key={page}
+                    onClick={() => setWhPage(page)}
+                    type="button"
+                  >
+                    {page}
+                  </button>
+                ));
+              })()}
+              <button
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={whPage >= whTotalPages}
+                onClick={() => setWhPage((p) => Math.min(p + 1, whTotalPages))}
+                type="button"
+              >
+                ถัดไป
+              </button>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Barcode Preview Modal */}
