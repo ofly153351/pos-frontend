@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import {
   addSupplierProduct,
@@ -89,15 +97,21 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
-  const [productMode, setProductMode] = useState<"existing" | "create">("existing");
+  const [productMode, setProductMode] = useState<"existing" | "create">(
+    "existing",
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<SupplierFormData>(initialFormData);
 
   // Supplier products state
-  const [expandedSupplierId, setExpandedSupplierId] = useState<string | null>(null);
+  const [expandedSupplierId, setExpandedSupplierId] = useState<string | null>(
+    null,
+  );
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<SupplierProduct | null>(null);
+  const [editingProduct, setEditingProduct] = useState<SupplierProduct | null>(
+    null,
+  );
   const [productFormData, setProductFormData] = useState({
     product_id: "",
     supplier_sku: "",
@@ -122,7 +136,10 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   // Close product search dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (productSearchRef.current && !productSearchRef.current.contains(e.target as Node)) {
+      if (
+        productSearchRef.current &&
+        !productSearchRef.current.contains(e.target as Node)
+      ) {
         setShowProductDropdown(false);
       }
     }
@@ -132,10 +149,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showProductDropdown]);
 
-  const {
-    data: suppliers = [],
-    error: queryError,
-  } = useQuery<Supplier[]>({
+  const { data: suppliers = [], error: queryError } = useQuery<Supplier[]>({
     queryFn: async () => {
       const response = await listSuppliers();
       return response.data ?? [];
@@ -144,9 +158,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   });
 
   // Fetch supplier products when expanded
-  const {
-    data: supplierProducts = [],
-  } = useQuery<SupplierProduct[]>({
+  const { data: supplierProducts = [] } = useQuery<SupplierProduct[]>({
     queryFn: async () => {
       if (!expandedSupplierId) return [];
       const response = await listSupplierProducts(expandedSupplierId);
@@ -157,9 +169,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   });
 
   // Fetch products for the add product search
-  const {
-    data: allProductsData,
-  } = useQuery({
+  const { data: allProductsData } = useQuery({
     queryFn: async () => {
       const response = await listProducts({ limit: 200 });
       return response.data;
@@ -169,12 +179,14 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   });
 
   const allProducts = allProductsData?.items ?? [];
-  const filteredProducts = allProducts.filter((p: Product) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    (p.sku ?? "").toLowerCase().includes(productSearch.toLowerCase()),
+  const filteredProducts = allProducts.filter(
+    (p: Product) =>
+      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      (p.sku ?? "").toLowerCase().includes(productSearch.toLowerCase()),
   );
 
-  const resolvedError = error || (queryError instanceof Error ? queryError.message : "");
+  const resolvedError =
+    error || (queryError instanceof Error ? queryError.message : "");
 
   function openCreateModal() {
     setEditingId(null);
@@ -249,7 +261,15 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   function openAddProductModal() {
     setEditingProduct(null);
     setProductMode("existing");
-    setProductFormData({ product_id: "", supplier_sku: "", supplier_price: 0, product_name: "", sku: "", barcode: "", base_price: 0 });
+    setProductFormData({
+      product_id: "",
+      supplier_sku: "",
+      supplier_price: 0,
+      product_name: "",
+      sku: "",
+      barcode: "",
+      base_price: 0,
+    });
     setProductSearch("");
     setError("");
     setIsProductModalOpen(true);
@@ -273,7 +293,15 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   function closeProductModal() {
     setIsProductModalOpen(false);
     setEditingProduct(null);
-    setProductFormData({ product_id: "", supplier_sku: "", supplier_price: 0, product_name: "", sku: "", barcode: "", base_price: 0 });
+    setProductFormData({
+      product_id: "",
+      supplier_sku: "",
+      supplier_price: 0,
+      product_name: "",
+      sku: "",
+      barcode: "",
+      base_price: 0,
+    });
     setProductSearch("");
     setShowProductDropdown(false);
     setError("");
@@ -292,11 +320,19 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   async function handleSaveProduct() {
     setError("");
 
-    if (!editingProduct && productMode === "existing" && !productFormData.product_id) {
+    if (
+      !editingProduct &&
+      productMode === "existing" &&
+      !productFormData.product_id
+    ) {
       setError(dictionary.searchProduct + " is required");
       return;
     }
-    if (!editingProduct && productMode === "create" && !productFormData.product_name.trim()) {
+    if (
+      !editingProduct &&
+      productMode === "create" &&
+      !productFormData.product_name.trim()
+    ) {
       setError(dictionary.productNameRequired);
       return;
     }
@@ -327,7 +363,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
             supplier_price: productFormData.supplier_price,
           });
         }
-        queryClient.invalidateQueries({ queryKey: ["supplier-products", supplierId] });
+        queryClient.invalidateQueries({
+          queryKey: ["supplier-products", supplierId],
+        });
         closeProductModal();
       } catch (err) {
         setError(err instanceof Error ? err.message : dictionary.requestFailed);
@@ -341,17 +379,21 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
 
     try {
       await removeSupplierProduct(expandedSupplierId, product.product_id);
-      queryClient.invalidateQueries({ queryKey: ["supplier-products", expandedSupplierId] });
+      queryClient.invalidateQueries({
+        queryKey: ["supplier-products", expandedSupplierId],
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : dictionary.requestFailed);
     }
   }
 
   return (
-    <div className="space-y-8">
+    <div className="">
       <section className="rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-slate-900">{dictionary.title}</h3>
+          <h3 className="text-lg font-bold text-slate-900">
+            {dictionary.title}
+          </h3>
           <button
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
             onClick={openCreateModal}
@@ -363,11 +405,15 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
         </div>
 
         {resolvedError ? (
-          <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{resolvedError}</p>
+          <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+            {resolvedError}
+          </p>
         ) : null}
 
         {suppliers.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-500">{dictionary.emptySuppliers}</p>
+          <p className="py-8 text-center text-sm text-slate-500">
+            {dictionary.emptySuppliers}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -386,7 +432,10 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                 {suppliers.map((supplier) => {
                   const isExpanded = expandedSupplierId === supplier.id;
                   return (
-                    <tr key={supplier.id} className="border-b border-slate-100 text-slate-700">
+                    <tr
+                      key={supplier.id}
+                      className="border-b border-slate-100 text-slate-700"
+                    >
                       <td className="py-3 pr-2">
                         <button
                           className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
@@ -403,12 +452,18 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       </td>
                       <td className="py-3 pr-4 font-medium">{supplier.name}</td>
                       <td className="py-3 pr-4">{supplier.phone || "-"}</td>
-                      <td className="py-3 pr-4">{supplier.contact_person || "-"}</td>
+                      <td className="py-3 pr-4">
+                        {supplier.contact_person || "-"}
+                      </td>
                       <td className="py-3 pr-4">{supplier.tax_id || "-"}</td>
                       <td className="py-3 pr-4">
-                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          supplier.is_active ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"
-                        }`}>
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            supplier.is_active
+                              ? "bg-green-100 text-green-700"
+                              : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
                           {supplier.is_active ? "Active" : "Inactive"}
                         </span>
                       </td>
@@ -456,27 +511,49 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                 </div>
 
                 {supplierProducts.length === 0 ? (
-                  <p className="py-4 text-center text-xs text-slate-500">{dictionary.noProducts}</p>
+                  <p className="py-4 text-center text-xs text-slate-500">
+                    {dictionary.noProducts}
+                  </p>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs">
                       <thead>
                         <tr className="border-b border-slate-300 text-xs font-semibold uppercase text-slate-500">
-                          <th className="pb-2 pr-3">{dictionary.productName}</th>
+                          <th className="pb-2 pr-3">
+                            {dictionary.productName}
+                          </th>
                           <th className="pb-2 pr-3">{dictionary.productSKU}</th>
-                          <th className="pb-2 pr-3">{dictionary.supplierSKU}</th>
-                          <th className="pb-2 pr-3">{dictionary.supplierPrice}</th>
-                          <th className="pb-2 text-right">{dictionary.tableActions}</th>
+                          <th className="pb-2 pr-3">
+                            {dictionary.supplierSKU}
+                          </th>
+                          <th className="pb-2 pr-3">
+                            {dictionary.supplierPrice}
+                          </th>
+                          <th className="pb-2 text-right">
+                            {dictionary.tableActions}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {supplierProducts.map((sp) => (
-                          <tr key={sp.id} className="border-b border-slate-200 text-slate-600">
-                            <td className="py-2 pr-3 font-medium text-slate-700">{sp.product_name}</td>
-                            <td className="py-2 pr-3">{sp.product_sku || "-"}</td>
-                            <td className="py-2 pr-3">{sp.supplier_sku || "-"}</td>
+                          <tr
+                            key={sp.id}
+                            className="border-b border-slate-200 text-slate-600"
+                          >
+                            <td className="py-2 pr-3 font-medium text-slate-700">
+                              {sp.product_name}
+                            </td>
                             <td className="py-2 pr-3">
-                              {sp.supplier_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {sp.product_sku || "-"}
+                            </td>
+                            <td className="py-2 pr-3">
+                              {sp.supplier_sku || "-"}
+                            </td>
+                            <td className="py-2 pr-3">
+                              {sp.supplier_price.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
                             </td>
                             <td className="py-2 text-right">
                               <div className="inline-flex items-center gap-1">
@@ -521,7 +598,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
             <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.15)]">
               <div className="mb-6 flex items-center justify-between">
                 <h4 className="text-lg font-bold text-slate-900">
-                  {editingId ? dictionary.editSupplier : dictionary.createSupplier}
+                  {editingId
+                    ? dictionary.editSupplier
+                    : dictionary.createSupplier}
                 </h4>
                 <button
                   className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
@@ -533,17 +612,22 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
               </div>
 
               {error ? (
-                <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+                <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                  {error}
+                </p>
               ) : null}
 
               <div className="space-y-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-slate-700">
-                    {dictionary.supplierName} <span className="text-red-500">*</span>
+                    {dictionary.supplierName}{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <input
                     className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     placeholder={dictionary.supplierName}
                     type="text"
                     value={formData.name}
@@ -556,7 +640,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     </label>
                     <input
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                       placeholder={dictionary.supplierPhone}
                       type="text"
                       value={formData.phone}
@@ -568,7 +654,12 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     </label>
                     <input
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setFormData({ ...formData, contact_person: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          contact_person: e.target.value,
+                        })
+                      }
                       placeholder={dictionary.contactPerson}
                       type="text"
                       value={formData.contact_person}
@@ -581,7 +672,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                   </label>
                   <textarea
                     className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
                     placeholder={dictionary.address}
                     rows={2}
                     value={formData.address}
@@ -594,7 +687,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     </label>
                     <input
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tax_id: e.target.value })
+                      }
                       placeholder={dictionary.taxId}
                       type="text"
                       value={formData.tax_id}
@@ -606,7 +701,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     </label>
                     <input
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, note: e.target.value })
+                      }
                       placeholder={dictionary.note}
                       type="text"
                       value={formData.note}
@@ -618,10 +715,15 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     checked={formData.is_active}
                     className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                     id="is-active"
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, is_active: e.target.checked })
+                    }
                     type="checkbox"
                   />
-                  <label className="text-sm font-medium text-slate-700" htmlFor="is-active">
+                  <label
+                    className="text-sm font-medium text-slate-700"
+                    htmlFor="is-active"
+                  >
                     {dictionary.supplierIsActive}
                   </label>
                 </div>
@@ -660,7 +762,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
             <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.15)]">
               <div className="mb-6 flex items-center justify-between">
                 <h4 className="text-lg font-bold text-slate-900">
-                  {editingProduct ? dictionary.editProduct : dictionary.addProduct}
+                  {editingProduct
+                    ? dictionary.editProduct
+                    : dictionary.addProduct}
                 </h4>
                 <button
                   className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
@@ -672,7 +776,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
               </div>
 
               {error ? (
-                <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>
+                <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                  {error}
+                </p>
               ) : null}
 
               <div className="space-y-4">
@@ -708,7 +814,8 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                 {!editingProduct && productMode === "existing" && (
                   <div ref={productSearchRef} className="relative">
                     <label className="mb-1 block text-sm font-medium text-slate-700">
-                      {dictionary.searchProduct} <span className="text-red-500">*</span>
+                      {dictionary.searchProduct}{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -718,7 +825,11 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                           setProductSearch(e.target.value);
                           setShowProductDropdown(true);
                           if (!e.target.value) {
-                            setProductFormData((prev) => ({ ...prev, product_id: "", product_name: "" }));
+                            setProductFormData((prev) => ({
+                              ...prev,
+                              product_id: "",
+                              product_name: "",
+                            }));
                           }
                         }}
                         onFocus={() => setShowProductDropdown(true)}
@@ -736,9 +847,13 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                             onClick={() => selectProduct(product)}
                             type="button"
                           >
-                            <span className="font-medium text-slate-700">{product.name}</span>
+                            <span className="font-medium text-slate-700">
+                              {product.name}
+                            </span>
                             {product.sku && (
-                              <span className="text-xs text-slate-400">({product.sku})</span>
+                              <span className="text-xs text-slate-400">
+                                ({product.sku})
+                              </span>
                             )}
                           </button>
                         ))}
@@ -757,12 +872,17 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                   <div className="space-y-3">
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-700">
-                        {dictionary.productName} <span className="text-red-500">*</span>
+                        {dictionary.productName}{" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                         onChange={(e) =>
-                          setProductFormData({ ...productFormData, product_name: e.target.value, product_id: "new" })
+                          setProductFormData({
+                            ...productFormData,
+                            product_name: e.target.value,
+                            product_id: "new",
+                          })
                         }
                         placeholder={dictionary.productName}
                         type="text"
@@ -777,7 +897,10 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                         <input
                           className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                           onChange={(e) =>
-                            setProductFormData({ ...productFormData, sku: e.target.value })
+                            setProductFormData({
+                              ...productFormData,
+                              sku: e.target.value,
+                            })
                           }
                           placeholder="SKU"
                           type="text"
@@ -792,7 +915,10 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                           className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                           min={0}
                           onChange={(e) =>
-                            setProductFormData({ ...productFormData, base_price: parseFloat(e.target.value) || 0 })
+                            setProductFormData({
+                              ...productFormData,
+                              base_price: parseFloat(e.target.value) || 0,
+                            })
                           }
                           placeholder="0.00"
                           step="0.01"
@@ -808,11 +934,14 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       <input
                         className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                         onChange={(e) =>
-                          setProductFormData({ ...productFormData, barcode: e.target.value })
+                          setProductFormData({
+                            ...productFormData,
+                            barcode: e.target.value,
+                          })
                         }
                         placeholder="Barcode"
                         type="text"
-                          value={productFormData.barcode}
+                        value={productFormData.barcode}
                       />
                     </div>
                   </div>
@@ -839,7 +968,10 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     <input
                       className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
                       onChange={(e) =>
-                        setProductFormData({ ...productFormData, supplier_sku: e.target.value })
+                        setProductFormData({
+                          ...productFormData,
+                          supplier_sku: e.target.value,
+                        })
                       }
                       placeholder={dictionary.supplierSKU}
                       type="text"
