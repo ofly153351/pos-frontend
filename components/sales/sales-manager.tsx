@@ -48,6 +48,7 @@ type AmountNumpadState = {
 
 type SalesManagerProps = {
   dictionary: SalesDictionary;
+  onCartItemsChange?: (count: number) => void;
 };
 
 const productViewStorageKey = "pos-sales-product-view";
@@ -182,7 +183,10 @@ function getCartLine(item: CartItem) {
   };
 }
 
-export function SalesManager({ dictionary }: SalesManagerProps) {
+export function SalesManager({
+  dictionary,
+  onCartItemsChange,
+}: SalesManagerProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -190,7 +194,13 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     CustomerLevelDiscount[]
   >([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Notify parent when cart items change (for cashier modal close confirmation)
+  useEffect(() => {
+    onCartItemsChange?.(cart.length);
+  }, [cart, onCartItemsChange]);
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [productView, setProductView] = useState<ProductViewMode>("grid");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customerSettlementMode, setCustomerSettlementMode] = useState<
@@ -289,12 +299,32 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     });
   }, []);
 
+  const categories = useMemo(() => {
+    const categorySet = new Set<string>();
+    products.forEach((product) => {
+      const name = product.product_type_name ?? product.product_type?.name;
+      if (name) {
+        categorySet.add(name);
+      }
+    });
+    return Array.from(categorySet).sort((a, b) => a.localeCompare(b));
+  }, [products]);
+
   const saleableProducts = useMemo(() => {
     const keyword = search.trim().toLowerCase();
 
     return products.filter((product) => {
       if (!product.is_active || product.quantity <= 0) {
         return false;
+      }
+
+      // Filter by selected category
+      if (selectedCategory) {
+        const productCategory =
+          product.product_type_name ?? product.product_type?.name ?? "";
+        if (productCategory !== selectedCategory) {
+          return false;
+        }
       }
 
       if (!keyword) {
@@ -309,7 +339,7 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
           .includes(keyword)
       );
     });
-  }, [products, search]);
+  }, [products, search, selectedCategory]);
   const saleableSkuMap = useMemo(() => {
     const nextMap = new Map<string, Product>();
 
@@ -1149,17 +1179,20 @@ export function SalesManager({ dictionary }: SalesManagerProps) {
     <>
       <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[65%_30%]">
         <ProductBrowser
+          categories={categories}
           dictionary={dictionary}
           error={error}
           getCartQuantity={(productId) =>
             cart.find((item) => item.product.id === productId)?.quantity ?? 0
           }
           onAddToCart={addToCart}
+          onCategoryFilterChange={setSelectedCategory}
           onProductViewChange={setProductView}
           onSearchChange={setSearch}
           productView={productView}
           products={saleableProducts}
           search={search}
+          selectedCategory={selectedCategory}
           successMessage={successMessage}
         />
 

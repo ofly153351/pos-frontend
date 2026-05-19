@@ -546,7 +546,6 @@ export function StockManager({
         await deleteProductType(productTypeId);
         await queryClient.invalidateQueries({ queryKey: ["stock", "product-types"] });
         router.refresh();
-        window.location.assign(window.location.href);
       } catch (nextError) {
         setTypeError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -599,7 +598,6 @@ export function StockManager({
         await deleteProductBrand(brandId);
         await queryClient.invalidateQueries({ queryKey: ["stock", "product-brands"] });
         router.refresh();
-        window.location.assign(window.location.href);
       } catch (nextError) {
         setBrandError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -662,7 +660,6 @@ export function StockManager({
         await deleteProductUnit(unitId);
         await queryClient.invalidateQueries({ queryKey: ["stock", "product-units"] });
         router.refresh();
-        window.location.assign(window.location.href);
       } catch (nextError) {
         setUnitError(nextError instanceof Error ? nextError.message : "Request failed");
       }

@@ -10,14 +10,17 @@ import type {
 import type { Product } from "@/types/product";
 
 type ProductBrowserProps = {
+  categories: string[];
   dictionary: SalesDictionary;
   error: string;
   onAddToCart: (product: Product) => void;
+  onCategoryFilterChange: (category: string) => void;
   onProductViewChange: (mode: ProductViewMode) => void;
   onSearchChange: (value: string) => void;
   productView: ProductViewMode;
   products: Product[];
   search: string;
+  selectedCategory: string;
   successMessage: string;
   getCartQuantity: (productId: string) => number;
 };
@@ -32,15 +35,18 @@ function formatCurrency(value: number) {
 }
 
 export function ProductBrowser({
+  categories,
   dictionary,
   error,
   getCartQuantity,
   onAddToCart,
+  onCategoryFilterChange,
   onProductViewChange,
   onSearchChange,
   productView,
   products,
   search,
+  selectedCategory,
   successMessage,
 }: ProductBrowserProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -59,7 +65,7 @@ export function ProductBrowser({
         <h2 className="text-2xl font-semibold text-slate-950">
           {dictionary.title}
         </h2>
-        <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           <div className="inline-flex items-center gap-1 self-start rounded-xl border border-slate-200 bg-white p-1">
             <button
               aria-label={dictionary.productViewGrid}
@@ -89,7 +95,7 @@ export function ProductBrowser({
             </button>
           </div>
 
-          <div className="relative w-full sm:max-w-sm">
+          <div className="relative w-full">
             <input
               className="w-full rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 pr-10 text-sm text-slate-700 outline-none transition focus:border-sky-300"
               onBlur={() => {
@@ -151,6 +157,37 @@ export function ProductBrowser({
       {successMessage ? (
         <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {successMessage}
+        </div>
+      ) : null}
+
+      {/* Category filter pills */}
+      {categories.length > 0 ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+              !selectedCategory
+                ? "border-sky-300 bg-sky-600 text-white shadow-sm"
+                : "border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100"
+            }`}
+            onClick={() => onCategoryFilterChange("")}
+            type="button"
+          >
+            {dictionary.categoryFilterAll}
+          </button>
+          {categories.map((category) => (
+            <button
+              className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+                selectedCategory === category
+                  ? "border-sky-300 bg-sky-600 text-white shadow-sm"
+                  : "border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100"
+              }`}
+              key={category}
+              onClick={() => onCategoryFilterChange(category)}
+              type="button"
+            >
+              {category}
+            </button>
+          ))}
         </div>
       ) : null}
 

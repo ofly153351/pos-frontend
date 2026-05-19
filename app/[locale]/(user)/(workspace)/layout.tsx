@@ -25,6 +25,7 @@ export default async function WorkspaceLayout({
   return (
     <UserWorkspaceLayout
       locale={locale}
+      salesDictionary={dictionary.sales}
       shell={{
         brand: dictionary.stock.shell.brand,
         completeSale: dictionary.stock.shell.completeSale,

@@ -3,13 +3,16 @@
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
+import { CashierModal } from "@/components/sales/cashier-modal";
 import { UserWorkspaceSidebar } from "@/components/navigation/user-workspace-sidebar";
 import { UserWorkspaceTopbar } from "@/components/navigation/user-workspace-topbar";
+import type { SalesDictionary } from "@/components/sales/types";
 import type { Locale } from "@/lib/locale-config";
 
 type UserWorkspaceLayoutProps = {
   children: React.ReactNode;
   locale: Locale;
+  salesDictionary: SalesDictionary;
   shell: {
     brand: string;
     completeSale: string;
@@ -44,11 +47,13 @@ type UserWorkspaceLayoutProps = {
 export function UserWorkspaceLayout({
   children,
   locale,
+  salesDictionary,
   shell,
   titles,
 }: UserWorkspaceLayoutProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [isCashierOpen, setIsCashierOpen] = useState(false);
 
   const title = useMemo(() => {
     if (pathname.endsWith("/sales")) {
@@ -93,6 +98,7 @@ export function UserWorkspaceLayout({
           transactions: shell.transactions,
         }}
         locale={locale}
+        onOpenCashier={() => setIsCashierOpen(true)}
         shell={shell}
       />
 
@@ -110,6 +116,13 @@ export function UserWorkspaceLayout({
         />
         <main className="flex-1 p-8">{children}</main>
       </div>
+
+      {isCashierOpen ? (
+        <CashierModal
+          dictionary={salesDictionary}
+          onClose={() => setIsCashierOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

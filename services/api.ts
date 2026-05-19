@@ -1,6 +1,9 @@
 import axios, { AxiosError } from "axios";
 
-import { getAuthSession } from "@/lib/auth-storage";
+import {
+  clearAuthSession,
+  getAuthSession,
+} from "@/lib/auth-storage";
 import type { ApiResponse } from "@/types/auth";
 
 type RequestOptions = {
@@ -22,6 +25,64 @@ export class ApiError extends Error {
 }
 
 const apiClient = axios.create();
+
+let isRedirectingToLogin = false;
+
+async function clearAuthAndRedirect() {
+  if (isRedirectingToLogin) return;
+  isRedirectingToLogin = true;
+
+  // First call logout endpoint to clear httpOnly cookies server-side
+  // (httpOnly cookies cannot be deleted from client-side JS)
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch {
+    // Best-effort — proceed with client-side cleanup regardless
+  }
+
+  // Clear localStorage auth session
+  clearAuthSession();
+
+  // Clear any other POS-related localStorage items
+  try {
+    window.localStorage.removeItem("pos-current-store-id");
+    window.localStorage.removeItem("pos-pending-plan");
+  } catch {
+    // localStorage may not be available
+  }
+
+  // Also try to clear non-httpOnly cookies as a fallback
+  document.cookie = "pos-access-token=; path=/; max-age=0; SameSite=Lax";
+  document.cookie = "pos-store-id=; path=/; max-age=0; SameSite=Lax";
+
+  // Extract locale from current path (/en/..., /th/...)
+  const match = window.location.pathname.match(/^\/(en|th)\//);
+  const locale = match?.[1] ?? "en";
+
+  // Redirect to login — uses replace() so back button doesn't loop
+  if (!window.location.pathname.includes("/login")) {
+    window.location.replace(`/${locale}/login`);
+  }
+}
+
+// Response interceptor — catch 401 (token expired) globally
+const authPaths = ["/api/auth/login", "/api/auth/register", "/api/auth/logout"];
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (
+      error.response?.status === 401 &&
+      typeof window !== "undefined" &&
+      error.config?.url &&
+      !authPaths.some((p) => error.config!.url!.startsWith(p))
+    ) {
+      clearAuthAndRedirect();
+      // Stall — don't let the error propagate into a retry/render loop
+      return new Promise<never>(() => {});
+    }
+    return Promise.reject(error);
+  },
+);
 
 function toApiError(error: unknown) {
   if (error instanceof ApiError) {
@@ -110,7 +171,11 @@ export async function authorizedApiRequest<T>(
   const token = getToken();
 
   if (requireToken && !token) {
-    throw new ApiError("Missing access token", 401);
+    if (typeof window !== "undefined") {
+      clearAuthAndRedirect();
+    }
+    // Stall — redirect is in progress, don't throw to avoid retry/render loops
+    return new Promise<ApiResponse<T> & { data: T }>(() => {});
   }
 
   const {
@@ -143,7 +208,11 @@ export async function authorizedRawRequest<T>(
   const token = getToken();
 
   if (requireToken && !token) {
-    throw new ApiError("Missing access token", 401);
+    if (typeof window !== "undefined") {
+      clearAuthAndRedirect();
+    }
+    // Stall — redirect is in progress, don't throw to avoid retry/render loops
+    return new Promise<T>(() => {});
   }
 
   const {

@@ -40,6 +40,7 @@ type UserWorkspaceSidebarProps = {
     stockWarehouses: string;
     transactions: string;
   };
+  onOpenCashier?: () => void;
   shell: {
     brand: string;
     completeSale: string;
@@ -52,6 +53,7 @@ export function UserWorkspaceSidebar({
   collapsed,
   locale,
   labels,
+  onOpenCashier,
   shell,
 }: UserWorkspaceSidebarProps) {
   const pathname = usePathname();
@@ -219,7 +221,7 @@ export function UserWorkspaceSidebar({
         : "stock-levels";
 
   const inventoryItemClass = isInventoryRoute
-    ? "rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-200/70"
+    ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
     : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600";
   const activeDocumentsKey = !isDocumentsRoute
     ? ""
@@ -228,7 +230,7 @@ export function UserWorkspaceSidebar({
       : "bills";
 
   const documentsItemClass = isDocumentsRoute
-    ? "rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-200/70"
+    ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
     : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600";
 
   function getNavIcon(key: string, isActive: boolean) {
@@ -269,15 +271,31 @@ export function UserWorkspaceSidebar({
       <nav className="flex-1 space-y-1">
         {topNavItems.map((item) => {
           const isActive = pathname === item.href;
+          const isRegister = item.key === "register";
+          const commonClasses = `flex items-center gap-3 px-4 py-3 text-sm ${
+            isActive
+              ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
+              : "font-medium text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
+          } ${collapsed ? "justify-center px-2" : ""}`;
+
+          if (isRegister) {
+            return (
+              <button
+                key={item.key}
+                className={`w-full text-left ${commonClasses}`}
+                onClick={() => onOpenCashier?.()}
+                type="button"
+              >
+                {getNavIcon(item.key, isActive)}
+                {!collapsed ? <span>{item.label}</span> : null}
+              </button>
+            );
+          }
 
           return (
             <Link
               key={item.key}
-              className={`flex items-center gap-3 px-4 py-3 text-sm transition ${
-                isActive
-                  ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
-                  : "font-medium text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
-              } ${collapsed ? "justify-center px-2" : ""}`}
+              className={commonClasses}
               href={item.href}
             >
               {getNavIcon(item.key, isActive)}
@@ -288,7 +306,7 @@ export function UserWorkspaceSidebar({
 
         <div className="space-y-1">
           <div
-            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold transition ${
+            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
               inventoryItemClass
             } ${collapsed ? "justify-center px-2" : ""}`}
           >
@@ -312,7 +330,7 @@ export function UserWorkspaceSidebar({
             {!collapsed ? (
               <button
                 aria-expanded={inventoryExpanded}
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isInventoryRoute
                     ? "text-white hover:bg-white/10"
                     : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
@@ -322,7 +340,7 @@ export function UserWorkspaceSidebar({
               >
                 <ChevronDown
                   aria-hidden="true"
-                  className={`h-4 w-4 transition-transform duration-300 ${inventoryExpanded ? "rotate-180" : ""}`}
+                  className={`h-4 w-4 transition-transform duration-200 ${inventoryExpanded ? "rotate-180" : ""}`}
                 />
               </button>
             ) : null}
@@ -330,7 +348,7 @@ export function UserWorkspaceSidebar({
 
           {!collapsed ? (
             <div
-              className={`grid overflow-hidden transition-all duration-300 ease-out ${
+              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
                 inventoryExpanded
                   ? "grid-rows-[1fr] opacity-100"
                   : "grid-rows-[0fr] opacity-0"
@@ -352,7 +370,7 @@ export function UserWorkspaceSidebar({
                     return (
                       <Link
                         key={item.key}
-                        className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition ${
+                        className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                           isActive
                             ? "bg-blue-100/80 font-semibold text-blue-700"
                             : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
@@ -380,7 +398,7 @@ export function UserWorkspaceSidebar({
 
         <div className="space-y-1">
           <div
-            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold transition ${
+            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
               documentsItemClass
             } ${collapsed ? "justify-center px-2" : ""}`}
           >
@@ -404,7 +422,7 @@ export function UserWorkspaceSidebar({
             {!collapsed ? (
               <button
                 aria-expanded={documentsExpanded}
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isDocumentsRoute
                     ? "text-white hover:bg-white/10"
                     : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
@@ -414,7 +432,7 @@ export function UserWorkspaceSidebar({
               >
                 <ChevronDown
                   aria-hidden="true"
-                  className={`h-4 w-4 transition-transform duration-300 ${documentsExpanded ? "rotate-180" : ""}`}
+                  className={`h-4 w-4 transition-transform duration-200 ${documentsExpanded ? "rotate-180" : ""}`}
                 />
               </button>
             ) : null}
@@ -422,7 +440,7 @@ export function UserWorkspaceSidebar({
 
           {!collapsed ? (
             <div
-              className={`grid overflow-hidden transition-all duration-300 ease-out ${
+              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
                 documentsExpanded
                   ? "grid-rows-[1fr] opacity-100"
                   : "grid-rows-[0fr] opacity-0"
@@ -431,7 +449,7 @@ export function UserWorkspaceSidebar({
               <div className="min-h-0">
                 <div className="space-y-1 pt-1 pl-6">
                   <Link
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition ${
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activeDocumentsKey === "bills"
                         ? "bg-blue-100/80 font-semibold text-blue-700"
                         : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
@@ -450,7 +468,7 @@ export function UserWorkspaceSidebar({
                     <span>{labels.documentBills}</span>
                   </Link>
                   <Link
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition ${
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activeDocumentsKey === "pending"
                         ? "bg-blue-100/80 font-semibold text-blue-700"
                         : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
@@ -480,7 +498,7 @@ export function UserWorkspaceSidebar({
           return (
             <Link
               key={item.key}
-              className={`flex items-center gap-3 px-4 py-3 text-sm transition ${
+              className={`flex items-center gap-3 px-4 py-3 text-sm ${
                 isActive
                   ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
                   : "font-medium text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
