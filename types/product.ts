@@ -26,6 +26,7 @@ export type Product = {
   brand?: string | null;
   brand_id?: string | null;
   brand_name?: string | null;
+  cost_price?: number;
   effective_price: number;
   id: string;
   image_url?: string | null;

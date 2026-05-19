@@ -24,6 +24,8 @@ type UserWorkspaceLayoutProps = {
     editProfile: string;
     inventory: string;
     logout: string;
+    purchasing: string;
+    purchaseOrders: string;
     register: string;
     searchPlaceholder: string;
     settings: string;
@@ -32,6 +34,7 @@ type UserWorkspaceLayoutProps = {
     stockLevels: string;
     stockWarehouses: string;
     station: string;
+    suppliers: string;
     transactions: string;
   };
   titles: {
@@ -90,11 +93,14 @@ export function UserWorkspaceLayout({
           documentPending: shell.documentPending,
           documents: shell.documents,
           inventory: shell.inventory,
+          purchasing: shell.purchasing,
+          purchaseOrders: shell.purchaseOrders,
           register: shell.register,
           settings: shell.settings,
           stockCategories: shell.stockCategories,
           stockWarehouses: shell.stockWarehouses,
           stockLevels: shell.stockLevels,
+          suppliers: shell.suppliers,
           transactions: shell.transactions,
         }}
         locale={locale}

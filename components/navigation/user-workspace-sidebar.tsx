@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   ReceiptText,
   Settings2,
+  ShoppingCart,
   Tags,
   Users,
   Warehouse,
@@ -33,11 +34,14 @@ type UserWorkspaceSidebarProps = {
     documentPending: string;
     documents: string;
     inventory: string;
+    purchasing: string;
+    purchaseOrders: string;
     register: string;
     settings: string;
     stockCategories: string;
     stockLevels: string;
     stockWarehouses: string;
+    suppliers: string;
     transactions: string;
   };
   onOpenCashier?: () => void;
@@ -66,15 +70,22 @@ export function UserWorkspaceSidebar({
   const stockWarehousesHref = `/${locale}/stock/warehouses`;
   const documentsBaseHref = `/${locale}/documents`;
   const documentsPendingHref = `/${locale}/documents/pending`;
+  const purchasesBaseHref = `/${locale}/purchases`;
+  const purchasesSuppliersHref = `/${locale}/purchases/suppliers`;
   const isInventoryRoute =
     pathname === stockBaseHref || pathname.startsWith(`${stockBaseHref}/`);
   const isDocumentsRoute =
     pathname === documentsBaseHref ||
     pathname.startsWith(`${documentsBaseHref}/`);
+  const isPurchasingRoute =
+    pathname === purchasesBaseHref ||
+    pathname.startsWith(`${purchasesBaseHref}/`);
   const [inventoryExpanded, setInventoryExpanded] = useState(isInventoryRoute);
   const [documentsExpanded, setDocumentsExpanded] = useState(isDocumentsRoute);
+  const [purchasingExpanded, setPurchasingExpanded] = useState(isPurchasingRoute);
   const wasInventoryRouteRef = useRef(isInventoryRoute);
   const wasDocumentsRouteRef = useRef(isDocumentsRoute);
+  const wasPurchasingRouteRef = useRef(isPurchasingRoute);
 
   useEffect(() => {
     let isMounted = true;
@@ -131,6 +142,7 @@ export function UserWorkspaceSidebar({
     if (collapsed) {
       setInventoryExpanded(false);
       setDocumentsExpanded(false);
+      setPurchasingExpanded(false);
     }
   }, [collapsed]);
 
@@ -171,6 +183,25 @@ export function UserWorkspaceSidebar({
 
     wasDocumentsRouteRef.current = isDocumentsRoute;
   }, [collapsed, isDocumentsRoute]);
+
+  useEffect(() => {
+    if (collapsed) {
+      wasPurchasingRouteRef.current = isPurchasingRoute;
+      return;
+    }
+
+    const wasPurchasingRoute = wasPurchasingRouteRef.current;
+
+    if (isPurchasingRoute && !wasPurchasingRoute) {
+      setPurchasingExpanded(true);
+    }
+
+    if (!isPurchasingRoute && wasPurchasingRoute) {
+      setPurchasingExpanded(false);
+    }
+
+    wasPurchasingRouteRef.current = isPurchasingRoute;
+  }, [collapsed, isPurchasingRoute]);
 
   const navItems = [
     {
@@ -228,6 +259,12 @@ export function UserWorkspaceSidebar({
     : pathname === documentsPendingHref
       ? "pending"
       : "bills";
+
+  const activePurchasingKey = !isPurchasingRoute
+    ? ""
+    : pathname === purchasesSuppliersHref
+      ? "suppliers"
+      : "orders";
 
   const documentsItemClass = isDocumentsRoute
     ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
@@ -390,6 +427,103 @@ export function UserWorkspaceSidebar({
                       </Link>
                     );
                   })}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Purchasing section */}
+        <div className="space-y-1">
+          <div
+            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
+              isPurchasingRoute ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70" : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
+            } ${collapsed ? "justify-center px-2" : ""}`}
+          >
+            <Link
+              className={`flex min-w-0 flex-1 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
+              href={purchasesBaseHref}
+            >
+              <span
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+                  isPurchasingRoute
+                    ? "bg-white/15 text-white"
+                    : "bg-blue-100 text-blue-700"
+                }`}
+              >
+                <ShoppingCart className="h-4 w-4" />
+              </span>
+              {!collapsed ? (
+                <span className="truncate">{labels.purchasing}</span>
+              ) : null}
+            </Link>
+            {!collapsed ? (
+              <button
+                aria-expanded={purchasingExpanded}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                  isPurchasingRoute
+                    ? "text-white hover:bg-white/10"
+                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
+                }`}
+                onClick={() => setPurchasingExpanded((current) => !current)}
+                type="button"
+              >
+                <ChevronDown
+                  aria-hidden="true"
+                  className={`h-4 w-4 transition-transform duration-200 ${purchasingExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+            ) : null}
+          </div>
+
+          {!collapsed ? (
+            <div
+              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                purchasingExpanded
+                  ? "grid-rows-[1fr] opacity-100"
+                  : "grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="min-h-0">
+                <div className="space-y-1 pt-1 pl-6">
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      activePurchasingKey === "orders"
+                        ? "bg-blue-100/80 font-semibold text-blue-700"
+                        : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                    }`}
+                    href={purchasesBaseHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activePurchasingKey === "orders"
+                          ? "bg-blue-200/80 text-blue-700"
+                          : "bg-slate-200 text-slate-500"
+                      }`}
+                    >
+                      <ShoppingCart className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.purchaseOrders}</span>
+                  </Link>
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      activePurchasingKey === "suppliers"
+                        ? "bg-blue-100/80 font-semibold text-blue-700"
+                        : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                    }`}
+                    href={purchasesSuppliersHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activePurchasingKey === "suppliers"
+                          ? "bg-blue-200/80 text-blue-700"
+                          : "bg-slate-200 text-slate-500"
+                      }`}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.suppliers}</span>
+                  </Link>
                 </div>
               </div>
             </div>

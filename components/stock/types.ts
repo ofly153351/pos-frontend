@@ -51,6 +51,7 @@ export type StockManagerDictionary = {
     optionalLabel: string;
     requiredLabel: string;
     save: string;
+    saving: string;
     setupSection: string;
     setupSectionHint: string;
     skuLabel: string;
@@ -151,6 +152,28 @@ export type StockManagerDictionary = {
     productDetails: string;
     sku: string;
     stock: string;
+    receiveAction: string;
+    moreActions: string;
+  };
+  receive?: {
+    receiveStockTitle?: string;
+    receiveStock?: string;
+    receiveStockConfirm?: string;
+    receiveStockSuccess?: string;
+    quantityToAdd?: string;
+    productName?: string;
+    currentStock?: string;
+    note?: string;
+    cancel?: string;
+    saving?: string;
+    historyTab?: string;
+    historyEmpty?: string;
+    historyProduct?: string;
+    historyQty?: string;
+    historyDate?: string;
+    historyNote?: string;
+    historyOperator?: string;
+    historyLoadError?: string;
   };
   units?: {
     activateLabel: string;

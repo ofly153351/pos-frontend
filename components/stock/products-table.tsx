@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Barcode, Pencil, Printer, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Barcode, MoreVertical, Pencil, Printer, Trash2, X } from "lucide-react";
 
 import type { ManagementDictionary } from "@/components/stock/types";
 import type { Product } from "@/types/product";
+import { StockReceiveModal } from "@/components/stock/stock-receive-modal";
 
 type ProductsTableProps = {
   emptyState: string;
@@ -17,6 +18,26 @@ type ProductsTableProps = {
   onEdit: (product: Product) => void;
   onExport: (selectedIds: string[]) => void;
   products: Product[];
+  receiveDictionary: {
+    receiveStockTitle: string;
+    receiveStock: string;
+    receiveStockConfirm: string;
+    receiveStockSuccess: string;
+    quantityToAdd: string;
+    productName: string;
+    currentStock: string;
+    note?: string;
+    cancel: string;
+    saving: string;
+    historyTab?: string;
+    historyEmpty?: string;
+    historyProduct?: string;
+    historyQty?: string;
+    historyDate?: string;
+    historyNote?: string;
+    historyOperator?: string;
+    historyLoadError?: string;
+  };
   tableDictionary: {
     actions: string;
     barcodeAction: string;
@@ -34,6 +55,8 @@ type ProductsTableProps = {
     productDetails: string;
     sku: string;
     stock: string;
+    receiveAction: string;
+    moreActions: string;
   };
 };
 
@@ -48,6 +71,7 @@ export function ProductsTable({
   onEdit,
   onExport,
   products,
+  receiveDictionary,
   tableDictionary,
 }: ProductsTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -61,6 +85,9 @@ export function ProductsTable({
   }
 
   const [previewSku, setPreviewSku] = useState<string | null>(null);
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const actionMenuRef = useRef<HTMLDivElement>(null);
 
   function generateBarcodeSvg(sku: string): string {
     const normalized = sku.trim().toUpperCase();
@@ -233,6 +260,30 @@ export function ProductsTable({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [previewSku]);
 
+  // Close action menu on click outside
+  useEffect(() => {
+    if (!isActionMenuOpen) return;
+
+    function handleClickOutside(event: MouseEvent) {
+      if (actionMenuRef.current && !actionMenuRef.current.contains(event.target as Node)) {
+        setIsActionMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsActionMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isActionMenuOpen]);
+
   return (
     <>
       <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
@@ -241,29 +292,46 @@ export function ProductsTable({
             <span className="text-sm text-slate-700">
               <strong className="font-semibold">{selectedIds.size}</strong> selected
             </span>
-            <div className="flex items-center gap-2">
+            <div className="relative" ref={actionMenuRef}>
               <button
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                onClick={() => {
-                  const selectedProducts = products.filter((p) =>
-                    selectedIds.has(p.id) && (p.barcode || p.sku),
-                  );
-                  if (selectedProducts.length === 0) return;
+                aria-label={tableDictionary.moreActions}
+                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50 hover:text-slate-800"
+                onClick={() => setIsActionMenuOpen((prev) => !prev)}
+                type="button"
+              >
+                <MoreVertical className="h-5 w-5" />
+              </button>
 
-                  const barcodesHtml = selectedProducts
-                    .map((p) => {
-                      const code = (p.barcode ?? p.sku ?? "").trim();
-                      const svg = generateBarcodeSvg(code);
-                      if (!svg) {
-                        return `<div class="barcode-item"><div class="barcode-label">${p.name}</div><div class="barcode-fallback">${code}</div></div>`;
+              {isActionMenuOpen ? (
+                <div
+                  className="absolute right-0 top-full z-30 mt-1 w-56 origin-top-right animate-fadeIn rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
+                  role="menu"
+                >
+                  <button
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    onClick={() => {
+                      const selectedProducts = products.filter((p) =>
+                        selectedIds.has(p.id) && (p.barcode || p.sku),
+                      );
+                      if (selectedProducts.length === 0) {
+                        setIsActionMenuOpen(false);
+                        return;
                       }
-                      return `<div class="barcode-item"><div class="barcode-label">${p.name}</div><img src="data:image/svg+xml;utf8,${encodeURIComponent(svg)}" alt="${code}" /></div>`;
-                    })
-                    .join("");
 
-                  const printWindow = window.open("", "barcode-bulk-print", `width=${window.innerWidth},height=${window.innerHeight}`);
-                  if (!printWindow) return;
-                  printWindow.document.write(`<!DOCTYPE html>
+                      const barcodesHtml = selectedProducts
+                        .map((p) => {
+                          const code = (p.barcode ?? p.sku ?? "").trim();
+                          const svg = generateBarcodeSvg(code);
+                          if (!svg) {
+                            return `<div class="barcode-item"><div class="barcode-label">${p.name}</div><div class="barcode-fallback">${code}</div></div>`;
+                          }
+                          return `<div class="barcode-item"><div class="barcode-label">${p.name}</div><img src="data:image/svg+xml;utf8,${encodeURIComponent(svg)}" alt="${code}" /></div>`;
+                        })
+                        .join("");
+
+                      const printWindow = window.open("", "barcode-bulk-print", `width=${window.innerWidth},height=${window.innerHeight}`);
+                      if (!printWindow) { setIsActionMenuOpen(false); return; }
+                      printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head><title>Print Barcodes</title>
 <style>
@@ -280,29 +348,52 @@ export function ProductsTable({
 </head>
 <body>
   <div class="barcode-grid">${barcodesHtml}</div>
-  <script>window.onload=function(){setTimeout(function(){window.print()},300)};<\/script>
+  <script>window.onload=function(){setTimeout(function(){window.print()},300)};<\\/script>
 </body>
 </html>`);
-                  printWindow.document.close();
-                }}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 14h12v8H6z" />
-                </svg>
-                {tableDictionary.barcodeAction}
-              </button>
-              <button
-                className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-                onClick={() => onExport(Array.from(selectedIds))}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0-3-3m3 3 3-3m2 8H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
-                </svg>
-                {tableDictionary.exportLabel}
-              </button>
+                      printWindow.document.close();
+                      setIsActionMenuOpen(false);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    <Barcode className="h-4 w-4 shrink-0 text-slate-500" />
+                    <span>{tableDictionary.barcodeAction}</span>
+                  </button>
+
+                  <button
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    onClick={() => {
+                      onExport(Array.from(selectedIds));
+                      setIsActionMenuOpen(false);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0-3-3m3 3 3-3m2 8H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
+                    </svg>
+                    <span>{tableDictionary.exportLabel}</span>
+                  </button>
+
+                  <div className="my-1 border-t border-slate-100" />
+
+                  <button
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                    onClick={() => {
+                      setIsReceiveModalOpen(true);
+                      setIsActionMenuOpen(false);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 10l5 5 5-5M12 15V3" />
+                    </svg>
+                    <span>{tableDictionary.receiveAction}</span>
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -556,6 +647,19 @@ export function ProductsTable({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {isReceiveModalOpen ? (
+        <StockReceiveModal
+          dictionary={receiveDictionary}
+          onClose={() => setIsReceiveModalOpen(false)}
+          onComplete={() => {
+            setIsReceiveModalOpen(false);
+            setSelectedIds(new Set());
+          }}
+          products={products}
+          selectedIds={selectedIds}
+        />
       ) : null}
     </>
   );

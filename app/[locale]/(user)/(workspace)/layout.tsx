@@ -37,6 +37,8 @@ export default async function WorkspaceLayout({
         editProfile: dictionary.stock.shell.editProfile,
         inventory: dictionary.stock.shell.inventory,
         logout: dictionary.stock.shell.logout,
+        purchasing: dictionary.purchasing.title,
+        purchaseOrders: dictionary.purchasing.purchaseOrders,
         register: dictionary.stock.shell.register,
         searchPlaceholder: dictionary.stock.shell.searchPlaceholder,
         settings: dictionary.stock.shell.settings,
@@ -45,6 +47,7 @@ export default async function WorkspaceLayout({
         stockLevels: dictionary.stock.shell.stockLevels,
         stockWarehouses: dictionary.stock.shell.stockWarehouses,
         station: dictionary.stock.shell.station,
+        suppliers: dictionary.purchasing.suppliers,
         transactions: dictionary.stock.shell.transactions,
       }}
       titles={{

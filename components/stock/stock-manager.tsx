@@ -69,10 +69,7 @@ export function StockManager({
     return 5;
   });
   const [hasMounted, setHasMounted] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
   const [productPage, setProductPage] = useState(1);
-  const [productTotalPages, setProductTotalPages] = useState(1);
-  const [productTotal, setProductTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [catalogSearch, setCatalogSearch] = useState("");
   const [selectedProductTypeId, setSelectedProductTypeId] = useState("");
@@ -230,30 +227,35 @@ export function StockManager({
     queryKey: ["stock", "product-units"],
   });
 
+  const productsQuery = useQuery({
+    enabled: hasMounted,
+    queryFn: async () => {
+      const response = await listProducts({
+        limit: productPageSize,
+        page: productPage,
+      });
+      return response.data;
+    },
+    queryKey: ["stock", "products", productPage, productPageSize],
+  });
+
+  // Correct page if it exceeds total pages after data changes
   useEffect(() => {
-    startTransition(async () => {
-      try {
-        const productResponse = await listProducts({
-          limit: productPageSize,
-          page: productPage,
-        });
+    if (!productsQuery.data) return;
+    const nextTotalPages = Math.max(productsQuery.data.total_pages ?? 1, 1);
+    if (productPage > nextTotalPages) {
+      setProductPage(nextTotalPages);
+    }
+  }, [productsQuery.data, productPage]);
 
-        const nextData = productResponse.data;
-        const nextTotalPages = Math.max(nextData.total_pages ?? 1, 1);
-
-        if (productPage > nextTotalPages) {
-          setProductPage(nextTotalPages);
-          return;
-        }
-
-        setProducts(nextData.items ?? []);
-        setProductTotal(nextData.total ?? 0);
-        setProductTotalPages(nextTotalPages);
-      } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
-      }
-    });
-  }, [productPage, productPageSize]);
+  const products = productsQuery.data?.items ?? [];
+  const productTotal = productsQuery.data?.total ?? 0;
+  const productTotalPages = Math.max(
+    productsQuery.data?.total_pages ?? 1,
+    1,
+  );
+  const isProductsFetching = productsQuery.isFetching;
+  const productsQueryError = productsQuery.error;
 
   if (!hasMounted) {
     return (
@@ -351,22 +353,10 @@ export function StockManager({
     (productUnitsQueryError instanceof Error ? productUnitsQueryError.message : "");
   const unitOptions = productUnits;
 
-  async function reloadProductsPage(page = productPage) {
-    const productResponse = await listProducts({
-      limit: productPageSize,
-      page,
+  async function reloadProductsPage() {
+    await queryClient.invalidateQueries({
+      queryKey: ["stock", "products"],
     });
-    const nextData = productResponse.data;
-    const nextTotalPages = Math.max(nextData.total_pages ?? 1, 1);
-
-    if (page > nextTotalPages) {
-      setProductPage(nextTotalPages);
-      return;
-    }
-
-    setProducts(nextData.items ?? []);
-    setProductTotal(nextData.total ?? 0);
-    setProductTotalPages(nextTotalPages);
   }
 
   function resetProductForm() {
@@ -700,7 +690,7 @@ export function StockManager({
   }
 
   return (
-    <div className="space-y-8">
+    <div>
       {isCategoriesView ? (
         <CatalogSetupSection
           brandError={resolvedBrandError}
@@ -734,9 +724,9 @@ export function StockManager({
         <StockLevelsSection
           dictionary={dictionary}
           emptyState={dictionary.emptyState}
-          error={error}
+          error={error || (productsQueryError instanceof Error ? productsQueryError.message : "")}
           filteredProducts={filteredProducts}
-          isPending={isPending}
+          isPending={isPending || isProductsFetching}
           loadingLabel={dictionary.loading}
           lowStockCount={lowStockCount}
           managementDictionary={managementDictionary}

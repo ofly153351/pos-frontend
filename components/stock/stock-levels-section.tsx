@@ -136,7 +136,7 @@ export function StockLevelsSection({
       </section>
 
       <section
-        className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-100 p-4"
+        className="my-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-100 p-4"
         id="stock-levels"
       >
         <div className="flex flex-wrap items-end gap-3">
@@ -301,6 +301,26 @@ export function StockLevelsSection({
         lowStockLabel={dictionary.filters.lowStockStatus}
         outOfStockLabel={dictionary.filters.outOfStockStatus}
         products={filteredProducts}
+        receiveDictionary={{
+          receiveStockTitle: dictionary.receive?.receiveStockTitle ?? dictionary.form.titleCreate,
+          receiveStock: dictionary.receive?.receiveStock ?? dictionary.table.importLabel,
+          receiveStockConfirm: dictionary.receive?.receiveStockConfirm ?? dictionary.form.save,
+          receiveStockSuccess: dictionary.receive?.receiveStockSuccess ?? dictionary.form.save,
+          quantityToAdd: dictionary.receive?.quantityToAdd ?? dictionary.form.quantityLabel,
+          productName: dictionary.receive?.productName ?? dictionary.form.nameLabel,
+          currentStock: dictionary.receive?.currentStock ?? dictionary.stats.totalProductsLabel,
+          note: dictionary.receive?.note,
+          cancel: dictionary.receive?.cancel ?? dictionary.form.cancel,
+          saving: dictionary.receive?.saving ?? dictionary.form.saving,
+          historyTab: dictionary.receive?.historyTab,
+          historyEmpty: dictionary.receive?.historyEmpty,
+          historyProduct: dictionary.receive?.historyProduct,
+          historyQty: dictionary.receive?.historyQty,
+          historyDate: dictionary.receive?.historyDate,
+          historyNote: dictionary.receive?.historyNote,
+          historyOperator: dictionary.receive?.historyOperator,
+          historyLoadError: dictionary.receive?.historyLoadError,
+        }}
         tableDictionary={dictionary.table}
       />
 
@@ -417,7 +437,7 @@ export function StockLevelsSection({
       ) : null}
 
       {paginationTotalPages > 1 ? (
-        <section className="flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
+        <section className="my-4 flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2">
             <button
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
