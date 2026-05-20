@@ -550,6 +550,8 @@
       "sku": "รหัสสินค้า",
       "barcode": "บาร์โค้ด",
       "price": "ราคา",
+      "costPrice": "ราคาทุน",
+      "sellingPrice": "ราคาขาย",
       "stock": "สต็อก",
       "actions": "การจัดการ",
       "barcodeAction": "บาร์โค้ด",

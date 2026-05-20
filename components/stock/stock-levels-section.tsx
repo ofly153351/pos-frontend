@@ -307,13 +307,14 @@ export function StockLevelsSection({
             selectedIds.includes(p.id),
           );
           const headers = [
-            "Name", "SKU", "Category", "Price", "Stock",
+            "Name", "SKU", "Category", "Cost Price", "Selling Price", "Stock",
             "Min Stock", "Max Stock", "Unit", "Active",
           ];
           const rows = selectedProducts.map((p) => [
             `"${(p.name ?? "").replace(/"/g, '""')}"`,
             `"${(p.sku ?? "").replace(/"/g, '""')}"`,
             `"${(p.product_type_name ?? "").replace(/"/g, '""')}"`,
+            p.cost_price ?? 0,
             p.effective_price ?? 0,
             p.total_stock ?? 0,
             p.min_stock ?? 0,

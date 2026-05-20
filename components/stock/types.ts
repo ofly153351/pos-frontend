@@ -159,6 +159,8 @@ export type StockManagerDictionary = {
     noBarcodeLabel: string;
     barcode: string;
     price: string;
+    costPrice: string;
+    sellingPrice: string;
     productDetails: string;
     sku: string;
     stock: string;

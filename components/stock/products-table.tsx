@@ -54,6 +54,8 @@ type ProductsTableProps = {
     noBarcodeLabel: string;
     barcode: string;
     price: string;
+    costPrice: string;
+    sellingPrice: string;
     productDetails: string;
     sku: string;
     stock: string;
@@ -438,18 +440,19 @@ export function ProductsTable({
               />
             </th>
             <th className="w-[10%] px-6 py-4 text-center font-bold">รูป</th>
-            <th className="w-[25%] px-6 py-4 font-bold">{tableDictionary.productDetails}</th>
-            <th className="w-[13%] px-6 py-4 font-bold">{tableDictionary.barcode}</th>
-            <th className="w-[14%] px-6 py-4 font-bold">{tableDictionary.category}</th>
-            <th className="w-[10%] px-6 py-4 font-bold">{tableDictionary.price}</th>
-            <th className="w-[8%] px-6 py-4 font-bold">{tableDictionary.stock}</th>
+            <th className="w-[22%] px-6 py-4 font-bold">{tableDictionary.productDetails}</th>
+            <th className="w-[11%] px-6 py-4 font-bold">{tableDictionary.barcode}</th>
+            <th className="w-[11%] px-6 py-4 font-bold">{tableDictionary.category}</th>
+            <th className="w-[8%] px-6 py-4 font-bold">{tableDictionary.costPrice}</th>
+            <th className="w-[8%] px-6 py-4 font-bold">{tableDictionary.sellingPrice}</th>
+            <th className="w-[10%] px-6 py-4 font-bold">{tableDictionary.stock}</th>
             <th className="w-[15%] px-6 py-4 text-right font-bold">{tableDictionary.actions}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {products.length === 0 ? (
             <tr>
-              <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={8}>
+              <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={9}>
                 {isPending ? (
                   <span className="inline-flex items-center gap-3">
                     <svg aria-hidden="true" className="h-5 w-5 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -527,6 +530,9 @@ export function ProductsTable({
                 >
                   {product.product_type_name ?? product.product_type?.name ?? "-"}
                 </span>
+              </td>
+              <td className="px-6 py-4 text-sm font-semibold text-slate-600">
+                {product.cost_price != null ? formatCurrency(Number(product.cost_price)) : "-"}
               </td>
               <td className="px-6 py-4 text-sm font-bold text-blue-700">
                 {formatCurrency(Number(product.effective_price ?? 0))}

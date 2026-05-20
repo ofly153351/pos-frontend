@@ -550,6 +550,8 @@
       "sku": "SKU",
       "barcode": "Barcode",
       "price": "Price",
+      "costPrice": "Cost Price",
+      "sellingPrice": "Selling Price",
       "stock": "Stock",
       "actions": "Actions",
       "barcodeAction": "Barcode",
