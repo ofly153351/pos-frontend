@@ -7,7 +7,7 @@ import type {
   ManagementDictionary,
   StockManagerDictionary,
 } from "@/components/stock/types";
-import type { Product, ProductType, ProductUnit } from "@/types/product";
+import type { Product, ProductBrand, ProductType, ProductUnit } from "@/types/product";
 
 type ProductStockStatus =
   | "all"
@@ -30,6 +30,7 @@ type StockLevelsSectionProps = {
   onDelete: (productId: string) => void;
   onEdit: (product: Product) => void;
   onOpenCreateModal: () => void;
+  onProductBrandFilterChange: (brandId: string) => void;
   onProductTypeFilterChange: (productTypeId: string) => void;
   onProductUnitFilterChange: (productUnitId: string) => void;
   onSearchChange: (value: string) => void;
@@ -38,6 +39,8 @@ type StockLevelsSectionProps = {
   paginationPageSize: number;
   paginationTotalItems: number;
   paginationTotalPages: number;
+  productBrandFilter: string;
+  productBrands: ProductBrand[];
   productTypeFilter: string;
   productTypesCount: number;
   productTypes: ProductType[];
@@ -61,6 +64,7 @@ export function StockLevelsSection({
   onDelete,
   onEdit,
   onOpenCreateModal,
+  onProductBrandFilterChange,
   onProductTypeFilterChange,
   onProductUnitFilterChange,
   onSearchChange,
@@ -69,6 +73,8 @@ export function StockLevelsSection({
   paginationPageSize,
   paginationTotalItems,
   paginationTotalPages,
+  productBrandFilter,
+  productBrands,
   productTypeFilter,
   productTypesCount,
   productTypes,
@@ -182,6 +188,29 @@ export function StockLevelsSection({
               {productUnits.map((productUnit) => (
                 <option key={productUnit.id} value={productUnit.id}>
                   {productUnit.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label
+              className="ml-1 text-[10px] font-bold uppercase tracking-tight text-slate-500"
+              htmlFor="stock-brand-filter"
+            >
+              {dictionary.filters.brandLabel}
+            </label>
+            <select
+              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              id="stock-brand-filter"
+              onChange={(event) =>
+                onProductBrandFilterChange(event.target.value)
+              }
+              value={productBrandFilter}
+            >
+              <option value="">{dictionary.filters.allBrands}</option>
+              {productBrands.map((brand) => (
+                <option key={brand.id} value={brand.id}>
+                  {brand.name}
                 </option>
               ))}
             </select>

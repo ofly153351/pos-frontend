@@ -74,6 +74,7 @@ export function StockManager({
   const [catalogSearch, setCatalogSearch] = useState("");
   const [selectedProductTypeId, setSelectedProductTypeId] = useState("");
   const [selectedProductUnitId, setSelectedProductUnitId] = useState("");
+  const [selectedProductBrandId, setSelectedProductBrandId] = useState("");
   const [selectedStockStatus, setSelectedStockStatus] =
     useState<ProductStockStatus>("all");
   const [error, setError] = useState("");
@@ -286,6 +287,13 @@ export function StockManager({
 
     const productUnitId = product.product_unit_id ?? product.unit_id;
     if (selectedProductUnitId && productUnitId !== selectedProductUnitId) {
+      return false;
+    }
+
+    if (
+      selectedProductBrandId &&
+      product.brand_id !== selectedProductBrandId
+    ) {
       return false;
     }
 
@@ -747,6 +755,10 @@ export function StockManager({
             setSelectedProductUnitId(value);
             setProductPage(1);
           }}
+          onProductBrandFilterChange={(value) => {
+            setSelectedProductBrandId(value);
+            setProductPage(1);
+          }}
           onSearchChange={(value) => {
             setSearch(value);
             setProductPage(1);
@@ -764,6 +776,8 @@ export function StockManager({
           productTypes={productTypes}
           productUnitFilter={selectedProductUnitId}
           productUnits={productUnits}
+          productBrandFilter={selectedProductBrandId}
+          productBrands={productBrands}
           search={search}
           stockStatusFilter={selectedStockStatus}
         />

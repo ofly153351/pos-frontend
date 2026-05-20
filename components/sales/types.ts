@@ -115,4 +115,12 @@ export type SalesDictionary = {
   statusPartiallyPaidLabel: string;
   viewReceiptButton: string;
   categoryFilterAll: string;
+  holdBillLabel: string;
+  restoreBillLabel: string;
+  restoreBillDrawerTitle: string;
+  holdBillConfirmLabel: string;
+  holdBillCancelLabel: string;
+  holdBillPlaceholderLabel: string;
+  restoreBillConfirmLabel: string;
+  noParkedBillsLabel: string;
 };

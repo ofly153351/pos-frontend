@@ -7,9 +7,11 @@ export type StockManagerDictionary = {
   emptyState: string;
   filters: {
     activeStatus: string;
+    allBrands: string;
     allCategories: string;
     allStatuses: string;
     allTypes: string;
+    brandLabel: string;
     categoryLabel: string;
     gridView: string;
     inactiveStatus: string;

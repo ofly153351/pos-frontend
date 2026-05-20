@@ -16,8 +16,11 @@ import { createInvoice } from "@/services/invoices";
 import { listProducts } from "@/services/products";
 import {
   calculateVat,
+  createParkedBill,
   createSale,
+  deleteParkedBill,
   getSaleReceiptPreviewHtml,
+  listParkedBills,
 } from "@/services/sales";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 import type { Product } from "@/types/product";
@@ -242,6 +245,10 @@ export function SalesManager({
   const [isReceiptPreviewLoading, setIsReceiptPreviewLoading] = useState(false);
   const [receiptPreviewHtml, setReceiptPreviewHtml] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [isRestoreDrawerOpen, setIsRestoreDrawerOpen] = useState(false);
+  const [parkedBills, setParkedBills] = useState<any[]>([]);
+  const [isHoldingBill, setIsHoldingBill] = useState(false);
+  const [holdBillLabel, setHoldBillLabel] = useState("");
   const numpadCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -422,17 +429,14 @@ export function SalesManager({
     cartSummary.total - customerDiscountAmount - billDiscountAmount,
     0,
   );
-  const fallbackNetBeforeVat = applyVat
-    ? roundCurrency(payableTotal / 1.07)
-    : roundCurrency(payableTotal);
   const fallbackVatAmount = applyVat
-    ? roundCurrency(payableTotal - fallbackNetBeforeVat)
+    ? roundCurrency(payableTotal * 0.07)
     : 0;
   const vatAmount = applyVat
     ? roundCurrency(vatSummary?.vat_amount ?? fallbackVatAmount)
     : 0;
   const settlementTotal = applyVat
-    ? roundCurrency(vatSummary?.grand_total ?? payableTotal)
+    ? roundCurrency(vatSummary?.grand_total ?? roundCurrency(payableTotal + fallbackVatAmount))
     : roundCurrency(payableTotal);
   const isNetworkCustomerSelected = Boolean(selectedCustomerId);
   const isInvoiceSettlement =
@@ -509,7 +513,7 @@ export function SalesManager({
               qty: item.quantity,
             };
           }),
-          vat_included: true,
+          vat_included: false,
           vat_percent: 7,
         });
 
@@ -1095,7 +1099,7 @@ export function SalesManager({
             customer_id: selectedCustomerId,
             items: mappedItems,
             note: note.trim() || undefined,
-            vat_included: applyVat,
+            vat_included: false,
             vat_percent: applyVat ? 7 : 0,
           });
 
@@ -1113,7 +1117,7 @@ export function SalesManager({
           note: note.trim() || undefined,
           paid_amount: paidAmountValue,
           payment_method: paymentMethod,
-          vat_included: applyVat,
+          vat_included: false,
           vat_percent: applyVat ? 7 : 0,
         });
 
@@ -1534,6 +1538,32 @@ export function SalesManager({
                 <span>{dictionary.vatToggleLabel}</span>
                 <span>{showVatControls ? "✓" : ""}</span>
               </button>
+              <button
+                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+                onClick={() => {
+                  setHoldBillLabel("");
+                  setIsHoldingBill(true);
+                }}
+                type="button"
+              >
+                <span>{dictionary.holdBillLabel}</span>
+              </button>
+              <button
+                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+                onClick={async () => {
+                  try {
+                    const response = await listParkedBills();
+                    setParkedBills(response.data ?? []);
+                  } catch {
+                    setParkedBills([]);
+                  }
+                  setIsRestoreDrawerOpen(true);
+                  setIsActionsMenuOpen(false);
+                }}
+                type="button"
+              >
+                <span>{dictionary.restoreBillLabel}</span>
+              </button>
               <div className="my-1 border-t border-slate-100" />
               <button
                 className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
@@ -1542,6 +1572,200 @@ export function SalesManager({
               >
                 {dictionary.clearCartButton}
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Hold Bill prompt */}
+      {isHoldingBill ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-2xl">
+            <h3 className="text-lg font-semibold text-slate-950">
+              {dictionary.holdBillLabel}
+            </h3>
+            <div className="mt-4">
+              <input
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300"
+                onChange={(e) => setHoldBillLabel(e.target.value)}
+                placeholder={dictionary.holdBillPlaceholderLabel}
+                type="text"
+                value={holdBillLabel}
+              />
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button
+                className="flex-1 rounded-xl border border-slate-200 px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={() => setIsHoldingBill(false)}
+                type="button"
+              >
+                {dictionary.holdBillCancelLabel}
+              </button>
+              <button
+                className="flex-1 rounded-xl bg-sky-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
+                onClick={async () => {
+                  if (cart.length === 0) {
+                    setError(dictionary.emptyCart);
+                    setIsHoldingBill(false);
+                    return;
+                  }
+
+                  const label =
+                    holdBillLabel.trim() ||
+                    `${dictionary.holdBillLabel} #${Date.now()}`;
+
+                  try {
+                    await createParkedBill({
+                      applyVat,
+                      bill_discount_amount: billDiscountAmount,
+                      bill_discount_percent: billDiscountPercent,
+                      bill_discount_type: billDiscountType,
+                      customerSettlementMode,
+                      items: cart.map((item) => {
+                        const dv = Number(item.discountValue);
+                        return {
+                          discount_type: item.discountType || undefined,
+                          discount_value: dv > 0 ? dv : undefined,
+                          product_id: item.product.id,
+                          quantity: item.quantity,
+                        };
+                      }),
+                      label,
+                      note,
+                      paymentMethod,
+                      selectedCustomerId,
+                    });
+
+                    clearCart();
+                    setSuccessMessage(dictionary.holdBillConfirmLabel);
+                    await reloadData();
+                  } catch (nextError) {
+                    setError(
+                      nextError instanceof Error
+                        ? nextError.message
+                        : "Request failed",
+                    );
+                  }
+
+                  setIsHoldingBill(false);
+                }}
+                type="button"
+              >
+                {dictionary.holdBillConfirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Restore Bill drawer */}
+      {isRestoreDrawerOpen ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-2xl">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold text-slate-950">
+                {dictionary.restoreBillDrawerTitle}
+              </h3>
+              <button
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                onClick={() => setIsRestoreDrawerOpen(false)}
+                type="button"
+              >
+                {dictionary.closeReceiptButton}
+              </button>
+            </div>
+
+            <div className="mt-4 max-h-[60dvh] space-y-2 overflow-y-auto">
+              {parkedBills.length === 0 ? (
+                <p className="py-8 text-center text-sm text-slate-500">
+                  {dictionary.noParkedBillsLabel}
+                </p>
+              ) : (
+                parkedBills.map((bill) => {
+                  const itemCount = bill.items?.length ?? 0;
+                  const totalAmount = (bill.items ?? []).reduce(
+                    (sum: number, item: any) => {
+                      const price =
+                        Number(item.effective_price ?? item.price ?? 0);
+                      return sum + price * (item.quantity ?? 0);
+                    },
+                    0,
+                  );
+
+                  return (
+                    <button
+                      key={bill.id}
+                      className="w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:bg-sky-50 hover:border-sky-200"
+                      onClick={() => {
+                        if (
+                          window.confirm(dictionary.restoreBillConfirmLabel)
+                        ) {
+                          const items = (bill.items ?? []).map(
+                            (item: any) => ({
+                              discountType: item.discount_type ?? "none",
+                              discountValue: item.discount_value ?? "0",
+                              product: products.find(
+                                (p) => p.id === item.product_id,
+                              ) ?? {
+                                id: item.product_id,
+                                effective_price: item.effective_price ?? item.price ?? 0,
+                                image_url: null,
+                                name: item.product_name ?? "Unknown",
+                                sku: null,
+                              } as Product,
+                              quantity: item.quantity ?? 0,
+                            }),
+                          );
+
+                          setCart(items);
+                          setSelectedCustomerId(
+                            bill.selectedCustomerId ?? "",
+                          );
+                          setCustomerSettlementMode(
+                            bill.customerSettlementMode ?? "cash_now",
+                          );
+                          setPaymentMethod(
+                            bill.paymentMethod ?? "cash",
+                          );
+                          setNote(bill.note ?? "");
+                          setBillDiscount(
+                            bill.bill_discount_amount > 0
+                              ? String(bill.bill_discount_amount)
+                              : "",
+                          );
+                          setBillDiscountType(
+                            bill.bill_discount_type ?? "amount",
+                          );
+                          setApplyVat(bill.applyVat ?? true);
+
+                          void deleteParkedBill(bill.id);
+                          setIsRestoreDrawerOpen(false);
+                          setSuccessMessage(
+                            dictionary.restoreBillConfirmLabel,
+                          );
+                        }
+                      }}
+                      type="button"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-slate-800">
+                          {bill.label}
+                        </span>
+                        <span className="text-sm font-medium text-sky-600">
+                          {formatCurrency(totalAmount)}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
+                        <span>
+                          {itemCount} {dictionary.productCountLabel}
+                        </span>
+                        <span>•</span>
+                        <span>{formatDateTime(bill.created_at)}</span>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
