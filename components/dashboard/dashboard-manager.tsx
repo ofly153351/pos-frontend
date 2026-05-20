@@ -730,7 +730,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                       <span className="truncate text-sm font-medium text-slate-800">{product.name}</span>
                     </div>
                     <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-rose-700">
-                      {product.quantity}
+                      {product.total_stock ?? 0}
                     </span>
                   </div>
                 ))
@@ -759,7 +759,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                       <span className="truncate text-sm font-medium text-slate-800">{product.name}</span>
                     </div>
                     <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-emerald-700">
-                      {product.quantity}
+                      {product.total_stock ?? 0}
                     </span>
                   </div>
                 ))

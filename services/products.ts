@@ -53,10 +53,6 @@ function buildProductFormData(input: ProductInput) {
     formData.set("unit_id", input.unit_id);
   }
 
-  if (typeof input.quantity === "string") {
-    formData.set("quantity", input.quantity);
-  }
-
   if (typeof input.min_stock === "string" && input.min_stock) {
     formData.set("min_stock", input.min_stock);
   }

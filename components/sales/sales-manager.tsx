@@ -321,7 +321,7 @@ export function SalesManager({
     const keyword = search.trim().toLowerCase();
 
     return products.filter((product) => {
-      if (!product.is_active || product.quantity <= 0) {
+      if (!product.is_active || (product.total_stock ?? 0) <= 0) {
         return false;
       }
 
@@ -628,7 +628,7 @@ export function SalesManager({
         ];
       }
 
-      if (existingItem.quantity >= product.quantity) {
+      if (existingItem.quantity >= (product.total_stock ?? 0)) {
         return currentCart;
       }
 
@@ -731,7 +731,7 @@ export function SalesManager({
 
         return {
           ...item,
-          quantity: Math.min(nextQuantity, item.product.quantity),
+          quantity: Math.min(nextQuantity, item.product.total_stock ?? 0),
         };
       });
     });
@@ -1421,13 +1421,13 @@ export function SalesManager({
                             <input
                               className="h-7 w-14 bg-white px-2 text-center text-xs font-semibold text-slate-900 outline-none"
                               inputMode="numeric"
-                              max={item.product.quantity}
+                              max={item.product.total_stock ?? 0}
                               min="1"
                               onClick={() =>
                                 openQuantityNumpad(
                                   item.product.id,
                                   item.quantity,
-                                  item.product.quantity,
+                                  item.product.total_stock ?? 0,
                                 )
                               }
                               onFocus={(event) => event.target.blur()}

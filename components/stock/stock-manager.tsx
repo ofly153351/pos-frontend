@@ -46,10 +46,11 @@ type ProductStockStatus = "all" | "active" | "inactive" | "low_stock" | "out_of_
 const LOW_STOCK_THRESHOLD = 10;
 
 function isLowStockProduct(product: Product) {
-  if (product.quantity <= 0) return false;
-  if (product.max_stock != null && product.quantity < product.max_stock / 2) return true;
-  if (product.min_stock != null && product.min_stock > 0 && product.quantity <= product.min_stock) return true;
-  return (product.min_stock == null || product.min_stock === 0) && product.max_stock == null && product.quantity > 0 && product.quantity <= 10;
+  const stock = product.total_stock ?? 0;
+  if (stock <= 0) return false;
+  if (product.max_stock != null && stock < product.max_stock / 2) return true;
+  if (product.min_stock != null && product.min_stock > 0 && stock <= product.min_stock) return true;
+  return (product.min_stock == null || product.min_stock === 0) && product.max_stock == null && stock > 0 && stock <= 10;
 }
 
 export function StockManager({
@@ -309,7 +310,7 @@ export function StockManager({
       return false;
     }
 
-    if (selectedStockStatus === "out_of_stock" && product.quantity > 0) {
+    if (selectedStockStatus === "out_of_stock" && (product.total_stock ?? 0) > 0) {
       return false;
     }
 
@@ -418,7 +419,6 @@ export function StockManager({
       is_active: product.is_active,
       name: product.name,
       product_type_id: product.product_type_id ?? "",
-      quantity: String(product.quantity ?? 0),
       min_stock: product.min_stock != null ? String(product.min_stock) : "",
       max_stock: product.max_stock != null ? String(product.max_stock) : "",
       sku: product.sku ?? "",

@@ -500,21 +500,6 @@ export function ProductFormModal({
                     value={formState.special_price}
                   />
                   <ProductTextInput
-                    badgeText={formLabels.requiredLabel}
-                    badgeTone="required"
-                    label={formLabels.quantityLabel}
-                    min="0"
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({
-                        ...current,
-                        quantity: value,
-                      }))
-                    }
-                    step="1"
-                    type="number"
-                    value={formState.quantity ?? "0"}
-                  />
-                  <ProductTextInput
                     badgeText={formLabels.optionalLabel}
                     label={formLabels.minStockLabel}
                     min="0"
@@ -654,7 +639,7 @@ export function ProductFormModal({
                     priceLabel={formLabels.basePriceLabel}
                     priceValue={formState.base_price || "0.00"}
                     quantityLabel={formLabels.quantityLabel}
-                    quantityValue={formState.quantity || "0"}
+                    quantityValue={"0"}
                     title={formLabels.setupSection}
                     unitLabel={formLabels.unitTypeLabel}
                     unitValue={

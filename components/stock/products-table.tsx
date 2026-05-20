@@ -153,15 +153,20 @@ export function ProductsTable({
     return generateBarcodeSvg(previewSku);
   }, [previewSku]);
 
+  function getTotalStock(product: Product): number {
+    return product.total_stock ?? 0;
+  }
+
   function isOutOfStock(product: Product) {
-    return product.quantity <= 0;
+    return getTotalStock(product) <= 0;
   }
 
   function isLowStock(product: Product) {
-    if (product.quantity <= 0) return false;
-    if (product.max_stock != null && product.quantity < product.max_stock / 2) return true;
-    if (product.min_stock != null && product.min_stock > 0 && product.quantity <= product.min_stock) return true;
-    return (product.min_stock == null || product.min_stock === 0) && product.max_stock == null && product.quantity <= 20;
+    const stock = getTotalStock(product);
+    if (stock <= 0) return false;
+    if (product.max_stock != null && stock < product.max_stock / 2) return true;
+    if (product.min_stock != null && product.min_stock > 0 && stock <= product.min_stock) return true;
+    return (product.min_stock == null || product.min_stock === 0) && product.max_stock == null && stock <= 20;
   }
 
   function printBarcode(svgContent: string, sku: string | null) {
@@ -554,8 +559,8 @@ export function ProductsTable({
                         ) : null}
                         <span>
                           {product.max_stock != null
-                            ? `${product.quantity} / ${product.max_stock}`
-                            : product.quantity}
+                            ? `${getTotalStock(product)} / ${product.max_stock}`
+                            : getTotalStock(product)}
                           {product.product_unit_name
                             ? ` ${product.product_unit_name}`
                             : ""}

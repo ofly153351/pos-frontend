@@ -42,6 +42,7 @@ export type DashboardLowStockProduct = {
   name: string;
   product_id: string;
   quantity: number;
+  total_stock?: number;
   sku?: string;
   unit_type?: string;
 };

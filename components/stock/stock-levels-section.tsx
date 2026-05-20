@@ -315,7 +315,7 @@ export function StockLevelsSection({
             `"${(p.sku ?? "").replace(/"/g, '""')}"`,
             `"${(p.product_type_name ?? "").replace(/"/g, '""')}"`,
             p.effective_price ?? 0,
-            p.quantity ?? 0,
+            p.total_stock ?? 0,
             p.min_stock ?? 0,
             p.max_stock ?? "",
             `"${(p.product_unit_name ?? "").replace(/"/g, '""')}"`,
@@ -437,7 +437,6 @@ export function StockLevelsSection({
                     await createProduct({
                       name: cols[nameIdx] || "",
                       base_price: cols[priceIdx] || "0",
-                      quantity: cols[stockIdx] || "0",
                       sku: skuIdx >= 0 ? cols[skuIdx] || "" : "",
                       min_stock: minStockIdx >= 0 ? cols[minStockIdx] || "0" : "0",
                       max_stock: maxStockIdx >= 0 ? cols[maxStockIdx] || "" : "",

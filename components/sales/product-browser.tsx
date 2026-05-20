@@ -134,7 +134,7 @@ export function ProductBrowser({
                         {product.name}
                       </p>
                       <p className="mt-0.5 text-xs text-slate-500">
-                        {dictionary.stockLabel} {product.quantity}
+                        {dictionary.stockLabel} {product.total_stock ?? 0}
                       </p>
                     </div>
                     <p className="text-xs font-semibold text-slate-700">
@@ -214,7 +214,7 @@ export function ProductBrowser({
               >
                 <div className="relative">
                   <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm">
-                    {dictionary.stockLabel} {product.quantity}
+                    {dictionary.stockLabel} {product.total_stock ?? 0}
                   </span>
                   {product.image_url ? (
                     <div className="relative">
@@ -248,14 +248,14 @@ export function ProductBrowser({
 
                 <button
                   className="mt-2 w-full rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
-                  disabled={currentQuantity >= product.quantity}
+                  disabled={currentQuantity >= (product.total_stock ?? 0)}
                   onClick={(event) => {
                     event.stopPropagation();
                     onAddToCart(product);
                   }}
                   type="button"
                 >
-                  {currentQuantity >= product.quantity
+                  {currentQuantity >= (product.total_stock ?? 0)
                     ? dictionary.productOutOfStock
                     : dictionary.addButton}
                 </button>
@@ -297,7 +297,7 @@ export function ProductBrowser({
                   </p>
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-600">
                     <span>
-                      {dictionary.stockLabel} {product.quantity}
+                      {dictionary.stockLabel} {product.total_stock ?? 0}
                     </span>
                     {currentQuantity > 0 ? (
                       <span className="rounded-full bg-blue-700 px-2 py-0.5 font-semibold text-white">
@@ -312,14 +312,14 @@ export function ProductBrowser({
                   </p>
                   <button
                     className="mt-2 rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
-                    disabled={currentQuantity >= product.quantity}
+                    disabled={currentQuantity >= (product.total_stock ?? 0)}
                     onClick={(event) => {
                       event.stopPropagation();
                       onAddToCart(product);
                     }}
                     type="button"
                   >
-                    {currentQuantity >= product.quantity
+                    {currentQuantity >= (product.total_stock ?? 0)
                       ? dictionary.productOutOfStock
                       : dictionary.addButton}
                   </button>

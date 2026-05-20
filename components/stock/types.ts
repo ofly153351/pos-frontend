@@ -219,7 +219,6 @@ export const initialProductFormState: ProductInput = {
   product_code: "",
   description: "",
   storage_location: "",
-  quantity: "0",
   sku: "",
   barcode: "",
   special_price: "",

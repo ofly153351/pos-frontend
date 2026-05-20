@@ -236,7 +236,7 @@ export function StockReceiveModal({
                             {dictionary.currentStock ?? "คงเหลือ"}
                           </p>
                           <p className="text-sm font-bold text-slate-900">
-                            {product.quantity ?? 0}
+                            {product.total_stock ?? 0}
                           </p>
                         </div>
                       </div>
