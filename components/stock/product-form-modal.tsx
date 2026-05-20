@@ -231,7 +231,7 @@ function ProductFileField({
   return (
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
       <input
-        className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-blue-700 focus:border-blue-500"
+        className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3  file:text-sm file:font-medium file:text-blue-700 focus:border-blue-500"
         onChange={(event) => onChange(event.target.files?.[0] ?? null)}
         type="file"
       />
@@ -462,74 +462,31 @@ export function ProductFormModal({
                     }
                     value={formState.name}
                   />
-                  <ProductTextInput
+                  <ProductSelectField
                     badgeText={formLabels.requiredLabel}
                     badgeTone="required"
-                    label={formLabels.basePriceLabel}
+                    label={formLabels.unitTypeLabel}
                     onChange={(value) =>
                       onFormStateChange((current) => ({
                         ...current,
-                        base_price: value,
+                        unit_id: value,
                       }))
                     }
-                    placeholder="0.00"
-                    value={formState.base_price}
+                    options={unitOptions.map((u) => ({ id: u.id, name: u.name }))}
+                    value={formState.unit_id ?? ""}
                   />
-                  <ProductTextInput
+                  <ProductSelectField
                     badgeText={formLabels.optionalLabel}
-                    label={formLabels.costPriceLabel}
+                    label={formLabels.categoryLabel}
                     onChange={(value) =>
                       onFormStateChange((current) => ({
                         ...current,
-                        cost_price: value,
+                        product_type_id: value,
                       }))
                     }
-                    placeholder="0.00"
-                    value={formState.cost_price}
+                    options={productTypes.map((t) => ({ id: t.id, name: t.name }))}
+                    value={formState.product_type_id ?? ""}
                   />
-                  <ProductTextInput
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.specialPriceLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({
-                        ...current,
-                        special_price: value,
-                      }))
-                    }
-                    placeholder="0.00"
-                    value={formState.special_price}
-                  />
-                  <ProductTextInput
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.minStockLabel}
-                    min="0"
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({
-                        ...current,
-                        min_stock: value,
-                      }))
-                    }
-                    step="1"
-                    type="number"
-                    value={formState.min_stock ?? "0"}
-                  />
-                  <ProductTextInput
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.maxStockLabel}
-                    min="0"
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({
-                        ...current,
-                        max_stock: value,
-                      }))
-                    }
-                    step="1"
-                    type="number"
-                    value={formState.max_stock ?? "0"}
-                  />
-                </div>
-
-                <div className="space-y-5">
                   <ProductSelectField
                     badgeText={formLabels.optionalLabel}
                     label={formLabels.brandLabel}
@@ -542,16 +499,18 @@ export function ProductFormModal({
                     options={productBrands.map((b) => ({ id: b.id, name: b.name }))}
                     value={formState.brand_id ?? ""}
                   />
-                  <ProductTextInput
+                </div>
+
+                <div className="space-y-5">
+                  <ProductFileField
                     badgeText={formLabels.optionalLabel}
-                    label={formLabels.productCodeLabel}
-                    onChange={(value) =>
+                    label={formLabels.imageLabel}
+                    onChange={(file) =>
                       onFormStateChange((current) => ({
                         ...current,
-                        product_code: value,
+                        image: file,
                       }))
                     }
-                    value={formState.product_code}
                   />
                   <ProductTextInput
                     badgeText={formLabels.optionalLabel}
@@ -586,74 +545,92 @@ export function ProductFormModal({
                     }
                     value={formState.storage_location}
                   />
-                  <ProductSelectField
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.categoryLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({
-                        ...current,
-                        product_type_id: value,
-                      }))
-                    }
-                    options={productTypes.map((t) => ({ id: t.id, name: t.name }))}
-                    value={formState.product_type_id ?? ""}
-                  />
+                </div>
+              </div>
+            </ProductModalSection>
 
-                  <ProductSelectField
+            <ProductModalSection title={formLabels.pricingSection}>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-5">
+                  <ProductTextInput
                     badgeText={formLabels.requiredLabel}
                     badgeTone="required"
-                    label={formLabels.unitTypeLabel}
+                    label={formLabels.basePriceLabel}
                     onChange={(value) =>
                       onFormStateChange((current) => ({
                         ...current,
-                        unit_id: value,
+                        base_price: value,
                       }))
                     }
-                    options={unitOptions.map((u) => ({ id: u.id, name: u.name }))}
-                    value={formState.unit_id ?? ""}
+                    placeholder="0.00"
+                    type="number"
+                    value={formState.base_price}
                   />
-                  <ProductFileField
+                  <ProductTextInput
                     badgeText={formLabels.optionalLabel}
-                    label={formLabels.imageLabel}
-                    onChange={(file) =>
+                    label={formLabels.costPriceLabel}
+                    onChange={(value) =>
                       onFormStateChange((current) => ({
                         ...current,
-                        image: file,
+                        cost_price: value,
                       }))
                     }
+                    placeholder="0.00"
+                    type="number"
+                    value={formState.cost_price}
                   />
-
-                  <ProductSummaryCard
-                    activeLabel={formLabels.activeLabel}
-                    activeValue={
-                      Boolean(formState.is_active)
-                        ? managementDictionary.activeLabel
-                        : managementDictionary.inactiveLabel
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.specialPriceLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        special_price: value,
+                      }))
                     }
-                    categoryLabel={formLabels.categoryLabel}
-                    categoryValue={
-                      productTypes.find(
-                        (type) => type.id === formState.product_type_id,
-                      )?.name ?? "-"
+                    placeholder="0.00"
+                    type="number"
+                    value={formState.special_price}
+                  />
+                </div>
+                <div className="space-y-5">
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.minStockLabel}
+                    min="0"
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        min_stock: value,
+                      }))
                     }
-                    priceLabel={formLabels.basePriceLabel}
-                    priceValue={formState.base_price || "0.00"}
-                    quantityLabel={formLabels.quantityLabel}
-                    quantityValue={"0"}
-                    title={formLabels.setupSection}
-                    unitLabel={formLabels.unitTypeLabel}
-                    unitValue={
-                      unitOptions.find((unit) => unit.id === formState.unit_id)
-                        ?.name ?? "-"
+                    step="1"
+                    type="number"
+                    value={formState.min_stock ?? "0"}
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.maxStockLabel}
+                    min="0"
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        max_stock: value,
+                      }))
                     }
+                    step="1"
+                    type="number"
+                    value={formState.max_stock ?? "0"}
                   />
                 </div>
               </div>
+            </ProductModalSection>
 
-              <div className="mt-6">
+            <ProductModalSection title={formLabels.setupSection}>
+              <div>
                 <ProductField badgeText={formLabels.optionalLabel} label={formLabels.descriptionLabel}>
                   <textarea
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-blue-500 min-h-[80px] resize-y"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-blue-500 min-h-[60px] resize-y"
                     onChange={(event) =>
                       onFormStateChange((current) => ({
                         ...current,

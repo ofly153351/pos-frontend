@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { PurchaseForm } from "@/components/purchasing/purchase-form";
 import { PurchaseList } from "@/components/purchasing/purchase-list";
@@ -61,6 +62,7 @@ type PurchasesContentProps = {
 
 export function PurchasesContent({ dictionary }: PurchasesContentProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
 
   return (
@@ -71,7 +73,7 @@ export function PurchasesContent({ dictionary }: PurchasesContentProps) {
           onClose={() => setShowForm(false)}
           onSuccess={() => {
             setShowForm(false);
-            router.refresh();
+            queryClient.invalidateQueries({ queryKey: ["purchase-orders"] });
           }}
         />
       ) : null}

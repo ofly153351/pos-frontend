@@ -5,9 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, X, Search } from "lucide-react";
 
 import { createPurchaseOrder, type CreatePOItemInput } from "@/services/purchases";
-import { listSuppliers, type Supplier } from "@/services/suppliers";
-import { listProducts } from "@/services/products";
-import type { Product } from "@/types/product";
+import { listSuppliers, listSupplierProducts, type Supplier, type SupplierProduct } from "@/services/suppliers";
 
 type PurchaseFormProps = {
   dictionary: {
@@ -62,30 +60,32 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
     queryKey: ["suppliers"],
   });
 
-  const { data: products = [] } = useQuery<Product[]>({
+  const { data: supplierProducts = [] } = useQuery<SupplierProduct[]>({
     queryFn: async () => {
-      const response = await listProducts({ limit: 100 });
-      return response.data.items ?? [];
+      if (!supplierId) return [];
+      const response = await listSupplierProducts(supplierId);
+      return response.data ?? [];
     },
-    queryKey: ["products-for-purchase"],
+    queryKey: ["supplier-products", supplierId],
+    enabled: !!supplierId,
   });
 
-  const filteredProducts = products.filter(
+  const filteredProducts = supplierProducts.filter(
     (p) =>
-      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-      (p.sku ?? "").toLowerCase().includes(productSearch.toLowerCase()),
+      p.product_name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      (p.product_sku ?? "").toLowerCase().includes(productSearch.toLowerCase()),
   );
 
-  function addProductToItems(product: Product) {
+  function addProductToItems(item: SupplierProduct) {
     // Check if already added
-    if (items.find((i) => i.product_id === product.id)) return;
+    if (items.find((i) => i.product_id === item.product_id)) return;
     setItems([
       ...items,
       {
-        product_id: product.id,
-        product_name: product.name,
+        product_id: item.product_id,
+        product_name: item.product_name,
         quantity: 1,
-        unit_cost: product.cost_price ?? 0,
+        unit_cost: item.supplier_price ?? 0,
       },
     ]);
     setProductSearch("");
@@ -176,7 +176,11 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
               </label>
               <select
                 className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                onChange={(e) => setSupplierId(e.target.value)}
+                onChange={(e) => {
+                  setSupplierId(e.target.value);
+                  setShowProductDropdown(true);
+                  setProductSearch("");
+                }}
                 value={supplierId}
               >
                 <option value="">-- {dictionary.selectSupplier} --</option>
@@ -195,6 +199,11 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
               <label className="mb-1 block text-sm font-medium text-slate-700">
                 {dictionary.selectProduct}
               </label>
+              {!supplierId ? (
+                <p className="rounded-xl border border-dashed border-slate-200 p-3 text-center text-sm text-slate-400">
+                  กรุณาเลือกซัพพลายเออร์ก่อน
+                </p>
+              ) : (
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
@@ -209,7 +218,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                   type="text"
                   value={productSearch}
                 />
-                {showProductDropdown && productSearch ? (
+                {showProductDropdown ? (
                   <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
                     {filteredProducts.length === 0 ? (
                       <p className="p-3 text-sm text-slate-500">No products found</p>
@@ -217,18 +226,19 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                       filteredProducts.map((p) => (
                         <button
                           className="flex w-full items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 transition-colors"
-                          key={p.id}
+                          key={p.product_id}
                           onMouseDown={() => addProductToItems(p)}
                           type="button"
                         >
-                          <span>{p.name}</span>
-                          <span className="text-xs text-slate-400">{p.sku || ""}</span>
+                          <span>{p.product_name}</span>
+                          <span className="text-xs text-slate-400">{p.product_sku || ""}</span>
                         </button>
                       ))
                     )}
                   </div>
                 ) : null}
               </div>
+              )}
             </div>
 
             {/* Items table */}
