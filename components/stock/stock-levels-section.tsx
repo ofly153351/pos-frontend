@@ -28,6 +28,7 @@ type StockLevelsSectionProps = {
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
   onDelete: (productId: string) => void;
+  onDeleteMany: (productIds: string[]) => void;
   onEdit: (product: Product) => void;
   onOpenCreateModal: () => void;
   onProductBrandFilterChange: (brandId: string) => void;
@@ -62,6 +63,7 @@ export function StockLevelsSection({
   onPageChange,
   onPageSizeChange,
   onDelete,
+  onDeleteMany,
   onEdit,
   onOpenCreateModal,
   onProductBrandFilterChange,
@@ -298,6 +300,7 @@ export function StockLevelsSection({
         loadingLabel={loadingLabel}
         managementDictionary={managementDictionary}
         onDelete={onDelete}
+        onDeleteMany={onDeleteMany}
         onEdit={onEdit}
         onExport={(selectedIds) => {
           const selectedProducts = filteredProducts.filter((p) =>

@@ -32,6 +32,9 @@ export type Product = {
   image_url?: string | null;
   is_active: boolean;
   name: string;
+  product_code?: string | null;
+  description?: string | null;
+  storage_location?: string | null;
   product_type?: ProductType | null;
   product_type_id?: string | null;
   product_type_name?: string | null;
@@ -67,13 +70,17 @@ export type ProductTypeInput = {
 };
 
 export type ProductInput = {
-  base_price: string;
+  base_price?: string;
   brand_id?: string;
+  cost_price?: string;
+  description?: string;
   image?: File | null;
   is_active?: boolean;
   max_stock?: string;
   min_stock?: string;
   name: string;
+  product_code?: string;
+  storage_location?: string;
   product_type_id?: string;
   quantity?: string;
   sku?: string;

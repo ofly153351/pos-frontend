@@ -399,14 +399,39 @@ export function ProductFormModal({
       >
         <div className="border-b border-slate-200 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
-                {quickActionLabel}
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold md:text-3xl">
-                {isEditing ? formLabels.titleEdit : formLabels.titleCreate}
-              </h2>
-            </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
+                    {quickActionLabel}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold md:text-3xl">
+                    {isEditing ? formLabels.titleEdit : formLabels.titleCreate}
+                  </h2>
+                </div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <button
+                    aria-checked={Boolean(formState.is_active)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                      Boolean(formState.is_active) ? "bg-white/90" : "bg-white/20"
+                    }`}
+                    onClick={() =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        is_active: !current.is_active,
+                      }))
+                    }
+                    role="switch"
+                    type="button"
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        Boolean(formState.is_active) ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                  <span className="text-xs font-medium tracking-wide text-white/60 uppercase">
+                    {Boolean(formState.is_active) ? "Active" : "Inactive"}
+                  </span>
+                </div>
           </div>
         </div>
 
@@ -449,6 +474,18 @@ export function ProductFormModal({
                     }
                     placeholder="0.00"
                     value={formState.base_price}
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.costPriceLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        cost_price: value,
+                      }))
+                    }
+                    placeholder="0.00"
+                    value={formState.cost_price}
                   />
                   <ProductTextInput
                     badgeText={formLabels.optionalLabel}
@@ -522,6 +559,17 @@ export function ProductFormModal({
                   />
                   <ProductTextInput
                     badgeText={formLabels.optionalLabel}
+                    label={formLabels.productCodeLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        product_code: value,
+                      }))
+                    }
+                    value={formState.product_code}
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
                     label={formLabels.skuLabel}
                     onChange={(value) =>
                       onFormStateChange((current) => ({
@@ -541,6 +589,17 @@ export function ProductFormModal({
                       }))
                     }
                     value={formState.barcode ?? ""}
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.storageLocationLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        storage_location: value,
+                      }))
+                    }
+                    value={formState.storage_location}
                   />
                   <ProductSelectField
                     badgeText={formLabels.optionalLabel}
@@ -579,22 +638,6 @@ export function ProductFormModal({
                     }
                   />
 
-                  <ProductField
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.activeLabel}
-                  >
-                    <ProductActiveToggle
-                      checked={Boolean(formState.is_active)}
-                      label=""
-                      onChange={(checked) =>
-                        onFormStateChange((current) => ({
-                          ...current,
-                          is_active: checked,
-                        }))
-                      }
-                    />
-                  </ProductField>
-
                   <ProductSummaryCard
                     activeLabel={formLabels.activeLabel}
                     activeValue={
@@ -620,6 +663,22 @@ export function ProductFormModal({
                     }
                   />
                 </div>
+              </div>
+
+              <div className="mt-6">
+                <ProductField badgeText={formLabels.optionalLabel} label={formLabels.descriptionLabel}>
+                  <textarea
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-blue-500 min-h-[80px] resize-y"
+                    onChange={(event) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    placeholder={formLabels.descriptionLabel}
+                    value={formState.description ?? ""}
+                  />
+                </ProductField>
               </div>
             </ProductModalSection>
 

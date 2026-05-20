@@ -5,6 +5,7 @@ import { AlertTriangle, Barcode, MoreVertical, Pencil, Printer, Trash2, X } from
 
 import type { ManagementDictionary } from "@/components/stock/types";
 import type { Product } from "@/types/product";
+import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { StockReceiveModal } from "@/components/stock/stock-receive-modal";
 
 type ProductsTableProps = {
@@ -15,6 +16,7 @@ type ProductsTableProps = {
   outOfStockLabel: string;
   managementDictionary: ManagementDictionary;
   onDelete: (productId: string) => void;
+  onDeleteMany: (productIds: string[]) => void;
   onEdit: (product: Product) => void;
   onExport: (selectedIds: string[]) => void;
   products: Product[];
@@ -68,6 +70,7 @@ export function ProductsTable({
   outOfStockLabel,
   managementDictionary,
   onDelete,
+  onDeleteMany,
   onEdit,
   onExport,
   products,
@@ -75,6 +78,7 @@ export function ProductsTable({
   tableDictionary,
 }: ProductsTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
   function formatCurrency(value: number) {
     return new Intl.NumberFormat("th-TH", {
       currency: "THB",
@@ -379,6 +383,19 @@ export function ProductsTable({
                   <div className="my-1 border-t border-slate-100" />
 
                   <button
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                    onClick={() => {
+                      setIsActionMenuOpen(false);
+                      setConfirmDeleteIds(Array.from(selectedIds));
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    <Trash2 className="h-4 w-4 shrink-0" />
+                    <span>{tableDictionary.deleteAction}</span>
+                  </button>
+
+                  <button
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
                     onClick={() => {
                       setIsReceiveModalOpen(true);
@@ -588,7 +605,7 @@ export function ProductsTable({
                   <button
                     className="rounded-lg p-2 text-rose-600 transition hover:bg-rose-50"
                     aria-label={tableDictionary.deleteAction}
-                    onClick={() => onDelete(product.id)}
+                    onClick={() => setConfirmDeleteIds([product.id])}
                     title={tableDictionary.deleteAction}
                     type="button"
                   >
@@ -661,6 +678,34 @@ export function ProductsTable({
           selectedIds={selectedIds}
         />
       ) : null}
+
+      <ConfirmDialog
+        cancelLabel="Cancel"
+        confirmLabel={tableDictionary.deleteAction}
+        danger
+        icon={
+          <Trash2 className="h-5 w-5 text-rose-600" />
+        }
+        isOpen={confirmDeleteIds !== null}
+        onCancel={() => setConfirmDeleteIds(null)}
+        onConfirm={() => {
+          if (confirmDeleteIds) {
+            if (confirmDeleteIds.length === 1) {
+              onDelete(confirmDeleteIds[0]);
+            } else {
+              onDeleteMany(confirmDeleteIds);
+            }
+            setConfirmDeleteIds(null);
+          }
+        }}
+        title={confirmDeleteIds?.length === 1 ? "Delete product" : `Delete ${confirmDeleteIds?.length ?? 0} products`}
+      >
+        <p className="text-sm text-slate-600">
+          {confirmDeleteIds?.length === 1
+            ? "Are you sure you want to delete this product? This action cannot be undone."
+            : `Are you sure you want to delete ${confirmDeleteIds?.length ?? 0} products? This action cannot be undone.`}
+        </p>
+      </ConfirmDialog>
     </>
   );
 }

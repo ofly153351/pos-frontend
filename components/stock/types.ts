@@ -52,6 +52,14 @@ export type StockManagerDictionary = {
     maxStockHint: string;
     optionalLabel: string;
     requiredLabel: string;
+    costPriceLabel: string;
+    costPriceHint: string;
+    productCodeLabel: string;
+    productCodeHint: string;
+    descriptionLabel: string;
+    descriptionHint: string;
+    storageLocationLabel: string;
+    storageLocationHint: string;
     save: string;
     saving: string;
     setupSection: string;
@@ -203,10 +211,14 @@ export type UnitsDictionary = NonNullable<StockManagerDictionary["units"]>;
 export const initialProductFormState: ProductInput = {
   base_price: "",
   brand_id: "",
+  cost_price: "",
   is_active: true,
   max_stock: "",
   min_stock: "",
   name: "",
+  product_code: "",
+  description: "",
+  storage_location: "",
   quantity: "0",
   sku: "",
   barcode: "",

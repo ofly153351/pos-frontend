@@ -62,7 +62,7 @@ export function ProductBrowser({
   return (
     <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-semibold text-slate-950">
+        <h2 className="min-w-48 shrink-0 text-2xl font-semibold text-slate-950">
           {dictionary.title}
         </h2>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">

@@ -697,6 +697,19 @@ export function StockManager({
     });
   }
 
+  async function handleDeleteMany(productIds: string[]) {
+    setError("");
+
+    startTransition(async () => {
+      try {
+        await Promise.all(productIds.map((id) => deleteProduct(id)));
+        await reloadProductsPage();
+      } catch (nextError) {
+        setError(nextError instanceof Error ? nextError.message : "Request failed");
+      }
+    });
+  }
+
   return (
     <div>
       {isCategoriesView ? (
@@ -745,6 +758,7 @@ export function StockManager({
             localStorage.setItem("stock-page-size", String(size));
           }}
           onDelete={handleDelete}
+          onDeleteMany={handleDeleteMany}
           onEdit={openEditModal}
           onOpenCreateModal={openCreateModal}
           onProductTypeFilterChange={(value) => {

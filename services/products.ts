@@ -25,11 +25,15 @@ function buildProductFormData(input: ProductInput) {
   const formData = new FormData();
 
   formData.set("name", input.name);
-  formData.set("base_price", input.base_price);
+  formData.set("base_price", input.base_price ?? "");
 
   if (input.brand_id) {
     formData.set("brand_id", input.brand_id);
   }
+
+  formData.set("product_code", input.product_code ?? "");
+  formData.set("description", input.description ?? "");
+  formData.set("storage_location", input.storage_location ?? "");
 
   formData.set("sku", input.sku ?? "");
   if (!input.sku) {
@@ -63,6 +67,10 @@ function buildProductFormData(input: ProductInput) {
 
   if (input.special_price) {
     formData.set("special_price", input.special_price);
+  }
+
+  if (input.cost_price) {
+    formData.set("cost_price", input.cost_price);
   }
 
   if (input.special_price_start_at) {
