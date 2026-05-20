@@ -21,6 +21,8 @@ import {
   X,
 } from "lucide-react";
 
+import SuccessPopup from "@/components/ui/success-popup";
+
 import {
   addWarehouseProduct,
   createWarehouse,
@@ -396,6 +398,26 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const [transferNote, setTransferNote] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
 
+  // Batch receive modal
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+  const [receiveSearch, setReceiveSearch] = useState("");
+  const [receiveQuantities, setReceiveQuantities] = useState<{[key: string]: number}>({});
+  const [isReceivingProduct, setIsReceivingProduct] = useState<{[key: string]: boolean}>({});
+  const [receiveError, setReceiveError] = useState("");
+
+  // Batch transfer modal
+  const [isBatchTransferModalOpen, setIsBatchTransferModalOpen] = useState(false);
+  const [batchTransferSearch, setBatchTransferSearch] = useState("");
+  const [batchTransferQuantities, setBatchTransferQuantities] = useState<{[key: string]: number}>({});
+  const [batchTransferDestType, setBatchTransferDestType] = useState<"stock" | "warehouse">("stock");
+  const [batchTransferDestWarehouse, setBatchTransferDestWarehouse] = useState("");
+  const [batchTransferNote, setBatchTransferNote] = useState("");
+  const [isBatchTransferring, setIsBatchTransferring] = useState<{[key: string]: boolean}>({});
+  const [batchTransferError, setBatchTransferError] = useState("");
+
+  // Success popup modal
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const { data: transferWarehousesData } = useQuery({
     queryKey: ["warehouses"],
     queryFn: listWarehouses,
@@ -618,12 +640,16 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         setForm(initialFormState);
       }
       if (isManageModalOpen) setIsManageModalOpen(false);
+      if (isReceiveModalOpen) setIsReceiveModalOpen(false);
+      if (isBatchTransferModalOpen) setIsBatchTransferModalOpen(false);
+      if (transferTarget) { setTransferTarget(null); setTransferDestType("stock"); setTransferDestWarehouse(""); setTransferNote(""); setTransferQty(1); }
       if (previewSku) setPreviewSku(null);
+      if (successMessage) setSuccessMessage(null);
     };
-    if (!isModalOpen && !isManageModalOpen && !previewSku) return;
+    if (!isModalOpen && !isManageModalOpen && !isReceiveModalOpen && !isBatchTransferModalOpen && !transferTarget && !previewSku && !successMessage) return;
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isModalOpen, isManageModalOpen, previewSku]);
+  }, [isModalOpen, isManageModalOpen, isReceiveModalOpen, isBatchTransferModalOpen, transferTarget, previewSku, successMessage]);
 
   // Fetch warehouses
   const { data: warehousesData, isLoading: warehousesLoading } = useQuery({
@@ -850,7 +876,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 
   return (
     <>
-      <div className="space-y-6">
+      <div>
         {/* Stats Cards */}
         <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <div className="rounded-xl border-b-2 border-blue-200 bg-white p-6">
@@ -880,7 +906,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       </section>
 
       {/* Warehouse Selector + Actions */}
-      <section className="rounded-xl bg-slate-100 p-4">
+      <section className="mt-6 rounded-xl bg-slate-100 p-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <WarehouseIcon className="h-5 w-5 text-slate-500" />
@@ -961,6 +987,37 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             >
               <Printer className="h-3.5 w-3.5" />
               {dictionary.exportBarcodeLabel}
+            </button>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-40"
+              disabled={!selectedWarehouse || warehouseProducts.length === 0}
+              onClick={() => {
+                setIsReceiveModalOpen(true);
+                setReceiveSearch("");
+                setReceiveQuantities({});
+                setReceiveError("");
+              }}
+              type="button"
+            >
+              <Download className="h-3.5 w-3.5" />
+              {dictionary.receiveStockLabel}
+            </button>
+            <button
+              className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-40"
+              disabled={!selectedWarehouse || warehouseProducts.length === 0}
+              onClick={() => {
+                setIsBatchTransferModalOpen(true);
+                setBatchTransferSearch("");
+                setBatchTransferQuantities({});
+                setBatchTransferDestType("stock");
+                setBatchTransferDestWarehouse("");
+                setBatchTransferNote("");
+                setBatchTransferError("");
+              }}
+              type="button"
+            >
+              <ArrowRight className="h-3.5 w-3.5" />
+              {dictionary.transferLabel}
             </button>
           </div>
         </div>
@@ -1057,12 +1114,13 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 
       {/* Error */}
       {error && (
-        <div className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
+        <div className="mt-6 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-600">
           {error}
         </div>
       )}
 
       {/* Products Table */}
+      <div className="mt-6">
       {!selectedWarehouse ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white px-6 py-16">
           <WarehouseIcon className="mb-4 h-12 w-12 text-slate-300" />
@@ -1311,40 +1369,6 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
-                            className="rounded-lg p-2 text-emerald-600 transition hover:bg-emerald-50"
-                            onClick={async () => {
-                              if (!selectedWarehouseId) return;
-                              setError("");
-                              try {
-                                await addWarehouseProduct(selectedWarehouseId, {
-                                  product_id: wp.product_id,
-                                  quantity: 1,
-                                });
-                                await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
-                              } catch (err: any) {
-                                setError(err?.message || "Receive failed");
-                              }
-                            }}
-                            title={dictionary.receiveStockLabel}
-                            type="button"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50"
-                            onClick={() => {
-                              setTransferTarget(wp);
-                              setTransferQty(1);
-                              setTransferDestType("stock");
-                              setTransferDestWarehouse("");
-                              setTransferNote("");
-                            }}
-                            title={dictionary.transferLabel}
-                            type="button"
-                          >
-                            <ArrowRight className="h-4 w-4" />
-                          </button>
-                          <button
                             className="rounded-lg p-2 text-rose-600 transition hover:bg-rose-50"
                             onClick={() => handleRemoveProduct(wp.product_id)}
                             title={dictionary.deleteLabel}
@@ -1362,10 +1386,11 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </table>
         </div>
       )}
+      </div>
 
       {/* Pagination */}
       {whTotal > 0 && (
-        <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
+        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span>{dictionary.showingLabel} {whStart + 1}-{Math.min(whEnd, whTotal)} {dictionary.fromLabel} {whTotal} {dictionary.itemsLabel}</span>
           </div>
@@ -1578,6 +1603,9 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       note: transferNote || undefined,
                     });
                     await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
+                    setSuccessMessage(
+                      `${transferTarget.product_name || ""} → ${transferDestType === "stock" ? dictionary.transferToStockLabel : dictionary.transferToWarehouseLabel} (-${transferQty})`,
+                    );
                     setTransferTarget(null);
                     setTransferDestType("stock");
                     setTransferDestWarehouse("");
@@ -1882,6 +1910,325 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </div>
         </div>
       )}
+
+      {/* Receive Stock Modal */}
+      {isReceiveModalOpen && selectedWarehouse ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6"
+          onClick={() => setIsReceiveModalOpen(false)}
+        >
+          <div
+            className="flex h-[80vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-br from-emerald-600 to-emerald-500 px-6 py-5 text-white rounded-t-2xl">
+              <div>
+                <h3 className="text-xl font-bold">{dictionary.receiveStockTitle}</h3>
+                <p className="mt-0.5 text-sm text-white/80">{warehouseProducts.length} {dictionary.productsLabel}</p>
+              </div>
+              <button
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/20"
+                onClick={() => setIsReceiveModalOpen(false)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col flex-1 overflow-hidden">
+              {/* Search */}
+              <div className="relative p-4 pb-0">
+                <Search className="absolute left-7 top-2/4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                  onChange={(e) => setReceiveSearch(e.target.value)}
+                  placeholder={dictionary.searchProductLabel}
+                  value={receiveSearch}
+                />
+              </div>
+
+              {receiveError && (
+                <div className="mx-4 mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">{receiveError}</div>
+              )}
+
+              {/* Product List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {warehouseProducts.filter((wp) => {
+                  if (!receiveSearch) return true;
+                  const q = receiveSearch.toLowerCase();
+                  return (wp.product_name?.toLowerCase().includes(q) || wp.product_sku?.toLowerCase().includes(q));
+                }).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <Package className="mb-3 h-10 w-10 text-slate-300" />
+                    <p className="text-sm text-slate-500">{dictionary.noProductsLabel}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {warehouseProducts.filter((wp) => {
+                      if (!receiveSearch) return true;
+                      const q = receiveSearch.toLowerCase();
+                      return (wp.product_name?.toLowerCase().includes(q) || wp.product_sku?.toLowerCase().includes(q));
+                    }).map((wp) => (
+                      <div
+                        key={wp.product_id}
+                        className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3 transition hover:border-slate-200 hover:shadow-sm"
+                      >
+                        <div className="shrink-0">
+                          {wp.image_url ? (
+                            <img alt={wp.product_name} className="h-10 w-10 rounded-lg border border-slate-200 bg-slate-100 object-cover" src={wp.image_url} />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
+                              {(wp.product_name || "?").slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900">{wp.product_name || "-"}</p>
+                          <p className="truncate text-xs text-slate-400">
+                            {wp.product_sku ? `${wp.product_sku} · ` : ""}
+                            จำนวนปัจจุบัน: {wp.quantity}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            className="w-16 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-center font-semibold outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                            min={1}
+                            onChange={(e) => setReceiveQuantities((prev) => ({ ...prev, [wp.product_id]: Math.max(1, Number(e.target.value) || 1) }))}
+                            type="number"
+                            value={receiveQuantities[wp.product_id] ?? 1}
+                          />
+                          <button
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                            disabled={isReceivingProduct[wp.product_id]}
+                            onClick={async () => {
+                              setReceiveError("");
+                              setIsReceivingProduct((prev) => ({ ...prev, [wp.product_id]: true }));
+                              try {
+                                const qty = receiveQuantities[wp.product_id] ?? 1;
+                                await addWarehouseProduct(selectedWarehouseId!, {
+                                  product_id: wp.product_id,
+                                  quantity: qty,
+                                });
+                                await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
+                                setSuccessMessage(`${wp.product_name || ""} +${qty}`);
+                              } catch (err: any) {
+                                setReceiveError(err?.message || dictionary.nameRequired);
+                              } finally {
+                                setIsReceivingProduct((prev) => ({ ...prev, [wp.product_id]: false }));
+                              }
+                            }}
+                            type="button"
+                          >
+                            {isReceivingProduct[wp.product_id] ? (
+                              <svg aria-hidden="true" className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
+                              </svg>
+                            ) : (
+                              <Download className="h-3.5 w-3.5" />
+                            )}
+                            {dictionary.receiveStockLabel}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Batch Transfer Modal */}
+      {isBatchTransferModalOpen && selectedWarehouse ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6"
+          onClick={() => setIsBatchTransferModalOpen(false)}
+        >
+          <div
+            className="flex h-[80vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-br from-blue-600 to-blue-500 px-6 py-5 text-white rounded-t-2xl">
+              <div>
+                <h3 className="text-xl font-bold">{dictionary.transferTitle}</h3>
+                <p className="mt-0.5 text-sm text-white/80">{warehouseProducts.length} {dictionary.productsLabel}</p>
+              </div>
+              <button
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/20"
+                onClick={() => setIsBatchTransferModalOpen(false)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex flex-col flex-1 overflow-hidden">
+              {/* Search */}
+              <div className="relative p-4 pb-0">
+                <Search className="absolute left-7 top-2/4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                  onChange={(e) => setBatchTransferSearch(e.target.value)}
+                  placeholder={dictionary.searchProductLabel}
+                  value={batchTransferSearch}
+                />
+              </div>
+
+              {/* Destination controls */}
+              <div className="flex flex-wrap items-center gap-3 p-4 pb-0">
+                <div className="flex gap-1.5">
+                  <button
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                      batchTransferDestType === "stock"
+                        ? "border-blue-300 bg-blue-50 text-blue-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                    onClick={() => setBatchTransferDestType("stock")}
+                    type="button"
+                  >
+                    {dictionary.transferToStockLabel}
+                  </button>
+                  <button
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                      batchTransferDestType === "warehouse"
+                        ? "border-blue-300 bg-blue-50 text-blue-700"
+                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                    onClick={() => setBatchTransferDestType("warehouse")}
+                    type="button"
+                  >
+                    {dictionary.transferToWarehouseLabel}
+                  </button>
+                </div>
+                {batchTransferDestType === "warehouse" && (
+                  <select
+                    className="min-w-[180px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold outline-none text-slate-700"
+                    onChange={(e) => setBatchTransferDestWarehouse(e.target.value)}
+                    value={batchTransferDestWarehouse}
+                  >
+                    <option value="">{dictionary.selectDestWarehouseLabel}</option>
+                    {(transferWarehousesData?.data ?? []).filter((w: Warehouse) => w.id !== selectedWarehouseId).map((w: Warehouse) => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                )}
+                <input
+                  className="flex-1 min-w-[140px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs outline-none transition focus:border-blue-400"
+                  onChange={(e) => setBatchTransferNote(e.target.value)}
+                  placeholder={dictionary.transferNoteLabel}
+                  value={batchTransferNote}
+                />
+              </div>
+
+              {batchTransferError && (
+                <div className="mx-4 mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">{batchTransferError}</div>
+              )}
+
+              {/* Product List */}
+              <div className="flex-1 overflow-y-auto p-4">
+                {(warehouseProducts.filter((wp) => wp.quantity > 0).filter((wp) => {
+                  if (!batchTransferSearch) return true;
+                  const q = batchTransferSearch.toLowerCase();
+                  return (wp.product_name?.toLowerCase().includes(q) || wp.product_sku?.toLowerCase().includes(q));
+                })).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <ArrowRight className="mb-3 h-10 w-10 text-slate-300" />
+                    <p className="text-sm text-slate-500">{dictionary.noProductsLabel}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {warehouseProducts.filter((wp) => wp.quantity > 0).filter((wp) => {
+                      if (!batchTransferSearch) return true;
+                      const q = batchTransferSearch.toLowerCase();
+                      return (wp.product_name?.toLowerCase().includes(q) || wp.product_sku?.toLowerCase().includes(q));
+                    }).map((wp) => (
+                      <div
+                        key={wp.product_id}
+                        className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3 transition hover:border-slate-200 hover:shadow-sm"
+                      >
+                        <div className="shrink-0">
+                          {wp.image_url ? (
+                            <img alt={wp.product_name} className="h-10 w-10 rounded-lg border border-slate-200 bg-slate-100 object-cover" src={wp.image_url} />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
+                              {(wp.product_name || "?").slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900">{wp.product_name || "-"}</p>
+                          <p className="truncate text-xs text-slate-400">
+                            {wp.product_sku ? `${wp.product_sku} · ` : ""}
+                            จำนวนปัจจุบัน: {wp.quantity}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <input
+                            className="w-16 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-center font-semibold outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                            max={wp.quantity}
+                            min={1}
+                            onChange={(e) => setBatchTransferQuantities((prev) => ({ ...prev, [wp.product_id]: Math.min(Math.max(1, Number(e.target.value) || 1), wp.quantity) }))}
+                            type="number"
+                            value={batchTransferQuantities[wp.product_id] ?? 1}
+                          />
+                          <button
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
+                            disabled={isBatchTransferring[wp.product_id] || (batchTransferDestType === "warehouse" && !batchTransferDestWarehouse)}
+                            onClick={async () => {
+                              setBatchTransferError("");
+                              setIsBatchTransferring((prev) => ({ ...prev, [wp.product_id]: true }));
+                              try {
+                                const qty = batchTransferQuantities[wp.product_id] ?? 1;
+                                await transferWarehouseProduct(selectedWarehouseId!, {
+                                  product_id: wp.product_id,
+                                  quantity: qty,
+                                  destination_type: batchTransferDestType,
+                                  destination_id: batchTransferDestType === "warehouse" ? batchTransferDestWarehouse : undefined,
+                                  note: batchTransferNote || undefined,
+                                });
+                                await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
+                                setSuccessMessage(`${wp.product_name || ""} → ${batchTransferDestType === "stock" ? dictionary.transferToStockLabel : dictionary.transferToWarehouseLabel} (-${qty})`);
+                              } catch (err: any) {
+                                setBatchTransferError(err?.message || dictionary.nameRequired);
+                              } finally {
+                                setIsBatchTransferring((prev) => ({ ...prev, [wp.product_id]: false }));
+                              }
+                            }}
+                            type="button"
+                          >
+                            {isBatchTransferring[wp.product_id] ? (
+                              <svg aria-hidden="true" className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
+                              </svg>
+                            ) : (
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            )}
+                            {dictionary.transferLabel}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Success Popup Modal */}
+      <SuccessPopup
+        message={successMessage}
+        onClose={() => {
+          setSuccessMessage(null);
+          setIsReceiveModalOpen(false);
+          setIsBatchTransferModalOpen(false);
+          setTransferTarget(null);
+        }}
+      />
     </div>
     </>
   );

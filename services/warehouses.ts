@@ -115,6 +115,7 @@ export function transferWarehouseProduct(warehouseId: string, input: WarehouseTr
   return authorizedApiRequest<void>(
     `/api/stores/${storeId}/warehouses/${warehouseId}/transfer`,
     {
+      allowEmptyData: true,
       body: input,
       method: "POST",
     },

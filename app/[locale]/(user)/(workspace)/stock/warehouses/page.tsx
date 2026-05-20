@@ -18,7 +18,7 @@ export default async function WarehousesPage({ params }: WarehousesPageProps) {
   const dictionary = await getDictionary(locale as Locale);
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div>
       <WarehouseSection dictionary={dictionary.stock.warehouses} />
     </div>
   );

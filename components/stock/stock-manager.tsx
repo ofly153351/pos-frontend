@@ -261,7 +261,7 @@ export function StockManager({
 
   if (!hasMounted) {
     return (
-      <div className="space-y-8">
+      <div className="space-y-6">
         <section className="rounded-2xl bg-white p-6 shadow-sm" id="categories">
           <h3 className="text-lg font-bold text-slate-900">{managementDictionary.title}</h3>
           <p className="mt-3 inline-flex items-center gap-3 text-sm text-slate-500">
