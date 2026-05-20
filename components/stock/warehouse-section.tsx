@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  ArrowRight,
   Barcode,
   Boxes,
   ChevronDown,
@@ -27,6 +28,7 @@ import {
   listWarehouseProducts,
   listWarehouses,
   removeWarehouseProduct,
+  transferWarehouseProduct,
   updateWarehouse,
   updateWarehouseProductQuantity,
 } from "@/services/warehouses";
@@ -106,6 +108,17 @@ type WarehouseSectionDictionary = {
   lowStockLabel: string;
   editQtyTitle: string;
   exportBarcodeLabel: string;
+  receiveStockLabel: string;
+  receiveStockTitle: string;
+  transferLabel: string;
+  transferTitle: string;
+  transferQtyLabel: string;
+  transferDestLabel: string;
+  transferToStockLabel: string;
+  transferToWarehouseLabel: string;
+  transferNoteLabel: string;
+  transferConfirmLabel: string;
+  selectDestWarehouseLabel: string;
 };
 
 type WarehouseSectionProps = {
@@ -374,6 +387,20 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 
   // Barcode preview
   const [previewSku, setPreviewSku] = useState<string | null>(null);
+
+  // Transfer modal state
+  const [transferTarget, setTransferTarget] = useState<WarehouseProduct | null>(null);
+  const [transferQty, setTransferQty] = useState(1);
+  const [transferDestType, setTransferDestType] = useState<"warehouse" | "stock">("stock");
+  const [transferDestWarehouse, setTransferDestWarehouse] = useState("");
+  const [transferNote, setTransferNote] = useState("");
+  const [isTransferring, setIsTransferring] = useState(false);
+
+  const { data: transferWarehousesData } = useQuery({
+    queryKey: ["warehouses"],
+    queryFn: listWarehouses,
+    enabled: transferTarget !== null && transferDestType === "warehouse",
+  });
 
   function generateBarcodeSvg(sku: string): string {
     const normalized = sku.trim().toUpperCase();
@@ -1284,6 +1311,40 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
+                            className="rounded-lg p-2 text-emerald-600 transition hover:bg-emerald-50"
+                            onClick={async () => {
+                              if (!selectedWarehouseId) return;
+                              setError("");
+                              try {
+                                await addWarehouseProduct(selectedWarehouseId, {
+                                  product_id: wp.product_id,
+                                  quantity: 1,
+                                });
+                                await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
+                              } catch (err: any) {
+                                setError(err?.message || "Receive failed");
+                              }
+                            }}
+                            title={dictionary.receiveStockLabel}
+                            type="button"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                          <button
+                            className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50"
+                            onClick={() => {
+                              setTransferTarget(wp);
+                              setTransferQty(1);
+                              setTransferDestType("stock");
+                              setTransferDestWarehouse("");
+                              setTransferNote("");
+                            }}
+                            title={dictionary.transferLabel}
+                            type="button"
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </button>
+                          <button
                             className="rounded-lg p-2 text-rose-600 transition hover:bg-rose-50"
                             onClick={() => handleRemoveProduct(wp.product_id)}
                             title={dictionary.deleteLabel}
@@ -1410,6 +1471,128 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     : dictionary.noBarcodeLabel}
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Transfer Modal */}
+      {transferTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-900">{dictionary.transferTitle}</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              {dictionary.transferDestLabel}: {transferTarget.product_name}
+            </p>
+
+            {/* Quantity input */}
+            <div className="mt-4">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.transferQtyLabel}</label>
+              <input
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none transition focus:border-blue-400"
+                max={transferTarget.quantity}
+                min={1}
+                onChange={(e) => setTransferQty(Math.min(Math.max(1, Number(e.target.value) || 1), transferTarget.quantity))}
+                type="number"
+                value={transferQty}
+              />
+            </div>
+
+            {/* Destination type selector */}
+            <div className="mt-4">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.transferDestLabel}</label>
+              <div className="flex gap-2">
+                <button
+                  className={`flex-1 rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                    transferDestType === "stock"
+                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                  onClick={() => setTransferDestType("stock")}
+                  type="button"
+                >
+                  {dictionary.transferToStockLabel}
+                </button>
+                <button
+                  className={`flex-1 rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                    transferDestType === "warehouse"
+                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                  onClick={() => setTransferDestType("warehouse")}
+                  type="button"
+                >
+                  {dictionary.transferToWarehouseLabel}
+                </button>
+              </div>
+            </div>
+
+            {/* Warehouse selector (only when destination_type = "warehouse") */}
+            {transferDestType === "warehouse" && (
+              <div className="mt-4">
+                <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.selectDestWarehouseLabel}</label>
+                <select
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none transition focus:border-blue-400"
+                  onChange={(e) => setTransferDestWarehouse(e.target.value)}
+                  value={transferDestWarehouse}
+                >
+                  <option value="">{dictionary.selectDestWarehouseLabel}</option>
+                  {(transferWarehousesData?.data ?? []).filter((w: Warehouse) => w.id !== selectedWarehouseId).map((w: Warehouse) => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Note */}
+            <div className="mt-4">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.transferNoteLabel}</label>
+              <input
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none transition focus:border-blue-400"
+                onChange={(e) => setTransferNote(e.target.value)}
+                placeholder={dictionary.transferNoteLabel}
+                value={transferNote}
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="mt-6 flex gap-3">
+              <button
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                onClick={() => { setTransferTarget(null); setTransferDestType("stock"); setTransferDestWarehouse(""); setTransferNote(""); setTransferQty(1); }}
+                type="button"
+              >
+                {dictionary.cancel}
+              </button>
+              <button
+                className="flex-1 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-50"
+                disabled={isTransferring || transferQty < 1 || (transferDestType === "warehouse" && !transferDestWarehouse)}
+                onClick={async () => {
+                  setIsTransferring(true);
+                  try {
+                    await transferWarehouseProduct(selectedWarehouseId!, {
+                      product_id: transferTarget.product_id,
+                      quantity: transferQty,
+                      destination_type: transferDestType,
+                      destination_id: transferDestType === "warehouse" ? transferDestWarehouse : undefined,
+                      note: transferNote || undefined,
+                    });
+                    await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
+                    setTransferTarget(null);
+                    setTransferDestType("stock");
+                    setTransferDestWarehouse("");
+                    setTransferNote("");
+                    setTransferQty(1);
+                  } catch (err: any) {
+                    setError(err?.message || "Transfer failed");
+                  } finally {
+                    setIsTransferring(false);
+                  }
+                }}
+                type="button"
+              >
+                {isTransferring ? "..." : dictionary.transferConfirmLabel}
+              </button>
             </div>
           </div>
         </div>

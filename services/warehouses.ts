@@ -102,6 +102,26 @@ export function removeWarehouseProduct(warehouseId: string, productId: string) {
   );
 }
 
+export type WarehouseTransferInput = {
+  product_id: string;
+  quantity: number;
+  destination_type: "warehouse" | "stock";
+  destination_id?: string;
+  note?: string;
+};
+
+export function transferWarehouseProduct(warehouseId: string, input: WarehouseTransferInput) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<void>(
+    `/api/stores/${storeId}/warehouses/${warehouseId}/transfer`,
+    {
+      body: input,
+      method: "POST",
+    },
+    { requireToken: true },
+  );
+}
+
 export function updateWarehouseProductQuantity(warehouseId: string, productId: string, quantity: number) {
   const storeId = ensureStoreId();
   return authorizedApiRequest<WarehouseProduct>(

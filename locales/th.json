@@ -796,7 +796,18 @@
       "saveLabel": "บันทึก",
       "outOfStockLabel": "หมด",
       "lowStockLabel": "สต็อกต่ำ",
-      "editQtyTitle": "แก้ไขจำนวน"
+      "editQtyTitle": "แก้ไขจำนวน",
+      "receiveStockLabel": "รับสินค้าเข้า",
+      "receiveStockTitle": "รับสินค้าเข้า",
+      "transferLabel": "โอน",
+      "transferTitle": "โอนสินค้า",
+      "transferQtyLabel": "จำนวนที่โอน",
+      "transferDestLabel": "ปลายทาง",
+      "transferToStockLabel": "สต็อกหน้าร้าน",
+      "transferToWarehouseLabel": "ไปคลังอื่น",
+      "transferNoteLabel": "หมายเหตุ",
+      "transferConfirmLabel": "ยืนยันการโอน",
+      "selectDestWarehouseLabel": "เลือกคลังปลายทาง"
     },
     "receive": {
       "receiveStockTitle": "รับสินค้าเข้า",

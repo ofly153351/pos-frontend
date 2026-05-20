@@ -796,7 +796,18 @@
       "saveLabel": "Save",
       "outOfStockLabel": "Out of Stock",
       "lowStockLabel": "Low Stock",
-      "editQtyTitle": "Edit quantity"
+      "editQtyTitle": "Edit quantity",
+      "receiveStockLabel": "Receive Stock",
+      "receiveStockTitle": "Receive Stock",
+      "transferLabel": "Transfer",
+      "transferTitle": "Transfer Stock",
+      "transferQtyLabel": "Transfer Qty",
+      "transferDestLabel": "Destination",
+      "transferToStockLabel": "Front Stock",
+      "transferToWarehouseLabel": "To Another Warehouse",
+      "transferNoteLabel": "Note",
+      "transferConfirmLabel": "Confirm Transfer",
+      "selectDestWarehouseLabel": "Select destination warehouse"
     },
     "receive": {
       "receiveStockTitle": "Receive Stock",
