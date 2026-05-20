@@ -2,7 +2,6 @@ import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest } from "@/services/api";
 import type {
   AddWarehouseProductInput,
-  CreateStandaloneWarehouseProductInput,
   CreateWarehouseInput,
   UpdateWarehouseInput,
   UpdateWarehouseProductInput,
@@ -88,25 +87,6 @@ export function addWarehouseProduct(warehouseId: string, input: AddWarehouseProd
     `/api/stores/${storeId}/warehouses/${warehouseId}/products`,
     {
       body: input,
-      method: "POST",
-    },
-    { requireToken: true },
-  );
-}
-
-/** Create a standalone warehouse product (no ref to products table) */
-export function createStandaloneWarehouseProduct(
-  warehouseId: string,
-  input: CreateStandaloneWarehouseProductInput,
-) {
-  const storeId = ensureStoreId();
-  return authorizedApiRequest<WarehouseProduct>(
-    `/api/stores/${storeId}/warehouses/${warehouseId}/products`,
-    {
-      body: {
-        product_id: "", // empty = standalone mode
-        ...input,
-      } satisfies AddWarehouseProductInput,
       method: "POST",
     },
     { requireToken: true },

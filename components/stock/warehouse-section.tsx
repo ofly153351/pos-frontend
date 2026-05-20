@@ -22,7 +22,6 @@ import {
 
 import {
   addWarehouseProduct,
-  createStandaloneWarehouseProduct,
   createWarehouse,
   deleteWarehouse,
   listWarehouseProducts,
@@ -31,16 +30,15 @@ import {
   updateWarehouse,
   updateWarehouseProductQuantity,
 } from "@/services/warehouses";
-import { listProducts, listProductTypes, listProductUnits } from "@/services/products";
+import { listProducts } from "@/services/products";
 import type {
   AddWarehouseProductInput,
-  CreateStandaloneWarehouseProductInput,
   CreateWarehouseInput,
   UpdateWarehouseInput,
   Warehouse,
   WarehouseProduct,
 } from "@/types/warehouse";
-import type { Product, ProductType, ProductUnit } from "@/types/product";
+import type { Product } from "@/types/product";
 
 type WarehouseSectionDictionary = {
   title: string;
@@ -123,16 +121,6 @@ type WarehouseFormState = {
   is_active: boolean;
 };
 
-type StandaloneFormState = {
-  name: string;
-  sku: string;
-  barcode: string;
-  price: string;
-  unit_name: string;
-  type_name: string;
-  quantity: string;
-};
-
 const initialFormState: WarehouseFormState = {
   name: "",
   code: "",
@@ -140,16 +128,6 @@ const initialFormState: WarehouseFormState = {
   phone: "",
   contact_name: "",
   is_active: true,
-};
-
-const initialStandaloneForm: StandaloneFormState = {
-  name: "",
-  sku: "",
-  barcode: "",
-  price: "",
-  unit_name: "",
-  type_name: "",
-  quantity: "1",
 };
 
 // Combobox: text input with filtered dropdown
@@ -349,15 +327,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 
   // Add product panel
   const [showAddProduct, setShowAddProduct] = useState(false);
-  const [addMode, setAddMode] = useState<"stock" | "standalone">("stock");
   const [productSearch, setProductSearch] = useState("");
   const [addingProductIds, setAddingProductIds] = useState<Set<string>>(new Set());
   const [addProductQuantity, setAddProductQuantity] = useState(1);
   const [addError, setAddError] = useState("");
-
-  // Standalone form
-  const [standaloneForm, setStandaloneForm] = useState<StandaloneFormState>(initialStandaloneForm);
-  const [isStandaloneSaving, setIsStandaloneSaving] = useState(false);
 
   // Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -550,11 +523,11 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
     }
 
     const labelRows = target
-      .filter((wp) => wp.product_barcode || wp.standalone_barcode)
+      .filter((wp) => wp.product_barcode)
       .map((wp) => {
-        const barcode = (wp.product_barcode || wp.standalone_barcode || "").trim().toUpperCase();
-        const name = wp.product_name || wp.standalone_name || "";
-        const sku = wp.product_sku || wp.standalone_sku || "";
+        const barcode = (wp.product_barcode || "").trim().toUpperCase();
+        const name = wp.product_name || "";
+        const sku = wp.product_sku || "";
         const label = sku ? `${name} (${sku})` : name;
         return { barcode, label };
       });
@@ -653,23 +626,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const { data: allProductsData } = useQuery({
     queryKey: ["all-products"],
     queryFn: () => listProducts({ limit: 200 }),
-    enabled: showAddProduct && addMode === "stock",
+    enabled: showAddProduct,
   });
-
-  const { data: productTypesData } = useQuery({
-    queryKey: ["product-types"],
-    queryFn: () => listProductTypes(),
-    enabled: showAddProduct && addMode === "standalone",
-  });
-
-  const { data: productUnitsData } = useQuery({
-    queryKey: ["product-units"],
-    queryFn: () => listProductUnits(),
-    enabled: showAddProduct && addMode === "standalone",
-  });
-
-  const productTypes: ProductType[] = productTypesData?.data ?? [];
-  const productUnits: ProductUnit[] = productUnitsData?.data ?? [];
 
   // Warehouse pagination state (client-side)
   const [whPage, setWhPage] = useState(1);
@@ -709,19 +667,16 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   );
 
   const totalUnits = warehouseProducts.reduce((sum, wp) => sum + wp.quantity, 0);
-  const totalValue = warehouseProducts.reduce((sum, wp) => sum + ((wp.product_price || wp.standalone_price || 0) * wp.quantity), 0);
+  const totalValue = warehouseProducts.reduce((sum, wp) => sum + (wp.product_price * wp.quantity), 0);
 
   const isFormValid = form.name.trim().length > 0;
 
   // Reset add product panel
   const resetAddPanel = useCallback(() => {
     setShowAddProduct(false);
-    setAddMode("stock");
     setProductSearch("");
     setAddingProductIds(new Set());
     setAddError("");
-    setStandaloneForm(initialStandaloneForm);
-    setIsStandaloneSaving(false);
   }, []);
 
   // Warehouse CRUD
@@ -811,39 +766,6 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
     },
     [queryClient, dictionary.nameRequired, selectedWarehouseId],
   );
-
-  const isStandaloneFormValid = standaloneForm.name.trim().length > 0;
-
-  const handleStandaloneSave = useCallback(async () => {
-    if (!selectedWarehouse || !isStandaloneFormValid) {
-      setAddError(dictionary.standaloneNameRequired);
-      return;
-    }
-
-    setIsStandaloneSaving(true);
-    setAddError("");
-
-    try {
-      const input: CreateStandaloneWarehouseProductInput = {
-        name: standaloneForm.name.trim(),
-        sku: standaloneForm.sku.trim() || undefined,
-        barcode: standaloneForm.barcode.trim() || undefined,
-        price: standaloneForm.price ? parseFloat(standaloneForm.price) || 0 : 0,
-        unit_name: standaloneForm.unit_name.trim() || undefined,
-        type_name: standaloneForm.type_name.trim() || undefined,
-        quantity: Math.max(0, parseInt(standaloneForm.quantity || "1", 10) || 0),
-      };
-      await createStandaloneWarehouseProduct(selectedWarehouse.id, input);
-      await queryClient.invalidateQueries({
-        queryKey: ["warehouse-products", selectedWarehouse.id],
-      });
-      setStandaloneForm(initialStandaloneForm);
-    } catch (err: any) {
-      setAddError(err?.message || "Failed to add product");
-    } finally {
-      setIsStandaloneSaving(false);
-    }
-  }, [selectedWarehouse, standaloneForm, isStandaloneFormValid, queryClient, dictionary.standaloneNameRequired]);
 
   const handleAddProduct = useCallback(
     async (productId: string) => {
@@ -980,11 +902,11 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 const selectedProducts = warehouseProducts.filter((wp) => selectedIds.has(wp.product_id));
                 if (selectedProducts.length === 0) return;
                 const rows = selectedProducts.map((wp) => [
-                  wp.product_name || wp.standalone_name || '',
-                  wp.product_sku || wp.standalone_sku || '',
-                  wp.product_barcode || wp.standalone_barcode || '',
-                  wp.product_type_name || wp.standalone_type_name || '',
-                  (wp.product_price || wp.standalone_price || 0).toString(),
+                  wp.product_name || '',
+                  wp.product_sku || '',
+                  wp.product_barcode || '',
+                  wp.product_type_name || '',
+                  (wp.product_price || 0).toString(),
                   String(wp.quantity),
                 ]);
                 const header = [['ชื่อ', 'SKU', 'บาร์โค้ด', 'หมวดหมู่', 'ราคา', 'จำนวน']];
@@ -1006,7 +928,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             </button>
             <button
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
-              disabled={selectedIds.size === 0 || warehouseProducts.filter((wp) => selectedIds.has(wp.product_id) && (wp.product_barcode || wp.standalone_barcode)).length === 0}
+              disabled={selectedIds.size === 0 || warehouseProducts.filter((wp) => selectedIds.has(wp.product_id) && (wp.product_barcode)).length === 0}
               onClick={exportSelectedBarcodes}
               type="button"
             >
@@ -1019,264 +941,89 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         {/* Add Product Panel */}
         {showAddProduct && selectedWarehouse && (
           <div className="mt-4 border-t border-slate-200 pt-4">
-            {/* Mode Tabs */}
-            <div className="mb-4 flex gap-2">
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder={dictionary.searchProductLabel}
+                value={productSearch}
+              />
+            </div>
+            <div className="mb-3 flex items-center gap-3">
+              <label className="text-xs font-medium text-slate-600">{dictionary.qtyLabel}:</label>
+              <input
+                className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-center outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                min={0}
+                onChange={(e) => setAddProductQuantity(Math.max(0, Number(e.target.value) || 0))}
+                type="number"
+                value={addProductQuantity}
+              />
               <button
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-                  addMode === "stock"
-                    ? "bg-blue-700 text-white shadow-sm"
-                    : "bg-white text-slate-600 hover:bg-slate-100"
-                }`}
-                onClick={() => setAddMode("stock")}
+                className="ml-auto rounded-lg px-2 py-1 text-xs text-slate-400 transition hover:text-slate-600"
+                onClick={resetAddPanel}
                 type="button"
               >
-                {dictionary.fromStockLabel}
-              </button>
-              <button
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition ${
-                  addMode === "standalone"
-                    ? "bg-blue-700 text-white shadow-sm"
-                    : "bg-white text-slate-600 hover:bg-slate-100"
-                }`}
-                onClick={() => setAddMode("standalone")}
-                type="button"
-              >
-                {dictionary.newProductLabel}
+                {dictionary.cancel}
               </button>
             </div>
-
-            {addMode === "stock" ? (
-              <>
-                <div className="relative mb-3">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    placeholder={dictionary.searchProductLabel}
-                    value={productSearch}
-                  />
-                </div>
-                <div className="mb-3 flex items-center gap-3">
-                  <label className="text-xs font-medium text-slate-600">{dictionary.qtyLabel}:</label>
-                  <input
-                    className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-center outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    min={0}
-                    onChange={(e) => setAddProductQuantity(Math.max(0, Number(e.target.value) || 0))}
-                    type="number"
-                    value={addProductQuantity}
-                  />
+            {addError && (
+              <div className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">
+                {addError}
+              </div>
+            )}
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+              {filteredAvailable.length === 0 ? (
+                <p className="py-4 text-center text-sm text-slate-400">
+                  {dictionary.noProductsLabel}
+                </p>
+              ) : (
+                filteredAvailable.map((product) => (
                   <button
-                    className="ml-auto rounded-lg px-2 py-1 text-xs text-slate-400 transition hover:text-slate-600"
-                    onClick={resetAddPanel}
+                    key={product.id}
+                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-all hover:bg-blue-50"
+                    onClick={() => handleAddProduct(product.id)}
                     type="button"
                   >
-                    {dictionary.cancel}
-                  </button>
-                </div>
-                {addError && (
-                  <div className="mb-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">
-                    {addError}
-                  </div>
-                )}
-                <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
-                  {filteredAvailable.length === 0 ? (
-                    <p className="py-4 text-center text-sm text-slate-400">
-                      {dictionary.noProductsLabel}
-                    </p>
-                  ) : (
-                    filteredAvailable.map((product) => (
-                      <button
-                        key={product.id}
-                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-all hover:bg-blue-50"
-                        onClick={() => handleAddProduct(product.id)}
-                        type="button"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="shrink-0">
-                            {product.image_url ? (
-                              <img
-                                alt={product.name}
-                                className="h-7 w-7 shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover"
-                                src={product.image_url}
-                              />
-                            ) : (
-                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500">
-                                {product.name.slice(0, 2).toUpperCase()}
-                              </div>
-                            )}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="shrink-0">
+                        {product.image_url ? (
+                          <img
+                            alt={product.name}
+                            className="h-7 w-7 shrink-0 rounded-lg border border-slate-200 bg-slate-100 object-cover"
+                            src={product.image_url}
+                          />
+                        ) : (
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500">
+                            {product.name.slice(0, 2).toUpperCase()}
                           </div>
-                          <div className="min-w-0 text-left">
-                            <span className="block truncate font-medium text-slate-700">
-                              {product.name}
-                            </span>
-                            {product.sku && (
-                              <span className="block truncate text-xs text-slate-400">
-                                {product.sku}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="shrink-0 text-xs font-medium text-blue-600">
-                          {addingProductIds.has(product.id) ? (
-                            <svg aria-hidden="true" className="h-4 w-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
-                            </svg>
-                          ) : (
-                            dictionary.addLabel
-                          )}
+                        )}
+                      </div>
+                      <div className="min-w-0 text-left">
+                        <span className="block truncate font-medium text-slate-700">
+                          {product.name}
                         </span>
-                      </button>
-                    ))
-                  )}
-                </div>
-              </>
-            ) : (
-              /* Standalone product form */
-              <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {/* Name (required) */}
-                  <label className="block sm:col-span-2">
-                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                      <span>{dictionary.standaloneNameLabel}</span>
-                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-blue-700">required</span>
-                    </span>
-                    <input
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, name: e.target.value }))}
-                      placeholder={dictionary.standaloneNameLabel}
-                      value={standaloneForm.name}
-                    />
-                  </label>
-
-                  {/* SKU */}
-                  <label className="block">
-                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                      <span>{dictionary.standaloneSkuLabel}</span>
-                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
-                    </span>
-                    <input
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, sku: e.target.value }))}
-                      placeholder={dictionary.standaloneSkuLabel}
-                      value={standaloneForm.sku}
-                    />
-                  </label>
-
-                  {/* Barcode */}
-                  <label className="block">
-                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                      <span>{dictionary.standaloneBarcodeLabel}</span>
-                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
-                    </span>
-                    <input
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, barcode: e.target.value }))}
-                      placeholder={dictionary.standaloneBarcodeLabel}
-                      value={standaloneForm.barcode}
-                    />
-                  </label>
-
-                  {/* Price */}
-                  <label className="block">
-                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                      <span>{dictionary.standalonePriceLabel}</span>
-                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
-                    </span>
-                    <input
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, price: e.target.value }))}
-                      placeholder="0.00"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={standaloneForm.price}
-                    />
-                  </label>
-
-                  {/* Unit */}
-                  <label className="block">
-                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                      <span>{dictionary.standaloneUnitLabel}</span>
-                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
-                    </span>
-                    <ComboBoxSelect
-                      getKey={(u: ProductUnit) => u.id}
-                      getLabel={(u: ProductUnit) => u.name}
-                      onChange={(v) => setStandaloneForm((prev) => ({ ...prev, unit_name: v }))}
-                      options={productUnits}
-                      placeholder={dictionary.standaloneUnitLabel}
-                      value={standaloneForm.unit_name}
-                    />
-                  </label>
-
-                  {/* Category/Type */}
-                  <label className="block">
-                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                      <span>{dictionary.standaloneTypeLabel}</span>
-                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
-                    </span>
-                    <ComboBoxSelect
-                      getKey={(t: ProductType) => t.id}
-                      getLabel={(t: ProductType) => t.name}
-                      onChange={(v) => setStandaloneForm((prev) => ({ ...prev, type_name: v }))}
-                      options={productTypes}
-                      placeholder={dictionary.standaloneTypeLabel}
-                      value={standaloneForm.type_name}
-                    />
-                  </label>
-
-                  {/* Quantity */}
-                  <label className="block">
-                    <span className="mb-1 flex items-center gap-2 text-xs font-medium text-slate-700">
-                      <span>{dictionary.qtyLabel}</span>
-                      <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-500">optional</span>
-                    </span>
-                    <input
-                      className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                      onChange={(e) => setStandaloneForm((prev) => ({ ...prev, quantity: e.target.value }))}
-                      min={0}
-                      type="number"
-                      value={standaloneForm.quantity}
-                    />
-                  </label>
-                </div>
-
-                {addError && (
-                  <div className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">
-                    {addError}
-                  </div>
-                )}
-
-                <div className="mt-4 flex items-center justify-between">
-                  <button
-                    className="rounded-lg px-2.5 py-1.5 text-xs text-slate-400 transition hover:text-slate-600"
-                    onClick={resetAddPanel}
-                    type="button"
-                  >
-                    {dictionary.cancel}
-                  </button>
-                  <button
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-700 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-200/70 transition hover:bg-blue-800 disabled:bg-blue-400"
-                    disabled={!isStandaloneFormValid || isStandaloneSaving}
-                    onClick={handleStandaloneSave}
-                    type="button"
-                  >
-                    {isStandaloneSaving ? (
-                      <>
-                        <svg aria-hidden="true" className="h-4 w-4 animate-spin text-white" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        {product.sku && (
+                          <span className="block truncate text-xs text-slate-400">
+                            {product.sku}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-xs font-medium text-blue-600">
+                      {addingProductIds.has(product.id) ? (
+                        <svg aria-hidden="true" className="h-4 w-4 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
                         </svg>
-                        <span>{dictionary.saveButton}</span>
-                      </>
-                    ) : (
-                      dictionary.addStandaloneLabel
-                    )}
+                      ) : (
+                        dictionary.addLabel
+                      )}
+                    </span>
                   </button>
-                </div>
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </div>
         )}
       </section>
@@ -1360,7 +1107,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             <tbody className="divide-y divide-slate-100">
               {whPageProducts.map((wp, index) => (
                 <tr
-                  key={wp.id}
+                  key={wp.product_id}
                   className={`${index % 2 === 1 ? "bg-slate-50/50" : "bg-white"} group transition hover:bg-slate-50`}
                 >
                   <td className="px-4 py-4 text-center">
@@ -1390,7 +1137,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       />
                     ) : (
                       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 shadow-inner">
-                        {(wp.product_name || wp.standalone_name || "?").slice(0, 2).toUpperCase()}
+                        {(wp.product_name || "?").slice(0, 2).toUpperCase()}
                       </div>
                     )}
                   </td>
@@ -1398,33 +1145,33 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     <div className="flex min-w-0 flex-col">
                       <span
                         className="overflow-hidden break-all text-sm font-bold text-slate-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-                        title={wp.product_name || wp.standalone_name}
+                        title={wp.product_name}
                       >
-                        {wp.product_name || wp.standalone_name || "-"}
+                        {wp.product_name || "-"}
                       </span>
-                      {(wp.product_sku || wp.standalone_sku) ? (
-                        <span className="mt-0.5 truncate text-xs text-slate-400" title={wp.product_sku || wp.standalone_sku}>
-                          {wp.product_sku || wp.standalone_sku}
+                      {(wp.product_sku) ? (
+                        <span className="mt-0.5 truncate text-xs text-slate-400" title={wp.product_sku}>
+                          {wp.product_sku}
                         </span>
                       ) : null}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-500">
-                    <span className="block truncate font-mono" title={wp.product_barcode || wp.standalone_barcode || "-"}>
-                      {wp.product_barcode || wp.standalone_barcode || "-"}
+                    <span className="block truncate font-mono" title={wp.product_barcode || "-"}>
+                      {wp.product_barcode || "-"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span
                       className="block truncate rounded px-2 py-1 text-[11px] font-bold uppercase text-blue-800"
-                      title={wp.product_type_name || wp.standalone_type_name || "-"}
+                      title={wp.product_type_name || "-"}
                     >
-                      {wp.product_type_name || wp.standalone_type_name || "-"}
+                      {wp.product_type_name || "-"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm font-bold text-blue-700">
-                    {(wp.product_price || wp.standalone_price || 0) > 0
-                      ? `฿${((wp.product_price || wp.standalone_price) || 0).toLocaleString()}`
+                    {(wp.product_price || 0) > 0
+                      ? `฿${((wp.product_price) || 0).toLocaleString()}`
                       : "—"}
                   </td>
                   <td className="px-2 py-4">
@@ -1474,7 +1221,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                                   {wp.product_max_stock != null
                                     ? `${wp.quantity} / ${wp.product_max_stock}`
                                     : wp.quantity}
-                                  {wp.product_unit_name || wp.standalone_unit_name ? ` ${wp.product_unit_name || wp.standalone_unit_name}` : ""}
+                                  {wp.product_unit_name ? ` ${wp.product_unit_name}` : ""}
                                 </span>
                               </>
                             )}
@@ -1521,8 +1268,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                         <>
                           <button
                             className="rounded-lg p-2 text-slate-500 transition hover:bg-blue-50 hover:text-blue-600"
-                            disabled={!(wp.product_barcode || wp.standalone_barcode)}
-                            onClick={() => setPreviewSku(wp.product_barcode || wp.standalone_barcode || null)}
+                            disabled={!(wp.product_barcode)}
+                            onClick={() => setPreviewSku(wp.product_barcode || null)}
                             title={dictionary.barcodeTooltip}
                             type="button"
                           >
