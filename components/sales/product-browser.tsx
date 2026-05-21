@@ -187,7 +187,7 @@ export function ProductBrowser({
               className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
                 selectedCategory === category
                   ? "border-violet-300 bg-violet-600 text-white shadow-sm"
-                  : "border-violet-100 bg-violet-600 text-violet-700 hover:bg-violet-100"
+                  : "border-violet-100 bg-violet-50 text-violet-700 hover:bg-violet-100"
               }`}
               key={category}
               onClick={() => onCategoryFilterChange(category)}
