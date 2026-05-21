@@ -72,7 +72,7 @@ function getInitials(name: string) {
 function StoreAvatar({ name, logoUrl, size = "md" }: { name: string; logoUrl?: string; size?: "sm" | "md" | "lg" }) {
   const sizeClass = size === "sm" ? "h-9 w-9 text-xs" : size === "lg" ? "h-16 w-16 text-xl" : "h-11 w-11 text-sm";
   return (
-    <div className={`${sizeClass} shrink-0 overflow-hidden rounded-xl border border-white/30 bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center font-bold text-white shadow-sm`}>
+    <div className={`${sizeClass} shrink-0 overflow-hidden rounded-xl border border-white/30 bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center font-bold text-white shadow-sm`}>
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img alt={name} className="h-full w-full object-cover" src={logoUrl} />
@@ -308,7 +308,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
   return (
     <div className="space-y-6">
       {/* ── Page header ── */}
-      <div className="rounded-[2rem] bg-gradient-to-br from-blue-700 via-blue-600 to-sky-500 p-7 text-white shadow-[0_16px_48px_rgba(59,130,246,0.35)]">
+      <div className="rounded-[2rem] bg-gradient-to-br from-violet-700 via-violet-600 to-purple-500 p-7 text-white shadow-[0_16px_48px_rgba(59,130,246,0.35)]">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">{dictionary.pageTitle}</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">{dictionary.switchSectionTitle}</h1>
         <p className="mt-1.5 max-w-xl text-sm text-white/70">{dictionary.pageDescription}</p>
@@ -360,7 +360,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                   <button
                     className={`w-full rounded-2xl border px-4 py-3.5 text-left transition ${
                       isSelected
-                        ? "border-sky-300 bg-sky-50 shadow-[0_4px_16px_rgba(59,130,246,0.12)]"
+                        ? "border-sky-300 bg-sky-50 shadow-[0_4px_16px_rgba(124,58,237,0.12)]"
                         : "border-slate-200 bg-white hover:border-sky-200 hover:bg-sky-50/40"
                     }`}
                     key={store.id}
@@ -544,7 +544,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
               tabIndex={-1}
             >
               {/* Modal header */}
-              <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-blue-700 to-sky-500 px-6 py-5 text-white">
+              <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-violet-700 to-purple-500 px-6 py-5 text-white">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
                     <Plus className="h-5 w-5" />

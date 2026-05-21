@@ -40,7 +40,7 @@ type PurchaseListProps = {
 
 const statusColors: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
-  partial: "bg-blue-100 text-blue-700",
+  partial: "bg-violet-100 text-violet-700",
   completed: "bg-green-100 text-green-700",
   cancelled: "bg-slate-100 text-slate-500",
 };
@@ -79,11 +79,11 @@ export function PurchaseList({ dictionary, onCreateOrder }: PurchaseListProps) {
 
   return (
     <>
-      <section className="rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
+      <section className="rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
         <div className="mb-6 flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900">{dictionary.purchaseOrders}</h3>
           <button
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition-colors"
             onClick={onCreateOrder}
             type="button"
           >

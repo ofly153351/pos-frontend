@@ -563,7 +563,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
   return (
     <>
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8">
+      <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-slate-950">{dictionary.historyTitle}</h2>
           <span className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">

@@ -108,7 +108,7 @@ export function StoreSetupForm({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
+      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-sky-600">
           {dictionary.title}
         </p>

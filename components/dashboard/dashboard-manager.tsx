@@ -296,7 +296,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[2rem] border border-sky-100 bg-gradient-to-br from-white via-sky-50/50 to-blue-50/40 p-5 shadow-[0_24px_60px_rgba(59,130,246,0.08)] sm:p-6">
+      <section className="rounded-[2rem] border border-sky-100 bg-gradient-to-br from-white via-violet-50/50 to-purple-50/40 p-5 shadow-[0_24px_60px_rgba(59,130,246,0.08)] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-slate-950 sm:text-3xl">{dictionary.title}</h1>

@@ -50,7 +50,7 @@ export function SubscriptionPlanSelector({
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,_#eff6ff_0%,_#ffffff_100%)] px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
+        <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
           <p className="text-sm font-medium uppercase tracking-[0.25em] text-sky-600">
             POS Suite
           </p>
@@ -69,7 +69,7 @@ export function SubscriptionPlanSelector({
             return (
               <button
                 key={plan.id}
-                className={`rounded-[2rem] border p-8 text-left shadow-[0_24px_60px_rgba(59,130,246,0.1)] transition ${
+                className={`rounded-[2rem] border p-8 text-left shadow-[0_24px_60px_rgba(124,58,237,0.1)] transition ${
                   isSelected
                     ? "border-sky-500 bg-sky-50/70"
                     : "border-sky-100 bg-white hover:border-sky-300"
@@ -118,7 +118,7 @@ export function SubscriptionPlanSelector({
           })}
         </section>
 
-        <section className="mt-8 flex flex-col items-start gap-4 rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
+        <section className="mt-8 flex flex-col items-start gap-4 rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
           <p className="text-sm leading-6 text-slate-600">{helper}</p>
               <button
                 className="rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-700"

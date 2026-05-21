@@ -252,8 +252,8 @@ export function UserWorkspaceSidebar({
         : "stock-levels";
 
   const inventoryItemClass = isInventoryRoute
-    ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
-    : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600";
+    ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
+    : "text-violet-300 hover:bg-violet-900/50 hover:text-white";
   const activeDocumentsKey = !isDocumentsRoute
     ? ""
     : pathname === documentsPendingHref
@@ -267,8 +267,8 @@ export function UserWorkspaceSidebar({
       : "orders";
 
   const documentsItemClass = isDocumentsRoute
-    ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
-    : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600";
+    ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
+    : "text-violet-300 hover:bg-violet-900/50 hover:text-white";
 
   function getNavIcon(key: string, isActive: boolean) {
     const className = "h-4 w-4";
@@ -283,7 +283,7 @@ export function UserWorkspaceSidebar({
     return (
       <span
         className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
-          isActive ? "bg-white/15 text-white" : "bg-blue-100 text-blue-700"
+          isActive ? "bg-white/15 text-white" : "bg-violet-900/60 text-violet-300"
         }`}
       >
         {iconByKey[key as keyof typeof iconByKey] ?? (
@@ -295,12 +295,12 @@ export function UserWorkspaceSidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 flex h-screen flex-col bg-slate-50 px-4 py-6 transition-all duration-300 ${
+      className={`fixed left-0 top-0 z-40 flex h-screen flex-col bg-indigo-950 px-4 py-6 transition-all duration-300 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
       <div className={`${collapsed ? "px-0" : "px-2"} mb-8`}>
-        <p className="text-xl font-black tracking-tight text-blue-800">
+        <p className="text-xl font-black tracking-tight text-violet-200">
           {collapsed ? shell.brand.slice(0, 2) : shell.brand}
         </p>
       </div>
@@ -311,8 +311,8 @@ export function UserWorkspaceSidebar({
           const isRegister = item.key === "register";
           const commonClasses = `flex items-center gap-3 px-4 py-3 text-sm ${
             isActive
-              ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
-              : "font-medium text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
+              ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
+              : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white"
           } ${collapsed ? "justify-center px-2" : ""}`;
 
           if (isRegister) {
@@ -355,7 +355,7 @@ export function UserWorkspaceSidebar({
                 className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
                   isInventoryRoute
                     ? "bg-white/15 text-white"
-                    : "bg-blue-100 text-blue-700"
+                    : "bg-violet-900/60 text-violet-300"
                 }`}
               >
                 <Boxes className="h-4 w-4" />
@@ -370,7 +370,7 @@ export function UserWorkspaceSidebar({
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isInventoryRoute
                     ? "text-white hover:bg-white/10"
-                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
+                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white"
                 }`}
                 onClick={() => setInventoryExpanded((current) => !current)}
                 type="button"
@@ -409,16 +409,16 @@ export function UserWorkspaceSidebar({
                         key={item.key}
                         className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                           isActive
-                            ? "bg-blue-100/80 font-semibold text-blue-700"
-                            : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                            ? "bg-violet-800/80 font-semibold text-violet-200"
+                            : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
                         }`}
                         href={item.href}
                       >
                         <span
                           className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
                             isActive
-                              ? "bg-blue-200/80 text-blue-700"
-                              : "bg-slate-200 text-slate-500"
+                              ? "bg-violet-700 text-violet-200"
+                              : "bg-violet-900/60 text-violet-400"
                           }`}
                         >
                           {itemIcon}
@@ -437,7 +437,7 @@ export function UserWorkspaceSidebar({
         <div className="space-y-1">
           <div
             className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
-              isPurchasingRoute ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70" : "text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
+              isPurchasingRoute ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg" : "text-violet-300 hover:bg-violet-900/50 hover:text-white"
             } ${collapsed ? "justify-center px-2" : ""}`}
           >
             <Link
@@ -448,7 +448,7 @@ export function UserWorkspaceSidebar({
                 className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
                   isPurchasingRoute
                     ? "bg-white/15 text-white"
-                    : "bg-blue-100 text-blue-700"
+                    : "bg-violet-900/60 text-violet-300"
                 }`}
               >
                 <ShoppingCart className="h-4 w-4" />
@@ -463,7 +463,7 @@ export function UserWorkspaceSidebar({
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isPurchasingRoute
                     ? "text-white hover:bg-white/10"
-                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
+                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white"
                 }`}
                 onClick={() => setPurchasingExpanded((current) => !current)}
                 type="button"
@@ -489,16 +489,16 @@ export function UserWorkspaceSidebar({
                   <Link
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activePurchasingKey === "orders"
-                        ? "bg-blue-100/80 font-semibold text-blue-700"
-                        : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
                     }`}
                     href={purchasesBaseHref}
                   >
                     <span
                       className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
                         activePurchasingKey === "orders"
-                          ? "bg-blue-200/80 text-blue-700"
-                          : "bg-slate-200 text-slate-500"
+                          ? "bg-violet-700 text-violet-200"
+                          : "bg-violet-900/60 text-violet-400"
                       }`}
                     >
                       <ShoppingCart className="h-3.5 w-3.5" />
@@ -508,16 +508,16 @@ export function UserWorkspaceSidebar({
                   <Link
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activePurchasingKey === "suppliers"
-                        ? "bg-blue-100/80 font-semibold text-blue-700"
-                        : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
                     }`}
                     href={purchasesSuppliersHref}
                   >
                     <span
                       className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
                         activePurchasingKey === "suppliers"
-                          ? "bg-blue-200/80 text-blue-700"
-                          : "bg-slate-200 text-slate-500"
+                          ? "bg-violet-700 text-violet-200"
+                          : "bg-violet-900/60 text-violet-400"
                       }`}
                     >
                       <Users className="h-3.5 w-3.5" />
@@ -544,7 +544,7 @@ export function UserWorkspaceSidebar({
                 className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
                   isDocumentsRoute
                     ? "bg-white/15 text-white"
-                    : "bg-blue-100 text-blue-700"
+                    : "bg-violet-900/60 text-violet-300"
                 }`}
               >
                 <ReceiptText className="h-4 w-4" />
@@ -559,7 +559,7 @@ export function UserWorkspaceSidebar({
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isDocumentsRoute
                     ? "text-white hover:bg-white/10"
-                    : "text-slate-500 hover:bg-blue-50 hover:text-blue-700"
+                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white"
                 }`}
                 onClick={() => setDocumentsExpanded((current) => !current)}
                 type="button"
@@ -585,16 +585,16 @@ export function UserWorkspaceSidebar({
                   <Link
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activeDocumentsKey === "bills"
-                        ? "bg-blue-100/80 font-semibold text-blue-700"
-                        : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
                     }`}
                     href={documentsBaseHref}
                   >
                     <span
                       className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
                         activeDocumentsKey === "bills"
-                          ? "bg-blue-200/80 text-blue-700"
-                          : "bg-slate-200 text-slate-500"
+                          ? "bg-violet-700 text-violet-200"
+                          : "bg-violet-900/60 text-violet-400"
                       }`}
                     >
                       <ReceiptText className="h-3.5 w-3.5" />
@@ -604,16 +604,16 @@ export function UserWorkspaceSidebar({
                   <Link
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activeDocumentsKey === "pending"
-                        ? "bg-blue-100/80 font-semibold text-blue-700"
-                        : "text-slate-500 hover:bg-blue-50/60 hover:text-blue-600"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
                     }`}
                     href={documentsPendingHref}
                   >
                     <span
                       className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
                         activeDocumentsKey === "pending"
-                          ? "bg-blue-200/80 text-blue-700"
-                          : "bg-slate-200 text-slate-500"
+                          ? "bg-violet-700 text-violet-200"
+                          : "bg-violet-900/60 text-violet-400"
                       }`}
                     >
                       <Clock3 className="h-3.5 w-3.5" />
@@ -634,8 +634,8 @@ export function UserWorkspaceSidebar({
               key={item.key}
               className={`flex items-center gap-3 px-4 py-3 text-sm ${
                 isActive
-                  ? "rounded-2xl bg-blue-700 font-bold text-white shadow-lg shadow-blue-200/70"
-                  : "font-medium text-slate-500 hover:bg-blue-50/50 hover:text-blue-600"
+                  ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
+                  : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white"
               } ${collapsed ? "justify-center px-2" : ""}`}
               href={item.href}
             >
@@ -648,7 +648,7 @@ export function UserWorkspaceSidebar({
 
       <div className="mt-auto">
         <div
-          className={`rounded-xl border border-slate-200 bg-white/80 px-4 py-3 shadow-sm ${
+          className={`rounded-xl border border-violet-800/50 bg-violet-900/30 px-4 py-3 ${
             collapsed ? "px-2 py-2" : ""
           }`}
         >
@@ -662,18 +662,18 @@ export function UserWorkspaceSidebar({
                   src={storeLogoUrl}
                 />
               ) : (
-                <span className="block truncate text-center text-xs font-semibold text-slate-600">
+                <span className="block truncate text-center text-xs font-semibold text-violet-300">
                   {storeName.slice(0, 2).toUpperCase()}
                 </span>
               )}
             </div>
           ) : (
             <>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-400">
                 {shell.storeLabel}
               </p>
               <div className="mt-2 flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-violet-700 bg-violet-900">
                   {storeLogoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -682,22 +682,22 @@ export function UserWorkspaceSidebar({
                       src={storeLogoUrl}
                     />
                   ) : (
-                    <span className="text-xs font-semibold text-slate-600">
+                    <span className="text-xs font-semibold text-violet-300">
                       {storeName.slice(0, 2).toUpperCase()}
                     </span>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-700">
+                  <p className="truncate text-sm font-semibold text-violet-200">
                     {storeName}
                   </p>
                   {storeDescription ? (
-                    <p className="mt-1 truncate text-xs text-slate-500">
+                    <p className="mt-1 truncate text-xs text-violet-400">
                       {storeDescription}
                     </p>
                   ) : null}
                   {storeAddress ? (
-                    <p className="mt-1 truncate text-xs text-slate-500">
+                    <p className="mt-1 truncate text-xs text-violet-400">
                       {storeAddress}
                     </p>
                   ) : null}

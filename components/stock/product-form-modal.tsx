@@ -69,7 +69,7 @@ function ProductField({
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
               badgeTone === "required"
-                ? "bg-blue-100 text-blue-700"
+                ? "bg-violet-100 text-violet-700"
                 : "bg-slate-200 text-slate-600"
             }`}
           >
@@ -106,7 +106,7 @@ function ProductTextInput({
   return (
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
       <input
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-blue-500"
+        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-violet-500"
         min={min}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder ?? label}
@@ -178,7 +178,7 @@ function ProductSelectField({
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
         <input
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-10 outline-none transition focus:border-blue-500"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-10 outline-none transition focus:border-violet-500"
           onChange={(e) => {
             setSearch(e.target.value);
             onChange(""); // clear ID, user is typing free-text
@@ -196,8 +196,8 @@ function ProductSelectField({
               filtered.map((opt) => (
                 <button
                   key={opt.id}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition hover:bg-blue-50 ${
-                    opt.id === value ? "bg-blue-50 font-medium text-blue-700" : "text-slate-700"
+                  className={`w-full px-4 py-2.5 text-left text-sm transition hover:bg-violet-50 ${
+                    opt.id === value ? "bg-violet-50 font-medium text-violet-700" : "text-slate-700"
                   }`}
                   onClick={() => {
                     onChange(opt.id);
@@ -231,7 +231,7 @@ function ProductFileField({
   return (
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
       <input
-        className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3  file:text-sm file:font-medium file:text-blue-700 focus:border-blue-500"
+        className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3  file:text-sm file:font-medium file:text-violet-700 focus:border-violet-500"
         onChange={(event) => onChange(event.target.files?.[0] ?? null)}
         type="file"
       />
@@ -255,8 +255,8 @@ function ProductActiveToggle({
       )}
       <button
         aria-checked={checked}
-        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-          checked ? "bg-blue-700" : "bg-slate-300"
+        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 ${
+          checked ? "bg-violet-700" : "bg-slate-300"
         } ${label ? "" : "ml-auto"}`}
         onClick={() => onChange(!checked)}
         role="switch"
@@ -297,7 +297,7 @@ function ProductModalFooter({
           {cancelLabel}
         </button>
         <button
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:bg-blue-400"
+          className="inline-flex items-center gap-2 rounded-xl bg-violet-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
           disabled={isPending}
           type="submit"
         >
@@ -397,7 +397,7 @@ export function ProductFormModal({
         }`}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-slate-200 bg-gradient-to-br from-blue-700 via-blue-600 to-cyan-500 px-6 py-6 text-white">
+        <div className="border-b border-slate-200 bg-gradient-to-br from-violet-700 via-violet-600 to-pink-500 px-6 py-6 text-white">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
@@ -630,7 +630,7 @@ export function ProductFormModal({
               <div>
                 <ProductField badgeText={formLabels.optionalLabel} label={formLabels.descriptionLabel}>
                   <textarea
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-blue-500 min-h-[60px] resize-y"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-violet-500 min-h-[60px] resize-y"
                     onChange={(event) =>
                       onFormStateChange((current) => ({
                         ...current,

@@ -61,7 +61,7 @@ export function CatalogSetupSection({
   return (
     <section
       className={`rounded-2xl bg-white p-6 shadow-sm ${
-        isCategoriesView ? "ring-2 ring-blue-200" : ""
+        isCategoriesView ? "ring-2 ring-violet-200" : ""
       }`}
       id="categories"
     >
@@ -71,7 +71,7 @@ export function CatalogSetupSection({
         </div>
         <div className="flex flex-wrap gap-3">
           <input
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-blue-400 focus:bg-white"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:bg-white"
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={searchPlaceholder}
             value={catalogSearch}
@@ -84,7 +84,7 @@ export function CatalogSetupSection({
             {managementDictionary.createTypeButton}
           </button>
           <button
-            className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
+            className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800"
             onClick={onOpenCreateUnitModal}
             type="button"
           >

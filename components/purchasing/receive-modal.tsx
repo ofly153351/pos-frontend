@@ -85,7 +85,7 @@ export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModa
     <>
       <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.15)]">
+        <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.15)]">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h4 className="text-lg font-bold text-slate-900">{dictionary.receiveStock}</h4>
@@ -124,7 +124,7 @@ export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModa
                           {dictionary.receiveQuantity} (max: {remaining})
                         </label>
                         <input
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                           max={remaining}
                           min={0}
                           onChange={(e) => handleQtyChange(item.product_id, e.target.value)}

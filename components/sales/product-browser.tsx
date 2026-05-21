@@ -68,7 +68,7 @@ export function ProductBrowser({
   }, [products, search]);
 
   return (
-    <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
+    <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="min-w-48 shrink-0 text-2xl font-semibold text-slate-950">
           {dictionary.title}
@@ -248,7 +248,7 @@ export function ProductBrowser({
                     {formatCurrency(product.effective_price)}
                   </span>
                   {currentQuantity > 0 ? (
-                    <span className="rounded-full bg-blue-700 px-2 py-0.5 text-[10px] font-semibold text-white">
+                    <span className="rounded-full bg-violet-700 px-2 py-0.5 text-[10px] font-semibold text-white">
                       {dictionary.quantityLabel} {currentQuantity}
                     </span>
                   ) : null}
@@ -308,7 +308,7 @@ export function ProductBrowser({
                       {dictionary.stockLabel} {product.total_stock ?? 0}
                     </span>
                     {currentQuantity > 0 ? (
-                      <span className="rounded-full bg-blue-700 px-2 py-0.5 font-semibold text-white">
+                      <span className="rounded-full bg-violet-700 px-2 py-0.5 font-semibold text-white">
                         {dictionary.quantityLabel} {currentQuantity}
                       </span>
                     ) : null}

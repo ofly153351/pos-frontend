@@ -92,7 +92,7 @@ export function ProductTypeModal({
               {managementDictionary.typeNameLabel}
             </span>
             <input
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500"
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-violet-500"
               onChange={(event) => onNameChange(event.target.value)}
               value={name}
             />
@@ -103,7 +103,7 @@ export function ProductTypeModal({
               {managementDictionary.descriptionLabel}
             </span>
             <input
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500"
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-violet-500"
               onChange={(event) => onDescriptionChange(event.target.value)}
               value={description}
             />
@@ -135,7 +135,7 @@ export function ProductTypeModal({
               {cancelLabel}
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:bg-blue-400"
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
               disabled={isPending}
               type="submit"
             >

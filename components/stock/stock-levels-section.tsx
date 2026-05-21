@@ -97,11 +97,11 @@ export function StockLevelsSection({
   return (
     <>
       <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
-        <div className="rounded-xl border-b-2 border-blue-200 bg-white p-6">
+        <div className="rounded-xl border-b-2 border-violet-200 bg-white p-6">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
             {dictionary.stats.totalProductsLabel}
           </span>
-          <p className="mt-2 text-3xl font-extrabold text-blue-700">
+          <p className="mt-2 text-3xl font-extrabold text-violet-700">
             {paginationTotalItems}
           </p>
         </div>
@@ -121,7 +121,7 @@ export function StockLevelsSection({
             {productTypesCount}
           </p>
         </div>
-        <div className="relative overflow-hidden rounded-xl bg-blue-700 p-6 text-white shadow-xl">
+        <div className="relative overflow-hidden rounded-xl bg-violet-700 p-6 text-white shadow-xl">
           <div className="relative z-10">
             <span className="text-xs font-bold uppercase tracking-widest opacity-80">
               {dictionary.quickAction.label}
@@ -156,7 +156,7 @@ export function StockLevelsSection({
               {dictionary.filters.categoryLabel}
             </label>
             <select
-              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300"
               id="stock-product-type-filter"
               onChange={(event) =>
                 onProductTypeFilterChange(event.target.value)
@@ -179,7 +179,7 @@ export function StockLevelsSection({
               {dictionary.filters.typeLabel}
             </label>
             <select
-              className="min-w-32 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              className="min-w-32 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300"
               id="stock-product-unit-filter"
               onChange={(event) =>
                 onProductUnitFilterChange(event.target.value)
@@ -202,7 +202,7 @@ export function StockLevelsSection({
               {dictionary.filters.brandLabel}
             </label>
             <select
-              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300"
               id="stock-brand-filter"
               onChange={(event) =>
                 onProductBrandFilterChange(event.target.value)
@@ -225,7 +225,7 @@ export function StockLevelsSection({
               {dictionary.filters.statusLabel}
             </label>
             <select
-              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              className="min-w-36 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300"
               id="stock-status-filter"
               onChange={(event) =>
                 onStockStatusFilterChange(
@@ -257,7 +257,7 @@ export function StockLevelsSection({
               {dictionary.pagination.perPage}
             </label>
             <select
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-300"
+              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300"
               id="stock-page-size"
               onChange={(event) => onPageSizeChange(Number(event.target.value))}
               value={paginationPageSize}
@@ -270,13 +270,13 @@ export function StockLevelsSection({
             </select>
           </div>
           <input
-            className="rounded-lg border-none bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-0 focus:ring-2 focus:ring-blue-500/20"
+            className="rounded-lg border-none bg-white px-4 py-2 text-sm text-slate-700 outline-none ring-0 focus:ring-2 focus:ring-violet-500/20"
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={dictionary.searchPlaceholder}
             value={search}
           />
           <button
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
             onClick={() => setIsImportModalOpen(true)}
             type="button"
           >
@@ -397,7 +397,7 @@ export function StockLevelsSection({
               </button>
 
               <button
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
                 onClick={() => importFileRef.current?.click()}
                 type="button"
               >
@@ -486,7 +486,7 @@ export function StockLevelsSection({
               <button
                 className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                   page === paginationCurrentPage
-                    ? "bg-blue-700 text-white"
+                    ? "bg-violet-700 text-white"
                     : "border border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
                 key={page}

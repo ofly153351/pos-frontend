@@ -74,7 +74,7 @@ export function SubscriptionPlanManager({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
+      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
         <h2 className="text-3xl font-semibold text-slate-950">{dictionary.title}</h2>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
           {dictionary.helper}
@@ -89,7 +89,7 @@ export function SubscriptionPlanManager({
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
+      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
         <label className="block">
           <span className="mb-2 block text-sm font-medium text-slate-700">
             {dictionary.selectLabel}

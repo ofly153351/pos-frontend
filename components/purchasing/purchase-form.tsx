@@ -153,7 +153,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
     <>
       <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.15)]">
+        <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.15)]">
           <div className="mb-6 flex items-center justify-between">
             <h4 className="text-lg font-bold text-slate-900">{dictionary.createOrder}</h4>
             <button
@@ -176,7 +176,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                 {dictionary.selectSupplier}
               </label>
               <select
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                 onChange={(e) => {
                   setSupplierId(e.target.value);
                   setShowProductDropdown(true);
@@ -208,7 +208,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
-                  className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                   onBlur={() => setTimeout(() => setShowProductDropdown(false), 200)}
                   onChange={(e) => {
                     setProductSearch(e.target.value);
@@ -226,7 +226,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                     ) : (
                       filteredProducts.map((p) => (
                         <button
-                          className="flex w-full items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-blue-50 transition-colors"
+                          className="flex w-full items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-violet-50 transition-colors"
                           key={p.product_id}
                           onMouseDown={() => addProductToItems(p)}
                           type="button"
@@ -261,7 +261,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                         <td className="px-4 py-2 text-slate-900">{item.product_name}</td>
                         <td className="px-4 py-2">
                           <input
-                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-900 focus:border-blue-400 focus:outline-none"
+                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-900 focus:border-violet-400 focus:outline-none"
                             min={1}
                             onChange={(e) => updateItem(item.product_id, "quantity", e.target.value)}
                             type="number"
@@ -270,7 +270,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                         </td>
                         <td className="px-4 py-2">
                           <input
-                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-900 focus:border-blue-400 focus:outline-none"
+                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm text-slate-900 focus:border-violet-400 focus:outline-none"
                             min={0}
                             onChange={(e) => updateItem(item.product_id, "unit_cost", e.target.value)}
                             step="0.01"
@@ -326,7 +326,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                 {dictionary.note}
               </label>
               <textarea
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder={dictionary.note}
                 rows={2}
@@ -344,7 +344,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
               {dictionary.cancel}
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
               disabled={isPending}
               onClick={handleSave}
               type="button"

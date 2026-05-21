@@ -1170,7 +1170,7 @@ export function SalesManager({
 
   if (!hasMounted) {
     return (
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8">
+      <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
         <p className="text-sm text-slate-500">{dictionary.title}</p>
       </section>
     );
@@ -1198,7 +1198,7 @@ export function SalesManager({
         />
 
         <div className="space-y-6 xl:h-full xl:min-h-0">
-          <section className="min-h-[74dvh] rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:min-h-[78dvh] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
+          <section className="min-h-[74dvh] rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-2xl font-semibold text-slate-950">
                 {dictionary.cartTitle}

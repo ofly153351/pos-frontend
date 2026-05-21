@@ -44,7 +44,7 @@ export function AuthStatusCard({ locale, labels }: AuthStatusCardProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
+    <div className="mx-auto w-full max-w-xl rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
       <h1 className="text-3xl font-semibold text-slate-950">{labels.title}</h1>
       <div className="mt-6 space-y-3 rounded-[1.5rem] bg-sky-50/70 p-5 text-slate-700">
         <p>

@@ -72,7 +72,7 @@ export function AuthShell({
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.26),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(191,219,254,0.85),_transparent_28%),linear-gradient(135deg,_#eff6ff_0%,_#f8fbff_45%,_#ffffff_100%)] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-sky-100 bg-white/90 shadow-[0_30px_80px_rgba(59,130,246,0.12)] backdrop-blur xl:grid xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-sky-100 bg-white/90 shadow-[0_30px_80px_rgba(124,58,237,0.12)] backdrop-blur xl:grid xl:grid-cols-[1.15fr_0.85fr]">
         <section className="flex flex-col justify-between gap-10 bg-[linear-gradient(160deg,_#eff6ff_0%,_#dbeafe_42%,_#bfdbfe_100%)] px-6 py-8 text-slate-900 sm:px-8 sm:py-10 lg:px-10">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -136,7 +136,7 @@ export function AuthShell({
 
         <section className="flex items-center px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
           <div className="mx-auto w-full max-w-md">
-            <div className="rounded-[1.75rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)] sm:p-8">
+            <div className="rounded-[1.75rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.25em] text-sky-600">
                   {panelEyebrow}

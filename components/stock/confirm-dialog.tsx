@@ -108,7 +108,7 @@ export function ConfirmDialog({
             className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               danger
                 ? "bg-rose-600 hover:bg-rose-700 focus:ring-rose-500"
-                : "bg-blue-700 hover:bg-blue-800 focus:ring-blue-500"
+                : "bg-violet-700 hover:bg-violet-800 focus:ring-violet-500"
             }`}
             onClick={onConfirm}
             type="button"

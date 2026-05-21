@@ -389,13 +389,13 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
 
   return (
     <div className="">
-      <section className="rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.1)]">
+      <section className="rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900">
             {dictionary.title}
           </h3>
           <button
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition-colors"
             onClick={openCreateModal}
             type="button"
           >
@@ -470,7 +470,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       <td className="py-3 text-right">
                         <div className="inline-flex items-center gap-1">
                           <button
-                            className="rounded-lg p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                            className="rounded-lg p-1.5 text-slate-400 hover:bg-violet-50 hover:text-violet-600 transition-colors"
                             onClick={() => openEditModal(supplier)}
                             title={dictionary.editSupplier}
                             type="button"
@@ -501,7 +501,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     {dictionary.supplierProducts}
                   </h4>
                   <button
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 transition-colors"
                     onClick={openAddProductModal}
                     type="button"
                   >
@@ -558,7 +558,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                             <td className="py-2 text-right">
                               <div className="inline-flex items-center gap-1">
                                 <button
-                                  className="rounded-md p-1 text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                  className="rounded-md p-1 text-slate-400 hover:bg-violet-50 hover:text-violet-600 transition-colors"
                                   onClick={() => openEditProductModal(sp)}
                                   title={dictionary.editProduct}
                                   type="button"
@@ -595,7 +595,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
             onClick={closeModal}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.15)]">
+            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.15)]">
               <div className="mb-6 flex items-center justify-between">
                 <h4 className="text-lg font-bold text-slate-900">
                   {editingId
@@ -624,7 +624,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     <span className="text-red-500">*</span>
                   </label>
                   <input
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
@@ -639,7 +639,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       {dictionary.supplierPhone}
                     </label>
                     <input
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                       onChange={(e) =>
                         setFormData({ ...formData, phone: e.target.value })
                       }
@@ -653,7 +653,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       {dictionary.contactPerson}
                     </label>
                     <input
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                       onChange={(e) =>
                         setFormData({
                           ...formData,
@@ -671,7 +671,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     {dictionary.address}
                   </label>
                   <textarea
-                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                     onChange={(e) =>
                       setFormData({ ...formData, address: e.target.value })
                     }
@@ -686,7 +686,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       {dictionary.taxId}
                     </label>
                     <input
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                       onChange={(e) =>
                         setFormData({ ...formData, tax_id: e.target.value })
                       }
@@ -700,7 +700,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       {dictionary.note}
                     </label>
                     <input
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                       onChange={(e) =>
                         setFormData({ ...formData, note: e.target.value })
                       }
@@ -713,7 +713,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                 <div className="flex items-center gap-3">
                   <input
                     checked={formData.is_active}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
                     id="is-active"
                     onChange={(e) =>
                       setFormData({ ...formData, is_active: e.target.checked })
@@ -738,7 +738,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                   {dictionary.cancel}
                 </button>
                 <button
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
                   disabled={isPending}
                   onClick={handleSave}
                   type="button"
@@ -759,7 +759,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
             onClick={closeProductModal}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(59,130,246,0.15)]">
+            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.15)]">
               <div className="mb-6 flex items-center justify-between">
                 <h4 className="text-lg font-bold text-slate-900">
                   {editingProduct
@@ -820,7 +820,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
-                        className="w-full rounded-xl border border-slate-200 px-9 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-200 px-9 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                         onChange={(e) => {
                           setProductSearch(e.target.value);
                           setShowProductDropdown(true);
@@ -842,7 +842,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
                         {filteredProducts.map((product: Product) => (
                           <button
-                            className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-blue-50 transition-colors"
+                            className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-violet-50 transition-colors"
                             key={product.id}
                             onClick={() => selectProduct(product)}
                             type="button"
@@ -876,7 +876,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                         <span className="text-red-500">*</span>
                       </label>
                       <input
-                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                         onChange={(e) =>
                           setProductFormData({
                             ...productFormData,
@@ -895,7 +895,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                           SKU
                         </label>
                         <input
-                          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                           onChange={(e) =>
                             setProductFormData({
                               ...productFormData,
@@ -912,7 +912,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                           {dictionary.basePrice}
                         </label>
                         <input
-                          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                           min={0}
                           onChange={(e) =>
                             setProductFormData({
@@ -932,7 +932,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                         Barcode
                       </label>
                       <input
-                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                         onChange={(e) =>
                           setProductFormData({
                             ...productFormData,
@@ -966,7 +966,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       {dictionary.supplierSKU}
                     </label>
                     <input
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                       onChange={(e) =>
                         setProductFormData({
                           ...productFormData,
@@ -985,7 +985,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                       {dictionary.supplierPrice}
                     </label>
                     <input
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                       min={0}
                       onChange={(e) =>
                         setProductFormData({
@@ -1011,7 +1011,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                   {dictionary.cancel}
                 </button>
                 <button
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
                   disabled={isPending}
                   onClick={handleSaveProduct}
                   type="button"

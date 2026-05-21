@@ -137,7 +137,7 @@ export function StockReceiveModal({
   const tabClass = (tab: "receive" | "history") =>
     `relative px-5 py-2.5 text-sm font-medium transition-colors rounded-lg ${
       activeTab === tab
-        ? "bg-blue-600 text-white shadow-sm"
+        ? "bg-violet-600 text-white shadow-sm"
         : "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
     }`;
 
@@ -147,7 +147,7 @@ export function StockReceiveModal({
       <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-[0_24px_60px_rgba(59,130,246,0.15)] animate-[fadeIn_0.2s_ease-out]"
+          className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-[0_24px_60px_rgba(124,58,237,0.15)] animate-[fadeIn_0.2s_ease-out]"
           ref={modalRef}
           tabIndex={-1}
         >
@@ -248,7 +248,7 @@ export function StockReceiveModal({
                             {dictionary.quantityToAdd ?? "จำนวนที่รับเข้า"}
                           </label>
                           <input
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                             min={0}
                             onChange={(e) => setQuantity(product.id, e.target.value)}
                             placeholder="0"
@@ -261,7 +261,7 @@ export function StockReceiveModal({
                             {dictionary.note ?? "หมายเหตุ"}
                           </label>
                           <input
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                             onChange={(e) => setNote(product.id, e.target.value)}
                             placeholder="..."
                             type="text"
@@ -278,7 +278,7 @@ export function StockReceiveModal({
             <div className="overflow-y-auto px-6 py-4" style={{ maxHeight: "calc(90vh - 14rem)" }}>
               {historyLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <svg aria-hidden="true" className="h-6 w-6 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <svg aria-hidden="true" className="h-6 w-6 animate-spin text-violet-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
                   </svg>
@@ -352,7 +352,7 @@ export function StockReceiveModal({
                 {dictionary.cancel ?? "ยกเลิก"}
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
                 disabled={isPending}
                 onClick={handleSubmit}
                 type="button"

@@ -373,7 +373,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
       <section className="rounded-2xl bg-white p-6 shadow-sm">
         <div className="flex flex-wrap gap-3">
           <button
-            className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
+            className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800"
             onClick={openCreateCustomerDrawer}
             type="button"
           >
@@ -395,7 +395,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <h3 className="text-lg font-semibold text-slate-900">{dictionary.listTitle}</h3>
           <input
-            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-blue-500 md:w-80"
+            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none transition focus:border-violet-500 md:w-80"
             onChange={(event) => setSearch(event.target.value)}
             placeholder={dictionary.searchPlaceholder}
             value={search}
@@ -493,7 +493,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.fullNameLabel}</span>
               <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
                 onChange={(event) => onFieldChange("full_name", event.target.value)}
                 value={formState.full_name}
               />
@@ -501,7 +501,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.levelLabel}</span>
               <select
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
                 onChange={(event) => onFieldChange("level", event.target.value)}
                 value={formState.level}
               >
@@ -515,7 +515,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.phoneLabel}</span>
               <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
                 onChange={(event) => onFieldChange("phone", event.target.value)}
                 value={formState.phone}
               />
@@ -523,7 +523,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.emailLabel}</span>
               <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
                 onChange={(event) => onFieldChange("email", event.target.value)}
                 value={formState.email}
               />
@@ -531,7 +531,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.addressLabel}</span>
               <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
                 onChange={(event) => onFieldChange("address", event.target.value)}
                 value={formState.address}
               />
@@ -539,7 +539,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.noteLabel}</span>
               <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
                 onChange={(event) => onFieldChange("note", event.target.value)}
                 value={formState.note}
               />
@@ -553,7 +553,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
               <span className="text-sm font-medium text-slate-700">{dictionary.activeLabel}</span>
             </label>
             <button
-              className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:bg-blue-400"
+              className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
               disabled={isPending}
               type="submit"
             >
@@ -598,7 +598,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.levelLabel}</span>
               <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
                 min="1"
                 onChange={(event) => setDiscountLevel(event.target.value)}
                 step="1"
@@ -609,7 +609,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.discountPercentLabel}</span>
               <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-blue-500"
+                className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
                 max="100"
                 min="0"
                 onChange={(event) => setDiscountPercent(event.target.value)}
@@ -619,7 +619,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
               />
             </label>
             <button
-              className="rounded-xl bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:bg-blue-400"
+              className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
               disabled={isDiscountPending}
               type="submit"
             >
