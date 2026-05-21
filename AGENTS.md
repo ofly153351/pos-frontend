@@ -76,15 +76,37 @@ Example:
 ---
 
 ## UI Rules
-- Clean POS layout
-- Fast interaction (important)
-- Use smooth, purposeful animations/transitions for interactive UI (drawer, modal, submenu, toggle) with consistent easing and duration.
-- All popups/modals/drawers must support closing with the `Escape` key.
+- Clean POS layout — fast interaction is the top priority
+- Use smooth, purposeful animations/transitions for interactive UI (drawer, modal, submenu, toggle) with consistent easing and duration
+- All popups/modals/drawers must support closing with the `Escape` key
 - Mobile responsive
-- Use a white-blue theme as the default visual direction
-- Watch hydration: avoid browser-only branches or browser-only data (window/date/random) inside server-rendered components so the markup stays deterministic between server/client.
-- For Client Components rendered by App Router, keep the first client render structurally identical to the server HTML. If browser-only state is required, defer it with `useEffect` and use a stable mount-safe fallback instead of changing classes/text/DOM shape during hydration.
-- Avoid invalid HTML nesting because the browser may repair the DOM differently from React's expected tree and trigger hydration mismatch errors.
+
+### Theme: POS Today (violet/purple)
+The design system has migrated from white-blue to **violet/purple**. Token file: `/theme/theme.css`. Showcase: `/theme/theme-components.html`.
+
+**Core palette:**
+| Role | Value | Tailwind (remapped) |
+|---|---|---|
+| Brand primary | `#7C3AED` | `sky-600` (remapped → violet-600) |
+| Brand gradient | violet → pink 135° | use `bg-gradient-to-br from-violet-600 to-pink-500` |
+| Sidebar bg | `#1E1B4B` | `indigo-950` |
+| Page bg | `#F9FAFB` | `gray-50` / `slate-50` |
+| Card | `#FFFFFF` | `white` |
+
+**Tailwind mapping:** `sky-*` utilities are remapped to violet in `globals.css` via `@theme inline`. All existing `sky-*` classes automatically render as violet — no need to change them.
+
+**Rules:**
+- Primary buttons: `bg-sky-600` (renders violet) or `bg-gradient-to-br from-violet-600 to-pink-500`
+- Sidebar: `bg-indigo-950` with `text-violet-300` nav items
+- Active nav: `bg-violet-900` with 3px left border `border-violet-400`
+- Focus rings: `ring-2 ring-violet-300` or `shadow-focus` CSS var
+- Gradients only on: sidebar header, CTA buttons, KPI icon boxes, table header
+- Cards: `bg-white border border-gray-200 shadow-sm rounded-xl` (or `rounded-2xl`)
+- Fonts: `Sarabun` (Thai-compatible) loaded in `globals.css`
+
+- Watch hydration: avoid browser-only branches or browser-only data (window/date/random) inside server-rendered components so the markup stays deterministic between server/client
+- For Client Components rendered by App Router, keep the first client render structurally identical to the server HTML. If browser-only state is required, defer it with `useEffect` and use a stable mount-safe fallback instead of changing classes/text/DOM shape during hydration
+- Avoid invalid HTML nesting because the browser may repair the DOM differently from React's expected tree and trigger hydration mismatch errors
 
 ---
 

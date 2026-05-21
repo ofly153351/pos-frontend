@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>POS Today — Component Showcase</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/tabler-icons.min.css" />
+<link rel="stylesheet" href="./theme.css" />
+<style>
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: var(--font-body);
+  background: var(--color-bg-page);
+  color: var(--color-text-body);
+  line-height: 1.5;
+}
+
+/* ── Layout Shell ── */
+.app-shell {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  grid-template-rows: auto 1fr;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  grid-row: 1 / -1;
+  background: var(--color-nav-bg);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--color-nav-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.sidebar-logo-icon {
+  width: 36px; height: 36px;
+  background: var(--color-brand-gradient);
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 18px;
+}
+.sidebar-logo-text { color: #fff; font-weight: 700; font-size: var(--text-lg); letter-spacing: -0.3px; }
+.sidebar-logo-sub  { color: var(--color-nav-text); font-size: var(--text-xs); opacity: 0.7; }
+
+.nav-group { padding: var(--space-4) 0 var(--space-2); }
+.nav-group-label {
+  padding: 0 var(--space-4) var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-nav-text);
+  opacity: 0.5;
+}
+.nav-item {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: 10px var(--space-4);
+  color: var(--color-nav-text);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  border-left: 3px solid transparent;
+  text-decoration: none;
+}
+.nav-item i { font-size: 18px; color: var(--color-nav-icon); opacity: 0.8; }
+.nav-item:hover { background: var(--color-nav-hover); color: #fff; }
+.nav-item:hover i { opacity: 1; }
+.nav-item.active {
+  background: var(--color-nav-active);
+  border-left-color: var(--color-brand-light);
+  color: #fff;
+}
+.nav-item.active i { color: var(--color-brand-light); opacity: 1; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--color-brand-accent);
+  color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+}
+
+/* ── Top Header ── */
+.topbar {
+  grid-column: 2;
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border-default);
+  padding: var(--space-3) var(--space-6);
+  display: flex; align-items: center; gap: var(--space-4);
+  box-shadow: var(--shadow-card);
+}
+.topbar-breadcrumb {
+  display: flex; align-items: center; gap: var(--space-2);
+  font-size: var(--text-sm); color: var(--color-text-secondary);
+}
+.topbar-breadcrumb span { color: var(--color-text-heading); font-weight: 600; }
+.topbar-search {
+  flex: 1; max-width: 320px; margin-left: var(--space-4);
+  position: relative;
+}
+.topbar-search input {
+  width: 100%;
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  padding: 7px 14px 7px 36px;
+  font-size: var(--text-sm);
+  color: var(--color-text-body);
+  outline: none;
+  transition: border var(--transition-fast), box-shadow var(--transition-fast);
+}
+.topbar-search input:focus { border-color: var(--color-border-focus); box-shadow: var(--shadow-focus); }
+.topbar-search i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--color-text-secondary); font-size: 16px; }
+.topbar-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-3); }
+.icon-btn {
+  width: 36px; height: 36px;
+  border: none; background: var(--color-bg-input);
+  border-radius: var(--radius-md);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-secondary); font-size: 18px;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  position: relative;
+}
+.icon-btn:hover { background: var(--color-brand-primary); color: #fff; }
+.notif-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 8px; height: 8px;
+  background: var(--color-danger); border-radius: 50%;
+  border: 2px solid var(--color-bg-card);
+}
+.user-avatar {
+  width: 36px; height: 36px;
+  background: var(--color-brand-gradient);
+  border-radius: var(--radius-full);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: var(--text-sm);
+  cursor: pointer;
+}
+.role-badge {
+  background: var(--color-brand-primary);
+  color: #fff;
+  font-size: 10px; font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+/* ── Main Content ── */
+.main-content {
+  grid-column: 2;
+  padding: var(--space-6);
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: var(--space-6);
+}
+.page-title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-text-heading);
+}
+.section-title {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-heading);
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+/* ── Card ── */
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5) var(--space-6);
+}
+
+/* ── A. KPI Cards ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+.kpi-card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5) var(--space-6);
+  display: flex; align-items: flex-start; gap: var(--space-4);
+}
+.kpi-icon {
+  width: 48px; height: 48px; border-radius: var(--radius-lg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #fff; flex-shrink: 0;
+}
+.kpi-icon.violet  { background: linear-gradient(135deg,#7C3AED,#9333EA); }
+.kpi-icon.pink    { background: linear-gradient(135deg,#EC4899,#F43F5E); }
+.kpi-icon.green   { background: linear-gradient(135deg,#10B981,#059669); }
+.kpi-icon.teal    { background: linear-gradient(135deg,#06B6D4,#0284C7); }
+.kpi-body { flex: 1; }
+.kpi-value { font-size: var(--text-2xl); font-weight: 700; color: var(--color-text-heading); line-height: 1.1; }
+.kpi-label { font-size: var(--text-sm); color: var(--color-text-secondary); margin-top: 2px; }
+.kpi-trend {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: var(--text-xs); font-weight: 600; margin-top: var(--space-2);
+}
+.kpi-trend.up   { color: var(--color-success); }
+.kpi-trend.down { color: var(--color-danger); }
+
+/* ── B. Alert Panels ── */
+.alert-panel {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  border-left: 4px solid;
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-card);
+}
+.alert-panel.orange { border-left-color: var(--color-data-low-stock); }
+.alert-panel.red    { border-left-color: var(--color-danger); }
+.alert-title { font-size: var(--text-base); font-weight: 600; color: var(--color-text-heading); margin-bottom: var(--space-3); display: flex; align-items: center; gap: var(--space-2); }
+.alert-item { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+.alert-item-name { font-size: var(--text-sm); font-weight: 500; color: var(--color-text-body); min-width: 120px; }
+.progress-track {
+  flex: 1; height: 8px; border-radius: var(--radius-full);
+  background: var(--color-data-low-stock-track);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: var(--radius-full);
+  background: var(--color-data-low-stock);
+  transition: width var(--transition-base);
+}
+.progress-fill.brand { background: var(--color-brand-gradient); }
+.alert-count { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); white-space: nowrap; }
+.days-badge {
+  display: inline-flex; align-items: center;
+  background: var(--color-danger-bg); color: var(--color-danger-text);
+  font-size: var(--text-xs); font-weight: 600;
+  padding: 2px 8px; border-radius: var(--radius-full);
+}
+
+/* ── C. Data Table ── */
+.table-wrap {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--color-border-default);
+}
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table thead tr {
+  background: var(--color-brand-gradient);
+}
+.data-table thead th {
+  padding: 12px var(--space-4);
+  text-align: left;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+}
+.data-table tbody tr {
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border-default);
+  transition: background var(--transition-fast);
+}
+.data-table tbody tr:nth-child(even) { background: var(--color-bg-table-row-alt); }
+.data-table tbody tr:hover { background: #EDE9FE; }
+.data-table td {
+  padding: 12px var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-body);
+}
+.data-table td .product-code { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-text-secondary); }
+.data-table td .product-name { font-weight: 600; color: var(--color-text-heading); }
+.table-actions { display: flex; gap: var(--space-2); }
+.table-action-btn {
+  width: 30px; height: 30px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-secondary); font-size: 15px;
+  transition: all var(--transition-fast);
+}
+.table-action-btn:hover { background: var(--color-brand-primary); color: #fff; border-color: var(--color-brand-primary); }
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-card);
+  border-top: 1px solid var(--color-border-default);
+  font-size: var(--text-sm);
+}
+.page-btns { display: flex; gap: var(--space-1); }
+.page-btn {
+  width: 32px; height: 32px;
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  cursor: pointer; font-size: var(--text-sm); font-weight: 500;
+  color: var(--color-text-body);
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition-fast);
+}
+.page-btn.active { background: var(--color-brand-primary); color: #fff; border-color: var(--color-brand-primary); }
+.page-btn:hover:not(.active) { background: var(--color-bg-input); }
+
+/* ── D. Form Elements ── */
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-4); }
+.form-group { display: flex; flex-direction: column; gap: var(--space-2); }
+.form-label { font-size: var(--text-sm); font-weight: 500; color: var(--color-text-body); }
+.form-input {
+  padding: 9px var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  color: var(--color-text-body);
+  font-size: var(--text-base);
+  font-family: var(--font-body);
+  outline: none;
+  transition: border var(--transition-fast), box-shadow var(--transition-fast);
+}
+.form-input::placeholder { color: var(--color-text-placeholder); }
+.form-input:focus { border-color: var(--color-border-focus); box-shadow: var(--shadow-focus); }
+.search-wrap { position: relative; }
+.search-wrap i { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--color-text-secondary); font-size: 16px; pointer-events: none; }
+.search-wrap .form-input { padding-left: 36px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 9px var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm); font-weight: 600;
+  cursor: pointer; border: none;
+  transition: opacity var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  font-family: var(--font-body);
+}
+.btn:hover   { opacity: 0.9; }
+.btn:active  { transform: scale(0.98); }
+.btn:focus   { box-shadow: var(--shadow-focus); outline: none; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--color-brand-gradient);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.3);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--color-brand-primary);
+  border: 1.5px solid var(--color-brand-primary);
+}
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+}
+.btn-ghost {
+  background: var(--color-bg-input);
+  color: var(--color-text-body);
+  border: 1px solid var(--color-border-default);
+}
+
+/* Toggle */
+.toggle-wrap { display: flex; align-items: center; gap: var(--space-3); }
+.toggle {
+  position: relative; width: 44px; height: 24px;
+  background: var(--color-border-default); border-radius: var(--radius-full);
+  cursor: pointer; transition: background var(--transition-base);
+  flex-shrink: 0;
+}
+.toggle::after {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  background: #fff; border-radius: 50%;
+  transition: left var(--transition-base);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle.on { background: var(--color-brand-primary); }
+.toggle.on::after { left: 23px; }
+
+/* Checkbox & Radio */
+.check-group { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--text-sm); }
+.check-group input[type="checkbox"],
+.check-group input[type="radio"] {
+  width: 16px; height: 16px; accent-color: var(--color-brand-primary); cursor: pointer;
+}
+
+/* ── E. Status Badges ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: var(--radius-full);
+  font-size: var(--text-xs); font-weight: 600;
+}
+.badge-success { background: var(--color-success-bg); color: var(--color-success-text); }
+.badge-warning { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.badge-danger  { background: var(--color-danger-bg);  color: var(--color-danger-text); }
+.badge-info    { background: var(--color-info-bg);    color: var(--color-info-text); }
+.badge-neutral { background: var(--color-bg-input);   color: var(--color-text-secondary); }
+.badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── F. Toast Notifications ── */
+.toast-stack { display: flex; flex-direction: column; gap: var(--space-3); }
+.toast {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dropdown);
+  padding: var(--space-4) var(--space-5);
+  border-left: 4px solid;
+  max-width: 400px;
+}
+.toast.success { border-left-color: var(--color-success); }
+.toast.error   { border-left-color: var(--color-danger); }
+.toast.info    { border-left-color: var(--color-info); }
+.toast-icon { font-size: 20px; margin-top: 1px; flex-shrink: 0; }
+.toast.success .toast-icon { color: var(--color-success); }
+.toast.error   .toast-icon { color: var(--color-danger); }
+.toast.info    .toast-icon { color: var(--color-info); }
+.toast-title { font-size: var(--text-sm); font-weight: 600; color: var(--color-text-heading); }
+.toast-body  { font-size: var(--text-sm); color: var(--color-text-secondary); margin-top: 2px; }
+.toast-close { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--color-text-secondary); font-size: 18px; padding: 0; }
+
+/* ── G. Modal ── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(3px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: var(--z-modal);
+}
+.modal {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-modal);
+  width: 100%; max-width: 480px;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  border-bottom: 1px solid var(--color-border-default);
+}
+.modal-title { font-size: var(--text-lg); font-weight: 700; color: var(--color-text-heading); }
+.modal-body { padding: var(--space-5) var(--space-6); }
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--color-border-default);
+  background: var(--color-bg-page);
+}
+
+/* ── H. Progress Bars ── */
+.progress-group { display: flex; flex-direction: column; gap: var(--space-3); }
+.progress-row { display: flex; align-items: center; gap: var(--space-3); }
+.progress-label { font-size: var(--text-sm); font-weight: 500; color: var(--color-text-body); min-width: 120px; }
+.progress-track-lg { flex: 1; height: 12px; border-radius: var(--radius-full); background: var(--color-bg-input); overflow: hidden; }
+.progress-track-lg .fill { height: 100%; border-radius: var(--radius-full); }
+.progress-track-lg .fill.brand  { background: var(--color-brand-gradient); }
+.progress-track-lg .fill.orange { background: var(--color-data-low-stock); }
+.progress-track-lg .fill.green  { background: var(--color-success); }
+.progress-pct { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-secondary); min-width: 36px; text-align: right; }
+
+/* ── Stacked bar ── */
+.stacked-bar { height: 16px; border-radius: var(--radius-full); display: flex; overflow: hidden; }
+.stacked-seg { height: 100%; }
+.stacked-seg.violet { background: var(--color-brand-primary); }
+.stacked-seg.pink   { background: var(--color-brand-accent); }
+.stacked-seg.green  { background: var(--color-success); }
+
+/* ── Helpers ── */
+.component-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.section { margin-bottom: var(--space-8); }
+.theme-toggle-bar {
+  position: fixed; bottom: var(--space-4); right: var(--space-4);
+  z-index: var(--z-toast);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-dropdown);
+  padding: var(--space-2) var(--space-4);
+  display: flex; align-items: center; gap: var(--space-3);
+  font-size: var(--text-sm); font-weight: 500; color: var(--color-text-body);
+  cursor: pointer;
+}
+
+/* ── Responsive: sidebar collapses ── */
+@media (max-width: 768px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .topbar  { grid-column: 1; }
+  .main-content { grid-column: 1; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .form-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon"><i class="ti ti-building-store"></i></div>
+      <div>
+        <div class="sidebar-logo-text">POS Today</div>
+        <div class="sidebar-logo-sub">Management Suite</div>
+      </div>
+    </div>
+
+    <nav>
+      <div class="nav-group">
+        <div class="nav-group-label">Overview</div>
+        <a class="nav-item active" href="#"><i class="ti ti-layout-dashboard"></i> Dashboard <span class="nav-badge">3</span></a>
+        <a class="nav-item" href="#"><i class="ti ti-chart-bar"></i> Analytics</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Sales</div>
+        <a class="nav-item" href="#"><i class="ti ti-cash-register"></i> Point of Sale</a>
+        <a class="nav-item" href="#"><i class="ti ti-file-invoice"></i> Invoices</a>
+        <a class="nav-item" href="#"><i class="ti ti-users"></i> Customers</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">Inventory</div>
+        <a class="nav-item" href="#"><i class="ti ti-box"></i> Products</a>
+        <a class="nav-item" href="#"><i class="ti ti-building-warehouse"></i> Warehouses</a>
+        <a class="nav-item" href="#"><i class="ti ti-truck"></i> Purchasing</a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label">System</div>
+        <a class="nav-item" href="#"><i class="ti ti-settings"></i> Settings</a>
+        <a class="nav-item" href="#"><i class="ti ti-help-circle"></i> Support</a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- ═══════════════════ TOP BAR ═══════════════════ -->
+  <header class="topbar">
+    <div class="topbar-breadcrumb">
+      <i class="ti ti-home" style="font-size:14px"></i>
+      <span style="opacity:.5">/</span>
+      <span>Component Showcase</span>
+    </div>
+    <div class="topbar-search">
+      <i class="ti ti-search"></i>
+      <input type="text" placeholder="Search products, orders…" />
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn"><i class="ti ti-bell"></i><span class="notif-dot"></span></button>
+      <button class="icon-btn"><i class="ti ti-moon"></i></button>
+      <div class="user-avatar">S</div>
+      <span class="role-badge">Owner</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
+  <main class="main-content">
+    <div>
+      <div class="page-title">Component Showcase</div>
+      <p style="color:var(--color-text-secondary);margin-top:4px;font-size:var(--text-sm)">Every design token demonstrated in real UI context — POS Today theme</p>
+    </div>
+
+    <!-- A. KPI Cards -->
+    <section class="section">
+      <div class="section-title">A. KPI Summary Cards</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon violet"><i class="ti ti-currency-baht"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-value">฿284,500</div>
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-trend up"><i class="ti ti-trending-up"></i>+12.4%</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon pink"><i class="ti ti-shopping-cart"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-value">1,248</div>
+            <div class="kpi-label">Orders Today</div>
+            <div class="kpi-trend up"><i class="ti ti-trending-up"></i>+5.2%</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green"><i class="ti ti-box"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-value">3,841</div>
+            <div class="kpi-label">Stock Units</div>
+            <div class="kpi-trend down"><i class="ti ti-trending-down"></i>-3.1%</div>
+          </div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon teal"><i class="ti ti-users"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-value">526</div>
+            <div class="kpi-label">Active Customers</div>
+            <div class="kpi-trend up"><i class="ti ti-trending-up"></i>+8.0%</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- B. Alert Panels -->
+    <section class="section">
+      <div class="section-title">B. Alert Panels</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4)">
+        <div class="alert-panel orange">
+          <div class="alert-title" style="color:var(--color-data-low-stock)"><i class="ti ti-alert-triangle"></i> Low Stock Alert</div>
+          <div class="alert-item">
+            <span class="alert-item-name">Nike Air Max</span>
+            <div class="progress-track"><div class="progress-fill" style="width:18%"></div></div>
+            <span class="alert-count">9 / 50</span>
+          </div>
+          <div class="alert-item">
+            <span class="alert-item-name">Adidas Ultraboost</span>
+            <div class="progress-track"><div class="progress-fill" style="width:24%"></div></div>
+            <span class="alert-count">12 / 50</span>
+          </div>
+          <div class="alert-item" style="margin-bottom:0">
+            <span class="alert-item-name">Converse Classic</span>
+            <div class="progress-track"><div class="progress-fill" style="width:30%"></div></div>
+            <span class="alert-count">15 / 50</span>
+          </div>
+        </div>
+        <div class="alert-panel red">
+          <div class="alert-title" style="color:var(--color-danger)"><i class="ti ti-clock"></i> Expiry Warning</div>
+          <div class="alert-item">
+            <span class="alert-item-name">Lot #2024-0891</span>
+            <span class="days-badge"><i class="ti ti-calendar" style="font-size:11px"></i>&nbsp;3 days left</span>
+          </div>
+          <div class="alert-item">
+            <span class="alert-item-name">Lot #2024-0775</span>
+            <span class="days-badge">7 days left</span>
+          </div>
+          <div class="alert-item" style="margin-bottom:0">
+            <span class="alert-item-name">Lot #2024-0612</span>
+            <span class="days-badge">14 days left</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- C. Data Table -->
+    <section class="section">
+      <div class="section-title">C. Data Table</div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Code / Name</th>
+              <th>Warehouse</th>
+              <th>Qty Remaining</th>
+              <th>Reserved</th>
+              <th>Available</th>
+              <th>Min Stock</th>
+              <th>Value</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="product-code">SKU-0012</div><div class="product-name">Nike Air Max 270</div></td>
+              <td>Main Warehouse</td>
+              <td><span class="badge badge-danger"><span class="badge-dot"></span>9</span></td>
+              <td>3</td><td>6</td><td>20</td>
+              <td style="font-family:var(--font-mono);font-weight:600;color:var(--color-text-heading)">฿18,000</td>
+              <td><div class="table-actions"><button class="table-action-btn"><i class="ti ti-edit"></i></button><button class="table-action-btn"><i class="ti ti-history"></i></button></div></td>
+            </tr>
+            <tr>
+              <td><div class="product-code">SKU-0034</div><div class="product-name">Adidas Ultraboost 22</div></td>
+              <td>Store A</td>
+              <td><span class="badge badge-warning"><span class="badge-dot"></span>12</span></td>
+              <td>5</td><td>7</td><td>15</td>
+              <td style="font-family:var(--font-mono);font-weight:600;color:var(--color-text-heading)">฿28,800</td>
+              <td><div class="table-actions"><button class="table-action-btn"><i class="ti ti-edit"></i></button><button class="table-action-btn"><i class="ti ti-history"></i></button></div></td>
+            </tr>
+            <tr>
+              <td><div class="product-code">SKU-0089</div><div class="product-name">Converse Chuck Taylor</div></td>
+              <td>Main Warehouse</td>
+              <td><span class="badge badge-success"><span class="badge-dot"></span>84</span></td>
+              <td>0</td><td>84</td><td>10</td>
+              <td style="font-family:var(--font-mono);font-weight:600;color:var(--color-text-heading)">฿67,200</td>
+              <td><div class="table-actions"><button class="table-action-btn"><i class="ti ti-edit"></i></button><button class="table-action-btn"><i class="ti ti-history"></i></button></div></td>
+            </tr>
+            <tr>
+              <td><div class="product-code">SKU-0102</div><div class="product-name">Vans Old Skool</div></td>
+              <td>Store B</td>
+              <td><span class="badge badge-info"><span class="badge-dot"></span>31</span></td>
+              <td>10</td><td>21</td><td>10</td>
+              <td style="font-family:var(--font-mono);font-weight:600;color:var(--color-text-heading)">฿24,800</td>
+              <td><div class="table-actions"><button class="table-action-btn"><i class="ti ti-edit"></i></button><button class="table-action-btn"><i class="ti ti-history"></i></button></div></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <span style="color:var(--color-text-secondary);font-size:var(--text-sm)">Showing 1–4 of 128 items</span>
+          <div class="page-btns">
+            <button class="page-btn"><i class="ti ti-chevron-left" style="font-size:13px"></i></button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">…</button>
+            <button class="page-btn">32</button>
+            <button class="page-btn"><i class="ti ti-chevron-right" style="font-size:13px"></i></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- D. Form Elements -->
+    <section class="section">
+      <div class="section-title">D. Form Elements</div>
+      <div class="card">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Product Name</label>
+            <input class="form-input" type="text" placeholder="e.g. Nike Air Max 270" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select class="form-input">
+              <option>Footwear</option><option>Apparel</option><option>Accessories</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Search</label>
+            <div class="search-wrap">
+              <i class="ti ti-search"></i>
+              <input class="form-input" type="text" placeholder="Search products…" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">SKU (read-only)</label>
+            <input class="form-input" type="text" value="SKU-0012" style="font-family:var(--font-mono)" readonly />
+          </div>
+        </div>
+
+        <div style="margin-top:var(--space-5);display:flex;flex-wrap:wrap;gap:var(--space-3);align-items:center">
+          <div class="form-group" style="flex-direction:row;align-items:center;gap:var(--space-2)">
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+            <span class="form-label">Active product</span>
+          </div>
+          <label class="check-group"><input type="checkbox" checked /> In-stock only</label>
+          <label class="check-group"><input type="radio" name="r" checked /> Sale price</label>
+          <label class="check-group"><input type="radio" name="r" /> Base price</label>
+        </div>
+
+        <div style="margin-top:var(--space-5)" class="component-row">
+          <button class="btn btn-primary"><i class="ti ti-device-floppy"></i> Save Changes</button>
+          <button class="btn btn-secondary"><i class="ti ti-x"></i> Cancel</button>
+          <button class="btn btn-danger"><i class="ti ti-trash"></i> Delete</button>
+          <button class="btn btn-ghost" disabled><i class="ti ti-lock"></i> Locked</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- E. Status Badges -->
+    <section class="section">
+      <div class="section-title">E. Status Badges</div>
+      <div class="card component-row">
+        <span class="badge badge-success"><span class="badge-dot"></span>In Stock</span>
+        <span class="badge badge-warning"><span class="badge-dot"></span>Low Stock</span>
+        <span class="badge badge-danger"><span class="badge-dot"></span>Out of Stock</span>
+        <span class="badge badge-info"><span class="badge-dot"></span>On Order</span>
+        <span class="badge badge-neutral"><span class="badge-dot"></span>Inactive</span>
+      </div>
+    </section>
+
+    <!-- F. Toasts -->
+    <section class="section">
+      <div class="section-title">F. Notifications / Toasts</div>
+      <div class="toast-stack">
+        <div class="toast success">
+          <i class="ti ti-circle-check toast-icon"></i>
+          <div><div class="toast-title">Stock Updated</div><div class="toast-body">50 units added to Main Warehouse successfully.</div></div>
+          <button class="toast-close"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="toast error">
+          <i class="ti ti-circle-x toast-icon"></i>
+          <div><div class="toast-title">Transfer Failed</div><div class="toast-body">Insufficient stock in source location.</div></div>
+          <button class="toast-close"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="toast info">
+          <i class="ti ti-info-circle toast-icon"></i>
+          <div><div class="toast-title">Sync in Progress</div><div class="toast-body">Inventory data is being synchronized…</div></div>
+          <button class="toast-close"><i class="ti ti-x"></i></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- G. Modal (inline preview) -->
+    <section class="section">
+      <div class="section-title">G. Modal Dialog</div>
+      <div class="card">
+        <p style="font-size:var(--text-sm);color:var(--color-text-secondary);margin-bottom:var(--space-4)">Modal structure preview (not overlaid, shown inline for showcase)</p>
+        <div class="modal" style="position:relative;max-width:480px;box-shadow:var(--shadow-modal)">
+          <div class="modal-header">
+            <span class="modal-title">Confirm Transfer</span>
+            <button class="icon-btn" style="width:28px;height:28px"><i class="ti ti-x" style="font-size:14px"></i></button>
+          </div>
+          <div class="modal-body">
+            <p style="font-size:var(--text-sm);color:var(--color-text-body)">Transfer <strong>25 units</strong> of <strong>Nike Air Max 270</strong> from <em>Main Warehouse</em> to <em>Store B</em>?</p>
+            <div style="margin-top:var(--space-4);background:var(--color-warning-bg);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);font-size:var(--text-sm);color:var(--color-warning-text);display:flex;gap:var(--space-2)">
+              <i class="ti ti-alert-triangle"></i> Remaining stock will be 6 units (below minimum of 20).
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-primary"><i class="ti ti-transfer"></i> Confirm Transfer</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- H. Progress Bars -->
+    <section class="section">
+      <div class="section-title">H. Progress Bars</div>
+      <div class="card progress-group">
+        <div class="progress-row">
+          <span class="progress-label">Revenue Target</span>
+          <div class="progress-track-lg"><div class="fill brand" style="width:72%"></div></div>
+          <span class="progress-pct">72%</span>
+        </div>
+        <div class="progress-row">
+          <span class="progress-label">Low Stock — Air Max</span>
+          <div class="progress-track-lg" style="background:var(--color-data-low-stock-track)"><div class="fill orange" style="width:18%"></div></div>
+          <span class="progress-pct" style="color:var(--color-data-low-stock)">9/50</span>
+        </div>
+        <div class="progress-row">
+          <span class="progress-label">Order Fulfillment</span>
+          <div class="progress-track-lg"><div class="fill green" style="width:91%"></div></div>
+          <span class="progress-pct">91%</span>
+        </div>
+        <div class="progress-row">
+          <span class="progress-label">Stock vs Reserved</span>
+          <div style="flex:1">
+            <div class="stacked-bar">
+              <div class="stacked-seg violet" style="width:55%"></div>
+              <div class="stacked-seg pink"   style="width:20%"></div>
+              <div class="stacked-seg green"  style="width:25%"></div>
+            </div>
+            <div style="display:flex;gap:var(--space-3);margin-top:var(--space-2);font-size:var(--text-xs);color:var(--color-text-secondary)">
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--color-brand-primary);border-radius:2px;display:inline-block"></span>Available (55%)</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--color-brand-accent);border-radius:2px;display:inline-block"></span>Reserved (20%)</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:var(--color-success);border-radius:2px;display:inline-block"></span>In Transit (25%)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Token Reference -->
+    <section class="section">
+      <div class="section-title">Token Color Reference</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--space-3)">
+        <div style="border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--color-border-default)">
+          <div style="height:48px;background:var(--color-brand-primary)"></div>
+          <div style="padding:6px 8px;font-size:10px;font-family:var(--font-mono)">--brand-primary<br/>#7C3AED</div>
+        </div>
+        <div style="border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--color-border-default)">
+          <div style="height:48px;background:var(--color-brand-accent)"></div>
+          <div style="padding:6px 8px;font-size:10px;font-family:var(--font-mono)">--brand-accent<br/>#EC4899</div>
+        </div>
+        <div style="border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--color-border-default)">
+          <div style="height:48px;background:var(--color-nav-bg)"></div>
+          <div style="padding:6px 8px;font-size:10px;font-family:var(--font-mono)">--nav-bg<br/>#1E1B4B</div>
+        </div>
+        <div style="border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--color-border-default)">
+          <div style="height:48px;background:var(--color-success)"></div>
+          <div style="padding:6px 8px;font-size:10px;font-family:var(--font-mono)">--success<br/>#10B981</div>
+        </div>
+        <div style="border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--color-border-default)">
+          <div style="height:48px;background:var(--color-warning)"></div>
+          <div style="padding:6px 8px;font-size:10px;font-family:var(--font-mono)">--warning<br/>#F59E0B</div>
+        </div>
+        <div style="border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--color-border-default)">
+          <div style="height:48px;background:var(--color-danger)"></div>
+          <div style="padding:6px 8px;font-size:10px;font-family:var(--font-mono)">--danger<br/>#EF4444</div>
+        </div>
+        <div style="border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--color-border-default)">
+          <div style="height:48px;background:var(--color-data-low-stock)"></div>
+          <div style="padding:6px 8px;font-size:10px;font-family:var(--font-mono)">--low-stock<br/>#F97316</div>
+        </div>
+        <div style="border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-card);border:1px solid var(--color-border-default)">
+          <div style="height:48px;background:var(--color-brand-gradient)"></div>
+          <div style="padding:6px 8px;font-size:10px;font-family:var(--font-mono)">--brand-gradient<br/>violet→pink</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Dark mode toggle -->
+<div class="theme-toggle-bar" onclick="document.documentElement.setAttribute('data-theme', document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark'); this.querySelector('i').className = document.documentElement.getAttribute('data-theme')==='dark' ? 'ti ti-sun' : 'ti ti-moon'">
+  <i class="ti ti-moon"></i>
+  Toggle Dark Mode
+</div>
+</body>
+</html>
