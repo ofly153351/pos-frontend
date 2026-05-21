@@ -86,7 +86,7 @@ function StoreAvatar({ name, logoUrl, size = "md" }: { name: string; logoUrl?: s
 function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <span className="text-sky-500">{icon}</span>
+      <span className="text-violet-500">{icon}</span>
       <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{label}</span>
       <div className="ml-2 h-px flex-1 bg-slate-100" />
     </div>
@@ -103,7 +103,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls =
-  "w-full rounded-xl border border-sky-100 bg-sky-50/60 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-100";
+  "w-full rounded-xl border border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100";
 
 export function StoreManagementPanel({ dictionary }: Props) {
   const router = useRouter();
@@ -338,7 +338,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{dictionary.storeListTitle}</span>
             <button
-              className="flex items-center gap-1.5 rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-700"
+              className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700"
               onClick={() => setIsCreateModalOpen(true)}
               type="button"
             >
@@ -360,8 +360,8 @@ export function StoreManagementPanel({ dictionary }: Props) {
                   <button
                     className={`w-full rounded-2xl border px-4 py-3.5 text-left transition ${
                       isSelected
-                        ? "border-sky-300 bg-sky-50 shadow-[0_4px_16px_rgba(124,58,237,0.12)]"
-                        : "border-slate-200 bg-white hover:border-sky-200 hover:bg-sky-50/40"
+                        ? "border-violet-300 bg-violet-600 shadow-[0_4px_16px_rgba(124,58,237,0.12)]"
+                        : "border-slate-200 bg-white hover:border-violet-200 hover:bg-violet-50/40"
                     }`}
                     key={store.id}
                     onClick={() => selectStore(store.id)}
@@ -370,7 +370,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                     <div className="flex items-center gap-3">
                       <StoreAvatar logoUrl={store.logo_url ?? undefined} name={store.name ?? ""} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-semibold ${isSelected ? "text-sky-900" : "text-slate-800"}`}>
+                        <p className={`truncate text-sm font-semibold ${isSelected ? "text-violet-900" : "text-slate-800"}`}>
                           {store.name}
                         </p>
                         {isActive && (
@@ -380,7 +380,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                           </span>
                         )}
                       </div>
-                      {isSelected && <Check className="h-4 w-4 shrink-0 text-sky-500" />}
+                      {isSelected && <Check className="h-4 w-4 shrink-0 text-violet-500" />}
                     </div>
                   </button>
                 );
@@ -391,7 +391,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
           {/* Switch active store */}
           {selectedStoreId && !isActiveSelected && (
             <button
-              className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 py-2.5 text-sm font-semibold text-sky-700 transition hover:bg-sky-100 disabled:opacity-60"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-600 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
               disabled={isSwitchPending}
               onClick={switchStore}
               type="button"
@@ -408,7 +408,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
         {/* ── Right: Edit form ── */}
         {currentStore ? (
           <form
-            className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_12px_40px_rgba(59,130,246,0.08)] sm:p-8"
+            className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_12px_40px_rgba(59,130,246,0.08)] sm:p-8"
             onSubmit={handleUpdateStore}
           >
             {/* Store identity header */}
@@ -417,7 +417,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                 <StoreAvatar logoUrl={editLogoPreviewUrl || currentStore.logo_url || undefined} name={editName} size="lg" />
                 {isEditLogoLoading && (
                   <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/70">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-300 border-t-sky-600" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-300 border-t-violet-600" />
                   </div>
                 )}
               </div>
@@ -475,7 +475,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                 <div className="flex items-start gap-4">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                     {isEditLogoLoading ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-200 border-t-sky-600" />
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
                     ) : editLogoPreviewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img alt={editName} className="h-full w-full object-cover" src={editLogoPreviewUrl} />
@@ -484,7 +484,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className="block cursor-pointer rounded-xl border border-dashed border-sky-200 bg-sky-50/60 px-4 py-3 text-center text-sm text-sky-600 transition hover:bg-sky-100">
+                    <label className="block cursor-pointer rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-3 text-center text-sm text-violet-600 transition hover:bg-violet-100">
                       <span>{dictionary.logoLabel}</span>
                       <input
                         accept="image/*"
@@ -510,7 +510,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
             {/* Save */}
             <div className="mt-8 flex items-center justify-end">
               <button
-                className="flex items-center gap-2 rounded-2xl bg-sky-600 px-6 py-2.5 font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-2xl bg-violet-600 px-6 py-2.5 font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
                 disabled={!selectedStoreId || isUpdatePending}
                 type="submit"
               >
@@ -593,7 +593,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                     <div className="flex items-center gap-3">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                         {isCreateLogoLoading ? (
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-sky-200 border-t-sky-600" />
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
                         ) : createLogoPreviewUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img alt={createName} className="h-full w-full object-cover" src={createLogoPreviewUrl} />
@@ -601,7 +601,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                           <span className="text-xs font-bold text-slate-400">{createName ? getInitials(createName) : "?"}</span>
                         )}
                       </div>
-                      <label className="flex-1 cursor-pointer rounded-xl border border-dashed border-sky-200 bg-sky-50/60 px-4 py-2.5 text-center text-sm text-sky-600 transition hover:bg-sky-100">
+                      <label className="flex-1 cursor-pointer rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-2.5 text-center text-sm text-violet-600 transition hover:bg-violet-100">
                         {dictionary.logoLabel}
                         <input accept="image/*" className="sr-only" onChange={(e) => setCreateLogoFile(e.target.files?.[0] ?? null)} type="file" />
                       </label>
@@ -619,7 +619,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                     ยกเลิก
                   </button>
                   <button
-                    className="flex items-center gap-2 rounded-2xl bg-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700 disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-2xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
                     disabled={isCreatePending}
                     type="submit"
                   >

@@ -74,13 +74,13 @@ export function SubscriptionPlanManager({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
+      <section className="rounded-[2rem] border border-violet-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
         <h2 className="text-3xl font-semibold text-slate-950">{dictionary.title}</h2>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
           {dictionary.helper}
         </p>
-        <div className="mt-6 rounded-[1.5rem] bg-sky-50/60 p-5">
-          <p className="text-sm uppercase tracking-[0.2em] text-sky-600">
+        <div className="mt-6 rounded-[1.5rem] bg-violet-50/60 p-5">
+          <p className="text-sm uppercase tracking-[0.2em] text-violet-600">
             {dictionary.currentLabel}
           </p>
           <p className="mt-2 text-xl font-semibold text-slate-950">
@@ -89,13 +89,13 @@ export function SubscriptionPlanManager({
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
+      <section className="rounded-[2rem] border border-violet-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
         <label className="block">
           <span className="mb-2 block text-sm font-medium text-slate-700">
             {dictionary.selectLabel}
           </span>
           <select
-            className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
+            className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:bg-white"
             onChange={(event) => setSelectedPlanId(event.target.value)}
             value={selectedPlanId}
           >
@@ -115,7 +115,7 @@ export function SubscriptionPlanManager({
         ) : null}
 
         <button
-          className="mt-6 inline-flex rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-700 disabled:bg-sky-300"
+          className="mt-6 inline-flex rounded-2xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700 disabled:bg-violet-300"
           disabled={isPending || !selectedPlanId}
           onClick={handleSave}
           type="button"

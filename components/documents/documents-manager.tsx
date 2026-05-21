@@ -563,17 +563,17 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
   return (
     <>
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
+      <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-slate-950">{dictionary.historyTitle}</h2>
-          <span className="rounded-full bg-sky-50 px-3 py-1 text-sm font-semibold text-sky-700">
+          <span className="rounded-full bg-violet-600 px-3 py-1 text-sm font-semibold text-violet-700">
             {dictionary.itemCountLabel} {filteredRecords.length}
           </span>
         </div>
 
         <div className="mt-4">
           <input
-            className="w-full rounded-2xl border border-sky-100 bg-violet-50/60 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             onChange={(event) => setSearch(event.target.value)}
             placeholder={dictionary.documentSearchPlaceholder}
             value={search}
@@ -625,7 +625,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <button
-                            className="rounded-xl border border-sky-200 px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
                             disabled={pdfLoadingId === invoice.id}
                             onClick={() => openInvoicePdf(invoice.id)}
                             type="button"
@@ -743,7 +743,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                   <button
                     className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
                       page === currentPage
-                        ? "bg-sky-600 text-white"
+                        ? "bg-violet-600 text-white"
                         : "border border-slate-200 text-violet-700 hover:bg-violet-50"
                     }`}
                     key={page}
@@ -830,7 +830,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
                 <div className="mt-4">
                   <button
-                    className="rounded-xl border border-sky-200 px-3 py-2 text-sm font-semibold text-sky-700 transition hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={pdfLoadingId === selectedInvoice.id}
                     onClick={() => openInvoicePdf(selectedInvoice.id)}
                     type="button"
@@ -949,7 +949,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
               </span>
               <input
                 accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-sky-700 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-700 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setPaymentProof(event.target.files?.[0] ?? null)}
                 ref={paymentProofInputRef}
                 type="file"

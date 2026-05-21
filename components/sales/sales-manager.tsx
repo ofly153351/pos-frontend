@@ -1170,7 +1170,7 @@ export function SalesManager({
 
   if (!hasMounted) {
     return (
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
+      <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
         <p className="text-sm text-slate-500">{dictionary.title}</p>
       </section>
     );
@@ -1198,14 +1198,14 @@ export function SalesManager({
         />
 
         <div className="space-y-6 xl:h-full xl:min-h-0">
-          <section className="min-h-[74dvh] rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
+          <section className="min-h-[74dvh] rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-2xl font-semibold text-slate-950">
                 {dictionary.cartTitle}
               </h2>
               <button
                 aria-label={dictionary.actionsLabel}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-200 bg-white text-violet-700 shadow-sm transition hover:bg-violet-50"
                 onClick={() => setIsActionsMenuOpen(true)}
                 type="button"
               >
@@ -1222,7 +1222,7 @@ export function SalesManager({
                     <button
                       className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                         applyVat
-                          ? "border-sky-600 bg-sky-600 text-white"
+                          ? "border-violet-600 bg-violet-600 text-white"
                           : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                       }`}
                       onClick={() => {
@@ -1236,7 +1236,7 @@ export function SalesManager({
                     <button
                       className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                         !applyVat
-                          ? "border-sky-600 bg-sky-600 text-white"
+                          ? "border-violet-600 bg-violet-600 text-white"
                           : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                       }`}
                       onClick={() => {
@@ -1291,7 +1291,7 @@ export function SalesManager({
                         <button
                           className={`h-7 min-w-9 rounded-lg px-2 text-[11px] font-extrabold tracking-wide transition-all duration-200 ease-out ${
                             billDiscountType === "amount"
-                              ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-[0_2px_8px_rgba(2,132,199,0.35)]"
+                              ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white shadow-[0_2px_8px_rgba(109,40,217,0.35)]"
                               : "text-slate-600 hover:bg-white/90 hover:text-slate-800"
                           }`}
                           onClick={() => setBillDiscountType("amount")}
@@ -1302,7 +1302,7 @@ export function SalesManager({
                         <button
                           className={`h-7 min-w-9 rounded-lg px-2 text-[11px] font-extrabold tracking-wide transition-all duration-200 ease-out ${
                             billDiscountType === "percent"
-                              ? "bg-gradient-to-b from-sky-500 to-sky-600 text-white shadow-[0_2px_8px_rgba(2,132,199,0.35)]"
+                              ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white shadow-[0_2px_8px_rgba(109,40,217,0.35)]"
                               : "text-slate-600 hover:bg-white/90 hover:text-slate-800"
                           }`}
                           onClick={() => setBillDiscountType("percent")}
@@ -1346,7 +1346,7 @@ export function SalesManager({
                 </div>
               </div>
               <button
-                className="mt-2 w-full rounded-2xl bg-sky-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                className="mt-2 w-full rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-3 text-base font-semibold text-white transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={cart.length === 0 || isPending}
                 onClick={() => setIsCheckoutSummaryOpen(true)}
                 type="button"
@@ -1508,7 +1508,7 @@ export function SalesManager({
               <button
                 className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition ${
                   showNoteField
-                    ? "bg-sky-50 text-sky-700"
+                    ? "bg-violet-50 text-violet-700"
                     : "text-slate-700 hover:bg-slate-50"
                 }`}
                 onClick={() => {
@@ -1523,7 +1523,7 @@ export function SalesManager({
               <button
                 className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition ${
                   showVatControls
-                    ? "bg-sky-50 text-sky-700"
+                    ? "bg-violet-50 text-violet-700"
                     : "text-slate-700 hover:bg-slate-50"
                 }`}
                 onClick={() => {
@@ -1536,7 +1536,7 @@ export function SalesManager({
                 <span>{showVatControls ? "✓" : ""}</span>
               </button>
               <button
-                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
                 onClick={() => {
                   setHoldBillLabel("");
                   setIsHoldingBill(true);
@@ -1546,7 +1546,7 @@ export function SalesManager({
                 <span>{dictionary.holdBillLabel}</span>
               </button>
               <button
-                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:bg-sky-50"
+                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
                 onClick={async () => {
                   try {
                     const response = await listParkedBills();
@@ -1599,7 +1599,7 @@ export function SalesManager({
                 {dictionary.holdBillCancelLabel}
               </button>
               <button
-                className="flex-1 rounded-xl bg-sky-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
+                className="flex-1 rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
                 onClick={async () => {
                   if (cart.length === 0) {
                     setError(dictionary.emptyCart);
@@ -1692,7 +1692,7 @@ export function SalesManager({
                   return (
                     <button
                       key={bill.id}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:bg-sky-50 hover:border-sky-200"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:bg-violet-50 hover:border-violet-200"
                       onClick={() => {
                         if (
                           window.confirm(dictionary.restoreBillConfirmLabel)
@@ -1752,7 +1752,7 @@ export function SalesManager({
                         <span className="font-semibold text-slate-800">
                           {bill.label}
                         </span>
-                        <span className="text-sm font-medium text-sky-600">
+                        <span className="text-sm font-medium text-violet-600">
                           {formatCurrency(totalAmount)}
                         </span>
                       </div>
@@ -1826,7 +1826,7 @@ export function SalesManager({
                       <button
                         className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                           customerSettlementMode === "cash_now"
-                            ? "border-sky-600 bg-sky-600 text-white"
+                            ? "border-violet-600 bg-violet-600 text-white"
                             : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                         }`}
                         onClick={() => setCustomerSettlementMode("cash_now")}
@@ -1837,7 +1837,7 @@ export function SalesManager({
                       <button
                         className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                           customerSettlementMode === "invoice"
-                            ? "border-sky-600 bg-sky-600 text-white"
+                            ? "border-violet-600 bg-violet-600 text-white"
                             : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                         }`}
                         onClick={() => setCustomerSettlementMode("invoice")}
@@ -1869,7 +1869,7 @@ export function SalesManager({
                           key={option.value}
                           className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                             paymentMethod === option.value
-                              ? "border-sky-600 bg-sky-600 text-white"
+                              ? "border-violet-600 bg-violet-600 text-white"
                               : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                           }`}
                           onClick={() => setPaymentMethod(option.value)}
@@ -1938,7 +1938,7 @@ export function SalesManager({
                             }
                             className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition ${
                               lastQuickCashAmount === option.amount
-                                ? "border-sky-600 bg-sky-600 text-white"
+                                ? "border-violet-600 bg-violet-600 text-white"
                                 : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                             }`}
                             onClick={() => applyQuickCash(option.amount)}
@@ -1956,7 +1956,7 @@ export function SalesManager({
               </div>
 
               <div className="flex flex-col-reverse lg:flex-col">
-                <div className="space-y-2.5 border-t border-sky-100 pt-3 text-xs text-slate-600 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+                <div className="space-y-2.5 border-t border-violet-100 pt-3 text-xs text-slate-600 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
                   <div className="flex items-center justify-between">
                     <span>{dictionary.summary.subtotalLabel}</span>
                     <span>{formatCurrency(cartSummary.subtotal)}</span>
@@ -2008,7 +2008,7 @@ export function SalesManager({
             </div>
 
             <button
-              className="mt-5 w-full rounded-2xl bg-sky-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+              className="mt-5 w-full rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-3 text-base font-semibold text-white transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={cart.length === 0 || isPending}
               onClick={() => {
                 setIsCheckoutSummaryOpen(false);
@@ -2061,7 +2061,7 @@ export function SalesManager({
                       key={option.value}
                       className={`rounded-xl border px-3 py-2 text-base font-bold transition ${
                         discountEditorItem.discountType === option.value
-                          ? "border-sky-600 bg-sky-600 text-white"
+                          ? "border-violet-600 bg-violet-600 text-white"
                           : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                       }`}
                       onClick={() =>
@@ -2139,7 +2139,7 @@ export function SalesManager({
               </button>
 
               <button
-                className="w-full rounded-xl bg-sky-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
+                className="w-full rounded-xl bg-violet-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700"
                 onClick={applyDiscountEditor}
                 type="button"
               >
@@ -2155,7 +2155,7 @@ export function SalesManager({
           <div className="relative flex max-h-[94dvh] w-fit max-w-[calc(100vw-2rem)] flex-col rounded-[1.75rem] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] ring-1 ring-white/70 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-6">
             <button
               aria-label={dictionary.closeReceiptButton}
-              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-sky-50 text-sky-400 shadow-sm transition hover:bg-sky-100 hover:text-sky-600"
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-violet-50 text-violet-400 shadow-sm transition hover:bg-violet-100 hover:text-violet-600"
               onClick={closeReceiptPreview}
               type="button"
             >
@@ -2189,7 +2189,7 @@ export function SalesManager({
 
             <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-3">
               <button
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(14,165,233,0.24)] transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300 disabled:shadow-none"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300 disabled:shadow-none"
                 disabled={isReceiptPreviewLoading || !receiptPreviewHtml}
                 onClick={handlePrintFromPrompt}
                 type="button"
@@ -2198,7 +2198,7 @@ export function SalesManager({
                 {dictionary.printReceiptNowButton}
               </button>
               <button
-                className="min-h-12 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700"
+                className="min-h-12 rounded-2xl border border-violet-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50"
                 onClick={closeReceiptPreview}
                 type="button"
               >
@@ -2281,7 +2281,7 @@ export function SalesManager({
                 {dictionary.quantityNumpadCancel}
               </button>
               <button
-                className="rounded-xl bg-sky-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
+                className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
                 onClick={applyNumpadQuantity}
                 type="button"
               >
@@ -2385,7 +2385,7 @@ export function SalesManager({
                 {dictionary.quantityNumpadCancel}
               </button>
               <button
-                className="rounded-xl bg-sky-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-sky-700"
+                className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
                 onClick={applyAmountNumpad}
                 type="button"
               >

@@ -108,8 +108,8 @@ export function StoreSetupForm({
 
   return (
     <div className="mx-auto max-w-3xl">
-      <section className="rounded-[2rem] border border-sky-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
-        <p className="text-sm font-medium uppercase tracking-[0.25em] text-sky-600">
+      <section className="rounded-[2rem] border border-violet-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
+        <p className="text-sm font-medium uppercase tracking-[0.25em] text-violet-600">
           {dictionary.title}
         </p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight text-slate-950">
@@ -118,8 +118,8 @@ export function StoreSetupForm({
         <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
           {dictionary.helper}
         </p>
-        <div className="mt-6 rounded-[1.5rem] bg-sky-50/60 p-5">
-          <p className="text-sm uppercase tracking-[0.2em] text-sky-600">
+        <div className="mt-6 rounded-[1.5rem] bg-violet-50/60 p-5">
+          <p className="text-sm uppercase tracking-[0.2em] text-violet-600">
             {dictionary.selectedPlanLabel}
           </p>
           <p className="mt-2 text-xl font-semibold text-slate-950">
@@ -137,7 +137,7 @@ export function StoreSetupForm({
               {dictionary.nameLabel}
             </span>
             <input
-              className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setName(event.target.value)}
               value={name}
             />
@@ -147,7 +147,7 @@ export function StoreSetupForm({
               {dictionary.phoneLabel}
             </span>
             <input
-              className="lg:col-span-3 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="lg:col-span-3 w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setPhone(event.target.value)}
               placeholder="+66 1234 5678"
               value={phone}
@@ -158,7 +158,7 @@ export function StoreSetupForm({
               {dictionary.addressLabel}
             </span>
             <textarea
-              className="min-h-24 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="min-h-24 w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setAddress(event.target.value)}
               value={address}
             />
@@ -168,7 +168,7 @@ export function StoreSetupForm({
               {dictionary.currencyLabel}
             </span>
             <input
-              className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setCurrencyCode(event.target.value)}
               placeholder="THB"
               value={currencyCode}
@@ -179,7 +179,7 @@ export function StoreSetupForm({
               {dictionary.descriptionLabel}
             </span>
             <textarea
-              className="min-h-32 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="min-h-32 w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setDescription(event.target.value)}
               value={description}
             />
@@ -192,7 +192,7 @@ export function StoreSetupForm({
           ) : null}
 
           <button
-            className="inline-flex rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-700 disabled:bg-sky-300"
+            className="inline-flex rounded-2xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700 disabled:bg-violet-300"
             disabled={isPending}
             type="submit"
           >

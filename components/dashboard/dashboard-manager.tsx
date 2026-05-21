@@ -296,7 +296,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[2rem] border border-sky-100 bg-gradient-to-br from-white via-violet-50/50 to-purple-50/40 p-5 shadow-[0_24px_60px_rgba(59,130,246,0.08)] sm:p-6">
+      <section className="rounded-[2rem] border border-violet-100 bg-gradient-to-br from-white via-violet-50/50 to-purple-50/40 p-5 shadow-[0_24px_60px_rgba(59,130,246,0.08)] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-slate-950 sm:text-3xl">{dictionary.title}</h1>
@@ -312,7 +312,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               <button
                 className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                   period === option.value
-                    ? "bg-sky-600 text-white"
+                    ? "bg-violet-600 text-white"
                     : "text-violet-600 hover:bg-violet-50"
                 }`}
                 key={option.value}
@@ -331,7 +331,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               ...
             </button>
             <button
-              className="rounded-xl bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:opacity-50"
+              className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
               disabled={isLoading}
               onClick={() => void loadDashboard()}
               type="button"
@@ -454,7 +454,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
           <article
-            className="rounded-2xl border border-sky-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
             key={metric.label}
           >
             <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${metric.accentClass}`}>
@@ -466,15 +466,15 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
-        <article className="rounded-[1.75rem] border border-sky-100 bg-white p-5 shadow-sm">
+        <article className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-bold text-slate-900">{dictionary.summary.revenue}</h2>
-              <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+              <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-700">
                 {dictionary.sections.range}
               </span>
             </div>
-            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
+            <span className="rounded-full bg-violet-600 px-3 py-1 text-xs font-bold text-violet-700">
               {compactCurrency(data?.summary.revenue ?? 0, locale)}
             </span>
           </div>
@@ -553,7 +553,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
           </div>
         </article>
 
-        <article className="rounded-[1.75rem] border border-sky-100 bg-white p-5 shadow-sm">
+        <article className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-slate-950">{dictionary.sections.paymentBreakdown}</h2>
           <div className="mt-4 space-y-3">
             {isLoading ? (
@@ -636,7 +636,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <article className="rounded-[1.75rem] border border-sky-100 bg-white p-5 shadow-sm">
+        <article className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-slate-950">{dictionary.sections.topProducts}</h2>
           <div className="mt-4 space-y-3">
             {isLoading ? (
@@ -769,7 +769,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
         </section>
       </section>
 
-      <section className="rounded-[1.75rem] border border-sky-100 bg-white p-5 shadow-sm">
+      <section className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-950">{dictionary.sections.recentSales}</h2>
           <span className="text-xs text-slate-500">{data?.recent_sales.length ?? 0}</span>

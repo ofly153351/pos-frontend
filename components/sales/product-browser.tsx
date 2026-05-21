@@ -68,7 +68,7 @@ export function ProductBrowser({
   }, [products, search]);
 
   return (
-    <div className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
+    <div className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="min-w-48 shrink-0 text-2xl font-semibold text-slate-950">
           {dictionary.title}
@@ -79,7 +79,7 @@ export function ProductBrowser({
               aria-label={dictionary.productViewGrid}
               className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                 productView === "grid"
-                  ? "bg-sky-600 text-white"
+                  ? "bg-violet-600 text-white"
                   : "text-violet-600 hover:bg-violet-50"
               }`}
               onClick={() => onProductViewChange("grid")}
@@ -92,7 +92,7 @@ export function ProductBrowser({
               aria-label={dictionary.productViewList}
               className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                 productView === "list"
-                  ? "bg-sky-600 text-white"
+                  ? "bg-violet-600 text-white"
                   : "text-violet-600 hover:bg-violet-50"
               }`}
               onClick={() => onProductViewChange("list")}
@@ -174,7 +174,7 @@ export function ProductBrowser({
           <button
             className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
               !selectedCategory
-                ? "border-sky-300 bg-sky-600 text-white shadow-sm"
+                ? "border-violet-300 bg-violet-600 text-white shadow-sm"
                 : "border-violet-100 bg-violet-50 text-violet-700 hover:bg-violet-100"
             }`}
             onClick={() => onCategoryFilterChange("")}
@@ -186,8 +186,8 @@ export function ProductBrowser({
             <button
               className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
                 selectedCategory === category
-                  ? "border-sky-300 bg-sky-600 text-white shadow-sm"
-                  : "border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                  ? "border-violet-300 bg-violet-600 text-white shadow-sm"
+                  : "border-violet-100 bg-violet-600 text-violet-700 hover:bg-violet-100"
               }`}
               key={category}
               onClick={() => onCategoryFilterChange(category)}
@@ -209,7 +209,7 @@ export function ProductBrowser({
             return productView === "grid" ? (
               <div
                 key={product.id}
-                className="flex h-[205px] cursor-pointer flex-col rounded-[1.1rem] border border-sky-100 bg-gradient-to-b from-sky-50/70 to-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="flex h-[205px] cursor-pointer flex-col rounded-[1.1rem] border border-violet-100 bg-gradient-to-b from-violet-50/50 to-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 onClick={() => onAddToCart(product)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -255,7 +255,7 @@ export function ProductBrowser({
                 </div>
 
                 <button
-                  className="mt-2 w-full rounded-lg bg-sky-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                  className="mt-2 w-full rounded-lg bg-violet-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300"
                   disabled={currentQuantity >= (product.total_stock ?? 0)}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -271,7 +271,7 @@ export function ProductBrowser({
             ) : (
               <div
                 key={product.id}
-                className="flex cursor-pointer items-center gap-4 rounded-2xl border border-sky-100 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
+                className="flex cursor-pointer items-center gap-4 rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
                 onClick={() => onAddToCart(product)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -319,7 +319,7 @@ export function ProductBrowser({
                     {formatCurrency(product.effective_price)}
                   </p>
                   <button
-                    className="mt-2 rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+                    className="mt-2 rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300"
                     disabled={currentQuantity >= (product.total_stock ?? 0)}
                     onClick={(event) => {
                       event.stopPropagation();
