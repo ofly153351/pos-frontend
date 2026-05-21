@@ -12,6 +12,7 @@ type PurchaseFormProps = {
     createOrder: string;
     editOrder: string;
     selectSupplier: string;
+    selectSupplierFirst: string;
     selectProduct: string;
     addItem: string;
     product: string;
@@ -94,11 +95,11 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
 
   function updateItem(productId: string, field: keyof LineItem, value: number | string) {
     setItems(
-      items.map((item) =>
-        item.product_id === productId
-          ? { ...item, [field]: typeof value === "string" ? parseFloat(value) || 0 : value }
-          : item,
-      ),
+      items.map((item) => {
+        if (item.product_id !== productId) return item;
+        const parsed = typeof value === "string" ? parseFloat(value) : value;
+        return { ...item, [field]: Number.isNaN(parsed) ? 0 : parsed };
+      }),
     );
   }
 
@@ -201,7 +202,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
               </label>
               {!supplierId ? (
                 <p className="rounded-xl border border-dashed border-slate-200 p-3 text-center text-sm text-slate-400">
-                  กรุณาเลือกซัพพลายเออร์ก่อน
+                  {dictionary.selectSupplierFirst}
                 </p>
               ) : (
               <div className="relative">

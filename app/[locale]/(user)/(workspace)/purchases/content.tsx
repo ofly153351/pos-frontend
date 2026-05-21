@@ -33,6 +33,7 @@ type PurchasingDictionary = {
   orderNumber: string;
   date: string;
   selectSupplier: string;
+  selectSupplierFirst: string;
   selectProduct: string;
   addItem: string;
   receiveConfirm: string;

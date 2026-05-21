@@ -52,11 +52,19 @@ export function ProductBrowser({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const suggestionProducts = useMemo(() => {
-    if (!search.trim()) {
+    const term = search.trim().toLowerCase();
+    if (!term) {
       return [];
     }
 
-    return products.slice(0, 6);
+    return products
+      .filter(
+        (p) =>
+          p.name.toLowerCase().includes(term) ||
+          p.barcode?.toLowerCase().includes(term) ||
+          p.sku?.toLowerCase().includes(term),
+      )
+      .slice(0, 6);
   }, [products, search]);
 
   return (

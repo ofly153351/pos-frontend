@@ -6,6 +6,7 @@ import type {
   UpdateWarehouseInput,
   UpdateWarehouseProductInput,
   Warehouse,
+  WarehouseInventoryItem,
   WarehouseProduct,
 } from "@/types/warehouse";
 
@@ -23,6 +24,14 @@ export function listWarehouses() {
   const storeId = ensureStoreId();
   return authorizedApiRequest<Warehouse[]>(
     `/api/stores/${storeId}/warehouses`,
+    {},
+    { requireToken: true },
+  );
+}
+
+export function listWarehousesForStore(targetStoreId: string) {
+  return authorizedApiRequest<Warehouse[]>(
+    `/api/stores/${targetStoreId}/warehouses`,
     {},
     { requireToken: true },
   );
@@ -107,6 +116,7 @@ export type WarehouseTransferInput = {
   quantity: number;
   destination_type: "warehouse" | "stock";
   destination_id?: string;
+  destination_store_id?: string;
   note?: string;
 };
 
@@ -130,6 +140,27 @@ export function updateWarehouseProductQuantity(warehouseId: string, productId: s
     {
       body: { quantity } satisfies UpdateWarehouseProductInput,
       method: "PUT",
+    },
+    { requireToken: true },
+  );
+}
+
+export function listWarehouseInventory(warehouseId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<WarehouseInventoryItem[]>(
+    `/api/stores/${storeId}/warehouses/${warehouseId}/inventory`,
+    {},
+    { requireToken: true },
+  );
+}
+
+export function allocateInventory(warehouseId: string, productId: string, quantity: number, note?: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<void>(
+    `/api/stores/${storeId}/warehouses/${warehouseId}/inventory/${productId}/allocate`,
+    {
+      body: { quantity, note: note || undefined },
+      method: "POST",
     },
     { requireToken: true },
   );

@@ -290,7 +290,7 @@ export function SalesManager({
       try {
         const [productsResponse, customersResponse, discountResponse] =
           await Promise.all([
-            listProducts(),
+            listProducts({ limit: 500 }),
             listCustomers(),
             listCustomerLevelDiscounts(),
           ]);
@@ -429,14 +429,11 @@ export function SalesManager({
     cartSummary.total - customerDiscountAmount - billDiscountAmount,
     0,
   );
-  const fallbackVatAmount = applyVat
+  const vatAmount = applyVat
     ? roundCurrency(payableTotal * 0.07)
     : 0;
-  const vatAmount = applyVat
-    ? roundCurrency(vatSummary?.vat_amount ?? fallbackVatAmount)
-    : 0;
   const settlementTotal = applyVat
-    ? roundCurrency(vatSummary?.grand_total ?? roundCurrency(payableTotal + fallbackVatAmount))
+    ? roundCurrency(payableTotal + vatAmount)
     : roundCurrency(payableTotal);
   const isNetworkCustomerSelected = Boolean(selectedCustomerId);
   const isInvoiceSettlement =
@@ -561,7 +558,7 @@ export function SalesManager({
   async function reloadData() {
     const [productsResponse, customersResponse, discountResponse] =
       await Promise.all([
-        listProducts(),
+        listProducts({ limit: 500 }),
         listCustomers(),
         listCustomerLevelDiscounts(),
       ]);
@@ -1729,9 +1726,13 @@ export function SalesManager({
                           );
                           setNote(bill.note ?? "");
                           setBillDiscount(
-                            bill.bill_discount_amount > 0
-                              ? String(bill.bill_discount_amount)
-                              : "",
+                            bill.bill_discount_type === "percent"
+                              ? bill.bill_discount_percent > 0
+                                ? String(bill.bill_discount_percent)
+                                : ""
+                              : bill.bill_discount_amount > 0
+                                ? String(bill.bill_discount_amount)
+                                : "",
                           );
                           setBillDiscountType(
                             bill.bill_discount_type ?? "amount",

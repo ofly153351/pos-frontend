@@ -29,12 +29,14 @@ import {
   deleteWarehouse,
   listWarehouseProducts,
   listWarehouses,
+  listWarehousesForStore,
   removeWarehouseProduct,
   transferWarehouseProduct,
   updateWarehouse,
   updateWarehouseProductQuantity,
 } from "@/services/warehouses";
 import { listProducts } from "@/services/products";
+import { listMyStores } from "@/services/stores";
 import type {
   AddWarehouseProductInput,
   CreateWarehouseInput,
@@ -43,6 +45,7 @@ import type {
   WarehouseProduct,
 } from "@/types/warehouse";
 import type { Product } from "@/types/product";
+import type { Store } from "@/types/store";
 
 type WarehouseSectionDictionary = {
   title: string;
@@ -121,6 +124,12 @@ type WarehouseSectionDictionary = {
   transferNoteLabel: string;
   transferConfirmLabel: string;
   selectDestWarehouseLabel: string;
+  currentStoreLabel: string;
+  selectTargetStoreLabel: string;
+  crossStoreWarehouseInfo: string;
+  availableQtyLabel: string;
+  noteLabel: string;
+  warehouseTransferredLabel: string;
 };
 
 type WarehouseSectionProps = {
@@ -395,6 +404,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const [transferQty, setTransferQty] = useState(1);
   const [transferDestType, setTransferDestType] = useState<"warehouse" | "stock">("stock");
   const [transferDestWarehouse, setTransferDestWarehouse] = useState("");
+  const [transferDestStore, setTransferDestStore] = useState("");
   const [transferNote, setTransferNote] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
 
@@ -411,6 +421,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const [batchTransferQuantities, setBatchTransferQuantities] = useState<{[key: string]: number}>({});
   const [batchTransferDestType, setBatchTransferDestType] = useState<"stock" | "warehouse">("stock");
   const [batchTransferDestWarehouse, setBatchTransferDestWarehouse] = useState("");
+  const [batchTransferDestStore, setBatchTransferDestStore] = useState("");
   const [batchTransferNote, setBatchTransferNote] = useState("");
   const [isBatchTransferring, setIsBatchTransferring] = useState<{[key: string]: boolean}>({});
   const [batchTransferError, setBatchTransferError] = useState("");
@@ -418,11 +429,27 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   // Success popup modal
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+
   const { data: transferWarehousesData } = useQuery({
     queryKey: ["warehouses"],
     queryFn: listWarehouses,
     enabled: transferTarget !== null && transferDestType === "warehouse",
   });
+
+  const { data: myStoresData } = useQuery({
+    queryKey: ["my-stores"],
+    queryFn: listMyStores,
+    enabled: isBatchTransferModalOpen || !!transferTarget,
+  });
+
+  // Fetch warehouses belonging to the target store (for cross-store warehouse transfer)
+  const crossStoreTargetId = transferDestType === "warehouse" ? transferDestStore : batchTransferDestType === "warehouse" ? batchTransferDestStore : "";
+  const { data: targetStoreWarehousesData } = useQuery({
+    queryKey: ["warehouses-for-store", crossStoreTargetId],
+    queryFn: () => listWarehousesForStore(crossStoreTargetId),
+    enabled: !!crossStoreTargetId,
+  });
+
 
   function generateBarcodeSvg(sku: string): string {
     const normalized = sku.trim().toUpperCase();
@@ -642,7 +669,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       if (isManageModalOpen) setIsManageModalOpen(false);
       if (isReceiveModalOpen) setIsReceiveModalOpen(false);
       if (isBatchTransferModalOpen) setIsBatchTransferModalOpen(false);
-      if (transferTarget) { setTransferTarget(null); setTransferDestType("stock"); setTransferDestWarehouse(""); setTransferNote(""); setTransferQty(1); }
+      if (transferTarget) { setTransferTarget(null); setTransferDestType("stock"); setTransferDestWarehouse(""); setTransferDestStore(""); setTransferNote(""); setTransferQty(1); }
       if (previewSku) setPreviewSku(null);
       if (successMessage) setSuccessMessage(null);
     };
@@ -1022,6 +1049,19 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </div>
         </div>
 
+        {/* Source info badge for transferred warehouses */}
+        {selectedWarehouse && (selectedWarehouse as any).source_store_id ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
+              <ArrowRight className="h-3 w-3" />
+              {(selectedWarehouse as any).source_store_name
+                ? `${dictionary.warehouseTransferredLabel} ${(selectedWarehouse as any).source_store_name}`
+                : dictionary.warehouseTransferredLabel}
+            </span>
+          </div>
+        ) : null}
+
+
         {/* Add Product Panel */}
         {showAddProduct && selectedWarehouse && (
           <div className="mt-4 border-t border-slate-200 pt-4">
@@ -1120,6 +1160,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       )}
 
       {/* Products Table */}
+      {(<>
       <div className="mt-6">
       {!selectedWarehouse ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-white px-6 py-16">
@@ -1453,6 +1494,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </div>
         </section>
       )}
+      </>)}
+
 
       {/* Barcode Preview Modal */}
       {previewSku ? (
@@ -1552,8 +1595,32 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               </div>
             </div>
 
-            {/* Warehouse selector (only when destination_type = "warehouse") */}
-            {transferDestType === "warehouse" && (
+            {/* Store selector — shown for both "stock" and "warehouse" destination types */}
+            <div className="mt-4">
+              <label className="mb-1 block text-xs font-semibold text-slate-600">
+                {transferDestType === "warehouse" ? dictionary.selectTargetStoreLabel : dictionary.currentStoreLabel}
+              </label>
+              <select
+                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none transition focus:border-blue-400"
+                onChange={(e) => { setTransferDestStore(e.target.value); setTransferDestWarehouse(""); }}
+                value={transferDestStore}
+              >
+                <option value="">{dictionary.currentStoreLabel}</option>
+                {(myStoresData?.data ?? []).map((s: Store) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Cross-store warehouse info banner */}
+            {transferDestType === "warehouse" && transferDestStore && (
+              <p className="mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs text-blue-700">
+                {dictionary.crossStoreWarehouseInfo}
+              </p>
+            )}
+
+            {/* Warehouse selector — only for same-store warehouse transfer */}
+            {transferDestType === "warehouse" && !transferDestStore && (
               <div className="mt-4">
                 <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.selectDestWarehouseLabel}</label>
                 <select
@@ -1591,7 +1658,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               </button>
               <button
                 className="flex-1 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:opacity-50"
-                disabled={isTransferring || transferQty < 1 || (transferDestType === "warehouse" && !transferDestWarehouse)}
+                disabled={isTransferring || transferQty < 1 || (transferDestType === "warehouse" && !transferDestStore && !transferDestWarehouse)}
                 onClick={async () => {
                   setIsTransferring(true);
                   try {
@@ -1600,15 +1667,21 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       quantity: transferQty,
                       destination_type: transferDestType,
                       destination_id: transferDestType === "warehouse" ? transferDestWarehouse : undefined,
+                      destination_store_id: transferDestStore || undefined,
                       note: transferNote || undefined,
                     });
-                    await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
+                    await Promise.all([
+                      queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] }),
+                      queryClient.invalidateQueries({ queryKey: ["stock", "products"] }),
+                      queryClient.invalidateQueries({ queryKey: ["warehouses"] }),
+                    ]);
                     setSuccessMessage(
                       `${transferTarget.product_name || ""} → ${transferDestType === "stock" ? dictionary.transferToStockLabel : dictionary.transferToWarehouseLabel} (-${transferQty})`,
                     );
                     setTransferTarget(null);
                     setTransferDestType("stock");
                     setTransferDestWarehouse("");
+                    setTransferDestStore("");
                     setTransferNote("");
                     setTransferQty(1);
                   } catch (err: any) {
@@ -2102,7 +2175,19 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     {dictionary.transferToWarehouseLabel}
                   </button>
                 </div>
-                {batchTransferDestType === "warehouse" && (
+                {/* Store selector for both destination types */}
+                <select
+                  className="min-w-[180px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold outline-none text-slate-700"
+                  onChange={(e) => { setBatchTransferDestStore(e.target.value); setBatchTransferDestWarehouse(""); }}
+                  value={batchTransferDestStore}
+                >
+                  <option value="">{dictionary.currentStoreLabel}</option>
+                  {(myStoresData?.data ?? []).map((s: Store) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+                {/* Warehouse selector — only for same-store warehouse transfer */}
+                {batchTransferDestType === "warehouse" && !batchTransferDestStore && (
                   <select
                     className="min-w-[180px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold outline-none text-slate-700"
                     onChange={(e) => setBatchTransferDestWarehouse(e.target.value)}
@@ -2121,6 +2206,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   value={batchTransferNote}
                 />
               </div>
+
+              {batchTransferDestType === "warehouse" && batchTransferDestStore && (
+                <div className="mx-4 mt-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-xs text-blue-700">{dictionary.crossStoreWarehouseInfo}</div>
+              )}
 
               {batchTransferError && (
                 <div className="mx-4 mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">{batchTransferError}</div>
@@ -2175,7 +2264,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                           />
                           <button
                             className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
-                            disabled={isBatchTransferring[wp.product_id] || (batchTransferDestType === "warehouse" && !batchTransferDestWarehouse)}
+                            disabled={isBatchTransferring[wp.product_id] || (batchTransferDestType === "warehouse" && !batchTransferDestStore && !batchTransferDestWarehouse)}
                             onClick={async () => {
                               setBatchTransferError("");
                               setIsBatchTransferring((prev) => ({ ...prev, [wp.product_id]: true }));
@@ -2186,9 +2275,14 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                                   quantity: qty,
                                   destination_type: batchTransferDestType,
                                   destination_id: batchTransferDestType === "warehouse" ? batchTransferDestWarehouse : undefined,
+                                  destination_store_id: batchTransferDestStore || undefined,
                                   note: batchTransferNote || undefined,
                                 });
-                                await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
+                                await Promise.all([
+                                  queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] }),
+                                  queryClient.invalidateQueries({ queryKey: ["stock", "products"] }),
+                                  queryClient.invalidateQueries({ queryKey: ["warehouses"] }),
+                                ]);
                                 setSuccessMessage(`${wp.product_name || ""} → ${batchTransferDestType === "stock" ? dictionary.transferToStockLabel : dictionary.transferToWarehouseLabel} (-${qty})`);
                               } catch (err: any) {
                                 setBatchTransferError(err?.message || dictionary.nameRequired);

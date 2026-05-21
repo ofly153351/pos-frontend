@@ -10,7 +10,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   return proxyApiRequest(
     request,
-    `/api/v1/stores/${storeId}/stock/add`,
+    `/api/v1/stores/${storeId}/stock-movements/in`,
     { body, method: "POST" },
   );
 }
