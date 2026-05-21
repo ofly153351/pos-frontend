@@ -474,7 +474,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                 {dictionary.sections.range}
               </span>
             </div>
-            <span className="rounded-full bg-violet-600 px-3 py-1 text-xs font-bold text-violet-700">
+            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
               {compactCurrency(data?.summary.revenue ?? 0, locale)}
             </span>
           </div>

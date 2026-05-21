@@ -566,7 +566,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-2xl font-semibold text-slate-950">{dictionary.historyTitle}</h2>
-          <span className="rounded-full bg-violet-600 px-3 py-1 text-sm font-semibold text-violet-700">
+          <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-semibold text-violet-700">
             {dictionary.itemCountLabel} {filteredRecords.length}
           </span>
         </div>
@@ -949,7 +949,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
               </span>
               <input
                 accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-violet-600 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-700 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-violet-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-700 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setPaymentProof(event.target.files?.[0] ?? null)}
                 ref={paymentProofInputRef}
                 type="file"
