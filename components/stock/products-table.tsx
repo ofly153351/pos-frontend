@@ -59,6 +59,9 @@ type ProductsTableProps = {
     productDetails: string;
     sku: string;
     stock: string;
+    status: string;
+    statusActive: string;
+    statusInactive: string;
     receiveAction: string;
     moreActions: string;
   };
@@ -446,13 +449,14 @@ export function ProductsTable({
             <th className="w-[8%] px-6 py-4 font-bold">{tableDictionary.costPrice}</th>
             <th className="w-[8%] px-6 py-4 font-bold">{tableDictionary.sellingPrice}</th>
             <th className="w-[10%] px-6 py-4 font-bold">{tableDictionary.stock}</th>
-            <th className="w-[15%] px-6 py-4 text-right font-bold">{tableDictionary.actions}</th>
+            <th className="w-[9%] px-6 py-4 font-bold">{tableDictionary.status}</th>
+            <th className="w-[12%] px-6 py-4 text-right font-bold">{tableDictionary.actions}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
           {products.length === 0 ? (
             <tr>
-              <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={9}>
+              <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={10}>
                 {isPending ? (
                   <span className="inline-flex items-center gap-3">
                     <svg aria-hidden="true" className="h-5 w-5 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -591,6 +595,19 @@ export function ProductsTable({
                     </span>
                   ) : null}
                 </div>
+              </td>
+              <td className="px-6 py-4">
+                {product.is_active ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    {tableDictionary.statusActive}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                    {tableDictionary.statusInactive}
+                  </span>
+                )}
               </td>
               <td className="px-6 py-4 text-right">
                 <div className="flex items-center justify-end gap-2">

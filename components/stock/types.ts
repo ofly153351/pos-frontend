@@ -164,6 +164,9 @@ export type StockManagerDictionary = {
     productDetails: string;
     sku: string;
     stock: string;
+    status: string;
+    statusActive: string;
+    statusInactive: string;
     receiveAction: string;
     moreActions: string;
   };
