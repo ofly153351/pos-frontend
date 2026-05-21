@@ -57,6 +57,10 @@ export default async function WorkspaceLayout({
         sales: dictionary.sales.title,
         settings: dictionary.storeManagement.pageTitle,
         stock: dictionary.stock.title,
+        stockCategories: dictionary.stock.shell.stockCategories,
+        stockWarehouses: dictionary.stock.shell.stockWarehouses,
+        purchaseOrders: dictionary.purchasing.purchaseOrders,
+        suppliers: dictionary.purchasing.suppliers,
       }}
     >
       {children}

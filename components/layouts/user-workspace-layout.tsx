@@ -44,6 +44,10 @@ type UserWorkspaceLayoutProps = {
     sales: string;
     settings: string;
     stock: string;
+    stockCategories: string;
+    stockWarehouses: string;
+    purchaseOrders: string;
+    suppliers: string;
   };
 };
 
@@ -71,8 +75,24 @@ export function UserWorkspaceLayout({
       return titles.documents;
     }
 
+    if (pathname.includes("/stock/categories")) {
+      return titles.stockCategories;
+    }
+
+    if (pathname.includes("/stock/warehouses")) {
+      return titles.stockWarehouses;
+    }
+
     if (pathname.includes("/stock")) {
       return titles.stock;
+    }
+
+    if (pathname.includes("/purchases/suppliers")) {
+      return titles.suppliers;
+    }
+
+    if (pathname.includes("/purchases")) {
+      return titles.purchaseOrders;
     }
 
     if (pathname.includes("/settings")) {
@@ -80,7 +100,18 @@ export function UserWorkspaceLayout({
     }
 
     return titles.dashboard;
-  }, [pathname, titles.customers, titles.dashboard, titles.documents, titles.sales, titles.settings, titles.stock]);
+  }, [pathname,
+    titles.customers,
+    titles.dashboard,
+    titles.documents,
+    titles.purchaseOrders,
+    titles.sales,
+    titles.settings,
+    titles.stock,
+    titles.stockCategories,
+    titles.stockWarehouses,
+    titles.suppliers,
+  ]);
 
   return (
     <div className="min-h-screen bg-[#f9f9f9] text-slate-900">
