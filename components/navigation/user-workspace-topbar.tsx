@@ -117,7 +117,7 @@ export function UserWorkspaceTopbar({
           <button
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               locale === "th"
-                ? "bg-sky-600 text-white"
+                ? "bg-violet-600 text-white shadow-sm"
                 : "text-violet-700 hover:bg-violet-50"
             }`}
             onClick={() => switchLocale("th")}
@@ -128,7 +128,7 @@ export function UserWorkspaceTopbar({
           <button
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               locale === "en"
-                ? "bg-sky-600 text-white"
+                ? "bg-violet-600 text-white shadow-sm"
                 : "text-violet-700 hover:bg-violet-50"
             }`}
             onClick={() => switchLocale("en")}

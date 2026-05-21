@@ -74,16 +74,19 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
   }, [handleEscape]);
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-[fadeIn_200ms_ease-out] flex-col bg-white">
+    <div className="fixed inset-0 z-50 flex animate-[fadeIn_200ms_ease-out] flex-col bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_40%,_#f8fafc_100%)]">
       {/* Header bar */}
-      <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-3">
-        <h2 className="text-lg font-bold text-slate-900">
-          {dictionary.title || "Cashier Screen"}
-        </h2>
+      <div className="flex shrink-0 items-center justify-between border-b border-indigo-800/60 bg-indigo-950 px-6 py-3">
+        <div className="flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-violet-400" />
+          <h2 className="text-lg font-bold text-white">
+            {dictionary.title || "Cashier Screen"}
+          </h2>
+        </div>
         <button
           ref={closeRef}
           aria-label="Close cashier"
-          className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
+          className="flex items-center gap-2 rounded-xl border border-indigo-700/60 px-4 py-2 text-sm font-medium text-violet-300 transition-colors hover:border-red-700/60 hover:bg-red-900/30 hover:text-red-300"
           onClick={handleCloseClick}
           type="button"
         >
@@ -92,9 +95,9 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
         </button>
       </div>
 
-      {/* Sales content with top spacing */}
+      {/* Sales content */}
       <div className="flex-1 overflow-auto">
-        <div className="w-[90%] mx-auto pt-4">
+        <div className="mx-auto w-[90%] pt-4">
           <SalesManager
             dictionary={dictionary}
             onCartItemsChange={handleCartChange}
@@ -104,8 +107,8 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
 
       {/* Confirmation dialog overlay */}
       {confirmClose ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
-          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-indigo-950/60 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-violet-100 bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900">
               ยืนยันการปิดหน้าร้าน
             </h3>
@@ -114,7 +117,7 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-medium text-violet-700 transition-colors hover:bg-violet-50"
                 onClick={handleCancelClose}
                 type="button"
               >
