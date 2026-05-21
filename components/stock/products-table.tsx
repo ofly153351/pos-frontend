@@ -322,7 +322,7 @@ export function ProductsTable({
                   role="menu"
                 >
                   <button
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
                     onClick={() => {
                       const selectedProducts = products.filter((p) =>
                         selectedIds.has(p.id) && (p.barcode || p.sku),
@@ -376,7 +376,7 @@ export function ProductsTable({
                   </button>
 
                   <button
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
                     onClick={() => {
                       onExport(Array.from(selectedIds));
                       setIsActionMenuOpen(false);

@@ -128,7 +128,7 @@ export function ProductTypeModal({
 
           <div className="flex justify-end gap-3 pt-2">
             <button
-              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
               onClick={onClose}
               type="button"
             >

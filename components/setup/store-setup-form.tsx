@@ -137,7 +137,7 @@ export function StoreSetupForm({
               {dictionary.nameLabel}
             </span>
             <input
-              className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
+              className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setName(event.target.value)}
               value={name}
             />
@@ -147,7 +147,7 @@ export function StoreSetupForm({
               {dictionary.phoneLabel}
             </span>
             <input
-              className="lg:col-span-3 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
+              className="lg:col-span-3 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setPhone(event.target.value)}
               placeholder="+66 1234 5678"
               value={phone}
@@ -158,7 +158,7 @@ export function StoreSetupForm({
               {dictionary.addressLabel}
             </span>
             <textarea
-              className="min-h-24 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
+              className="min-h-24 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setAddress(event.target.value)}
               value={address}
             />
@@ -168,7 +168,7 @@ export function StoreSetupForm({
               {dictionary.currencyLabel}
             </span>
             <input
-              className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
+              className="w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setCurrencyCode(event.target.value)}
               placeholder="THB"
               value={currencyCode}
@@ -179,7 +179,7 @@ export function StoreSetupForm({
               {dictionary.descriptionLabel}
             </span>
             <textarea
-              className="min-h-32 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-sky-500 focus:bg-white"
+              className="min-h-32 w-full rounded-2xl border border-sky-100 bg-sky-50/55 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setDescription(event.target.value)}
               value={description}
             />

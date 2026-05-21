@@ -82,27 +82,50 @@ Example:
 - Mobile responsive
 
 ### Theme: POS Today (violet/purple)
-The design system has migrated from white-blue to **violet/purple**. Token file: `/theme/theme.css`. Showcase: `/theme/theme-components.html`.
+The design system uses a **violet/purple** palette throughout. Token file: `/theme/theme.css`. Showcase: `/theme/theme-components.html`.
 
 **Core palette:**
-| Role | Value | Tailwind (remapped) |
+| Role | Value | Tailwind |
 |---|---|---|
-| Brand primary | `#7C3AED` | `sky-600` (remapped → violet-600) |
-| Brand gradient | violet → pink 135° | use `bg-gradient-to-br from-violet-600 to-pink-500` |
+| Brand primary | `#7C3AED` | `violet-600` / `sky-600` (remapped) |
+| Brand gradient | violet → pink 135° | `bg-gradient-to-br from-violet-600 to-pink-500` |
 | Sidebar bg | `#1E1B4B` | `indigo-950` |
-| Page bg | `#F9FAFB` | `gray-50` / `slate-50` |
-| Card | `#FFFFFF` | `white` |
+| Page bg | violet-tinted white | `bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)]` |
+| Card | white + violet border | `bg-white border border-violet-100 shadow-sm rounded-xl` |
+| Input border | `border-violet-200` focus: `border-violet-400 ring-2 ring-violet-100` |
+| Section/table bg | `bg-violet-50/40` |
 
-**Tailwind mapping:** `sky-*` utilities are remapped to violet in `globals.css` via `@theme inline`. All existing `sky-*` classes automatically render as violet — no need to change them.
+**Tailwind mapping:** `sky-*` utilities are remapped to violet in `globals.css` via `@theme inline`. All `sky-*` classes render as violet automatically.
 
-**Rules:**
-- Primary buttons: `bg-sky-600` (renders violet) or `bg-gradient-to-br from-violet-600 to-pink-500`
-- Sidebar: `bg-indigo-950` with `text-violet-300` nav items
-- Active nav: `bg-violet-900` with 3px left border `border-violet-400`
-- Focus rings: `ring-2 ring-violet-300` or `shadow-focus` CSS var
-- Gradients only on: sidebar header, CTA buttons, KPI icon boxes, table header
-- Cards: `bg-white border border-gray-200 shadow-sm rounded-xl` (or `rounded-2xl`)
-- Fonts: `Sarabun` (Thai-compatible) loaded in `globals.css`
+**Buttons:**
+- Primary / CTA: `bg-gradient-to-br from-violet-600 to-pink-500 text-white hover:from-violet-700 hover:to-pink-600`
+- Secondary / outline: `border border-violet-200 bg-white text-violet-700 hover:bg-violet-50`
+- Ghost / text: `text-violet-600 hover:bg-violet-50`
+- Danger: keep red (`bg-red-600`, `text-red-600`) — do NOT change
+
+**Form inputs / selects / textareas:**
+- `border-violet-200 bg-white outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100`
+- Error state: `border-rose-300 bg-rose-50/70`
+
+**Sidebar (dark indigo):**
+- Container: `bg-indigo-950`
+- Nav items inactive: `text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg`
+- Nav items active: `border-l-[3px] border-violet-400 bg-violet-900 text-white rounded-r-lg`
+- Sub-items active: `bg-violet-800/80 text-violet-200`
+- Icons inactive: `bg-violet-900/60 text-violet-300`
+- Store card: `border border-violet-800/50 bg-violet-900/30`
+
+**Backgrounds (avoid empty/bare white sections):**
+- Page wrapper: violet-tinted gradient (not plain white or `bg-gray-50`)
+- Empty states / placeholders: `bg-violet-50/40 border-dashed border-violet-200`
+- Table/section wrappers: `bg-violet-50/40` or `bg-white border border-violet-100`
+- Progress/track bars: `bg-violet-100/50`
+- Neutral badges: `bg-violet-100 text-violet-700`
+- Avatar / initials: `bg-gradient-to-br from-violet-600 to-pink-500 text-white`
+
+**Status colors (keep as-is):** emerald = active/success, rose/red = error/danger, amber = warning
+
+**Fonts:** `Sarabun` (Thai-compatible) loaded in `globals.css`. JetBrains Mono for code/numbers.
 
 - Watch hydration: avoid browser-only branches or browser-only data (window/date/random) inside server-rendered components so the markup stays deterministic between server/client
 - For Client Components rendered by App Router, keep the first client render structurally identical to the server HTML. If browser-only state is required, defer it with `useEffect` and use a stable mount-safe fallback instead of changing classes/text/DOM shape during hydration

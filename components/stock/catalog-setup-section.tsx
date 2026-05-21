@@ -77,7 +77,7 @@ export function CatalogSetupSection({
             value={catalogSearch}
           />
           <button
-            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
             onClick={onOpenCreateTypeModal}
             type="button"
           >
@@ -126,7 +126,7 @@ export function CatalogSetupSection({
                     </div>
                     <span
                       className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
-                        productType.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+                        productType.is_active ? "bg-emerald-100 text-emerald-700" : "bg-violet-100 text-violet-700"
                       }`}
                     >
                       {productType.is_active
@@ -199,7 +199,7 @@ export function CatalogSetupSection({
                     </div>
                     <span
                       className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
-                        unit.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+                        unit.is_active ? "bg-emerald-100 text-emerald-700" : "bg-violet-100 text-violet-700"
                       }`}
                     >
                       {unit.is_active ? managementDictionary.activeLabel : managementDictionary.inactiveLabel}
@@ -270,7 +270,7 @@ export function CatalogSetupSection({
                     </div>
                     <span
                       className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
-                        brand.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+                        brand.is_active ? "bg-emerald-100 text-emerald-700" : "bg-violet-100 text-violet-700"
                       }`}
                     >
                       {brand.is_active ? managementDictionary.activeLabel : managementDictionary.inactiveLabel}

@@ -373,7 +373,7 @@ export function StockLevelsSection({
 
             <div className="mt-6 flex flex-col gap-3">
               <button
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => {
                   const template = [
                     "Name,SKU,Price,Stock,Min Stock,Max Stock,Active",
@@ -472,7 +472,7 @@ export function StockLevelsSection({
         <section className="my-4 flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
           <div className="flex items-center gap-2">
             <button
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={paginationCurrentPage <= 1 || isPending}
               onClick={() =>
                 onPageChange(Math.max(paginationCurrentPage - 1, 1))
@@ -487,7 +487,7 @@ export function StockLevelsSection({
                 className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                   page === paginationCurrentPage
                     ? "bg-violet-700 text-white"
-                    : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                    : "border border-slate-200 text-violet-700 hover:bg-violet-50"
                 }`}
                 key={page}
                 onClick={() => onPageChange(page)}
@@ -498,7 +498,7 @@ export function StockLevelsSection({
             ))}
 
             <button
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={
                 paginationCurrentPage >= paginationTotalPages || isPending
               }

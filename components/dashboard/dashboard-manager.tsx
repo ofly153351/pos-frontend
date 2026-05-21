@@ -152,7 +152,7 @@ function normalizeRecentSalesSeries(recentSales: DashboardRecentSale[]) {
 function buildMetrics(data: StoreDashboard | null, dictionary: DashboardDictionary, locale: string): MetricCard[] {
   return [
     {
-      accentClass: "bg-sky-500/12 text-sky-700",
+      accentClass: "bg-violet-500/12 text-violet-700",
       label: dictionary.summary.revenue,
       value: formatCurrency(data?.summary.revenue ?? 0, locale),
     },
@@ -303,7 +303,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <p className="mt-1 text-xs text-slate-500">{compactRangeText(data, locale)}</p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/90 p-1.5 shadow-sm">
+          <div className="flex items-center gap-2 rounded-2xl border border-violet-200 bg-white/90 p-1.5 shadow-sm">
             {([
               { label: dictionary.filters.periodToday, value: "today" },
               { label: dictionary.filters.period7d, value: "7d" },
@@ -313,7 +313,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                 className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
                   period === option.value
                     ? "bg-sky-600 text-white"
-                    : "text-slate-600 hover:bg-slate-100"
+                    : "text-violet-600 hover:bg-violet-50"
                 }`}
                 key={option.value}
                 onClick={() => setPeriod(option.value)}
@@ -324,7 +324,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             ))}
             <button
               aria-label={dictionary.filters.periodLabel}
-              className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+              className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-sm font-semibold text-violet-600 transition hover:bg-violet-50"
               onClick={() => setIsFilterOpen((current) => !current)}
               type="button"
             >
@@ -346,7 +346,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <label className="flex flex-col gap-1 text-xs text-slate-600">
               <span>{dictionary.filters.periodLabel}</span>
               <select
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setPeriod(event.target.value as FilterPeriod)}
                 value={period}
               >
@@ -362,7 +362,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                 <label className="flex flex-col gap-1 text-xs text-slate-600">
                   <span>{dictionary.filters.fromLabel}</span>
                   <input
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                     onChange={(event) => setFromDate(event.target.value)}
                     type="date"
                     value={fromDate}
@@ -371,7 +371,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                 <label className="flex flex-col gap-1 text-xs text-slate-600">
                   <span>{dictionary.filters.toLabel}</span>
                   <input
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                     onChange={(event) => setToDate(event.target.value)}
                     type="date"
                     value={toDate}
@@ -383,7 +383,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <label className="flex flex-col gap-1 text-xs text-slate-600">
               <span>{dictionary.filters.topLimitLabel}</span>
               <select
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setTopLimit(parseNumber(event.target.value, 5))}
                 value={topLimit}
               >
@@ -398,7 +398,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <label className="flex flex-col gap-1 text-xs text-slate-600">
               <span>{dictionary.filters.recentLimitLabel}</span>
               <select
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setRecentLimit(parseNumber(event.target.value, 10))}
                 value={recentLimit}
               >
@@ -413,7 +413,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <label className="flex flex-col gap-1 text-xs text-slate-600">
               <span>{dictionary.filters.lowStockLimitLabel}</span>
               <select
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setLowStockLimit(parseNumber(event.target.value, 10))}
                 value={lowStockLimit}
               >
@@ -428,7 +428,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <label className="flex flex-col gap-1 text-xs text-slate-600">
               <span>{dictionary.filters.lowStockThresholdLabel}</span>
               <input
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 min={1}
                 onChange={(event) => setLowStockThreshold(parseNumber(event.target.value, 10))}
                 type="number"
@@ -479,7 +479,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             </span>
           </div>
 
-          <div className="mt-4 h-[300px] rounded-2xl bg-gradient-to-b from-sky-100/60 to-white p-3">
+          <div className="mt-4 h-[300px] rounded-2xl bg-gradient-to-b from-violet-100/60 to-white p-3">
             {isLoading ? (
               <div className="flex h-full items-center justify-center text-sm text-slate-500">{dictionary.loading}</div>
             ) : recentSeries.length === 0 ? (
@@ -489,8 +489,8 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                 <AreaChart data={chartData} margin={{ bottom: 4, left: 0, right: 4, top: 4 }}>
                   <defs>
                     <linearGradient id="revenueGradient" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.02} />
+                      <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
@@ -540,10 +540,10 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                     cursor={false}
                   />
                   <Area
-                    activeDot={{ fill: "#0ea5e9", r: 5, stroke: "#fff", strokeWidth: 2 }}
+                    activeDot={{ fill: "#7c3aed", r: 5, stroke: "#fff", strokeWidth: 2 }}
                     dataKey="amount"
                     fill="url(#revenueGradient)"
-                    stroke="#0284c7"
+                    stroke="#6d28d9"
                     strokeWidth={2.5}
                     type="monotone"
                   />
@@ -581,7 +581,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                         {paymentBreakdown.map((_item, i) => (
                           <Cell
                             key={`cell-${i}`}
-                            fill={["#0ea5e9","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][i % 6]}
+                            fill={["#7c3aed","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][i % 6]}
                           />
                         ))}
                       </Pie>
@@ -610,18 +610,18 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                           <span
                             className="inline-block h-2.5 w-2.5 rounded-full"
                             style={{
-                              background: `linear-gradient(135deg, ${["#0ea5e9","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][index % 6]}, ${["#0284c7","#059669","#d97706","#c026d3","#7c3aed","#dc2626"][index % 6]})`,
+                              background: `linear-gradient(135deg, ${["#7c3aed","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][index % 6]}, ${["#6d28d9","#059669","#d97706","#c026d3","#7c3aed","#dc2626"][index % 6]})`,
                             }}
                           />
                           <span className="font-semibold capitalize text-slate-700">{item.payment_method}</span>
                         </div>
                         <span className="text-xs text-slate-500">{item.ratio.toFixed(0)}%</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-slate-100">
+                      <div className="h-1.5 rounded-full bg-violet-100/50">
                         <div
                           className="h-1.5 rounded-full transition-all duration-500"
                           style={{
-                            background: `linear-gradient(90deg, ${["#0ea5e9","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][index % 6]}, ${["#0284c7","#059669","#d97706","#c026d3","#7c3aed","#dc2626"][index % 6]})`,
+                            background: `linear-gradient(90deg, ${["#7c3aed","#10b981","#f59e0b","#d946ef","#8b5cf6","#ef4444"][index % 6]}, ${["#6d28d9","#059669","#d97706","#c026d3","#7c3aed","#dc2626"][index % 6]})`,
                             width: `${Math.max(item.ratio, 4)}%`,
                           }}
                         />
@@ -696,7 +696,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                       {topProducts.slice(0, 8).map((_entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={["#0ea5e9","#14b8a6","#f59e0b","#8b5cf6","#ef4444","#ec4899","#06b6d4","#10b981"][index % 8]}
+                          fill={["#7c3aed","#8b5cf6","#f59e0b","#8b5cf6","#ef4444","#ec4899","#06b6d4","#10b981"][index % 8]}
                           fillOpacity={0.85}
                         />
                       ))}

@@ -86,16 +86,16 @@ export function UserWorkspaceTopbar({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white/80 px-8 shadow-sm backdrop-blur-md">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-violet-100 bg-white/90 px-8 shadow-sm backdrop-blur-md">
       <div className="flex items-center gap-4">
         <button
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-violet-200 bg-white text-violet-700 transition hover:bg-violet-50"
           onClick={onToggle}
           type="button"
         >
           <span className="text-xs font-bold">||</span>
         </button>
-        <div className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+        <div className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-violet-200 bg-violet-50">
           {storeLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -104,7 +104,7 @@ export function UserWorkspaceTopbar({
               src={storeLogoUrl}
             />
           ) : (
-            <span className="text-xs font-bold text-slate-500">
+            <span className="text-xs font-bold text-violet-600">
               {(storeName || title).slice(0, 2).toUpperCase()}
             </span>
           )}
@@ -113,12 +113,12 @@ export function UserWorkspaceTopbar({
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white p-1">
+        <div className="inline-flex items-center gap-1 rounded-xl border border-violet-200 bg-white p-1">
           <button
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               locale === "th"
                 ? "bg-sky-600 text-white"
-                : "text-slate-700 hover:bg-slate-100"
+                : "text-violet-700 hover:bg-violet-50"
             }`}
             onClick={() => switchLocale("th")}
             type="button"
@@ -129,7 +129,7 @@ export function UserWorkspaceTopbar({
             className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
               locale === "en"
                 ? "bg-sky-600 text-white"
-                : "text-slate-700 hover:bg-slate-100"
+                : "text-violet-700 hover:bg-violet-50"
             }`}
             onClick={() => switchLocale("en")}
             type="button"

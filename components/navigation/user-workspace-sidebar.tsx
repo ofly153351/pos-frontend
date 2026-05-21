@@ -253,7 +253,7 @@ export function UserWorkspaceSidebar({
 
   const inventoryItemClass = isInventoryRoute
     ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
-    : "text-violet-300 hover:bg-violet-900/50 hover:text-white";
+    : "text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg";
   const activeDocumentsKey = !isDocumentsRoute
     ? ""
     : pathname === documentsPendingHref
@@ -268,7 +268,7 @@ export function UserWorkspaceSidebar({
 
   const documentsItemClass = isDocumentsRoute
     ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
-    : "text-violet-300 hover:bg-violet-900/50 hover:text-white";
+    : "text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg";
 
   function getNavIcon(key: string, isActive: boolean) {
     const className = "h-4 w-4";
@@ -312,7 +312,7 @@ export function UserWorkspaceSidebar({
           const commonClasses = `flex items-center gap-3 px-4 py-3 text-sm ${
             isActive
               ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
-              : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white"
+              : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
           } ${collapsed ? "justify-center px-2" : ""}`;
 
           if (isRegister) {
@@ -370,7 +370,7 @@ export function UserWorkspaceSidebar({
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isInventoryRoute
                     ? "text-white hover:bg-white/10"
-                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white"
+                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
                 }`}
                 onClick={() => setInventoryExpanded((current) => !current)}
                 type="button"
@@ -410,7 +410,7 @@ export function UserWorkspaceSidebar({
                         className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                           isActive
                             ? "bg-violet-800/80 font-semibold text-violet-200"
-                            : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
+                            : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
                         }`}
                         href={item.href}
                       >
@@ -437,7 +437,7 @@ export function UserWorkspaceSidebar({
         <div className="space-y-1">
           <div
             className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
-              isPurchasingRoute ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg" : "text-violet-300 hover:bg-violet-900/50 hover:text-white"
+              isPurchasingRoute ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg" : "text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
             } ${collapsed ? "justify-center px-2" : ""}`}
           >
             <Link
@@ -463,7 +463,7 @@ export function UserWorkspaceSidebar({
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isPurchasingRoute
                     ? "text-white hover:bg-white/10"
-                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white"
+                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
                 }`}
                 onClick={() => setPurchasingExpanded((current) => !current)}
                 type="button"
@@ -490,7 +490,7 @@ export function UserWorkspaceSidebar({
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activePurchasingKey === "orders"
                         ? "bg-violet-800/80 font-semibold text-violet-200"
-                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
                     }`}
                     href={purchasesBaseHref}
                   >
@@ -509,7 +509,7 @@ export function UserWorkspaceSidebar({
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activePurchasingKey === "suppliers"
                         ? "bg-violet-800/80 font-semibold text-violet-200"
-                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
                     }`}
                     href={purchasesSuppliersHref}
                   >
@@ -559,7 +559,7 @@ export function UserWorkspaceSidebar({
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isDocumentsRoute
                     ? "text-white hover:bg-white/10"
-                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white"
+                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
                 }`}
                 onClick={() => setDocumentsExpanded((current) => !current)}
                 type="button"
@@ -586,7 +586,7 @@ export function UserWorkspaceSidebar({
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activeDocumentsKey === "bills"
                         ? "bg-violet-800/80 font-semibold text-violet-200"
-                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
                     }`}
                     href={documentsBaseHref}
                   >
@@ -605,7 +605,7 @@ export function UserWorkspaceSidebar({
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
                       activeDocumentsKey === "pending"
                         ? "bg-violet-800/80 font-semibold text-violet-200"
-                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
                     }`}
                     href={documentsPendingHref}
                   >
@@ -635,7 +635,7 @@ export function UserWorkspaceSidebar({
               className={`flex items-center gap-3 px-4 py-3 text-sm ${
                 isActive
                   ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
-                  : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white"
+                  : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
               } ${collapsed ? "justify-center px-2" : ""}`}
               href={item.href}
             >

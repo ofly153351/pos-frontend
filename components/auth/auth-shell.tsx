@@ -71,23 +71,23 @@ export function AuthShell({
   ];
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.26),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(191,219,254,0.85),_transparent_28%),linear-gradient(135deg,_#eff6ff_0%,_#f8fbff_45%,_#ffffff_100%)] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-sky-100 bg-white/90 shadow-[0_30px_80px_rgba(124,58,237,0.12)] backdrop-blur xl:grid xl:grid-cols-[1.15fr_0.85fr]">
-        <section className="flex flex-col justify-between gap-10 bg-[linear-gradient(160deg,_#eff6ff_0%,_#dbeafe_42%,_#bfdbfe_100%)] px-6 py-8 text-slate-900 sm:px-8 sm:py-10 lg:px-10">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(124,58,237,0.22),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(196,181,253,0.6),_transparent_30%),linear-gradient(135deg,_#1e1b4b_0%,_#2e1065_45%,_#3b0764_100%)] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col overflow-hidden rounded-[2rem] border border-violet-800/40 bg-white/90 shadow-[0_30px_80px_rgba(124,58,237,0.25)] backdrop-blur xl:grid xl:grid-cols-[1.15fr_0.85fr]">
+        <section className="flex flex-col justify-between gap-10 bg-[linear-gradient(160deg,_#1e1b4b_0%,_#2e1065_50%,_#4c1d95_100%)] px-6 py-8 text-white sm:px-8 sm:py-10 lg:px-10">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.25em] text-sky-700">
+              <p className="text-sm font-medium uppercase tracking-[0.25em] text-violet-300">
                 {brand}
               </p>
-              <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight sm:text-5xl">
+              <h1 className="mt-4 max-w-xl text-4xl font-semibold tracking-tight text-white sm:text-5xl">
                 {pageTitle}
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs font-medium uppercase tracking-[0.25em] text-sky-700/70">
+              <span className="text-xs font-medium uppercase tracking-[0.25em] text-violet-300/80">
                 {languageLabel}
               </span>
-              <div className="flex rounded-full border border-sky-200 bg-white/70 p-1 text-sm shadow-sm">
+              <div className="flex rounded-full border border-violet-600/50 bg-violet-900/50 p-1 text-sm shadow-sm">
               {languageOptions.map((option) => {
                 const isActive = option.hrefLocale === locale;
 
@@ -103,8 +103,8 @@ export function AuthShell({
                     }}
                     className={`rounded-full px-3 py-1.5 transition ${
                       isActive
-                        ? "bg-sky-600 text-white shadow-sm"
-                        : "text-sky-700 hover:bg-sky-50"
+                        ? "bg-violet-500 text-white shadow-sm"
+                        : "text-violet-300 hover:bg-violet-800/60"
                     }`}
                   >
                     {option.label}
@@ -116,29 +116,29 @@ export function AuthShell({
           </div>
 
           <div className="grid gap-6 lg:max-w-xl">
-            <p className="text-sm font-medium uppercase tracking-[0.3em] text-sky-700">
+            <p className="text-sm font-medium uppercase tracking-[0.3em] text-violet-300">
               {panelEyebrow}
             </p>
-            <p className="text-lg leading-8 text-slate-700">{description}</p>
-            <div className="rounded-[1.75rem] border border-white/70 bg-white/65 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-              <p className="text-2xl font-semibold">{panelTitle}</p>
-              <p className="mt-3 max-w-lg text-base leading-7 text-slate-600">
+            <p className="text-lg leading-8 text-violet-100">{description}</p>
+            <div className="rounded-[1.75rem] border border-violet-500/30 bg-violet-900/40 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+              <p className="text-2xl font-semibold text-white">{panelTitle}</p>
+              <p className="mt-3 max-w-lg text-base leading-7 text-violet-200">
                 {panelDescription}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-sm text-sky-800/70">
-            <span className="h-2 w-2 rounded-full bg-sky-500" />
+          <div className="flex items-center gap-3 text-sm text-violet-300/80">
+            <span className="h-2 w-2 rounded-full bg-violet-400" />
             {footerNote}
           </div>
         </section>
 
-        <section className="flex items-center px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
+        <section className="flex items-center bg-gradient-to-br from-violet-50/60 to-white px-6 py-8 sm:px-8 sm:py-10 lg:px-10">
           <div className="mx-auto w-full max-w-md">
-            <div className="rounded-[1.75rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
+            <div className="rounded-[1.75rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.12)] sm:p-8">
               <div>
-                <p className="text-sm font-medium uppercase tracking-[0.25em] text-sky-600">
+                <p className="text-sm font-medium uppercase tracking-[0.25em] text-violet-600">
                   {panelEyebrow}
                 </p>
                 <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950">
@@ -148,7 +148,7 @@ export function AuthShell({
                   {alternateLabel}{" "}
                   <Link
                     href={alternateHref}
-                    className="font-semibold text-sky-700 transition hover:text-sky-900"
+                    className="font-semibold text-violet-700 transition hover:text-violet-900"
                   >
                     {alternateCta}
                   </Link>

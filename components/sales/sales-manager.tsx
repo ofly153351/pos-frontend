@@ -1223,7 +1223,7 @@ export function SalesManager({
                       className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                         applyVat
                           ? "border-sky-600 bg-sky-600 text-white"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                       }`}
                       onClick={() => {
                         setApplyVat(true);
@@ -1237,7 +1237,7 @@ export function SalesManager({
                       className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                         !applyVat
                           ? "border-sky-600 bg-sky-600 text-white"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                       }`}
                       onClick={() => {
                         setApplyVat(false);
@@ -1253,10 +1253,10 @@ export function SalesManager({
 
               <div>
                 <div className="flex items-center gap-1.5">
-                  <hr className="flex-1 border-t border-dashed border-slate-200" />
+                  <hr className="flex-1 border-t border-dashed border-violet-200" />
                   <button
                     aria-label={dictionary.discountBillLabel}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-slate-200 bg-white text-slate-600 transition-all duration-200 ease-out hover:scale-105 hover:bg-slate-50"
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-violet-200 bg-white text-violet-600 transition-all duration-200 ease-out hover:scale-105 hover:bg-violet-50"
                     onClick={() =>
                       setIsBillDiscountFieldOpen((current) => !current)
                     }
@@ -1268,7 +1268,7 @@ export function SalesManager({
                       }`}
                     />
                   </button>
-                  <hr className="flex-1 border-t border-dashed border-slate-200" />
+                  <hr className="flex-1 border-t border-dashed border-violet-200" />
                 </div>
 
                 {isBillDiscountFieldOpen ? (
@@ -1278,7 +1278,7 @@ export function SalesManager({
                     </label>
                     <div className="flex items-stretch">
                       <input
-                        className="w-full rounded-l-xl rounded-r-none border border-r-0 border-slate-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                        className="w-full rounded-l-xl rounded-r-none border border-r-0 border-violet-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                         inputMode="decimal"
                         min="0"
                         onClick={() => openAmountNumpad("bill_discount")}
@@ -1287,7 +1287,7 @@ export function SalesManager({
                         readOnly
                         value={billDiscount}
                       />
-                      <div className="flex items-center gap-1 rounded-r-xl border border-slate-200 bg-gradient-to-b from-slate-100 to-slate-50 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                      <div className="flex items-center gap-1 rounded-r-xl border border-violet-200 bg-gradient-to-b from-violet-100/60 to-violet-50/60 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
                         <button
                           className={`h-7 min-w-9 rounded-lg px-2 text-[11px] font-extrabold tracking-wide transition-all duration-200 ease-out ${
                             billDiscountType === "amount"
@@ -1322,7 +1322,7 @@ export function SalesManager({
                     {dictionary.noteLabel}
                   </label>
                   <textarea
-                    className="min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                    className="min-h-24 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                     onChange={(event) => setNote(event.target.value)}
                     placeholder={dictionary.notePlaceholder}
                     value={note}
@@ -1330,7 +1330,7 @@ export function SalesManager({
                 </div>
               ) : null}
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 mb-0">
+              <div className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 text-sm text-slate-700 mb-0">
                 <div className="flex items-center justify-between">
                   <span>{dictionary.summary.subtotalLabel}</span>
                   <span>฿{formatAmount(cartSummary.subtotal)}</span>
@@ -1339,7 +1339,7 @@ export function SalesManager({
                   <span>{dictionary.totalDiscountLabel}</span>
                   <span>-฿{formatAmount(totalDiscountAmount)}</span>
                 </div>
-                <div className="my-2 border-t border-dashed border-slate-300" />
+                <div className="my-2 border-t border-dashed border-violet-200" />
                 <div className="flex items-center justify-between font-semibold text-slate-900">
                   <span>{dictionary.netTotalLabel}</span>
                   <span>฿{formatAmount(payableTotal)}</span>
@@ -1365,14 +1365,14 @@ export function SalesManager({
                   return (
                     <div
                       key={item.product.id}
-                      className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm"
+                      className="rounded-2xl border border-violet-100 bg-white px-3 py-3 shadow-sm"
                     >
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                         <div className="flex min-w-0 flex-1 items-start gap-2.5">
                           {item.product.image_url ? (
                             <img
                               alt={item.product.name}
-                              className="h-9 w-9 shrink-0 rounded-lg border border-slate-200 bg-white object-cover"
+                              className="h-9 w-9 shrink-0 rounded-lg border border-violet-100 bg-white object-cover"
                               loading="lazy"
                               src={item.product.image_url}
                             />
@@ -1402,9 +1402,9 @@ export function SalesManager({
                               </p>
                             ) : null}
                           </div>
-                          <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+                          <div className="flex items-center overflow-hidden rounded-lg border border-violet-100 bg-white">
                             <button
-                              className="flex h-7 w-7 items-center justify-center border-r border-slate-200 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                              className="flex h-7 w-7 items-center justify-center border-r border-violet-100 text-sm font-semibold text-slate-600 transition hover:bg-violet-50"
                               onClick={() =>
                                 updateCartQuantity(
                                   item.product.id,
@@ -1583,7 +1583,7 @@ export function SalesManager({
             </h3>
             <div className="mt-4">
               <input
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-sky-300"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(e) => setHoldBillLabel(e.target.value)}
                 placeholder={dictionary.holdBillPlaceholderLabel}
                 type="text"
@@ -1795,7 +1795,7 @@ export function SalesManager({
                     {dictionary.customerLabel}
                   </label>
                   <select
-                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                     onChange={(event) =>
                       setSelectedCustomerId(event.target.value)
                     }
@@ -1827,7 +1827,7 @@ export function SalesManager({
                         className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                           customerSettlementMode === "cash_now"
                             ? "border-sky-600 bg-sky-600 text-white"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                         }`}
                         onClick={() => setCustomerSettlementMode("cash_now")}
                         type="button"
@@ -1838,7 +1838,7 @@ export function SalesManager({
                         className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                           customerSettlementMode === "invoice"
                             ? "border-sky-600 bg-sky-600 text-white"
-                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                            : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                         }`}
                         onClick={() => setCustomerSettlementMode("invoice")}
                         type="button"
@@ -1870,7 +1870,7 @@ export function SalesManager({
                           className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                             paymentMethod === option.value
                               ? "border-sky-600 bg-sky-600 text-white"
-                              : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                              : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                           }`}
                           onClick={() => setPaymentMethod(option.value)}
                           type="button"
@@ -1896,7 +1896,7 @@ export function SalesManager({
                           {dictionary.customerPaymentLabel}
                         </label>
                         <input
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right text-xs text-slate-700 outline-none transition focus:border-sky-300"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-right text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                           inputMode="numeric"
                           min="0"
                           onClick={() => openAmountNumpad("paid_amount")}
@@ -1939,7 +1939,7 @@ export function SalesManager({
                             className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition ${
                               lastQuickCashAmount === option.amount
                                 ? "border-sky-600 bg-sky-600 text-white"
-                                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                             }`}
                             onClick={() => applyQuickCash(option.amount)}
                             type="button"
@@ -2062,7 +2062,7 @@ export function SalesManager({
                       className={`rounded-xl border px-3 py-2 text-base font-bold transition ${
                         discountEditorItem.discountType === option.value
                           ? "border-sky-600 bg-sky-600 text-white"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                       }`}
                       onClick={() =>
                         updateCartDiscountType(
@@ -2084,7 +2084,7 @@ export function SalesManager({
                 </span>
                 <input
                   autoFocus
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   inputMode="decimal"
                   min="0"
                   onChange={(event) =>
@@ -2229,7 +2229,7 @@ export function SalesManager({
             </h3>
             <input
               autoFocus
-              className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-sky-300"
+              className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               inputMode="numeric"
               onChange={(event) => onNumpadInputChange(event.target.value)}
               onKeyDown={onNumpadInputKeyDown}
@@ -2314,7 +2314,7 @@ export function SalesManager({
             </h3>
             <input
               autoFocus
-              className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-sky-300"
+              className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               inputMode={
                 amountNumpad.field === "paid_amount" ? "numeric" : "decimal"
               }

@@ -43,12 +43,12 @@ export function UserWorkspaceShell({
   ];
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,_#eff6ff_0%,_#ffffff_100%)] px-4 py-6 sm:px-6">
+    <main className="min-h-screen bg-[linear-gradient(180deg,_#f5f3ff_0%,_#faf5ff_40%,_#ffffff_100%)] px-4 py-6 sm:px-6">
       <div className="mx-auto max-w-7xl space-y-6">
-        <header className="rounded-[2rem] border border-sky-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
+        <header className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-sm font-medium uppercase tracking-[0.25em] text-sky-600">
+              <p className="text-sm font-medium uppercase tracking-[0.25em] text-violet-600">
                 POS Suite
               </p>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
@@ -68,8 +68,8 @@ export function UserWorkspaceShell({
                     key={item.key}
                     className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                       isActive
-                        ? "bg-sky-600 text-white"
-                        : "border border-sky-200 text-sky-700 hover:bg-sky-50"
+                        ? "bg-gradient-to-br from-violet-600 to-pink-500 text-white"
+                        : "border border-violet-200 text-violet-700 hover:bg-violet-50"
                     }`}
                     href={item.href}
                   >

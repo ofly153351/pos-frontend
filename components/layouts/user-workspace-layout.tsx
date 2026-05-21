@@ -114,7 +114,7 @@ export function UserWorkspaceLayout({
   ]);
 
   return (
-    <div className="min-h-screen bg-[#f9f9f9] text-slate-900">
+    <div className="min-h-screen bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
       <UserWorkspaceSidebar
         collapsed={collapsed}
         labels={{
@@ -151,7 +151,7 @@ export function UserWorkspaceLayout({
           onToggle={() => setCollapsed((current) => !current)}
           title={title}
         />
-        <main className="flex-1 p-8">{children}</main>
+        <main className="flex-1 p-6 lg:p-8">{children}</main>
       </div>
 
       {isCashierOpen ? (

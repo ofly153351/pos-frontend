@@ -138,7 +138,7 @@ export function StockReceiveModal({
     `relative px-5 py-2.5 text-sm font-medium transition-colors rounded-lg ${
       activeTab === tab
         ? "bg-violet-600 text-white shadow-sm"
-        : "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+        : "text-violet-600 hover:bg-violet-50 hover:text-slate-800"
     }`;
 
   return (

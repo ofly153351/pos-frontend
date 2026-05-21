@@ -94,11 +94,11 @@ export function UserProfileMenu({
     <div className="relative" ref={profileMenuRef}>
       <button
         aria-expanded={isProfileMenuOpen}
-        className="flex items-center gap-3 rounded-full bg-white pl-2 pr-4 py-1 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50"
+        className="flex items-center gap-3 rounded-full bg-white pl-2 pr-4 py-1 shadow-sm ring-1 ring-violet-200 transition hover:bg-violet-50"
         onClick={() => setIsProfileMenuOpen((current) => !current)}
         type="button"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 ring-2 ring-white shadow-sm">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-xs font-bold text-white ring-2 ring-white shadow-sm">
           {initials}
         </div>
         <div className="min-w-0 text-left">
@@ -112,14 +112,14 @@ export function UserProfileMenu({
       </button>
 
       <div
-        className={`absolute right-0 top-[calc(100%+0.5rem)] w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl transition-all duration-200 ${
+        className={`absolute right-0 top-[calc(100%+0.5rem)] w-44 rounded-xl border border-violet-100 bg-white p-1.5 shadow-xl transition-all duration-200 ${
           isProfileMenuOpen
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-1 opacity-0"
         }`}
       >
         <button
-          className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
           onClick={handleEditProfile}
           type="button"
         >

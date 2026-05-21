@@ -226,7 +226,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                     ) : (
                       filteredProducts.map((p) => (
                         <button
-                          className="flex w-full items-center justify-between px-4 py-2.5 text-sm text-slate-700 hover:bg-violet-50 transition-colors"
+                          className="flex w-full items-center justify-between px-4 py-2.5 text-sm text-violet-700 hover:bg-violet-50 transition-colors"
                           key={p.product_id}
                           onMouseDown={() => addProductToItems(p)}
                           type="button"

@@ -70,7 +70,7 @@ function ProductField({
             className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
               badgeTone === "required"
                 ? "bg-violet-100 text-violet-700"
-                : "bg-slate-200 text-slate-600"
+                : "bg-violet-100 text-violet-700"
             }`}
           >
             {badgeText}
@@ -290,7 +290,7 @@ function ProductModalFooter({
       <p className="max-w-xl text-sm text-slate-500">{modeTitle}</p>
       <div className="flex justify-end gap-3">
         <button
-          className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
           onClick={onClose}
           type="button"
         >

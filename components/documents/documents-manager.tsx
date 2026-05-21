@@ -573,7 +573,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
         <div className="mt-4">
           <input
-            className="w-full rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+            className="w-full rounded-2xl border border-sky-100 bg-violet-50/60 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             onChange={(event) => setSearch(event.target.value)}
             placeholder={dictionary.documentSearchPlaceholder}
             value={search}
@@ -683,7 +683,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
                         disabled={saleReceiptLoadingId === sale.id}
                         onClick={() => openSaleReceiptPreview(sale.id)}
                         type="button"
@@ -715,7 +715,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 {dictionary.pagination.perPage}
               </label>
               <select
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-sky-300"
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 id="documents-page-size"
                 onChange={(event) => setPageSize(Number(event.target.value))}
                 value={pageSize}
@@ -731,7 +731,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             {totalPages > 1 ? (
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={currentPage <= 1 || isPending}
                   onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
                   type="button"
@@ -744,7 +744,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                     className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
                       page === currentPage
                         ? "bg-sky-600 text-white"
-                        : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                        : "border border-slate-200 text-violet-700 hover:bg-violet-50"
                     }`}
                     key={page}
                     onClick={() => setCurrentPage(page)}
@@ -755,7 +755,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 ))}
 
                 <button
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={currentPage >= totalPages || isPending}
                   onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
                   type="button"
@@ -786,7 +786,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 ) : null}
               </div>
               <button
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closeReceiptModal}
                 type="button"
               >
@@ -801,7 +801,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             ) : null}
 
             {isReceiptPending && !selectedSale && !selectedInvoice ? (
-              <div className="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+              <div className="mt-6 rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 px-4 py-8 text-center text-sm text-slate-500">
                 {dictionary.viewReceiptButton}
               </div>
             ) : null}
@@ -888,7 +888,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             <div className="flex items-start justify-between gap-4">
               <h3 className="text-lg font-semibold text-slate-900">{dictionary.pendingPaymentSectionTitle}</h3>
               <button
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closePaymentModal}
                 type="button"
               >
@@ -908,7 +908,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                   {dictionary.customerPaymentLabel}
                 </span>
                 <input
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   inputMode="decimal"
                   min="0"
                   onChange={(event) => setPaymentAmount(event.target.value)}
@@ -921,7 +921,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                   {dictionary.paymentMethodLabel}
                 </span>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   onChange={(event) => setPaymentMethod(event.target.value)}
                   value={paymentMethod}
                 >
@@ -937,7 +937,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 {dictionary.noteLabel}
               </span>
               <input
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setPaymentNote(event.target.value)}
                 value={paymentNote}
               />
@@ -949,7 +949,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
               </span>
               <input
                 accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-sky-700 focus:border-sky-300"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-sky-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-sky-700 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setPaymentProof(event.target.files?.[0] ?? null)}
                 ref={paymentProofInputRef}
                 type="file"
@@ -958,7 +958,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closePaymentModal}
                 type="button"
               >
@@ -983,7 +983,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             <div className="flex items-start justify-between gap-4">
               <h3 className="text-lg font-semibold text-slate-900">{dictionary.markUnpaidButton}</h3>
               <button
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closeUnpayModal}
                 type="button"
               >
@@ -1002,7 +1002,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 {dictionary.unpayReasonLabel}
               </span>
               <textarea
-                className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+                className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setUnpayReason(event.target.value)}
                 value={unpayReason}
               />
@@ -1010,7 +1010,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closeUnpayModal}
                 type="button"
               >
@@ -1046,14 +1046,14 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
               <h3 className="text-base font-semibold text-slate-900">{dictionary.pdfPreviewTitle}</h3>
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                   onClick={printPdfPreview}
                   type="button"
                 >
                   {dictionary.printButton || dictionary.viewReceiptButton}
                 </button>
                 <button
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                   onClick={closePdfDrawer}
                   type="button"
                 >
@@ -1090,14 +1090,14 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
               <h3 className="text-base font-semibold text-slate-900">{dictionary.receiptPreviewTitle}</h3>
               <div className="flex items-center gap-2">
                 <button
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                   onClick={printSaleReceiptPreview}
                   type="button"
                 >
                   {dictionary.printButton || dictionary.viewReceiptButton}
                 </button>
                 <button
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                   onClick={closeSaleReceiptDrawer}
                   type="button"
                 >

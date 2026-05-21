@@ -97,7 +97,7 @@ export function ConfirmDialog({
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
           <button
-            className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+            className="rounded-xl px-4 py-2.5 text-sm font-medium text-violet-600 transition hover:bg-violet-50"
             onClick={onCancel}
             type="button"
           >

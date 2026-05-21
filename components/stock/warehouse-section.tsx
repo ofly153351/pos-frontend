@@ -956,7 +956,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
               disabled={!selectedWarehouse}
               onClick={() => {
                 setShowAddProduct(true);
@@ -968,7 +968,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               {dictionary.addProductLabel}
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
               onClick={() => setIsManageModalOpen(true)}
               type="button"
             >
@@ -976,7 +976,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               {dictionary.manageLabel}
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
               disabled={selectedIds.size === 0}
               onClick={() => {
                 const selectedProducts = warehouseProducts.filter((wp) => selectedIds.has(wp.product_id));
@@ -1007,7 +1007,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               {dictionary.exportLabel}
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
               disabled={selectedIds.size === 0 || warehouseProducts.filter((wp) => selectedIds.has(wp.product_id) && (wp.product_barcode)).length === 0}
               onClick={exportSelectedBarcodes}
               type="button"
@@ -1455,7 +1455,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             </div>
             <div className="flex items-center gap-2">
               <button
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={whPage <= 1}
                 onClick={() => setWhPage((p) => Math.max(p - 1, 1))}
                 type="button"
@@ -1472,7 +1472,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
                       page === whPage
                         ? "bg-violet-700 text-white"
-                        : "border border-slate-200 text-slate-700 hover:bg-slate-50"
+                        : "border border-slate-200 text-violet-700 hover:bg-violet-50"
                     }`}
                     key={page}
                     onClick={() => setWhPage(page)}
@@ -1483,7 +1483,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 ));
               })()}
               <button
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={whPage >= whTotalPages}
                 onClick={() => setWhPage((p) => Math.min(p + 1, whTotalPages))}
                 type="button"
@@ -1831,7 +1831,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   <p className="max-w-xl text-sm text-slate-500">{editingId ? dictionary.editTitle : dictionary.createTitle}</p>
                   <div className="flex justify-end gap-3">
                     <button
-                      className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                       onClick={() => { setIsModalOpen(false); resetForm(); }}
                       type="button"
                     >
@@ -1930,7 +1930,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                         <td className="px-4 py-3 text-sm text-slate-600">{warehouse.contact_name ?? "—"}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                            warehouse.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"
+                            warehouse.is_active ? "bg-emerald-100 text-emerald-700" : "bg-violet-100 text-violet-700"
                           }`}>
                             {warehouse.is_active ? dictionary.activeLabel : dictionary.inactiveLabel}
                           </span>

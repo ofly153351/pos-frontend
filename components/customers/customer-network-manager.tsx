@@ -380,7 +380,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             {dictionary.createTitle}
           </button>
           <button
-            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
             onClick={openDiscountDrawer}
             type="button"
           >
@@ -434,7 +434,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
                       className={`rounded-full px-2 py-1 text-xs font-semibold ${
                         customer.is_active
                           ? "bg-emerald-100 text-emerald-700"
-                          : "bg-slate-200 text-slate-600"
+                          : "bg-violet-100 text-violet-700"
                       }`}
                     >
                       {customer.is_active ? dictionary.activeStatus : dictionary.inactiveStatus}
@@ -443,7 +443,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <button
-                        className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
                         onClick={() => onEditCustomer(customer)}
                         type="button"
                       >
@@ -482,7 +482,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
               {editingCustomerId ? dictionary.editLabel : dictionary.createTitle}
             </h3>
             <button
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-violet-600 transition hover:bg-violet-50"
               onClick={closeCustomerDrawer}
               type="button"
             >
@@ -561,7 +561,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
             </button>
             {editingCustomerId ? (
               <button
-                className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={clearForm}
                 type="button"
               >
@@ -587,7 +587,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-lg font-semibold text-slate-900">{dictionary.discountRuleTitle}</h3>
             <button
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-violet-600 transition hover:bg-violet-50"
               onClick={closeDiscountDrawer}
               type="button"
             >

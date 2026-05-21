@@ -348,7 +348,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
           </div>
 
           {stores.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
+            <div className="rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 p-6 text-center text-sm text-slate-400">
               {dictionary.emptyStores}
             </div>
           ) : (
@@ -520,7 +520,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
             </div>
           </form>
         ) : (
-          <div className="flex items-center justify-center rounded-[2rem] border border-dashed border-slate-200 bg-slate-50 p-12 text-center text-slate-400">
+          <div className="flex items-center justify-center rounded-[2rem] border border-dashed border-violet-200 bg-violet-50/40 p-12 text-center text-slate-400">
             <div>
               <Building2 className="mx-auto mb-3 h-10 w-10 text-slate-300" />
               <p className="text-sm">{dictionary.selectStoreLabel}</p>

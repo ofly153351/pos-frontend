@@ -74,13 +74,13 @@ export function ProductBrowser({
           {dictionary.title}
         </h2>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <div className="inline-flex items-center gap-1 self-start rounded-xl border border-slate-200 bg-white p-1">
+          <div className="inline-flex items-center gap-1 self-start rounded-xl border border-violet-200 bg-white p-1">
             <button
               aria-label={dictionary.productViewGrid}
               className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                 productView === "grid"
                   ? "bg-sky-600 text-white"
-                  : "text-slate-700 hover:bg-slate-100"
+                  : "text-violet-600 hover:bg-violet-50"
               }`}
               onClick={() => onProductViewChange("grid")}
               title={dictionary.productViewGrid}
@@ -93,7 +93,7 @@ export function ProductBrowser({
               className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                 productView === "list"
                   ? "bg-sky-600 text-white"
-                  : "text-slate-700 hover:bg-slate-100"
+                  : "text-violet-600 hover:bg-violet-50"
               }`}
               onClick={() => onProductViewChange("list")}
               title={dictionary.productViewList}
@@ -105,7 +105,7 @@ export function ProductBrowser({
 
           <div className="relative w-full">
             <input
-              className="w-full rounded-2xl border border-sky-100 bg-sky-50/70 px-4 py-3 pr-10 text-sm text-slate-700 outline-none transition focus:border-sky-300"
+              className="w-full rounded-2xl border border-violet-200 bg-violet-50/60 px-4 py-3 pr-10 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               onBlur={() => {
                 setTimeout(() => setIsSearchFocused(false), 120);
               }}
@@ -117,10 +117,10 @@ export function ProductBrowser({
             <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
             {isSearchFocused && suggestionProducts.length > 0 ? (
-              <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+              <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-xl">
                 {suggestionProducts.map((product) => (
                   <button
-                    className="flex w-full items-center gap-3 border-b border-slate-100 px-3 py-2.5 text-left transition last:border-b-0 hover:bg-slate-50"
+                    className="flex w-full items-center gap-3 border-b border-violet-100 px-3 py-2.5 text-left transition last:border-b-0 hover:bg-violet-50"
                     key={product.id}
                     onClick={() => onAddToCart(product)}
                     type="button"
@@ -128,12 +128,12 @@ export function ProductBrowser({
                     {product.image_url ? (
                       <img
                         alt={product.name}
-                        className="h-9 w-12 rounded-lg border border-slate-200 bg-white object-cover"
+                        className="h-9 w-12 rounded-lg border border-violet-100 bg-white object-cover"
                         loading="lazy"
                         src={product.image_url}
                       />
                     ) : (
-                      <div className="flex h-9 w-12 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-xs font-bold text-slate-500">
+                      <div className="flex h-9 w-12 items-center justify-center rounded-lg border border-violet-100 bg-violet-50 text-xs font-bold text-slate-500">
                         {product.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
@@ -175,7 +175,7 @@ export function ProductBrowser({
             className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
               !selectedCategory
                 ? "border-sky-300 bg-sky-600 text-white shadow-sm"
-                : "border-sky-100 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                : "border-violet-100 bg-violet-50 text-violet-700 hover:bg-violet-100"
             }`}
             onClick={() => onCategoryFilterChange("")}
             type="button"
@@ -228,7 +228,7 @@ export function ProductBrowser({
                     <div className="relative">
                       <img
                         alt={product.name}
-                        className="h-32 w-full rounded-lg border border-slate-200 bg-white object-contain shadow-sm"
+                        className="h-32 w-full rounded-lg border border-violet-100 bg-white object-contain shadow-sm"
                         loading="lazy"
                         src={product.image_url}
                       />
@@ -237,7 +237,7 @@ export function ProductBrowser({
                       </span>
                     </div>
                   ) : (
-                    <div className="flex h-32 w-full items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
+                    <div className="flex h-32 w-full items-center justify-center rounded-lg border border-violet-100 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
                       <span className="line-clamp-2">{product.name}</span>
                     </div>
                   )}
@@ -285,12 +285,12 @@ export function ProductBrowser({
                 {product.image_url ? (
                   <img
                     alt={product.name}
-                    className="h-14 w-20 rounded-xl border border-slate-200 bg-white object-cover"
+                    className="h-14 w-20 rounded-xl border border-violet-100 bg-white object-cover"
                     loading="lazy"
                     src={product.image_url}
                   />
                 ) : (
-                  <div className="flex h-14 w-20 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-500">
+                  <div className="flex h-14 w-20 items-center justify-center rounded-xl border border-violet-100 bg-violet-50 text-sm font-bold text-slate-500">
                     {product.name.slice(0, 2).toUpperCase()}
                   </div>
                 )}
@@ -341,7 +341,7 @@ export function ProductBrowser({
               productView === "grid" ? "sm:col-span-2 xl:col-span-4" : ""
             }
           >
-            <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
+            <div className="rounded-[1.5rem] border border-dashed border-violet-200 bg-violet-50 px-6 py-10 text-center text-sm text-slate-500">
               {dictionary.emptyProducts}
             </div>
           </div>

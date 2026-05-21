@@ -71,7 +71,7 @@ export function SubscriptionPlanSelector({
                 key={plan.id}
                 className={`rounded-[2rem] border p-8 text-left shadow-[0_24px_60px_rgba(124,58,237,0.1)] transition ${
                   isSelected
-                    ? "border-sky-500 bg-sky-50/70"
+                    ? "border-sky-500 bg-violet-50/60"
                     : "border-sky-100 bg-white hover:border-sky-300"
                 }`}
                 onClick={() => {
