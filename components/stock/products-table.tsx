@@ -539,7 +539,7 @@ export function ProductsTable({
                 {product.cost_price != null ? formatCurrency(Number(product.cost_price)) : "-"}
               </td>
               <td className="px-6 py-4 text-sm font-bold text-violet-700">
-                {formatCurrency(Number(product.effective_price ?? 0))}
+                {formatCurrency(Number(product.base_price ?? 0))}
               </td>
               <td className="px-2 py-4">
                 <div className="flex flex-col">
