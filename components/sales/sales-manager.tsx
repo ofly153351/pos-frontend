@@ -1201,6 +1201,7 @@ export function SalesManager({
           onCategoryFilterChange={setSelectedCategory}
           onProductViewChange={setProductView}
           onSearchChange={setSearch}
+          onUpdateCartQuantity={updateCartQuantity}
           productView={productView}
           products={saleableProducts}
           search={search}
@@ -1208,274 +1209,228 @@ export function SalesManager({
           successMessage={successMessage}
         />
 
-        <div className="space-y-6 xl:h-full xl:min-h-0">
-          <section className="min-h-[74dvh] rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-semibold text-slate-950">
-                {dictionary.cartTitle}
-              </h2>
-              <div className="flex items-center gap-2">
-                <button
-                  aria-label={dictionary.vatToggleLabel}
-                  className={`flex h-10 items-center gap-1.5 rounded-2xl border px-3 text-xs font-bold tracking-wide transition ${
-                    applyVat
-                      ? "border-violet-500 bg-violet-600 text-white shadow-sm"
-                      : "border-violet-200 bg-white text-violet-400 hover:bg-violet-50"
-                  }`}
-                  onClick={() => {
-                    setApplyVat((v) => !v);
-                    setIsPaidAmountTouched(false);
-                  }}
-                  title={dictionary.vatToggleLabel}
-                  type="button"
-                >
-                  <span className={`h-2 w-2 rounded-full ${applyVat ? "bg-white" : "bg-violet-300"}`} />
-                  VAT
-                </button>
-                <button
-                  aria-label={dictionary.actionsLabel}
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-200 bg-white text-violet-700 shadow-sm transition hover:bg-violet-50"
-                  onClick={() => setIsActionsMenuOpen(true)}
-                  type="button"
-                >
-                  <span className="text-lg leading-none">···</span>
-                </button>
-              </div>
-            </div>
-            <div className="mt-6 space-y-2">
+        {/* ── Right: Cart panel ── */}
+        <div className="xl:h-full xl:min-h-0">
+          <section className="flex h-full min-h-[74dvh] flex-col rounded-[2rem] border border-violet-100 bg-white shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh]">
 
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <hr className="flex-1 border-t border-dashed border-violet-200" />
+            {/* Header */}
+            <div className="shrink-0 border-b border-violet-50 px-5 pb-3 pt-5">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">{dictionary.cartTitle}</h2>
+                  <p className="mt-0.5 text-xs text-violet-400">
+                    {cart.length > 0 ? `สินค้า ${cart.length} รายการ` : "ยังไม่มีสินค้า"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {/* VAT toggle */}
                   <button
-                    aria-label={dictionary.discountBillLabel}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-violet-200 bg-white text-violet-600 transition-all duration-200 ease-out hover:scale-105 hover:bg-violet-50"
-                    onClick={() =>
-                      setIsBillDiscountFieldOpen((current) => !current)
-                    }
+                    className={`flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-bold transition ${applyVat ? "border-violet-500 bg-violet-600 text-white shadow-sm" : "border-violet-200 bg-white text-violet-400 hover:bg-violet-50"}`}
+                    onClick={() => { setApplyVat((v) => !v); setIsPaidAmountTouched(false); }}
                     type="button"
                   >
-                    <ChevronDown
-                      className={`h-3.5 w-3.5 transition-transform duration-200 ease-out ${
-                        isBillDiscountFieldOpen ? "rotate-180" : ""
-                      }`}
-                    />
+                    <span className={`h-1.5 w-1.5 rounded-full ${applyVat ? "bg-white" : "bg-violet-300"}`} />
+                    VAT {applyVat ? "7%" : "off"}
                   </button>
-                  <hr className="flex-1 border-t border-dashed border-violet-200" />
+                  {/* Hold bill */}
+                  <button
+                    className="flex h-8 items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 text-[11px] font-semibold text-orange-600 transition hover:bg-orange-100"
+                    onClick={() => { setHoldBillLabel(""); setIsHoldingBill(true); }}
+                    type="button"
+                  >
+                    พักบิล
+                  </button>
+                  {/* Restore bill */}
+                  <button
+                    className="flex h-8 items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 text-[11px] font-semibold text-violet-600 transition hover:bg-violet-100"
+                    onClick={async () => {
+                      try { const r = await listParkedBills(); setParkedBills(r.data ?? []); } catch { setParkedBills([]); }
+                      setIsRestoreDrawerOpen(true);
+                    }}
+                    type="button"
+                  >
+                    เรียกบิล
+                  </button>
+                  {/* More */}
+                  <button
+                    className="flex h-8 w-8 items-center justify-center rounded-full border border-violet-200 bg-white text-violet-600 transition hover:bg-violet-50"
+                    onClick={() => setIsActionsMenuOpen(true)}
+                    type="button"
+                  >
+                    <span className="text-base leading-none">···</span>
+                  </button>
                 </div>
+              </div>
 
-                {isBillDiscountFieldOpen ? (
-                  <div className="mt-2">
-                    <label className="mb-1.5 block text-xs font-semibold text-violet-800">
-                      {dictionary.discountBillLabel}
-                    </label>
+              {/* Summary bar */}
+              <div className="mt-3 flex items-center justify-between rounded-2xl bg-violet-50 px-4 py-2.5">
+                <button
+                  className="flex items-center gap-2 text-sm font-semibold text-slate-700"
+                  onClick={() => setIsBillDiscountFieldOpen((c) => !c)}
+                  type="button"
+                >
+                  <ChevronDown className={`h-4 w-4 text-violet-400 transition-transform ${isBillDiscountFieldOpen ? "rotate-180" : ""}`} />
+                  {dictionary.netTotalLabel}
+                </button>
+                <span className="text-lg font-bold text-violet-700">฿{formatAmount(settlementTotal)}</span>
+              </div>
+
+              {/* Collapsible discount/note area */}
+              {isBillDiscountFieldOpen && (
+                <div className="mt-2 space-y-2 rounded-2xl border border-violet-100 bg-white p-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-violet-700">{dictionary.discountBillLabel}</label>
                     <div className="flex items-stretch">
                       <input
-                        className="w-full rounded-l-xl rounded-r-none border border-r-0 border-violet-200 bg-white px-3 py-2.5 text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        className="w-full rounded-l-xl rounded-r-none border border-r-0 border-violet-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                         inputMode="decimal"
                         min="0"
                         onClick={() => openAmountNumpad("bill_discount")}
-                        onFocus={(event) => event.target.blur()}
+                        onFocus={(e) => e.target.blur()}
                         placeholder="0.00"
                         readOnly
                         value={billDiscount}
                       />
-                      <div className="flex items-center gap-1 rounded-r-xl border border-violet-200 bg-gradient-to-b from-violet-100/60 to-violet-50/60 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                        <button
-                          className={`h-7 min-w-9 rounded-lg px-2 text-[11px] font-extrabold tracking-wide transition-all duration-200 ease-out ${
-                            billDiscountType === "amount"
-                              ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white shadow-[0_2px_8px_rgba(109,40,217,0.35)]"
-                              : "text-slate-600 hover:bg-white/90 hover:text-slate-800"
-                          }`}
-                          onClick={() => setBillDiscountType("amount")}
-                          type="button"
-                        >
-                          ฿
-                        </button>
-                        <button
-                          className={`h-7 min-w-9 rounded-lg px-2 text-[11px] font-extrabold tracking-wide transition-all duration-200 ease-out ${
-                            billDiscountType === "percent"
-                              ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white shadow-[0_2px_8px_rgba(109,40,217,0.35)]"
-                              : "text-slate-600 hover:bg-white/90 hover:text-slate-800"
-                          }`}
-                          onClick={() => setBillDiscountType("percent")}
-                          type="button"
-                        >
-                          %
-                        </button>
+                      <div className="flex items-center gap-1 rounded-r-xl border border-violet-200 bg-gradient-to-b from-violet-100/60 to-violet-50/60 p-1">
+                        <button className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "amount" ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white" : "text-slate-600 hover:bg-white/90"}`} onClick={() => setBillDiscountType("amount")} type="button">฿</button>
+                        <button className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "percent" ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white" : "text-slate-600 hover:bg-white/90"}`} onClick={() => setBillDiscountType("percent")} type="button">%</button>
                       </div>
                     </div>
                   </div>
-                ) : null}
-              </div>
+                  <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>{dictionary.summary.subtotalLabel}</span><span>฿{formatAmount(cartSummary.subtotal)}</span>
+                  </div>
+                  {totalDiscountAmount > 0 && (
+                    <div className="flex items-center justify-between text-xs text-emerald-600">
+                      <span>{dictionary.totalDiscountLabel}</span><span>-฿{formatAmount(totalDiscountAmount)}</span>
+                    </div>
+                  )}
+                  {applyVat && (
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>VAT 7%</span><span>฿{formatAmount(vatAmount)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {showNoteField ? (
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-violet-800">
-                    {dictionary.noteLabel}
-                  </label>
-                  <textarea
-                    className="min-h-24 w-full rounded-2xl border border-violet-200 bg-violet-50/30 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                    onChange={(event) => setNote(event.target.value)}
-                    placeholder={dictionary.notePlaceholder}
-                    value={note}
-                  />
-                </div>
-              ) : null}
+              {/* Note field */}
+              {showNoteField && (
+                <textarea
+                  className="mt-2 min-h-16 w-full rounded-2xl border border-violet-200 bg-violet-50/30 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder={dictionary.notePlaceholder}
+                  value={note}
+                />
+              )}
+            </div>
 
-              <div className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 text-sm text-slate-700 mb-0">
-                <div className="flex items-center justify-between">
-                  <span>{dictionary.summary.subtotalLabel}</span>
-                  <span>฿{formatAmount(cartSummary.subtotal)}</span>
+            {/* ── Cart items (scrollable) ── */}
+            <div className="pretty-scroll min-h-0 flex-1 overflow-y-auto px-4 py-3" ref={cartScrollRef}>
+              {cart.length > 0 ? (
+                <div className="space-y-2">
+                  {cart.map((item) => {
+                    const line = getCartLine(item);
+                    return (
+                      <div key={item.product.id} className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-white px-3 py-2.5 shadow-sm">
+                        {/* Thumbnail */}
+                        {item.product.image_url ? (
+                          <img alt={item.product.name} className="h-10 w-10 shrink-0 rounded-xl border border-violet-100 object-cover" loading="lazy" src={item.product.image_url} />
+                        ) : (
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-xs font-bold text-violet-600">
+                            {item.product.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+
+                        {/* Name + unit price */}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-semibold text-slate-900">{item.product.name}</p>
+                          <p className="text-[11px] text-slate-400">฿{formatAmount(line.unitPrice)}/หน่วย</p>
+                        </div>
+
+                        {/* Unit price badge */}
+                        <span className="shrink-0 text-xs font-semibold text-slate-700">฿{formatAmount(line.unitPrice)}</span>
+
+                        {/* Discount button */}
+                        <button
+                          className="shrink-0 rounded-lg border border-violet-200 px-2 py-1 text-[11px] font-semibold text-violet-600 transition hover:bg-violet-50"
+                          onClick={() => setDiscountEditorProductId(item.product.id)}
+                          title={dictionary.discountTypeLabel}
+                          type="button"
+                        >
+                          {line.lineDiscount > 0 ? (
+                            <span className="text-emerald-600">-฿{formatAmount(line.lineDiscount)}</span>
+                          ) : "%ลด"}
+                        </button>
+
+                        {/* Qty stepper */}
+                        <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-violet-200">
+                          <button className="flex h-7 w-7 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50" onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} type="button">−</button>
+                          <input
+                            className="h-7 w-9 bg-white text-center text-xs font-bold text-slate-900 outline-none"
+                            inputMode="numeric"
+                            max={item.product.total_stock ?? 0}
+                            min="1"
+                            onClick={() => openQuantityNumpad(item.product.id, item.quantity, item.product.total_stock ?? 0)}
+                            onFocus={(e) => e.target.blur()}
+                            pattern="[0-9]*"
+                            readOnly
+                            type="number"
+                            value={item.quantity}
+                          />
+                          <button className="flex h-7 w-7 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50" onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} type="button">+</button>
+                        </div>
+
+                        {/* Line total */}
+                        <span className="shrink-0 w-16 text-right text-sm font-bold text-slate-900">฿{formatAmount(line.lineTotal)}</span>
+
+                        {/* Delete */}
+                        <button
+                          aria-label={dictionary.removeItemButton}
+                          className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
+                          onClick={() => updateCartQuantity(item.product.id, 0)}
+                          type="button"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="mt-1 flex items-center justify-between">
-                  <span>{dictionary.totalDiscountLabel}</span>
-                  <span>-฿{formatAmount(totalDiscountAmount)}</span>
+              ) : (
+                <div className="flex h-full min-h-[120px] items-center justify-center rounded-[1.5rem] border border-dashed border-violet-200 bg-violet-50/40 text-sm text-violet-300">
+                  {dictionary.emptyCart}
                 </div>
-                <div className="my-2 border-t border-dashed border-violet-200" />
-                <div className="flex items-center justify-between font-semibold text-slate-900">
-                  <span>{dictionary.netTotalLabel}</span>
-                  <span>฿{formatAmount(payableTotal)}</span>
-                </div>
+              )}
+            </div>
+
+            {/* ── Bottom actions ── */}
+            <div className="shrink-0 border-t border-violet-50 px-4 pb-4 pt-3">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  className="flex items-center justify-center gap-1.5 rounded-2xl border border-violet-200 py-2.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
+                  onClick={clearCart}
+                  type="button"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {dictionary.clearCartButton}
+                </button>
+                <button
+                  className={`flex items-center justify-center gap-1.5 rounded-2xl border py-2.5 text-xs font-semibold transition ${showNoteField ? "border-violet-400 bg-violet-50 text-violet-700" : "border-violet-200 text-violet-600 hover:bg-violet-50"}`}
+                  onClick={() => setShowNoteField((c) => !c)}
+                  type="button"
+                >
+                  หมายเหตุ {showNoteField ? "✓" : ""}
+                </button>
               </div>
               <button
-                className="mt-2 w-full rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-3 text-base font-semibold text-white transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-500 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={cart.length === 0 || isPending}
                 onClick={() => setIsCheckoutSummaryOpen(true)}
                 type="button"
               >
-                {dictionary.checkoutButton}
+                💳 {dictionary.checkoutButton} (฿{formatAmount(settlementTotal)})
+                <span className="ml-1">→</span>
               </button>
-            </div>
-            <div
-              className="pretty-scroll mt-6 space-y-4 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1"
-              ref={cartScrollRef}
-            >
-              {cart.length > 0 ? (
-                cart.map((item) => {
-                  const line = getCartLine(item);
-
-                  return (
-                    <div
-                      key={item.product.id}
-                      className="rounded-2xl border border-violet-100 bg-white px-3 py-3 shadow-sm"
-                    >
-                      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                        <div className="flex min-w-0 flex-1 items-start gap-2.5">
-                          {item.product.image_url ? (
-                            <img
-                              alt={item.product.name}
-                              className="h-9 w-9 shrink-0 rounded-lg border border-violet-100 bg-white object-cover"
-                              loading="lazy"
-                              src={item.product.image_url}
-                            />
-                          ) : null}
-                          <div className="min-w-0 flex-1">
-                            <p
-                              className="w-full overflow-hidden break-all text-sm font-semibold text-slate-950 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-                              title={item.product.name}
-                            >
-                              {item.product.name}
-                            </p>
-                            <p className="mt-0.5 text-xs text-slate-600">
-                              {dictionary.unitPriceLabel}{" "}
-                              {formatCurrency(line.unitPrice)}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 items-center justify-center gap-1.5">
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-slate-900">
-                              {formatCurrency(line.lineTotal)}
-                            </p>
-                            {line.lineDiscount > 0 ? (
-                              <p className="mt-0.5 text-[11px] font-medium text-emerald-700">
-                                {dictionary.discountLabel}{" "}
-                                {formatCurrency(line.lineDiscount)}
-                              </p>
-                            ) : null}
-                          </div>
-                          <div className="flex items-center overflow-hidden rounded-lg border border-violet-100 bg-white">
-                            <button
-                              className="flex h-7 w-7 items-center justify-center border-r border-violet-100 text-sm font-semibold text-slate-600 transition hover:bg-violet-50"
-                              onClick={() =>
-                                updateCartQuantity(
-                                  item.product.id,
-                                  item.quantity - 1,
-                                )
-                              }
-                              type="button"
-                            >
-                              -
-                            </button>
-                            <input
-                              className="h-7 w-14 bg-white px-2 text-center text-xs font-semibold text-slate-900 outline-none"
-                              inputMode="numeric"
-                              max={item.product.total_stock ?? 0}
-                              min="1"
-                              onClick={() =>
-                                openQuantityNumpad(
-                                  item.product.id,
-                                  item.quantity,
-                                  item.product.total_stock ?? 0,
-                                )
-                              }
-                              onFocus={(event) => event.target.blur()}
-                              pattern="[0-9]*"
-                              readOnly
-                              step="1"
-                              type="number"
-                              value={item.quantity}
-                            />
-                            <button
-                              className="flex h-7 w-7 items-center justify-center border-l border-violet-100 text-sm font-semibold text-violet-600 transition hover:bg-violet-50"
-                              onClick={() =>
-                                updateCartQuantity(
-                                  item.product.id,
-                                  item.quantity + 1,
-                                )
-                              }
-                              type="button"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex items-end justify-end">
-                        <div className="flex items-end gap-1.5">
-                          <button
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-violet-200 bg-white text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                            onClick={() =>
-                              setDiscountEditorProductId(item.product.id)
-                            }
-                            title={dictionary.discountTypeLabel}
-                            type="button"
-                          >
-                            ...
-                          </button>
-                          <button
-                            aria-label={dictionary.removeItemButton}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200 text-rose-600 transition hover:bg-rose-50"
-                            onClick={() =>
-                              updateCartQuantity(item.product.id, 0)
-                            }
-                            title={dictionary.removeItemButton}
-                            type="button"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="rounded-[1.25rem] border border-dashed border-violet-200 bg-violet-50/40 px-4 py-8 text-center text-sm text-violet-400">
-                  {dictionary.emptyCart}
-                </div>
-              )}
             </div>
           </section>
         </div>
