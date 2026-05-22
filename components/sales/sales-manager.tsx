@@ -1201,7 +1201,6 @@ export function SalesManager({
           onCategoryFilterChange={setSelectedCategory}
           onProductViewChange={setProductView}
           onSearchChange={setSearch}
-          onUpdateCartQuantity={updateCartQuantity}
           productView={productView}
           products={saleableProducts}
           search={search}
