@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayoutGrid, List, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List, Search } from "lucide-react";
+
+const PAGE_SIZE_GRID = 20;
+const PAGE_SIZE_LIST = 15;
 
 import type {
   ProductViewMode,
@@ -13,6 +16,7 @@ type ProductBrowserProps = {
   categories: string[];
   dictionary: SalesDictionary;
   error: string;
+  hideSearch?: boolean;
   onAddToCart: (product: Product) => void;
   onCategoryFilterChange: (category: string) => void;
   onProductViewChange: (mode: ProductViewMode) => void;
@@ -48,8 +52,20 @@ export function ProductBrowser({
   search,
   selectedCategory,
   successMessage,
+  hideSearch = false,
 }: ProductBrowserProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const pageSize = productView === "grid" ? PAGE_SIZE_GRID : PAGE_SIZE_LIST;
+  const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+  const pagedProducts = useMemo(
+    () => products.slice((page - 1) * pageSize, page * pageSize),
+    [products, page, pageSize],
+  );
+
+  // Reset to page 1 when filters/view change
+  useMemo(() => { setPage(1); }, [products.length, productView, pageSize]);
 
   const suggestionProducts = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -103,7 +119,7 @@ export function ProductBrowser({
             </button>
           </div>
 
-          <div className="relative w-full">
+          {!hideSearch && <div className="relative w-full">
             <input
               className="w-full rounded-lg border border-violet-200 bg-violet-50/60 px-4 py-3 pr-10 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               onBlur={() => {
@@ -152,7 +168,7 @@ export function ProductBrowser({
                 ))}
               </div>
             ) : null}
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -202,8 +218,8 @@ export function ProductBrowser({
       <div
         className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-4" : "space-y-3"}`}
       >
-        {products.length > 0 ? (
-          products.map((product) => {
+        {pagedProducts.length > 0 ? (
+          pagedProducts.map((product) => {
             const currentQuantity = getCartQuantity(product.id);
 
             return productView === "grid" ? (
@@ -336,17 +352,59 @@ export function ProductBrowser({
             );
           })
         ) : (
-          <div
-            className={
-              productView === "grid" ? "sm:col-span-2 xl:col-span-4" : ""
-            }
-          >
+          <div className={productView === "grid" ? "sm:col-span-2 xl:col-span-4" : ""}>
             <div className="rounded-[1.5rem] border border-dashed border-violet-200 bg-violet-50 px-6 py-10 text-center text-sm text-slate-500">
               {dictionary.emptyProducts}
             </div>
           </div>
         )}
       </div>
+
+      {/* Pagination — bottom right, small */}
+      {totalPages > 1 && (
+        <div className="mt-3 flex items-center justify-end gap-1.5">
+          <span className="text-[11px] text-slate-400">
+            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, products.length)} / {products.length}
+          </span>
+          <button
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-violet-200 text-violet-500 transition hover:bg-violet-50 disabled:opacity-30"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            type="button"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+            .reduce<(number | "…")[]>((acc, p, i, arr) => {
+              if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
+              acc.push(p);
+              return acc;
+            }, [])
+            .map((p, i) =>
+              p === "…" ? (
+                <span key={`ellipsis-${i}`} className="text-[11px] text-slate-300">…</span>
+              ) : (
+                <button
+                  key={p}
+                  className={`flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-semibold transition ${page === p ? "bg-violet-600 text-white" : "border border-violet-200 text-slate-500 hover:bg-violet-50"}`}
+                  onClick={() => setPage(p as number)}
+                  type="button"
+                >
+                  {p}
+                </button>
+              )
+            )}
+          <button
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-violet-200 text-violet-500 transition hover:bg-violet-50 disabled:opacity-30"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            type="button"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

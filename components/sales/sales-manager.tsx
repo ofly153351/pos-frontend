@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
 import { ChevronDown, Printer, Trash2, X } from "lucide-react";
 
 import { ProductBrowser } from "@/components/sales/product-browser";
@@ -49,9 +49,21 @@ type AmountNumpadState = {
   value: string;
 };
 
+export type SalesManagerHandle = {
+  toggleVat: () => void;
+  holdBill: () => void;
+  restoreBill: () => void;
+  toggleNote: () => void;
+  clearCartExternal: () => void;
+  openActions: () => void;
+};
+
 type SalesManagerProps = {
   dictionary: SalesDictionary;
   onCartItemsChange?: (count: number) => void;
+  externalSearch?: string;
+  onExternalSearchChange?: (value: string) => void;
+  onCartStateChange?: (state: { applyVat: boolean; showNoteField: boolean }) => void;
 };
 
 const productViewStorageKey = "pos-sales-product-view";
@@ -187,10 +199,13 @@ function getCartLine(item: CartItem) {
   };
 }
 
-export function SalesManager({
+export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(function SalesManager({
   dictionary,
   onCartItemsChange,
-}: SalesManagerProps) {
+  externalSearch,
+  onExternalSearchChange,
+  onCartStateChange,
+}: SalesManagerProps, ref) {
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -203,7 +218,9 @@ export function SalesManager({
   useEffect(() => {
     onCartItemsChange?.(cart.length);
   }, [cart, onCartItemsChange]);
-  const [search, setSearch] = useState("");
+  const [internalSearch, setInternalSearch] = useState("");
+  const search = externalSearch !== undefined ? externalSearch : internalSearch;
+  const setSearch = onExternalSearchChange ?? setInternalSearch;
   const [selectedCategory, setSelectedCategory] = useState("");
   const [productView, setProductView] = useState<ProductViewMode>("grid");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
@@ -233,12 +250,17 @@ export function SalesManager({
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
 
   useEffect(() => {
-    try { localStorage.setItem(applyVatStorageKey, String(applyVat)); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(applyVatStorageKey, String(applyVat));
+    } catch {
+      /* ignore */
+    }
   }, [applyVat]);
   const [discountEditorProductId, setDiscountEditorProductId] = useState<
     string | null
   >(null);
   const [showNoteField, setShowNoteField] = useState(false);
+  const [nameTooltip, setNameTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
   const [isBillDiscountFieldOpen, setIsBillDiscountFieldOpen] = useState(false);
   const [billDiscountType, setBillDiscountType] = useState<
     "amount" | "percent"
@@ -440,9 +462,7 @@ export function SalesManager({
     cartSummary.total - customerDiscountAmount - billDiscountAmount,
     0,
   );
-  const vatAmount = applyVat
-    ? roundCurrency(payableTotal * 0.07)
-    : 0;
+  const vatAmount = applyVat ? roundCurrency(payableTotal * 0.07) : 0;
   const settlementTotal = applyVat
     ? roundCurrency(payableTotal + vatAmount)
     : roundCurrency(payableTotal);
@@ -597,6 +617,25 @@ export function SalesManager({
     setLastQuickCashAmount(null);
     setPaymentMethod("cash");
   }
+
+  useImperativeHandle(ref, () => ({
+    toggleVat: () => { setApplyVat((v) => !v); setIsPaidAmountTouched(false); },
+    holdBill: () => { setHoldBillLabel(""); setIsHoldingBill(true); },
+    restoreBill: () => {
+      void (async () => {
+        try { const r = await listParkedBills(); setParkedBills(r.data ?? []); }
+        catch { setParkedBills([]); }
+        setIsRestoreDrawerOpen(true);
+      })();
+    },
+    toggleNote: () => setShowNoteField((c) => !c),
+    clearCartExternal: clearCart,
+    openActions: () => setIsActionsMenuOpen(true),
+  }));
+
+  useEffect(() => {
+    onCartStateChange?.({ applyVat, showNoteField });
+  }, [applyVat, showNoteField, onCartStateChange]);
 
   function applyQuickCash(addAmount: number, isExact = false) {
     setPaidAmount((currentValue) => {
@@ -952,7 +991,9 @@ export function SalesManager({
     });
   }
 
-  function onAmountNumpadInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+  function onAmountNumpadInputKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) {
     if (event.key === "Escape") {
       event.preventDefault();
       closeAmountNumpad();
@@ -1200,6 +1241,7 @@ export function SalesManager({
           onAddToCart={addToCart}
           onCategoryFilterChange={setSelectedCategory}
           onProductViewChange={setProductView}
+          hideSearch={externalSearch !== undefined}
           onSearchChange={setSearch}
           productView={productView}
           products={saleableProducts}
@@ -1211,54 +1253,27 @@ export function SalesManager({
         {/* ── Right: Cart panel ── */}
         <div className="xl:h-full xl:min-h-0">
           <section className="flex h-full min-h-[74dvh] flex-col rounded-[2rem] border border-violet-100 bg-white shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh]">
-
             {/* Header */}
             <div className="shrink-0 border-b border-violet-50 px-5 pb-3 pt-5">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">{dictionary.cartTitle}</h2>
+                  <h2 className="text-xl font-bold text-slate-900">
+                    {dictionary.cartTitle}
+                  </h2>
                   <p className="mt-0.5 text-xs text-violet-400">
-                    {cart.length > 0 ? `สินค้า ${cart.length} รายการ` : "ยังไม่มีสินค้า"}
+                    {cart.length > 0
+                      ? `สินค้า ${cart.length} รายการ`
+                      : "ยังไม่มีสินค้า"}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  {/* VAT toggle */}
-                  <button
-                    className={`flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[11px] font-bold transition ${applyVat ? "border-violet-500 bg-violet-600 text-white shadow-sm" : "border-violet-200 bg-white text-violet-400 hover:bg-violet-50"}`}
-                    onClick={() => { setApplyVat((v) => !v); setIsPaidAmountTouched(false); }}
-                    type="button"
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${applyVat ? "bg-white" : "bg-violet-300"}`} />
-                    VAT {applyVat ? "7%" : "off"}
-                  </button>
-                  {/* Hold bill */}
-                  <button
-                    className="flex h-8 items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 text-[11px] font-semibold text-orange-600 transition hover:bg-orange-100"
-                    onClick={() => { setHoldBillLabel(""); setIsHoldingBill(true); }}
-                    type="button"
-                  >
-                    พักบิล
-                  </button>
-                  {/* Restore bill */}
-                  <button
-                    className="flex h-8 items-center gap-1 rounded-full border border-violet-200 bg-violet-50 px-2.5 text-[11px] font-semibold text-violet-600 transition hover:bg-violet-100"
-                    onClick={async () => {
-                      try { const r = await listParkedBills(); setParkedBills(r.data ?? []); } catch { setParkedBills([]); }
-                      setIsRestoreDrawerOpen(true);
-                    }}
-                    type="button"
-                  >
-                    เรียกบิล
-                  </button>
-                  {/* More */}
-                  <button
-                    className="flex h-8 w-8 items-center justify-center rounded-full border border-violet-200 bg-white text-violet-600 transition hover:bg-violet-50"
-                    onClick={() => setIsActionsMenuOpen(true)}
-                    type="button"
-                  >
-                    <span className="text-base leading-none">···</span>
-                  </button>
-                </div>
+                <button
+                  className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 text-[11px] font-semibold text-rose-500 transition hover:bg-rose-100"
+                  onClick={clearCart}
+                  type="button"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  ล้าง
+                </button>
               </div>
 
               {/* Summary bar */}
@@ -1268,17 +1283,23 @@ export function SalesManager({
                   onClick={() => setIsBillDiscountFieldOpen((c) => !c)}
                   type="button"
                 >
-                  <ChevronDown className={`h-4 w-4 text-violet-400 transition-transform ${isBillDiscountFieldOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown
+                    className={`h-4 w-4 text-violet-400 transition-transform ${isBillDiscountFieldOpen ? "rotate-180" : ""}`}
+                  />
                   {dictionary.netTotalLabel}
                 </button>
-                <span className="text-lg font-bold text-violet-700">฿{formatAmount(settlementTotal)}</span>
+                <span className="text-lg font-bold text-violet-700">
+                  ฿{formatAmount(settlementTotal)}
+                </span>
               </div>
 
               {/* Collapsible discount/note area */}
               {isBillDiscountFieldOpen && (
                 <div className="mt-2 space-y-2 rounded-xl border border-violet-100 bg-white p-3">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-violet-700">{dictionary.discountBillLabel}</label>
+                    <label className="mb-1 block text-xs font-semibold text-violet-700">
+                      {dictionary.discountBillLabel}
+                    </label>
                     <div className="flex items-stretch">
                       <input
                         className="w-full rounded-l-xl rounded-r-none border border-r-0 border-violet-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
@@ -1291,22 +1312,37 @@ export function SalesManager({
                         value={billDiscount}
                       />
                       <div className="flex items-center gap-1 rounded-r-xl border border-violet-200 bg-gradient-to-b from-violet-100/60 to-violet-50/60 p-1">
-                        <button className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "amount" ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white" : "text-slate-600 hover:bg-white/90"}`} onClick={() => setBillDiscountType("amount")} type="button">฿</button>
-                        <button className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "percent" ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white" : "text-slate-600 hover:bg-white/90"}`} onClick={() => setBillDiscountType("percent")} type="button">%</button>
+                        <button
+                          className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "amount" ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white" : "text-slate-600 hover:bg-white/90"}`}
+                          onClick={() => setBillDiscountType("amount")}
+                          type="button"
+                        >
+                          ฿
+                        </button>
+                        <button
+                          className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "percent" ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white" : "text-slate-600 hover:bg-white/90"}`}
+                          onClick={() => setBillDiscountType("percent")}
+                          type="button"
+                        >
+                          %
+                        </button>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>{dictionary.summary.subtotalLabel}</span><span>฿{formatAmount(cartSummary.subtotal)}</span>
+                    <span>{dictionary.summary.subtotalLabel}</span>
+                    <span>฿{formatAmount(cartSummary.subtotal)}</span>
                   </div>
                   {totalDiscountAmount > 0 && (
                     <div className="flex items-center justify-between text-xs text-emerald-600">
-                      <span>{dictionary.totalDiscountLabel}</span><span>-฿{formatAmount(totalDiscountAmount)}</span>
+                      <span>{dictionary.totalDiscountLabel}</span>
+                      <span>-฿{formatAmount(totalDiscountAmount)}</span>
                     </div>
                   )}
                   {applyVat && (
                     <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span>VAT 7%</span><span>฿{formatAmount(vatAmount)}</span>
+                      <span>VAT 7%</span>
+                      <span>฿{formatAmount(vatAmount)}</span>
                     </div>
                   )}
                 </div>
@@ -1324,63 +1360,133 @@ export function SalesManager({
             </div>
 
             {/* ── Cart items (scrollable) ── */}
-            <div className="pretty-scroll min-h-0 flex-1 overflow-y-auto px-4 py-3" ref={cartScrollRef}>
+            <div
+              className="pretty-scroll min-h-0 flex-1 overflow-y-auto px-4 py-3"
+              ref={cartScrollRef}
+            >
               {cart.length > 0 ? (
                 <div className="space-y-2">
                   {cart.map((item) => {
                     const line = getCartLine(item);
                     return (
-                      <div key={item.product.id} className="flex items-center gap-3 rounded-xl border border-violet-100 bg-white px-4 py-3.5 shadow-sm">
+                      <div
+                        key={item.product.id}
+                        className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3.5 shadow-sm"
+                      >
                         {/* Thumbnail */}
                         {item.product.image_url ? (
-                          <img alt={item.product.name} className="h-10 w-10 shrink-0 rounded-xl border border-violet-100 object-cover" loading="lazy" src={item.product.image_url} />
+                          <img
+                            alt={item.product.name}
+                            className="h-10 w-10 shrink-0 rounded-xl border border-violet-100 object-cover"
+                            loading="lazy"
+                            src={item.product.image_url}
+                          />
                         ) : (
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm font-bold text-violet-600">
+                          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm font-bold text-violet-600">
                             {item.product.name.slice(0, 2).toUpperCase()}
                           </div>
                         )}
 
                         {/* Name + unit price */}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-900">{item.product.name}</p>
-                          <p className="text-xs text-slate-400">฿{formatAmount(line.unitPrice)}/หน่วย</p>
+                          <p
+                            className="cursor-default truncate text-sm font-semibold text-slate-900"
+                            tabIndex={0}
+                            onMouseEnter={(e) => {
+                              const el = e.currentTarget;
+                              if (el.scrollWidth > el.clientWidth) {
+                                const r = el.getBoundingClientRect();
+                                setNameTooltip({ x: r.left, y: r.top, text: item.product.name });
+                              }
+                            }}
+                            onMouseLeave={() => setNameTooltip(null)}
+                            onFocus={(e) => {
+                              const el = e.currentTarget;
+                              const r = el.getBoundingClientRect();
+                              setNameTooltip({ x: r.left, y: r.top, text: item.product.name });
+                            }}
+                            onBlur={() => setNameTooltip(null)}
+                          >
+                            {item.product.name}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            ฿{formatAmount(line.unitPrice)}/หน่วย
+                          </p>
                         </div>
 
                         {/* Unit price badge */}
-                        <span className="shrink-0 text-sm font-semibold text-slate-700">฿{formatAmount(line.unitPrice)}</span>
+                        {/*<span className="shrink-0 text-sm font-semibold text-slate-700">
+                          ฿{formatAmount(line.unitPrice)}
+                        </span>*/}
 
                         {/* Discount button */}
                         <button
                           className="shrink-0 rounded-lg border border-violet-200 px-2.5 py-1.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
-                          onClick={() => setDiscountEditorProductId(item.product.id)}
+                          onClick={() =>
+                            setDiscountEditorProductId(item.product.id)
+                          }
                           title={dictionary.discountTypeLabel}
                           type="button"
                         >
                           {line.lineDiscount > 0 ? (
-                            <span className="text-emerald-600">-฿{formatAmount(line.lineDiscount)}</span>
-                          ) : "%ลด"}
+                            <span className="text-emerald-600">
+                              -฿{formatAmount(line.lineDiscount)}
+                            </span>
+                          ) : (
+                            "%ลด"
+                          )}
                         </button>
 
                         {/* Qty stepper */}
                         <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-violet-200">
-                          <button className="flex h-8 w-8 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50" onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} type="button">−</button>
+                          <button
+                            className="flex h-8 w-8 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50"
+                            onClick={() =>
+                              updateCartQuantity(
+                                item.product.id,
+                                item.quantity - 1,
+                              )
+                            }
+                            type="button"
+                          >
+                            −
+                          </button>
                           <input
-                            className="h-8 w-10 bg-white text-center text-sm font-bold text-slate-900 outline-none"
+                            className="h-8 w-8 bg-white text-center text-sm font-bold text-slate-900 outline-none"
                             inputMode="numeric"
                             max={item.product.total_stock ?? 0}
                             min="1"
-                            onClick={() => openQuantityNumpad(item.product.id, item.quantity, item.product.total_stock ?? 0)}
+                            onClick={() =>
+                              openQuantityNumpad(
+                                item.product.id,
+                                item.quantity,
+                                item.product.total_stock ?? 0,
+                              )
+                            }
                             onFocus={(e) => e.target.blur()}
                             pattern="[0-9]*"
                             readOnly
                             type="number"
                             value={item.quantity}
                           />
-                          <button className="flex h-8 w-8 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50" onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} type="button">+</button>
+                          <button
+                            className="flex h-8 w-8 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50"
+                            onClick={() =>
+                              updateCartQuantity(
+                                item.product.id,
+                                item.quantity + 1,
+                              )
+                            }
+                            type="button"
+                          >
+                            +
+                          </button>
                         </div>
 
                         {/* Line total */}
-                        <span className="shrink-0 w-20 text-right text-sm font-bold text-slate-900">฿{formatAmount(line.lineTotal)}</span>
+                        <span className="shrink-0 w-20 text-right text-sm font-bold text-slate-900">
+                          ฿{formatAmount(line.lineTotal)}
+                        </span>
 
                         {/* Delete */}
                         <button
@@ -1402,32 +1508,15 @@ export function SalesManager({
               )}
             </div>
 
-            {/* ── Bottom actions ── */}
+            {/* ── Checkout button ── */}
             <div className="shrink-0 border-t border-violet-50 px-4 pb-4 pt-3">
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-violet-200 py-2.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
-                  onClick={clearCart}
-                  type="button"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  {dictionary.clearCartButton}
-                </button>
-                <button
-                  className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-semibold transition ${showNoteField ? "border-violet-400 bg-violet-50 text-violet-700" : "border-violet-200 text-violet-600 hover:bg-violet-50"}`}
-                  onClick={() => setShowNoteField((c) => !c)}
-                  type="button"
-                >
-                  หมายเหตุ {showNoteField ? "✓" : ""}
-                </button>
-              </div>
               <button
-                className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={cart.length === 0 || isPending}
                 onClick={() => setIsCheckoutSummaryOpen(true)}
                 type="button"
               >
-                💳 {dictionary.checkoutButton} (฿{formatAmount(settlementTotal)})
+                {dictionary.checkoutButton} (฿{formatAmount(settlementTotal)})
                 <span className="ml-1">→</span>
               </button>
             </div>
@@ -1614,8 +1703,9 @@ export function SalesManager({
                   const itemCount = bill.items?.length ?? 0;
                   const totalAmount = (bill.items ?? []).reduce(
                     (sum: number, item: any) => {
-                      const price =
-                        Number(item.effective_price ?? item.price ?? 0);
+                      const price = Number(
+                        item.effective_price ?? item.price ?? 0,
+                      );
                       return sum + price * (item.quantity ?? 0);
                     },
                     0,
@@ -1629,33 +1719,28 @@ export function SalesManager({
                         if (
                           window.confirm(dictionary.restoreBillConfirmLabel)
                         ) {
-                          const items = (bill.items ?? []).map(
-                            (item: any) => ({
-                              discountType: item.discount_type ?? "none",
-                              discountValue: item.discount_value ?? "0",
-                              product: products.find(
-                                (p) => p.id === item.product_id,
-                              ) ?? {
+                          const items = (bill.items ?? []).map((item: any) => ({
+                            discountType: item.discount_type ?? "none",
+                            discountValue: item.discount_value ?? "0",
+                            product:
+                              products.find((p) => p.id === item.product_id) ??
+                              ({
                                 id: item.product_id,
-                                effective_price: item.effective_price ?? item.price ?? 0,
+                                effective_price:
+                                  item.effective_price ?? item.price ?? 0,
                                 image_url: null,
                                 name: item.product_name ?? "Unknown",
                                 sku: null,
-                              } as Product,
-                              quantity: item.quantity ?? 0,
-                            }),
-                          );
+                              } as Product),
+                            quantity: item.quantity ?? 0,
+                          }));
 
                           setCart(items);
-                          setSelectedCustomerId(
-                            bill.selectedCustomerId ?? "",
-                          );
+                          setSelectedCustomerId(bill.selectedCustomerId ?? "");
                           setCustomerSettlementMode(
                             bill.customerSettlementMode ?? "cash_now",
                           );
-                          setPaymentMethod(
-                            bill.paymentMethod ?? "cash",
-                          );
+                          setPaymentMethod(bill.paymentMethod ?? "cash");
                           setNote(bill.note ?? "");
                           setBillDiscount(
                             bill.bill_discount_type === "percent"
@@ -1673,9 +1758,7 @@ export function SalesManager({
 
                           void deleteParkedBill(bill.id);
                           setIsRestoreDrawerOpen(false);
-                          setSuccessMessage(
-                            dictionary.restoreBillConfirmLabel,
-                          );
+                          setSuccessMessage(dictionary.restoreBillConfirmLabel);
                         }
                       }}
                       type="button"
@@ -1873,7 +1956,9 @@ export function SalesManager({
                                 ? "border-violet-600 bg-violet-600 text-white"
                                 : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                             }`}
-                            onClick={() => applyQuickCash(option.amount, option.isExact)}
+                            onClick={() =>
+                              applyQuickCash(option.amount, option.isExact)
+                            }
                             type="button"
                           >
                             {option.isExact
@@ -1894,24 +1979,43 @@ export function SalesManager({
                     <span>{dictionary.summary.subtotalLabel}</span>
                     <span>{formatCurrency(cartSummary.subtotal)}</span>
                   </div>
-                  <div className={`flex items-center justify-between text-sm ${cartSummary.discountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                  <div
+                    className={`flex items-center justify-between text-sm ${cartSummary.discountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
+                  >
                     <span>{dictionary.summary.discountLabel}</span>
-                    <span>{cartSummary.discountAmount > 0 ? `-${formatCurrency(cartSummary.discountAmount)}` : formatCurrency(0)}</span>
+                    <span>
+                      {cartSummary.discountAmount > 0
+                        ? `-${formatCurrency(cartSummary.discountAmount)}`
+                        : formatCurrency(0)}
+                    </span>
                   </div>
-                  <div className={`flex items-center justify-between text-sm ${billDiscountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                  <div
+                    className={`flex items-center justify-between text-sm ${billDiscountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
+                  >
                     <span>
                       {dictionary.discountBillLabel}
-                      {billDiscountType === "percent" && billDiscountPercent > 0 ? ` (${billDiscountPercent}%)` : ""}
+                      {billDiscountType === "percent" && billDiscountPercent > 0
+                        ? ` (${billDiscountPercent}%)`
+                        : ""}
                     </span>
-                    <span>{billDiscountAmount > 0 ? `-${formatCurrency(billDiscountAmount)}` : formatCurrency(0)}</span>
+                    <span>
+                      {billDiscountAmount > 0
+                        ? `-${formatCurrency(billDiscountAmount)}`
+                        : formatCurrency(0)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm text-slate-400">
                     <span>{dictionary.customerTypeLabel}</span>
-                    <span className="font-medium text-slate-600">{customerTypeLabel}</span>
+                    <span className="font-medium text-slate-600">
+                      {customerTypeLabel}
+                    </span>
                   </div>
                   {selectedCustomerId && customerDiscountAmount > 0 ? (
                     <div className="flex items-center justify-between text-sm text-emerald-600">
-                      <span>{dictionary.customerDiscountLabel} ({customerDiscountPercent}%)</span>
+                      <span>
+                        {dictionary.customerDiscountLabel} (
+                        {customerDiscountPercent}%)
+                      </span>
                       <span>-{formatCurrency(customerDiscountAmount)}</span>
                     </div>
                   ) : null}
@@ -1926,18 +2030,30 @@ export function SalesManager({
 
                   {/* Net total */}
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-semibold text-slate-700">{dictionary.summary.totalLabel}</span>
-                    <span className="text-xl font-bold text-violet-700">{formatCurrency(settlementTotal)}</span>
+                    <span className="text-base font-semibold text-slate-700">
+                      {dictionary.summary.totalLabel}
+                    </span>
+                    <span className="text-xl font-bold text-violet-700">
+                      {formatCurrency(settlementTotal)}
+                    </span>
                   </div>
 
                   {/* Paid & change */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">{dictionary.totalPaidLabel}</span>
-                    <span className="text-sm font-semibold text-slate-800">{formatCurrency(effectivePaidAmount)}</span>
+                    <span className="text-sm text-slate-500">
+                      {dictionary.totalPaidLabel}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-800">
+                      {formatCurrency(effectivePaidAmount)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">{dictionary.changeLabel}</span>
-                    <span className={`text-sm font-bold ${changeAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                    <span className="text-sm text-slate-500">
+                      {dictionary.changeLabel}
+                    </span>
+                    <span
+                      className={`text-sm font-bold ${changeAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
+                    >
                       {formatCurrency(Math.max(changeAmount, 0))}
                     </span>
                   </div>
@@ -2333,6 +2449,17 @@ export function SalesManager({
           </div>
         </div>
       ) : null}
+
+      {/* Fixed product name tooltip — escapes overflow-y-auto clipping */}
+      {nameTooltip && (
+        <div
+          className="pointer-events-none fixed z-[400] max-w-[260px] break-words rounded-xl bg-slate-800 px-3 py-1.5 text-xs font-medium leading-snug text-white shadow-xl"
+          style={{ left: nameTooltip.x, top: nameTooltip.y - 40 }}
+        >
+          {nameTooltip.text}
+          <div className="absolute left-3 top-full h-2 w-2 -translate-y-0.5 rotate-45 bg-slate-800" />
+        </div>
+      )}
     </>
   );
-}
+});
