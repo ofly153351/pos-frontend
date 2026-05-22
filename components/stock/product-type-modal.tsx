@@ -92,7 +92,7 @@ export function ProductTypeModal({
               {managementDictionary.typeNameLabel}
             </span>
             <input
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-violet-500"
+              className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus:border-violet-500"
               onChange={(event) => onNameChange(event.target.value)}
               value={name}
             />
@@ -103,13 +103,13 @@ export function ProductTypeModal({
               {managementDictionary.descriptionLabel}
             </span>
             <input
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-violet-500"
+              className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none focus:border-violet-500"
               onChange={(event) => onDescriptionChange(event.target.value)}
               value={description}
             />
           </label>
 
-          <label className="flex items-center gap-3 rounded-xl border border-slate-200 px-4 py-3">
+          <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3">
             <input
               checked={isActive}
               onChange={(event) => onActiveChange(event.target.checked)}
@@ -121,21 +121,21 @@ export function ProductTypeModal({
           </label>
 
           {error ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
               {error}
             </div>
           ) : null}
 
           <div className="flex justify-end gap-3 pt-2">
             <button
-              className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+              className="rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
               onClick={onClose}
               type="button"
             >
               {cancelLabel}
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
+              className="inline-flex items-center gap-2 rounded-lg bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
               disabled={isPending}
               type="submit"
             >

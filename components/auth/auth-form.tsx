@@ -126,7 +126,7 @@ export function AuthForm({
           </span>
           <input
             autoComplete={field.autoComplete}
-            className={`w-full rounded-2xl border px-4 py-3 text-base outline-none transition placeholder:text-slate-400 focus:bg-white ${
+            className={`w-full rounded-xl border px-4 py-3 text-base outline-none transition placeholder:text-slate-400 focus:bg-white ${
               errors[field.name]
                 ? "border-rose-300 bg-rose-50/70 focus:border-rose-400"
                 : "border-violet-200 bg-violet-50/50 focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
@@ -159,7 +159,7 @@ export function AuthForm({
 
       {message ? (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`rounded-xl border px-4 py-3 text-sm ${
             messageTone === "success"
               ? "border-emerald-200 bg-emerald-50 text-emerald-700"
               : "border-rose-200 bg-rose-50 text-rose-700"
@@ -170,7 +170,7 @@ export function AuthForm({
       ) : null}
 
       <button
-        className="mt-2 inline-flex w-full items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-3 text-base font-semibold text-white transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-2 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-3 text-base font-semibold text-white transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
         disabled={isPending}
         type="submit"
       >

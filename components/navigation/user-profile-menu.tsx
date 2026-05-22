@@ -119,14 +119,14 @@ export function UserProfileMenu({
         }`}
       >
         <button
-          className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+          className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
           onClick={handleEditProfile}
           type="button"
         >
           {editProfileLabel}
         </button>
         <button
-          className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isLoggingOut}
           onClick={handleLogout}
           type="button"

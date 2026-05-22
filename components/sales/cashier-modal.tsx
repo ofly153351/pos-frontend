@@ -97,7 +97,7 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
 
       {/* Sales content */}
       <div className="flex-1 overflow-auto">
-        <div className="mx-auto w-[90%] pt-4">
+        <div className="mx-5 pt-4 pb-4">
           <SalesManager
             dictionary={dictionary}
             onCartItemsChange={handleCartChange}

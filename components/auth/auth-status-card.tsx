@@ -46,7 +46,7 @@ export function AuthStatusCard({ locale, labels }: AuthStatusCardProps) {
   return (
     <div className="mx-auto w-full max-w-xl rounded-[2rem] border border-violet-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
       <h1 className="text-3xl font-semibold text-slate-950">{labels.title}</h1>
-      <div className="mt-6 space-y-3 rounded-[1.5rem] bg-violet-50/60 p-5 text-slate-700">
+      <div className="mt-6 space-y-3 rounded-lg bg-violet-50/60 p-5 text-slate-700">
         <p>
           <span className="font-semibold">{labels.user}: </span>
           {session.user.name || labels.empty}
@@ -58,7 +58,7 @@ export function AuthStatusCard({ locale, labels }: AuthStatusCardProps) {
       </div>
       <div className="mt-6 flex gap-3">
         <button
-          className="rounded-2xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700"
+          className="rounded-lg bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700"
           onClick={() => {
             clearAuthSession();
             router.replace(`/${locale}/login`);
@@ -68,7 +68,7 @@ export function AuthStatusCard({ locale, labels }: AuthStatusCardProps) {
           {labels.logout}
         </button>
         <Link
-          className="rounded-2xl border border-violet-200 px-5 py-3 font-semibold text-violet-700 transition hover:bg-violet-50"
+          className="rounded-lg border border-violet-200 px-5 py-3 font-semibold text-violet-700 transition hover:bg-violet-50"
           href={`/${locale}/login`}
         >
           {labels.backToLogin}

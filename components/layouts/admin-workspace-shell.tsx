@@ -50,7 +50,7 @@ export function AdminWorkspaceShell({
 
             <div className="flex flex-wrap gap-3">
               <Link
-                className="rounded-2xl border border-violet-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 href={`/${locale}/dashboard`}
               >
                 {navigation.dashboard}
@@ -61,7 +61,7 @@ export function AdminWorkspaceShell({
                 return (
                   <Link
                     key={item.key}
-                    className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                    className={`rounded-lg px-4 py-3 text-sm font-semibold transition ${
                       isActive
                         ? "bg-violet-600 text-white"
                         : "border border-violet-200 text-violet-700 hover:bg-violet-50"

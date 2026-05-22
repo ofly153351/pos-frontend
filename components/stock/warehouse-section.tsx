@@ -1096,7 +1096,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 {addError}
               </div>
             )}
-            <div className="max-h-48 space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2">
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-white p-2">
               {filteredAvailable.length === 0 ? (
                 <p className="py-4 text-center text-sm text-slate-400">
                   {dictionary.noProductsLabel}
@@ -1525,7 +1525,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
               {previewBarcodeSvg ? (
                 <img
                   alt={`${dictionary.barcodeTooltip} ${previewSku}`}

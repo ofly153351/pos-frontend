@@ -97,7 +97,7 @@ export function ConfirmDialog({
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
           <button
-            className="rounded-xl px-4 py-2.5 text-sm font-medium text-violet-600 transition hover:bg-violet-50"
+            className="rounded-lg px-4 py-2.5 text-sm font-medium text-violet-600 transition hover:bg-violet-50"
             onClick={onCancel}
             type="button"
           >
@@ -105,7 +105,7 @@ export function ConfirmDialog({
           </button>
           <button
             ref={confirmRef}
-            className={`rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+            className={`rounded-lg px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               danger
                 ? "bg-rose-600 hover:bg-rose-700 focus:ring-rose-500"
                 : "bg-violet-700 hover:bg-violet-800 focus:ring-violet-500"

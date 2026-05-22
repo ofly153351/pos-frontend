@@ -111,7 +111,7 @@ export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModa
               items.map((item) => {
                 const remaining = item.quantity - item.received_quantity;
                 return (
-                  <div key={item.id} className="rounded-xl border border-slate-200 p-4">
+                  <div key={item.id} className="rounded-lg border border-slate-200 p-4">
                     <div className="mb-2 flex items-center justify-between">
                       <span className="text-sm font-medium text-slate-900">{item.product_name || item.product_id}</span>
                       <span className="text-xs text-slate-500">
@@ -124,7 +124,7 @@ export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModa
                           {dictionary.receiveQuantity} (max: {remaining})
                         </label>
                         <input
-                          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                           max={remaining}
                           min={0}
                           onChange={(e) => handleQtyChange(item.product_id, e.target.value)}
@@ -151,14 +151,14 @@ export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModa
 
           <div className="mt-6 flex items-center justify-end gap-3">
             <button
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               onClick={onClose}
               type="button"
             >
               {dictionary.cancel}
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
               disabled={isPending}
               onClick={handleReceive}
               type="button"

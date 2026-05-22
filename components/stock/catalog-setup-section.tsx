@@ -71,27 +71,27 @@ export function CatalogSetupSection({
         </div>
         <div className="flex flex-wrap gap-3">
           <input
-            className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:bg-white"
+            className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:bg-white"
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={searchPlaceholder}
             value={catalogSearch}
           />
           <button
-            className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+            className="rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
             onClick={onOpenCreateTypeModal}
             type="button"
           >
             {managementDictionary.createTypeButton}
           </button>
           <button
-            className="rounded-xl bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800"
+            className="rounded-lg bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800"
             onClick={onOpenCreateUnitModal}
             type="button"
           >
             {managementDictionary.createUnitButton}
           </button>
           <button
-            className="rounded-xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700"
+            className="rounded-lg bg-cyan-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700"
             onClick={onOpenCreateBrandModal}
             type="button"
           >
@@ -101,7 +101,7 @@ export function CatalogSetupSection({
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-slate-900">{managementDictionary.typeTitle}</p>
@@ -116,7 +116,7 @@ export function CatalogSetupSection({
           {productTypes.length > 0 ? (
             <div className="mt-4 space-y-3">
               {productTypes.map((productType) => (
-                <div key={productType.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div key={productType.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900">{productType.name}</p>
@@ -168,13 +168,13 @@ export function CatalogSetupSection({
             <p className="mt-4 text-sm text-slate-500">{managementDictionary.typeEmpty}</p>
           )}
           {typeError ? (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
+            <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
               {typeError}
             </div>
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-slate-900">{managementDictionary.unitTitle}</p>
@@ -189,7 +189,7 @@ export function CatalogSetupSection({
           {productUnits.length > 0 ? (
             <div className="mt-4 space-y-3">
               {productUnits.map((unit) => (
-                <div key={unit.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div key={unit.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900">{unit.name}</p>
@@ -239,13 +239,13 @@ export function CatalogSetupSection({
             <p className="mt-4 text-sm text-slate-500">{managementDictionary.unitEmpty}</p>
           )}
           {unitError ? (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
+            <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
               {unitError}
             </div>
           ) : null}
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-slate-900">{managementDictionary.brandTitle}</p>
@@ -260,7 +260,7 @@ export function CatalogSetupSection({
           {productBrands.length > 0 ? (
             <div className="mt-4 space-y-3">
               {productBrands.map((brand) => (
-                <div key={brand.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                <div key={brand.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-slate-900">{brand.name}</p>
@@ -310,7 +310,7 @@ export function CatalogSetupSection({
             <p className="mt-4 text-sm text-slate-500">{managementDictionary.brandEmpty}</p>
           )}
           {brandError ? (
-            <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
+            <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-700">
               {brandError}
             </div>
           ) : null}

@@ -303,14 +303,14 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <p className="mt-1 text-xs text-slate-500">{compactRangeText(data, locale)}</p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-2xl border border-violet-200 bg-white/90 p-1.5 shadow-sm">
+          <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-white/90 p-1.5 shadow-sm">
             {([
               { label: dictionary.filters.periodToday, value: "today" },
               { label: dictionary.filters.period7d, value: "7d" },
               { label: dictionary.filters.period30d, value: "30d" },
             ] as const).map((option) => (
               <button
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                   period === option.value
                     ? "bg-violet-600 text-white"
                     : "text-violet-600 hover:bg-violet-50"
@@ -324,14 +324,14 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             ))}
             <button
               aria-label={dictionary.filters.periodLabel}
-              className="rounded-xl border border-slate-200 px-2.5 py-1.5 text-sm font-semibold text-violet-600 transition hover:bg-violet-50"
+              className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-semibold text-violet-600 transition hover:bg-violet-50"
               onClick={() => setIsFilterOpen((current) => !current)}
               type="button"
             >
               ...
             </button>
             <button
-              className="rounded-xl bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
+              className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
               disabled={isLoading}
               onClick={() => void loadDashboard()}
               type="button"
@@ -342,7 +342,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
         </div>
 
         {isFilterOpen ? (
-          <div className="mt-4 grid gap-2 rounded-2xl border border-slate-200 bg-white/90 p-3 sm:grid-cols-2 lg:grid-cols-6">
+          <div className="mt-4 grid gap-2 rounded-xl border border-slate-200 bg-white/90 p-3 sm:grid-cols-2 lg:grid-cols-6">
             <label className="flex flex-col gap-1 text-xs text-slate-600">
               <span>{dictionary.filters.periodLabel}</span>
               <select
@@ -479,7 +479,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             </span>
           </div>
 
-          <div className="mt-4 h-[300px] rounded-2xl bg-gradient-to-b from-violet-100/60 to-white p-3">
+          <div className="mt-4 h-[300px] rounded-lg bg-gradient-to-b from-violet-100/60 to-white p-3">
             {isLoading ? (
               <div className="flex h-full items-center justify-center text-sm text-slate-500">{dictionary.loading}</div>
             ) : recentSeries.length === 0 ? (

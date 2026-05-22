@@ -673,7 +673,7 @@ export function UserWorkspaceSidebar({
                 {shell.storeLabel}
               </p>
               <div className="mt-2 flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-violet-700 bg-violet-900">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-violet-700 bg-violet-900">
                   {storeLogoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

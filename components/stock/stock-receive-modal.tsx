@@ -201,7 +201,7 @@ export function StockReceiveModal({
                   {selectedProducts.map((product) => (
                     <div
                       key={product.id}
-                      className="rounded-xl border border-slate-200 bg-slate-50 p-4"
+                      className="rounded-lg border border-slate-200 bg-slate-50 p-4"
                     >
                       <div className="flex items-center gap-3">
                         {/* Image */}
@@ -345,14 +345,14 @@ export function StockReceiveModal({
           {activeTab === "receive" ? (
             <div className="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4">
               <button
-                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                 onClick={onClose}
                 type="button"
               >
                 {dictionary.cancel ?? "ยกเลิก"}
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
                 disabled={isPending}
                 onClick={handleSubmit}
                 type="button"

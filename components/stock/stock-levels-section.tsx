@@ -373,7 +373,7 @@ export function StockLevelsSection({
 
             <div className="mt-6 flex flex-col gap-3">
               <button
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => {
                   const template = [
                     "Name,SKU,Price,Stock,Min Stock,Max Stock,Active",
@@ -397,7 +397,7 @@ export function StockLevelsSection({
               </button>
 
               <button
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
                 onClick={() => importFileRef.current?.click()}
                 type="button"
               >
@@ -458,7 +458,7 @@ export function StockLevelsSection({
             />
 
             <button
-              className="mt-4 w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="mt-4 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
               onClick={() => setIsImportModalOpen(false)}
               type="button"
             >

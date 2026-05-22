@@ -1189,7 +1189,7 @@ export function SalesManager({
 
   return (
     <>
-      <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[1fr_420px]">
+      <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
         <ProductBrowser
           categories={categories}
           dictionary={dictionary}
@@ -1262,7 +1262,7 @@ export function SalesManager({
               </div>
 
               {/* Summary bar */}
-              <div className="mt-3 flex items-center justify-between rounded-2xl bg-violet-50 px-4 py-2.5">
+              <div className="mt-3 flex items-center justify-between rounded-xl bg-violet-50 px-4 py-2.5">
                 <button
                   className="flex items-center gap-2 text-sm font-semibold text-slate-700"
                   onClick={() => setIsBillDiscountFieldOpen((c) => !c)}
@@ -1276,7 +1276,7 @@ export function SalesManager({
 
               {/* Collapsible discount/note area */}
               {isBillDiscountFieldOpen && (
-                <div className="mt-2 space-y-2 rounded-2xl border border-violet-100 bg-white p-3">
+                <div className="mt-2 space-y-2 rounded-xl border border-violet-100 bg-white p-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-violet-700">{dictionary.discountBillLabel}</label>
                     <div className="flex items-stretch">
@@ -1315,7 +1315,7 @@ export function SalesManager({
               {/* Note field */}
               {showNoteField && (
                 <textarea
-                  className="mt-2 min-h-16 w-full rounded-2xl border border-violet-200 bg-violet-50/30 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  className="mt-2 min-h-16 w-full rounded-xl border border-violet-200 bg-violet-50/30 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   onChange={(e) => setNote(e.target.value)}
                   placeholder={dictionary.notePlaceholder}
                   value={note}
@@ -1330,28 +1330,28 @@ export function SalesManager({
                   {cart.map((item) => {
                     const line = getCartLine(item);
                     return (
-                      <div key={item.product.id} className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-white px-3 py-2.5 shadow-sm">
+                      <div key={item.product.id} className="flex items-center gap-3 rounded-xl border border-violet-100 bg-white px-4 py-3.5 shadow-sm">
                         {/* Thumbnail */}
                         {item.product.image_url ? (
                           <img alt={item.product.name} className="h-10 w-10 shrink-0 rounded-xl border border-violet-100 object-cover" loading="lazy" src={item.product.image_url} />
                         ) : (
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-xs font-bold text-violet-600">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm font-bold text-violet-600">
                             {item.product.name.slice(0, 2).toUpperCase()}
                           </div>
                         )}
 
                         {/* Name + unit price */}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-semibold text-slate-900">{item.product.name}</p>
-                          <p className="text-[11px] text-slate-400">฿{formatAmount(line.unitPrice)}/หน่วย</p>
+                          <p className="truncate text-sm font-semibold text-slate-900">{item.product.name}</p>
+                          <p className="text-xs text-slate-400">฿{formatAmount(line.unitPrice)}/หน่วย</p>
                         </div>
 
                         {/* Unit price badge */}
-                        <span className="shrink-0 text-xs font-semibold text-slate-700">฿{formatAmount(line.unitPrice)}</span>
+                        <span className="shrink-0 text-sm font-semibold text-slate-700">฿{formatAmount(line.unitPrice)}</span>
 
                         {/* Discount button */}
                         <button
-                          className="shrink-0 rounded-lg border border-violet-200 px-2 py-1 text-[11px] font-semibold text-violet-600 transition hover:bg-violet-50"
+                          className="shrink-0 rounded-lg border border-violet-200 px-2.5 py-1.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
                           onClick={() => setDiscountEditorProductId(item.product.id)}
                           title={dictionary.discountTypeLabel}
                           type="button"
@@ -1363,9 +1363,9 @@ export function SalesManager({
 
                         {/* Qty stepper */}
                         <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-violet-200">
-                          <button className="flex h-7 w-7 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50" onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} type="button">−</button>
+                          <button className="flex h-8 w-8 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50" onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)} type="button">−</button>
                           <input
-                            className="h-7 w-9 bg-white text-center text-xs font-bold text-slate-900 outline-none"
+                            className="h-8 w-10 bg-white text-center text-sm font-bold text-slate-900 outline-none"
                             inputMode="numeric"
                             max={item.product.total_stock ?? 0}
                             min="1"
@@ -1376,16 +1376,16 @@ export function SalesManager({
                             type="number"
                             value={item.quantity}
                           />
-                          <button className="flex h-7 w-7 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50" onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} type="button">+</button>
+                          <button className="flex h-8 w-8 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50" onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)} type="button">+</button>
                         </div>
 
                         {/* Line total */}
-                        <span className="shrink-0 w-16 text-right text-sm font-bold text-slate-900">฿{formatAmount(line.lineTotal)}</span>
+                        <span className="shrink-0 w-20 text-right text-sm font-bold text-slate-900">฿{formatAmount(line.lineTotal)}</span>
 
                         {/* Delete */}
                         <button
                           aria-label={dictionary.removeItemButton}
-                          className="shrink-0 flex h-7 w-7 items-center justify-center rounded-lg text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
+                          className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
                           onClick={() => updateCartQuantity(item.product.id, 0)}
                           type="button"
                         >
@@ -1396,7 +1396,7 @@ export function SalesManager({
                   })}
                 </div>
               ) : (
-                <div className="flex h-full min-h-[120px] items-center justify-center rounded-[1.5rem] border border-dashed border-violet-200 bg-violet-50/40 text-sm text-violet-300">
+                <div className="flex h-full min-h-[120px] items-center justify-center rounded-xl border border-dashed border-violet-200 bg-violet-50/40 text-sm text-violet-300">
                   {dictionary.emptyCart}
                 </div>
               )}
@@ -1406,7 +1406,7 @@ export function SalesManager({
             <div className="shrink-0 border-t border-violet-50 px-4 pb-4 pt-3">
               <div className="grid grid-cols-2 gap-2">
                 <button
-                  className="flex items-center justify-center gap-1.5 rounded-2xl border border-violet-200 py-2.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-violet-200 py-2.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
                   onClick={clearCart}
                   type="button"
                 >
@@ -1414,7 +1414,7 @@ export function SalesManager({
                   {dictionary.clearCartButton}
                 </button>
                 <button
-                  className={`flex items-center justify-center gap-1.5 rounded-2xl border py-2.5 text-xs font-semibold transition ${showNoteField ? "border-violet-400 bg-violet-50 text-violet-700" : "border-violet-200 text-violet-600 hover:bg-violet-50"}`}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-xs font-semibold transition ${showNoteField ? "border-violet-400 bg-violet-50 text-violet-700" : "border-violet-200 text-violet-600 hover:bg-violet-50"}`}
                   onClick={() => setShowNoteField((c) => !c)}
                   type="button"
                 >
@@ -1422,7 +1422,7 @@ export function SalesManager({
                 </button>
               </div>
               <button
-                className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-500 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={cart.length === 0 || isPending}
                 onClick={() => setIsCheckoutSummaryOpen(true)}
                 type="button"
@@ -1443,7 +1443,7 @@ export function SalesManager({
                 {dictionary.actionsLabel}
               </h3>
               <button
-                className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => setIsActionsMenuOpen(false)}
                 type="button"
               >
@@ -1453,7 +1453,7 @@ export function SalesManager({
 
             <div className="mt-4 space-y-2">
               <button
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition ${
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
                   showNoteField
                     ? "bg-violet-50 text-violet-700"
                     : "text-violet-700 hover:bg-violet-50"
@@ -1468,7 +1468,7 @@ export function SalesManager({
                 <span>{showNoteField ? "✓" : ""}</span>
               </button>
               <button
-                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
                 onClick={() => {
                   setHoldBillLabel("");
                   setIsHoldingBill(true);
@@ -1478,7 +1478,7 @@ export function SalesManager({
                 <span>{dictionary.holdBillLabel}</span>
               </button>
               <button
-                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
                 onClick={async () => {
                   try {
                     const response = await listParkedBills();
@@ -1495,7 +1495,7 @@ export function SalesManager({
               </button>
               <div className="my-1 border-t border-violet-100" />
               <button
-                className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+                className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
                 onClick={clearCart}
                 type="button"
               >
@@ -1515,7 +1515,7 @@ export function SalesManager({
             </h3>
             <div className="mt-4">
               <input
-                className="w-full rounded-2xl border border-violet-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-lg border border-violet-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(e) => setHoldBillLabel(e.target.value)}
                 placeholder={dictionary.holdBillPlaceholderLabel}
                 type="text"
@@ -1524,14 +1524,14 @@ export function SalesManager({
             </div>
             <div className="mt-5 flex gap-3">
               <button
-                className="flex-1 rounded-xl border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="flex-1 rounded-lg border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => setIsHoldingBill(false)}
                 type="button"
               >
                 {dictionary.holdBillCancelLabel}
               </button>
               <button
-                className="flex-1 rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
+                className="flex-1 rounded-lg bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
                 onClick={async () => {
                   if (cart.length === 0) {
                     setError(dictionary.emptyCart);
@@ -1596,7 +1596,7 @@ export function SalesManager({
                 {dictionary.restoreBillDrawerTitle}
               </h3>
               <button
-                className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => setIsRestoreDrawerOpen(false)}
                 type="button"
               >
@@ -1624,7 +1624,7 @@ export function SalesManager({
                   return (
                     <button
                       key={bill.id}
-                      className="w-full rounded-xl border border-violet-100 bg-white p-4 text-left transition hover:bg-violet-50 hover:border-violet-300"
+                      className="w-full rounded-lg border border-violet-100 bg-white p-4 text-left transition hover:bg-violet-50 hover:border-violet-300"
                       onClick={() => {
                         if (
                           window.confirm(dictionary.restoreBillConfirmLabel)
@@ -1712,7 +1712,7 @@ export function SalesManager({
                 {dictionary.checkoutSectionTitle}
               </h3>
               <button
-                className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => setIsCheckoutSummaryOpen(false)}
                 type="button"
               >
@@ -1727,7 +1727,7 @@ export function SalesManager({
                     {dictionary.customerLabel}
                   </label>
                   <select
-                    className="w-full rounded-2xl border border-violet-200 bg-violet-50/30 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    className="w-full rounded-lg border border-violet-200 bg-violet-50/30 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                     onChange={(event) =>
                       setSelectedCustomerId(event.target.value)
                     }
@@ -1756,7 +1756,7 @@ export function SalesManager({
                     </label>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <button
-                        className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
                           customerSettlementMode === "cash_now"
                             ? "border-violet-600 bg-violet-600 text-white"
                             : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
@@ -1767,7 +1767,7 @@ export function SalesManager({
                         {dictionary.customerSettlementCashNow}
                       </button>
                       <button
-                        className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                        className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
                           customerSettlementMode === "invoice"
                             ? "border-violet-600 bg-violet-600 text-white"
                             : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
@@ -1799,7 +1799,7 @@ export function SalesManager({
                       ].map((option) => (
                         <button
                           key={option.value}
-                          className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                          className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
                             paymentMethod === option.value
                               ? "border-violet-600 bg-violet-600 text-white"
                               : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
@@ -1828,7 +1828,7 @@ export function SalesManager({
                           {dictionary.customerPaymentLabel}
                         </label>
                         <input
-                          className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-right text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                          className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-right text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                           inputMode="numeric"
                           min="0"
                           onClick={() => openAmountNumpad("paid_amount")}
@@ -1848,7 +1848,7 @@ export function SalesManager({
                             {dictionary.changeLabel}
                           </label>
                           <input
-                            className="w-full rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 text-right text-xs font-semibold text-slate-700 outline-none"
+                            className="w-full rounded-lg border border-violet-100 bg-violet-50 px-3 py-2.5 text-right text-xs font-semibold text-slate-700 outline-none"
                             readOnly
                             value={formatCurrency(Math.max(changeAmount, 0))}
                           />
@@ -1940,7 +1940,7 @@ export function SalesManager({
             </div>
 
             <button
-              className="mt-5 w-full rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-3 text-base font-semibold text-white transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-5 w-full rounded-lg bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-3 text-base font-semibold text-white transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={cart.length === 0 || isPending}
               onClick={() => {
                 setIsCheckoutSummaryOpen(false);
@@ -1962,7 +1962,7 @@ export function SalesManager({
                 {discountEditorItem.product.name}
               </h3>
               <button
-                className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => setDiscountEditorProductId(null)}
                 type="button"
               >
@@ -1991,7 +1991,7 @@ export function SalesManager({
                     <button
                       aria-label={option.label}
                       key={option.value}
-                      className={`rounded-xl border px-3 py-2 text-base font-bold transition ${
+                      className={`rounded-lg border px-3 py-2 text-base font-bold transition ${
                         discountEditorItem.discountType === option.value
                           ? "border-violet-600 bg-violet-600 text-white"
                           : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
@@ -2016,7 +2016,7 @@ export function SalesManager({
                 </span>
                 <input
                   autoFocus
-                  className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   inputMode="decimal"
                   min="0"
                   onChange={(event) =>
@@ -2031,7 +2031,7 @@ export function SalesManager({
               <div className="grid grid-cols-3 gap-2">
                 {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
                   <button
-                    className="rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
+                    className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
                     key={digit}
                     onClick={() => appendDiscountEditorDigit(digit)}
                     type="button"
@@ -2040,21 +2040,21 @@ export function SalesManager({
                   </button>
                 ))}
                 <button
-                  className="rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                  className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                   onClick={clearDiscountEditorValue}
                   type="button"
                 >
                   {dictionary.quantityNumpadClear}
                 </button>
                 <button
-                  className="rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
+                  className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
                   onClick={() => appendDiscountEditorDigit("0")}
                   type="button"
                 >
                   0
                 </button>
                 <button
-                  className="rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
+                  className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
                   onClick={appendDiscountEditorDecimal}
                   type="button"
                 >
@@ -2063,7 +2063,7 @@ export function SalesManager({
               </div>
 
               <button
-                className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={backspaceDiscountEditorValue}
                 type="button"
               >
@@ -2071,7 +2071,7 @@ export function SalesManager({
               </button>
 
               <button
-                className="w-full rounded-xl bg-violet-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700"
+                className="w-full rounded-lg bg-violet-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700"
                 onClick={applyDiscountEditor}
                 type="button"
               >
@@ -2094,15 +2094,15 @@ export function SalesManager({
               <X className="h-5 w-5" />
             </button>
 
-            <div className="min-h-0 w-[384px] max-w-[calc(100vw-4rem)] flex-1 rounded-[1.35rem] bg-violet-50/60 p-0 shadow-inner sm:max-w-[calc(100vw-5rem)]">
+            <div className="min-h-0 w-[384px] max-w-[calc(100vw-4rem)] flex-1 rounded-lg bg-violet-50/60 p-0 shadow-inner sm:max-w-[calc(100vw-5rem)]">
               {isReceiptPreviewLoading ? (
-                <div className="flex h-[70dvh] max-h-[35rem] min-h-[30rem] w-full items-center justify-center rounded-[1.1rem] border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 shadow-sm">
+                <div className="flex h-[70dvh] max-h-[35rem] min-h-[30rem] w-full items-center justify-center rounded-md border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 shadow-sm">
                   <span className="rounded-full bg-violet-100 px-4 py-2">
                     {dictionary.receiptPreviewLoading}
                   </span>
                 </div>
               ) : receiptPreviewHtml ? (
-                <div className="rounded-[1.1rem] bg-white shadow-[0_12px_34px_rgba(15,23,42,0.12)] ring-1 ring-violet-200/60">
+                <div className="rounded-md bg-white shadow-[0_12px_34px_rgba(15,23,42,0.12)] ring-1 ring-violet-200/60">
                   <iframe
                     className="h-[70dvh] max-h-[35rem] min-h-[30rem] w-full border-0 bg-white"
                     ref={receiptPreviewFrameRef}
@@ -2111,7 +2111,7 @@ export function SalesManager({
                   />
                 </div>
               ) : (
-                <div className="flex h-[70dvh] max-h-[35rem] min-h-[30rem] w-full items-center justify-center rounded-[1.1rem] border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 shadow-sm">
+                <div className="flex h-[70dvh] max-h-[35rem] min-h-[30rem] w-full items-center justify-center rounded-md border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 shadow-sm">
                   <span className="rounded-full bg-violet-100 px-4 py-2">
                     {dictionary.receiptPreviewLoading}
                   </span>
@@ -2121,7 +2121,7 @@ export function SalesManager({
 
             <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-3">
               <button
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300 disabled:shadow-none"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300 disabled:shadow-none"
                 disabled={isReceiptPreviewLoading || !receiptPreviewHtml}
                 onClick={handlePrintFromPrompt}
                 type="button"
@@ -2130,7 +2130,7 @@ export function SalesManager({
                 {dictionary.printReceiptNowButton}
               </button>
               <button
-                className="min-h-12 rounded-2xl border border-violet-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50"
+                className="min-h-12 rounded-lg border border-violet-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50"
                 onClick={closeReceiptPreview}
                 type="button"
               >
@@ -2161,7 +2161,7 @@ export function SalesManager({
             </h3>
             <input
               autoFocus
-              className="mt-3 w-full rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               inputMode="numeric"
               onChange={(event) => onNumpadInputChange(event.target.value)}
               onKeyDown={onNumpadInputKeyDown}
@@ -2173,7 +2173,7 @@ export function SalesManager({
             <div className="mt-4 grid grid-cols-3 gap-2">
               {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
                 <button
-                  className="rounded-xl border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
+                  className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
                   key={digit}
                   onClick={() => appendNumpadDigit(digit)}
                   type="button"
@@ -2182,21 +2182,21 @@ export function SalesManager({
                 </button>
               ))}
               <button
-                className="rounded-xl border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={clearNumpadValue}
                 type="button"
               >
                 {dictionary.quantityNumpadClear}
               </button>
               <button
-                className="rounded-xl border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
                 onClick={() => appendNumpadDigit("0")}
                 type="button"
               >
                 0
               </button>
               <button
-                className="rounded-xl border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={backspaceNumpadValue}
                 type="button"
               >
@@ -2206,14 +2206,14 @@ export function SalesManager({
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
-                className="rounded-xl border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closeQuantityNumpad}
                 type="button"
               >
                 {dictionary.quantityNumpadCancel}
               </button>
               <button
-                className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
+                className="rounded-lg bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
                 onClick={applyNumpadQuantity}
                 type="button"
               >
@@ -2246,7 +2246,7 @@ export function SalesManager({
             </h3>
             <input
               autoFocus
-              className="mt-3 w-full rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               inputMode={
                 amountNumpad.field === "paid_amount" ? "numeric" : "decimal"
               }
@@ -2266,7 +2266,7 @@ export function SalesManager({
             <div className="mt-4 grid grid-cols-3 gap-2">
               {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
                 <button
-                  className="rounded-xl border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
+                  className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
                   key={digit}
                   onClick={() => appendAmountNumpadDigit(digit)}
                   type="button"
@@ -2275,21 +2275,21 @@ export function SalesManager({
                 </button>
               ))}
               <button
-                className="rounded-xl border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={clearAmountNumpadValue}
                 type="button"
               >
                 {dictionary.quantityNumpadClear}
               </button>
               <button
-                className="rounded-xl border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
                 onClick={() => appendAmountNumpadDigit("0")}
                 type="button"
               >
                 0
               </button>
               <button
-                className="rounded-xl border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
                 onClick={appendAmountNumpadDecimal}
                 type="button"
                 disabled={amountNumpad.field === "paid_amount"}
@@ -2300,7 +2300,7 @@ export function SalesManager({
 
             <div className="mt-2">
               <button
-                className="w-full rounded-xl border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="w-full rounded-lg border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={backspaceAmountNumpadValue}
                 type="button"
               >
@@ -2310,14 +2310,14 @@ export function SalesManager({
 
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
-                className="rounded-xl border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closeAmountNumpad}
                 type="button"
               >
                 {dictionary.quantityNumpadCancel}
               </button>
               <button
-                className="rounded-xl bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
+                className="rounded-lg bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
                 onClick={applyAmountNumpad}
                 type="button"
               >

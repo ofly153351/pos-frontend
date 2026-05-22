@@ -573,7 +573,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
         <div className="mt-4">
           <input
-            className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            className="w-full rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             onChange={(event) => setSearch(event.target.value)}
             placeholder={dictionary.documentSearchPlaceholder}
             value={search}
@@ -581,12 +581,12 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
         </div>
 
         {error ? (
-          <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
         ) : null}
 
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
+        <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -715,7 +715,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 {dictionary.pagination.perPage}
               </label>
               <select
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 id="documents-page-size"
                 onChange={(event) => setPageSize(Number(event.target.value))}
                 value={pageSize}
@@ -731,7 +731,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             {totalPages > 1 ? (
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={currentPage <= 1 || isPending}
                   onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
                   type="button"
@@ -741,7 +741,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
                 {pageNumbers.map((page) => (
                   <button
-                    className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                    className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
                       page === currentPage
                         ? "bg-violet-600 text-white"
                         : "border border-slate-200 text-violet-700 hover:bg-violet-50"
@@ -755,7 +755,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 ))}
 
                 <button
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={currentPage >= totalPages || isPending}
                   onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
                   type="button"
@@ -786,7 +786,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 ) : null}
               </div>
               <button
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closeReceiptModal}
                 type="button"
               >
@@ -795,13 +795,13 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             </div>
 
             {receiptError ? (
-              <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                 {receiptError}
               </div>
             ) : null}
 
             {isReceiptPending && !selectedSale && !selectedInvoice ? (
-              <div className="mt-6 rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 px-4 py-8 text-center text-sm text-slate-500">
+              <div className="mt-6 rounded-xl border border-dashed border-violet-200 bg-violet-50/40 px-4 py-8 text-center text-sm text-slate-500">
                 {dictionary.viewReceiptButton}
               </div>
             ) : null}
@@ -812,7 +812,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
             {selectedInvoice ? (
               <>
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                   <p>
                     {dictionary.customerTypeLabel} {dictionary.customerTypeNetwork}
                   </p>
@@ -830,7 +830,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
                 <div className="mt-4">
                   <button
-                    className="rounded-xl border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
                     disabled={pdfLoadingId === selectedInvoice.id}
                     onClick={() => openInvoicePdf(selectedInvoice.id)}
                     type="button"
@@ -840,7 +840,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 </div>
 
                 {(selectedInvoice.payments ?? []).length > 0 ? (
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white px-4 py-4">
+                  <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-4">
                     <p className="text-sm font-semibold text-slate-900">{dictionary.pendingPaymentSectionTitle}</p>
                     <div className="mt-3 space-y-2">
                       {(selectedInvoice.payments ?? []).map((payment) => (
@@ -888,7 +888,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             <div className="flex items-start justify-between gap-4">
               <h3 className="text-lg font-semibold text-slate-900">{dictionary.pendingPaymentSectionTitle}</h3>
               <button
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closePaymentModal}
                 type="button"
               >
@@ -897,7 +897,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             </div>
 
             {paymentError ? (
-              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                 {paymentError}
               </div>
             ) : null}
@@ -908,7 +908,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                   {dictionary.customerPaymentLabel}
                 </span>
                 <input
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   inputMode="decimal"
                   min="0"
                   onChange={(event) => setPaymentAmount(event.target.value)}
@@ -921,7 +921,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                   {dictionary.paymentMethodLabel}
                 </span>
                 <select
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   onChange={(event) => setPaymentMethod(event.target.value)}
                   value={paymentMethod}
                 >
@@ -937,7 +937,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 {dictionary.noteLabel}
               </span>
               <input
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setPaymentNote(event.target.value)}
                 value={paymentNote}
               />
@@ -949,7 +949,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
               </span>
               <input
                 accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
-                className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-violet-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-700 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition file:mr-3 file:rounded-lg file:border-0 file:bg-violet-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-700 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setPaymentProof(event.target.files?.[0] ?? null)}
                 ref={paymentProofInputRef}
                 type="file"
@@ -958,14 +958,14 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closePaymentModal}
                 type="button"
               >
                 {dictionary.printReceiptSkipButton}
               </button>
               <button
-                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
                 disabled={isPaymentPending}
                 onClick={submitInvoicePayment}
                 type="button"
@@ -983,7 +983,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             <div className="flex items-start justify-between gap-4">
               <h3 className="text-lg font-semibold text-slate-900">{dictionary.markUnpaidButton}</h3>
               <button
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closeUnpayModal}
                 type="button"
               >
@@ -992,7 +992,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
             </div>
 
             {unpayError ? (
-              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+              <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                 {unpayError}
               </div>
             ) : null}
@@ -1002,7 +1002,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                 {dictionary.unpayReasonLabel}
               </span>
               <textarea
-                className="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="min-h-24 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 onChange={(event) => setUnpayReason(event.target.value)}
                 value={unpayReason}
               />
@@ -1010,14 +1010,14 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
             <div className="mt-5 flex justify-end gap-2">
               <button
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={closeUnpayModal}
                 type="button"
               >
                 {dictionary.printReceiptSkipButton}
               </button>
               <button
-                className="rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
+                className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-rose-300"
                 disabled={isUnpayPending}
                 onClick={submitInvoiceUnpay}
                 type="button"

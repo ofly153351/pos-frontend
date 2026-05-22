@@ -674,7 +674,7 @@ export function ProductsTable({
               </div>
             </div>
 
-            <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
               {previewBarcodeSvg ? (
                 <img
                   alt={`${tableDictionary.barcodeAction} ${previewSku}`}

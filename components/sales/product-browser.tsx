@@ -74,7 +74,7 @@ export function ProductBrowser({
           {dictionary.title}
         </h2>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-          <div className="inline-flex items-center gap-1 self-start rounded-xl border border-violet-200 bg-white p-1">
+          <div className="inline-flex items-center gap-1 self-start rounded-lg border border-violet-200 bg-white p-1">
             <button
               aria-label={dictionary.productViewGrid}
               className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
@@ -105,7 +105,7 @@ export function ProductBrowser({
 
           <div className="relative w-full">
             <input
-              className="w-full rounded-2xl border border-violet-200 bg-violet-50/60 px-4 py-3 pr-10 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="w-full rounded-lg border border-violet-200 bg-violet-50/60 px-4 py-3 pr-10 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               onBlur={() => {
                 setTimeout(() => setIsSearchFocused(false), 120);
               }}
@@ -117,7 +117,7 @@ export function ProductBrowser({
             <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
             {isSearchFocused && suggestionProducts.length > 0 ? (
-              <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-xl">
+              <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-violet-100 bg-white shadow-xl">
                 {suggestionProducts.map((product) => (
                   <button
                     className="flex w-full items-center gap-3 border-b border-violet-100 px-3 py-2.5 text-left transition last:border-b-0 hover:bg-violet-50"
@@ -157,13 +157,13 @@ export function ProductBrowser({
       </div>
 
       {error ? (
-        <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        <div className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {successMessage}
         </div>
       ) : null}
@@ -209,7 +209,7 @@ export function ProductBrowser({
             return productView === "grid" ? (
               <div
                 key={product.id}
-                className="flex h-[205px] cursor-pointer flex-col rounded-[1.1rem] border border-violet-100 bg-gradient-to-b from-violet-50/50 to-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="flex h-[205px] cursor-pointer flex-col rounded-lg border border-violet-100 bg-gradient-to-b from-violet-50/50 to-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 onClick={() => onAddToCart(product)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -271,7 +271,7 @@ export function ProductBrowser({
             ) : (
               <div
                 key={product.id}
-                className="flex cursor-pointer items-center gap-4 rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
+                className="flex cursor-pointer items-center gap-4 rounded-lg border border-violet-100 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
                 onClick={() => onAddToCart(product)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -285,12 +285,12 @@ export function ProductBrowser({
                 {product.image_url ? (
                   <img
                     alt={product.name}
-                    className="h-14 w-20 rounded-xl border border-violet-100 bg-white object-cover"
+                    className="h-14 w-20 rounded-lg border border-violet-100 bg-white object-cover"
                     loading="lazy"
                     src={product.image_url}
                   />
                 ) : (
-                  <div className="flex h-14 w-20 items-center justify-center rounded-xl border border-violet-100 bg-violet-50 text-sm font-bold text-slate-500">
+                  <div className="flex h-14 w-20 items-center justify-center rounded-lg border border-violet-100 bg-violet-50 text-sm font-bold text-slate-500">
                     {product.name.slice(0, 2).toUpperCase()}
                   </div>
                 )}
@@ -319,7 +319,7 @@ export function ProductBrowser({
                     {formatCurrency(product.effective_price)}
                   </p>
                   <button
-                    className="mt-2 rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300"
+                    className="mt-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300"
                     disabled={currentQuantity >= (product.total_stock ?? 0)}
                     onClick={(event) => {
                       event.stopPropagation();

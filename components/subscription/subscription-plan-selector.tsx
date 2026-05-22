@@ -121,7 +121,7 @@ export function SubscriptionPlanSelector({
         <section className="mt-8 flex flex-col items-start gap-4 rounded-[2rem] border border-violet-100 bg-white p-8 shadow-[0_24px_60px_rgba(124,58,237,0.1)]">
           <p className="text-sm leading-6 text-slate-600">{helper}</p>
               <button
-                className="rounded-2xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700"
+                className="rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700"
                 onClick={() => {
                   savePendingPlanChoice({
                     id: selectedPlanId,

@@ -103,7 +103,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputCls =
-  "w-full rounded-xl border border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100";
+  "w-full rounded-lg border border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100";
 
 export function StoreManagementPanel({ dictionary }: Props) {
   const router = useRouter();
@@ -473,7 +473,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
               <div>
                 <SectionLabel icon={<Image className="h-3.5 w-3.5" />} label={dictionary.logoSection} />
                 <div className="flex items-start gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-violet-100 bg-violet-50">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-violet-100 bg-violet-50">
                     {isEditLogoLoading ? (
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
                     ) : editLogoPreviewUrl ? (
@@ -484,7 +484,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                     )}
                   </div>
                   <div className="flex-1">
-                    <label className="block cursor-pointer rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-3 text-center text-sm text-violet-600 transition hover:bg-violet-100">
+                    <label className="block cursor-pointer rounded-lg border border-dashed border-violet-200 bg-violet-50/60 px-4 py-3 text-center text-sm text-violet-600 transition hover:bg-violet-100">
                       <span>{dictionary.logoLabel}</span>
                       <input
                         accept="image/*"
@@ -510,7 +510,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
             {/* Save */}
             <div className="mt-8 flex items-center justify-end">
               <button
-                className="flex items-center gap-2 rounded-2xl bg-violet-600 px-6 py-2.5 font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg bg-violet-600 px-6 py-2.5 font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
                 disabled={!selectedStoreId || isUpdatePending}
                 type="submit"
               >
@@ -546,13 +546,13 @@ export function StoreManagementPanel({ dictionary }: Props) {
               {/* Modal header */}
               <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-violet-700 to-purple-500 px-6 py-5 text-white">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
                     <Plus className="h-5 w-5" />
                   </div>
                   <h2 className="text-lg font-semibold">{dictionary.createStoreTitle}</h2>
                 </div>
                 <button
-                  className="rounded-xl p-1.5 text-white/70 transition hover:bg-white/20 hover:text-white"
+                  className="rounded-lg p-1.5 text-white/70 transition hover:bg-white/20 hover:text-white"
                   onClick={() => setIsCreateModalOpen(false)}
                   type="button"
                 >
@@ -591,7 +591,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                   {/* Logo upload */}
                   <Field label={dictionary.logoLabel}>
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-violet-100 bg-violet-50">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-violet-100 bg-violet-50">
                         {isCreateLogoLoading ? (
                           <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
                         ) : createLogoPreviewUrl ? (
@@ -601,7 +601,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                           <span className="text-xs font-bold text-slate-400">{createName ? getInitials(createName) : "?"}</span>
                         )}
                       </div>
-                      <label className="flex-1 cursor-pointer rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-2.5 text-center text-sm text-violet-600 transition hover:bg-violet-100">
+                      <label className="flex-1 cursor-pointer rounded-lg border border-dashed border-violet-200 bg-violet-50/60 px-4 py-2.5 text-center text-sm text-violet-600 transition hover:bg-violet-100">
                         {dictionary.logoLabel}
                         <input accept="image/*" className="sr-only" onChange={(e) => setCreateLogoFile(e.target.files?.[0] ?? null)} type="file" />
                       </label>
@@ -611,7 +611,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
 
                 <div className="mt-6 flex items-center justify-end gap-3">
                   <button
-                    className="rounded-2xl border border-violet-200 px-5 py-2.5 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                    className="rounded-lg border border-violet-200 px-5 py-2.5 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
                     onClick={() => setIsCreateModalOpen(false)}
                     type="button"
                   >
@@ -619,7 +619,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                     ยกเลิก
                   </button>
                   <button
-                    className="flex items-center gap-2 rounded-2xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
                     disabled={isCreatePending}
                     type="submit"
                   >

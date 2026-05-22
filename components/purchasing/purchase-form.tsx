@@ -176,7 +176,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                 {dictionary.selectSupplier}
               </label>
               <select
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                 onChange={(e) => {
                   setSupplierId(e.target.value);
                   setShowProductDropdown(true);
@@ -201,14 +201,14 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                 {dictionary.selectProduct}
               </label>
               {!supplierId ? (
-                <p className="rounded-xl border border-dashed border-slate-200 p-3 text-center text-sm text-slate-400">
+                <p className="rounded-lg border border-dashed border-slate-200 p-3 text-center text-sm text-slate-400">
                   {dictionary.selectSupplierFirst}
                 </p>
               ) : (
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
-                  className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                  className="w-full rounded-lg border border-slate-200 py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                   onBlur={() => setTimeout(() => setShowProductDropdown(false), 200)}
                   onChange={(e) => {
                     setProductSearch(e.target.value);
@@ -220,7 +220,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                   value={productSearch}
                 />
                 {showProductDropdown ? (
-                  <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                  <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                     {filteredProducts.length === 0 ? (
                       <p className="p-3 text-sm text-slate-500">No products found</p>
                     ) : (
@@ -244,7 +244,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
 
             {/* Items table */}
             {items.length > 0 ? (
-              <div className="rounded-xl border border-slate-200 overflow-hidden">
+              <div className="rounded-lg border border-slate-200 overflow-hidden">
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50">
                     <tr className="text-xs font-semibold uppercase text-slate-500">
@@ -315,7 +315,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                 </table>
               </div>
             ) : (
-              <p className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
+              <p className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-sm text-slate-400">
                 {dictionary.selectProduct}
               </p>
             )}
@@ -326,7 +326,7 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
                 {dictionary.note}
               </label>
               <textarea
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder={dictionary.note}
                 rows={2}
@@ -337,14 +337,14 @@ export function PurchaseForm({ dictionary, onClose, onSuccess }: PurchaseFormPro
 
           <div className="mt-6 flex items-center justify-end gap-3">
             <button
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
               onClick={onClose}
               type="button"
             >
               {dictionary.cancel}
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50 transition-colors"
               disabled={isPending}
               onClick={handleSave}
               type="button"

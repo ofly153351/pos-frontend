@@ -118,7 +118,7 @@ export function StoreSetupForm({
         <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
           {dictionary.helper}
         </p>
-        <div className="mt-6 rounded-[1.5rem] bg-violet-50/60 p-5">
+        <div className="mt-6 rounded-xl bg-violet-50/60 p-5">
           <p className="text-sm uppercase tracking-[0.2em] text-violet-600">
             {dictionary.selectedPlanLabel}
           </p>
@@ -137,7 +137,7 @@ export function StoreSetupForm({
               {dictionary.nameLabel}
             </span>
             <input
-              className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="w-full rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setName(event.target.value)}
               value={name}
             />
@@ -147,7 +147,7 @@ export function StoreSetupForm({
               {dictionary.phoneLabel}
             </span>
             <input
-              className="lg:col-span-3 w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="lg:col-span-3 w-full rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setPhone(event.target.value)}
               placeholder="+66 1234 5678"
               value={phone}
@@ -158,7 +158,7 @@ export function StoreSetupForm({
               {dictionary.addressLabel}
             </span>
             <textarea
-              className="min-h-24 w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="min-h-24 w-full rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setAddress(event.target.value)}
               value={address}
             />
@@ -168,7 +168,7 @@ export function StoreSetupForm({
               {dictionary.currencyLabel}
             </span>
             <input
-              className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="w-full rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setCurrencyCode(event.target.value)}
               placeholder="THB"
               value={currencyCode}
@@ -179,20 +179,20 @@ export function StoreSetupForm({
               {dictionary.descriptionLabel}
             </span>
             <textarea
-              className="min-h-32 w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
+              className="min-h-32 w-full rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 focus:bg-white"
               onChange={(event) => setDescription(event.target.value)}
               value={description}
             />
           </label>
 
           {error ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
               {error}
             </div>
           ) : null}
 
           <button
-            className="inline-flex rounded-2xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700 disabled:bg-violet-300"
+            className="inline-flex rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700 disabled:bg-violet-300"
             disabled={isPending}
             type="submit"
           >

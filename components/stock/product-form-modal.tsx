@@ -106,7 +106,7 @@ function ProductTextInput({
   return (
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
       <input
-        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-violet-500"
+        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-violet-500"
         min={min}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder ?? label}
@@ -178,7 +178,7 @@ function ProductSelectField({
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
         <input
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 pr-10 outline-none transition focus:border-violet-500"
+          className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 outline-none transition focus:border-violet-500"
           onChange={(e) => {
             setSearch(e.target.value);
             onChange(""); // clear ID, user is typing free-text
@@ -189,7 +189,7 @@ function ProductSelectField({
           value={search}
         />
         {open && opts.length > 0 && (
-          <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+          <div className="absolute z-10 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
             {filtered.length === 0 ? (
               <div className="px-4 py-2.5 text-xs text-slate-400">{noResultsLabel}</div>
             ) : (
@@ -231,7 +231,7 @@ function ProductFileField({
   return (
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
       <input
-        className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3  file:text-sm file:font-medium file:text-violet-700 focus:border-violet-500"
+        className="w-full rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3  file:text-sm file:font-medium file:text-violet-700 focus:border-violet-500"
         onChange={(event) => onChange(event.target.files?.[0] ?? null)}
         type="file"
       />
@@ -249,7 +249,7 @@ function ProductActiveToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+    <label className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
       {label && (
         <span className="text-sm font-medium text-slate-700">{label}</span>
       )}
@@ -286,18 +286,18 @@ function ProductModalFooter({
   submitLabel: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-100 px-4 py-4">
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-100 px-4 py-4">
       <p className="max-w-xl text-sm text-slate-500">{modeTitle}</p>
       <div className="flex justify-end gap-3">
         <button
-          className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+          className="rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
           onClick={onClose}
           type="button"
         >
           {cancelLabel}
         </button>
         <button
-          className="inline-flex items-center gap-2 rounded-xl bg-violet-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
+          className="inline-flex items-center gap-2 rounded-lg bg-violet-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
           disabled={isPending}
           type="submit"
         >
@@ -438,7 +438,7 @@ export function ProductFormModal({
         <div className="h-[calc(92vh-108px)] overflow-y-auto p-6">
           <div className="flex items-center justify-end">
             <button
-              className="rounded-xl px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100"
+              className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100"
               onClick={onClose}
               type="button"
             >
@@ -630,7 +630,7 @@ export function ProductFormModal({
               <div>
                 <ProductField badgeText={formLabels.optionalLabel} label={formLabels.descriptionLabel}>
                   <textarea
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-violet-500 min-h-[60px] resize-y"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-violet-500 min-h-[60px] resize-y"
                     onChange={(event) =>
                       onFormStateChange((current) => ({
                         ...current,

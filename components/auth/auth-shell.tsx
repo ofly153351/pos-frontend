@@ -120,7 +120,7 @@ export function AuthShell({
               {panelEyebrow}
             </p>
             <p className="text-lg leading-8 text-violet-100">{description}</p>
-            <div className="rounded-[1.75rem] border border-violet-500/30 bg-violet-900/40 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <div className="rounded-xl border border-violet-500/30 bg-violet-900/40 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <p className="text-2xl font-semibold text-white">{panelTitle}</p>
               <p className="mt-3 max-w-lg text-base leading-7 text-violet-200">
                 {panelDescription}

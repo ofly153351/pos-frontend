@@ -83,7 +83,7 @@ export function PurchaseList({ dictionary, onCreateOrder }: PurchaseListProps) {
         <div className="mb-6 flex items-center justify-between">
           <h3 className="text-lg font-bold text-slate-900">{dictionary.purchaseOrders}</h3>
           <button
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition-colors"
             onClick={onCreateOrder}
             type="button"
           >

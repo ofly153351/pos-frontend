@@ -79,7 +79,7 @@ export function SubscriptionPlanManager({
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-600">
           {dictionary.helper}
         </p>
-        <div className="mt-6 rounded-[1.5rem] bg-violet-50/60 p-5">
+        <div className="mt-6 rounded-xl bg-violet-50/60 p-5">
           <p className="text-sm uppercase tracking-[0.2em] text-violet-600">
             {dictionary.currentLabel}
           </p>
@@ -95,7 +95,7 @@ export function SubscriptionPlanManager({
             {dictionary.selectLabel}
           </span>
           <select
-            className="w-full rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:bg-white"
+            className="w-full rounded-lg border border-violet-100 bg-violet-50/60 px-4 py-3 outline-none focus:border-violet-500 focus:bg-white"
             onChange={(event) => setSelectedPlanId(event.target.value)}
             value={selectedPlanId}
           >
@@ -109,13 +109,13 @@ export function SubscriptionPlanManager({
         </label>
 
         {error ? (
-          <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
         ) : null}
 
         <button
-          className="mt-6 inline-flex rounded-2xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700 disabled:bg-violet-300"
+          className="mt-6 inline-flex rounded-xl bg-violet-600 px-5 py-3 font-semibold text-white transition hover:bg-violet-700 disabled:bg-violet-300"
           disabled={isPending || !selectedPlanId}
           onClick={handleSave}
           type="button"
