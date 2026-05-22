@@ -55,6 +55,7 @@ type SalesManagerProps = {
 };
 
 const productViewStorageKey = "pos-sales-product-view";
+const applyVatStorageKey = "pos-sales-apply-vat";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -220,13 +221,23 @@ export function SalesManager({
   );
   const [isAmountNumpadOpen, setIsAmountNumpadOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
-  const [applyVat, setApplyVat] = useState(true);
+  const [applyVat, setApplyVat] = useState<boolean>(() => {
+    try {
+      const stored = localStorage.getItem(applyVatStorageKey);
+      return stored === null ? true : stored === "true";
+    } catch {
+      return true;
+    }
+  });
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
+
+  useEffect(() => {
+    try { localStorage.setItem(applyVatStorageKey, String(applyVat)); } catch { /* ignore */ }
+  }, [applyVat]);
   const [discountEditorProductId, setDiscountEditorProductId] = useState<
     string | null
   >(null);
-  const [showVatControls, setShowVatControls] = useState(false);
   const [showNoteField, setShowNoteField] = useState(false);
   const [isBillDiscountFieldOpen, setIsBillDiscountFieldOpen] = useState(false);
   const [billDiscountType, setBillDiscountType] = useState<
@@ -579,7 +590,6 @@ export function SalesManager({
     setIsActionsMenuOpen(false);
     setIsCheckoutSummaryOpen(false);
     setDiscountEditorProductId(null);
-    setShowVatControls(false);
     setShowNoteField(false);
     setIsBillDiscountFieldOpen(false);
     setBillDiscountType("amount");
@@ -1199,57 +1209,39 @@ export function SalesManager({
 
         <div className="space-y-6 xl:h-full xl:min-h-0">
           <section className="min-h-[74dvh] rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-3">
               <h2 className="text-2xl font-semibold text-slate-950">
                 {dictionary.cartTitle}
               </h2>
-              <button
-                aria-label={dictionary.actionsLabel}
-                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-200 bg-white text-violet-700 shadow-sm transition hover:bg-violet-50"
-                onClick={() => setIsActionsMenuOpen(true)}
-                type="button"
-              >
-                <span className="text-xl leading-none">...</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  aria-label={dictionary.vatToggleLabel}
+                  className={`flex h-10 items-center gap-1.5 rounded-2xl border px-3 text-xs font-bold tracking-wide transition ${
+                    applyVat
+                      ? "border-violet-500 bg-violet-600 text-white shadow-sm"
+                      : "border-violet-200 bg-white text-violet-400 hover:bg-violet-50"
+                  }`}
+                  onClick={() => {
+                    setApplyVat((v) => !v);
+                    setIsPaidAmountTouched(false);
+                  }}
+                  title={dictionary.vatToggleLabel}
+                  type="button"
+                >
+                  <span className={`h-2 w-2 rounded-full ${applyVat ? "bg-white" : "bg-violet-300"}`} />
+                  VAT
+                </button>
+                <button
+                  aria-label={dictionary.actionsLabel}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-200 bg-white text-violet-700 shadow-sm transition hover:bg-violet-50"
+                  onClick={() => setIsActionsMenuOpen(true)}
+                  type="button"
+                >
+                  <span className="text-lg leading-none">···</span>
+                </button>
+              </div>
             </div>
             <div className="mt-6 space-y-2">
-              {showVatControls ? (
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-violet-800">
-                    {dictionary.vatToggleLabel}
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                        applyVat
-                          ? "border-violet-600 bg-violet-600 text-white"
-                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                      }`}
-                      onClick={() => {
-                        setApplyVat(true);
-                        setIsPaidAmountTouched(false);
-                      }}
-                      type="button"
-                    >
-                      {dictionary.vatToggleOn}
-                    </button>
-                    <button
-                      className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                        !applyVat
-                          ? "border-violet-600 bg-violet-600 text-white"
-                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                      }`}
-                      onClick={() => {
-                        setApplyVat(false);
-                        setIsPaidAmountTouched(false);
-                      }}
-                      type="button"
-                    >
-                      {dictionary.vatToggleOff}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
 
               <div>
                 <div className="flex items-center gap-1.5">
@@ -1519,21 +1511,6 @@ export function SalesManager({
               >
                 <span>{dictionary.noteLabel}</span>
                 <span>{showNoteField ? "✓" : ""}</span>
-              </button>
-              <button
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition ${
-                  showVatControls
-                    ? "bg-violet-50 text-violet-700"
-                    : "text-violet-700 hover:bg-violet-50"
-                }`}
-                onClick={() => {
-                  setShowVatControls((current) => !current);
-                  setIsActionsMenuOpen(false);
-                }}
-                type="button"
-              >
-                <span>{dictionary.vatToggleLabel}</span>
-                <span>{showVatControls ? "✓" : ""}</span>
               </button>
               <button
                 className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
