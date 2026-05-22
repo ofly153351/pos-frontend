@@ -1888,52 +1888,58 @@ export function SalesManager({
               </div>
 
               <div className="flex flex-col-reverse lg:flex-col">
-                <div className="space-y-2.5 border-t border-violet-100 pt-3 text-xs text-slate-600 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-1.5 border-t border-violet-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
+                  {/* Secondary rows */}
+                  <div className="flex items-center justify-between text-sm text-slate-400">
                     <span>{dictionary.summary.subtotalLabel}</span>
                     <span>{formatCurrency(cartSummary.subtotal)}</span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className={`flex items-center justify-between text-sm ${cartSummary.discountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}>
                     <span>{dictionary.summary.discountLabel}</span>
-                    <span>{formatCurrency(cartSummary.discountAmount)}</span>
+                    <span>{cartSummary.discountAmount > 0 ? `-${formatCurrency(cartSummary.discountAmount)}` : formatCurrency(0)}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>{dictionary.discountBillLabel}</span>
+                  <div className={`flex items-center justify-between text-sm ${billDiscountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}>
                     <span>
-                      -{formatCurrency(billDiscountAmount)}
-                      {billDiscountType === "percent"
-                        ? ` (${billDiscountPercent}%)`
-                        : ""}
+                      {dictionary.discountBillLabel}
+                      {billDiscountType === "percent" && billDiscountPercent > 0 ? ` (${billDiscountPercent}%)` : ""}
                     </span>
+                    <span>{billDiscountAmount > 0 ? `-${formatCurrency(billDiscountAmount)}` : formatCurrency(0)}</span>
                   </div>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between text-sm text-slate-400">
                     <span>{dictionary.customerTypeLabel}</span>
-                    <span>{customerTypeLabel}</span>
+                    <span className="font-medium text-slate-600">{customerTypeLabel}</span>
                   </div>
-                  {selectedCustomerId ? (
-                    <div className="flex items-center justify-between">
-                      <span>
-                        {dictionary.customerDiscountLabel} (
-                        {customerDiscountPercent}%)
-                      </span>
+                  {selectedCustomerId && customerDiscountAmount > 0 ? (
+                    <div className="flex items-center justify-between text-sm text-emerald-600">
+                      <span>{dictionary.customerDiscountLabel} ({customerDiscountPercent}%)</span>
                       <span>-{formatCurrency(customerDiscountAmount)}</span>
                     </div>
                   ) : null}
+                  {applyVat && (
+                    <div className="flex items-center justify-between text-sm text-slate-400">
+                      <span>{dictionary.vatAmountLabel}</span>
+                      <span>{formatCurrency(vatAmount)}</span>
+                    </div>
+                  )}
+
+                  <div className="my-1.5 border-t border-dashed border-violet-100" />
+
+                  {/* Net total */}
                   <div className="flex items-center justify-between">
-                    <span>{dictionary.vatAmountLabel}</span>
-                    <span>{formatCurrency(vatAmount)}</span>
+                    <span className="text-base font-semibold text-slate-700">{dictionary.summary.totalLabel}</span>
+                    <span className="text-xl font-bold text-violet-700">{formatCurrency(settlementTotal)}</span>
+                  </div>
+
+                  {/* Paid & change */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-500">{dictionary.totalPaidLabel}</span>
+                    <span className="text-sm font-semibold text-slate-800">{formatCurrency(effectivePaidAmount)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>{dictionary.totalPaidLabel}</span>
-                    <span>{formatCurrency(effectivePaidAmount)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>{dictionary.changeLabel}</span>
-                    <span>{formatCurrency(Math.max(changeAmount, 0))}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm font-semibold text-slate-950">
-                    <span>{dictionary.summary.totalLabel}</span>
-                    <span>{formatCurrency(settlementTotal)}</span>
+                    <span className="text-sm text-slate-500">{dictionary.changeLabel}</span>
+                    <span className={`text-sm font-bold ${changeAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                      {formatCurrency(Math.max(changeAmount, 0))}
+                    </span>
                   </div>
                 </div>
               </div>
