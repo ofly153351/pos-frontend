@@ -1,42 +1,38 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
-  Boxes,
-  ChevronRight,
   CircleDollarSign,
-  Search,
-  FileText,
-  LayoutDashboard,
   Menu,
-  Settings2,
-  ShoppingCart,
-  Users,
+  Search,
   X,
 } from "lucide-react";
 
+import { SidebarDrawer } from "@/components/navigation/sidebar-drawer";
+import type { NavLabels } from "@/components/navigation/nav-config";
 import { SalesManager } from "@/components/sales/sales-manager";
 import type { SalesManagerHandle } from "@/components/sales/sales-manager";
 import type { SalesDictionary } from "@/components/sales/types";
 
+const CLOSE_DURATION = 220;
+
 type CashierModalProps = {
   dictionary: SalesDictionary;
+  locale: string;
+  navLabels: NavLabels;
   onClose: () => void;
 };
 
-export function CashierModal({ dictionary, onClose }: CashierModalProps) {
-  const pathname = usePathname();
-  const locale = pathname.split("/")[1] ?? "th";
-
+export function CashierModal({ dictionary, locale, navLabels, onClose }: CashierModalProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const salesRef = useRef<SalesManagerHandle>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [cartCount, setCartCount] = useState(0);
   const [confirmClose, setConfirmClose] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [search, setSearch] = useState("");
   const [vatOn, setVatOn] = useState(true);
   const [noteOn, setNoteOn] = useState(false);
@@ -46,104 +42,77 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
     if (confirmClose) requestAnimationFrame(() => confirmRef.current?.focus());
   }, [confirmClose]);
 
-  // Close menu on outside click
-  useEffect(() => {
-    function handlePointerDown(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsMenuOpen(false);
-      }
-    }
-    if (isMenuOpen) window.addEventListener("mousedown", handlePointerDown);
-    return () => window.removeEventListener("mousedown", handlePointerDown);
-  }, [isMenuOpen]);
+  useEffect(() => () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  }, []);
+
+  const triggerClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setIsMenuOpen(false);
+    closeTimerRef.current = setTimeout(() => onClose(), CLOSE_DURATION);
+  }, [isClosing, onClose]);
 
   const handleCartChange = useCallback((count: number) => { setCartCount(count); }, []);
+
   const handleCloseClick = useCallback(() => {
     if (cartCount > 0) setConfirmClose(true);
-    else onClose();
-  }, [cartCount, onClose]);
-  const handleConfirmClose = useCallback(() => { setConfirmClose(false); onClose(); }, [onClose]);
+    else triggerClose();
+  }, [cartCount, triggerClose]);
+
+  const handleConfirmClose = useCallback(() => {
+    setConfirmClose(false);
+    triggerClose();
+  }, [triggerClose]);
+
   const handleCancelClose = useCallback(() => { setConfirmClose(false); }, []);
 
   const handleEscape = useCallback(() => {
+    if (isClosing) return;
     if (isMenuOpen) { setIsMenuOpen(false); return; }
     if (confirmClose) { setConfirmClose(false); return; }
     if (cartCount > 0) setConfirmClose(true);
-    else onClose();
-  }, [confirmClose, cartCount, isMenuOpen, onClose]);
+    else triggerClose();
+  }, [isClosing, isMenuOpen, confirmClose, cartCount, triggerClose]);
 
   useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) { if (e.key === "Escape") handleEscape(); }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") handleEscape(); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [handleEscape]);
 
-  const navItems = [
-    { href: `/${locale}/dashboard`, icon: <LayoutDashboard className="h-4 w-4" />, label: "Dashboard" },
-    { href: `/${locale}/stock`, icon: <Boxes className="h-4 w-4" />, label: "Stock" },
-    { href: `/${locale}/stock/categories`, icon: <ChevronRight className="h-4 w-4 opacity-50" />, label: "Categories", sub: true },
-    { href: `/${locale}/stock/warehouses`, icon: <ChevronRight className="h-4 w-4 opacity-50" />, label: "Warehouses", sub: true },
-    { href: `/${locale}/purchases`, icon: <ShoppingCart className="h-4 w-4" />, label: "Purchases" },
-    { href: `/${locale}/documents`, icon: <FileText className="h-4 w-4" />, label: "Documents" },
-    { href: `/${locale}/customers`, icon: <Users className="h-4 w-4" />, label: "Customers" },
-    { href: `/${locale}/settings`, icon: <Settings2 className="h-4 w-4" />, label: "Settings" },
-  ];
-
   return (
-    <div className="fixed inset-0 z-50 flex animate-[fadeIn_200ms_ease-out] flex-col bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_40%,_#f8fafc_100%)]">
-
-      {/* Header bar — light */}
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_40%,_#f8fafc_100%)]"
+      style={{
+        animation: isClosing
+          ? `cashierFadeOut ${CLOSE_DURATION}ms ease-in forwards`
+          : "cashierFadeIn 200ms ease-out",
+      }}
+    >
+      {/* Header */}
       <div className="flex shrink-0 items-center gap-3 border-b border-violet-100 bg-white px-5 py-4">
+        <button
+          aria-label="Menu"
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition ${isMenuOpen ? "bg-violet-100 text-violet-700" : "text-slate-500 hover:bg-violet-50 hover:text-violet-600"}`}
+          onClick={() => setIsMenuOpen(true)}
+          type="button"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
 
-        {/* Left: hamburger + title */}
-        <div className="flex shrink-0 items-center gap-3" ref={menuRef}>
-          <div className="relative">
-            <button
-              aria-label="Menu"
-              className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${isMenuOpen ? "bg-violet-100 text-violet-700" : "text-slate-500 hover:bg-violet-50 hover:text-violet-600"}`}
-              onClick={() => setIsMenuOpen((v) => !v)}
-              type="button"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-
-            {/* Dropdown menu */}
-            {isMenuOpen && (
-              <div className="absolute left-0 top-[calc(100%+8px)] z-[200] w-52 overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-[0_16px_48px_rgba(124,58,237,0.15)]">
-                <div className="border-b border-violet-50 px-3 py-2.5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-400">Navigation</p>
-                </div>
-                <div className="p-1.5 space-y-0.5">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition hover:bg-violet-50 hover:text-violet-700 ${item.sub ? "pl-6 text-xs text-slate-400 hover:text-violet-600" : "text-slate-700"}`}
-                      href={item.href}
-                      onClick={() => { setIsMenuOpen(false); onClose(); }}
-                    >
-                      <span className="text-violet-400">{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <CircleDollarSign className="h-4 w-4 text-violet-500" />
-            <h2 className="text-base font-bold text-slate-900">
-              {dictionary.title || "หน้าขาย"}
-            </h2>
-            {cartCount > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white">
-                {cartCount}
-              </span>
-            )}
-          </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <CircleDollarSign className="h-4 w-4 text-violet-500" />
+          <h2 className="text-base font-bold text-slate-900">
+            {dictionary.title || "หน้าขาย"}
+          </h2>
+          {cartCount > 0 && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white">
+              {cartCount}
+            </span>
+          )}
         </div>
 
-        {/* Search */}
         <div className="relative min-w-0 flex-1">
           <input
             className="w-full rounded-xl border border-violet-200 bg-violet-50/60 py-2.5 pl-9 pr-4 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
@@ -154,7 +123,6 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         </div>
 
-        {/* Pill action buttons — right of search */}
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             className={`flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition ${vatOn ? "border-violet-500 bg-violet-600 text-white shadow-sm" : "border-violet-200 bg-white text-violet-400 hover:bg-violet-50"}`}
@@ -187,7 +155,6 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
           </button>
         </div>
 
-        {/* Close */}
         <button
           ref={closeRef}
           aria-label="Close cashier"
@@ -216,9 +183,19 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
         </div>
       </div>
 
+      {/* Navigation drawer — self-contained inside cashier modal stacking context.
+          Backdrop (z-10) and panel (z-20) stay within z-50, no interference with main sidebar (z-40). */}
+      <SidebarDrawer
+        isOpen={isMenuOpen}
+        locale={locale}
+        labels={navLabels}
+        onClose={() => setIsMenuOpen(false)}
+        onNavigate={() => { setIsMenuOpen(false); triggerClose(); }}
+      />
+
       {/* Confirmation dialog */}
       {confirmClose ? (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-indigo-950/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-indigo-950/60 backdrop-blur-sm">
           <div className="mx-4 w-full max-w-sm rounded-2xl border border-violet-100 bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-slate-900">ยืนยันการปิดหน้าร้าน</h3>
             <p className="mt-2 text-sm text-slate-600">
@@ -246,7 +223,8 @@ export function CashierModal({ dictionary, onClose }: CashierModalProps) {
       ) : null}
 
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes cashierFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes cashierFadeOut { from { opacity: 1; } to { opacity: 0; } }
       `}</style>
     </div>
   );

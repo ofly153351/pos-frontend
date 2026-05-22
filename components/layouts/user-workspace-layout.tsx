@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { CashierModal } from "@/components/sales/cashier-modal";
 import { UserWorkspaceSidebar } from "@/components/navigation/user-workspace-sidebar";
 import { UserWorkspaceTopbar } from "@/components/navigation/user-workspace-topbar";
+import type { NavLabels } from "@/components/navigation/nav-config";
 import type { SalesDictionary } from "@/components/sales/types";
 import type { Locale } from "@/lib/locale-config";
 
@@ -62,56 +63,35 @@ export function UserWorkspaceLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [isCashierOpen, setIsCashierOpen] = useState(false);
 
+  const navLabels: NavLabels = {
+    dashboard: shell.dashboard,
+    register: shell.register,
+    inventory: shell.inventory,
+    "stock-levels": shell.stockLevels,
+    categories: shell.stockCategories,
+    warehouses: shell.stockWarehouses,
+    purchasing: shell.purchasing,
+    "purchase-orders": shell.purchaseOrders,
+    suppliers: shell.suppliers,
+    documents: shell.documents,
+    "document-bills": shell.documentBills,
+    "document-pending": shell.documentPending,
+    customers: shell.customers,
+    settings: shell.settings,
+  };
+
   const title = useMemo(() => {
-    if (pathname.endsWith("/sales")) {
-      return titles.sales;
-    }
-
-    if (pathname.includes("/customers")) {
-      return titles.customers;
-    }
-
-    if (pathname.includes("/documents")) {
-      return titles.documents;
-    }
-
-    if (pathname.includes("/stock/categories")) {
-      return titles.stockCategories;
-    }
-
-    if (pathname.includes("/stock/warehouses")) {
-      return titles.stockWarehouses;
-    }
-
-    if (pathname.includes("/stock")) {
-      return titles.stock;
-    }
-
-    if (pathname.includes("/purchases/suppliers")) {
-      return titles.suppliers;
-    }
-
-    if (pathname.includes("/purchases")) {
-      return titles.purchaseOrders;
-    }
-
-    if (pathname.includes("/settings")) {
-      return titles.settings;
-    }
-
+    if (pathname.endsWith("/sales")) return titles.sales;
+    if (pathname.includes("/customers")) return titles.customers;
+    if (pathname.includes("/documents")) return titles.documents;
+    if (pathname.includes("/stock/categories")) return titles.stockCategories;
+    if (pathname.includes("/stock/warehouses")) return titles.stockWarehouses;
+    if (pathname.includes("/stock")) return titles.stock;
+    if (pathname.includes("/purchases/suppliers")) return titles.suppliers;
+    if (pathname.includes("/purchases")) return titles.purchaseOrders;
+    if (pathname.includes("/settings")) return titles.settings;
     return titles.dashboard;
-  }, [pathname,
-    titles.customers,
-    titles.dashboard,
-    titles.documents,
-    titles.purchaseOrders,
-    titles.sales,
-    titles.settings,
-    titles.stock,
-    titles.stockCategories,
-    titles.stockWarehouses,
-    titles.suppliers,
-  ]);
+  }, [pathname, titles]);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
@@ -157,6 +137,8 @@ export function UserWorkspaceLayout({
       {isCashierOpen ? (
         <CashierModal
           dictionary={salesDictionary}
+          locale={locale}
+          navLabels={navLabels}
           onClose={() => setIsCashierOpen(false)}
         />
       ) : null}
