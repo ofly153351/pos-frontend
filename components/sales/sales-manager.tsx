@@ -598,13 +598,14 @@ export function SalesManager({
     setPaymentMethod("cash");
   }
 
-  function applyQuickCash(addAmount: number) {
+  function applyQuickCash(addAmount: number, isExact = false) {
     setPaidAmount((currentValue) => {
-      if (!isPaidAmountTouched) {
+      // Exact-amount button: always set to the bill total, never accumulate
+      if (isExact) {
         return String(addAmount);
       }
 
-      if (lastQuickCashAmount !== addAmount) {
+      if (!isPaidAmountTouched || lastQuickCashAmount !== addAmount) {
         return String(addAmount);
       }
 
@@ -1918,7 +1919,7 @@ export function SalesManager({
                                 ? "border-violet-600 bg-violet-600 text-white"
                                 : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
                             }`}
-                            onClick={() => applyQuickCash(option.amount)}
+                            onClick={() => applyQuickCash(option.amount, option.isExact)}
                             type="button"
                           >
                             {option.isExact
