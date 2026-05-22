@@ -1189,7 +1189,7 @@ export function SalesManager({
 
   return (
     <>
-      <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[65%_30%]">
+      <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[1fr_420px]">
         <ProductBrowser
           categories={categories}
           dictionary={dictionary}
