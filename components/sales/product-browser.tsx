@@ -162,7 +162,7 @@ export function ProductBrowser({
                       </p>
                     </div>
                     <p className="text-xs font-semibold text-slate-700">
-                      {formatCurrency(product.effective_price)}
+                      {formatCurrency(product.base_price)}
                     </p>
                   </button>
                 ))}
@@ -261,7 +261,7 @@ export function ProductBrowser({
 
                 <div className="mt-0.5 flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-semibold text-slate-900">
-                    {formatCurrency(product.effective_price)}
+                    {formatCurrency(product.base_price)}
                   </span>
                   {currentQuantity > 0 ? (
                     <span className="rounded-full bg-violet-700 px-2 py-0.5 text-[10px] font-semibold text-white">
@@ -332,7 +332,7 @@ export function ProductBrowser({
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-semibold text-slate-900">
-                    {formatCurrency(product.effective_price)}
+                    {formatCurrency(product.base_price)}
                   </p>
                   <button
                     className="mt-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300"

@@ -173,7 +173,7 @@ function removeReceiptPreviewToolbar(html: string) {
 }
 
 function getDiscountPerUnit(item: CartItem) {
-  const unitPrice = Number(item.product.effective_price ?? 0);
+  const unitPrice = Number(item.product.base_price ?? 0);
   const rawValue = Number(item.discountValue || 0);
   const discountValue = Number.isFinite(rawValue) ? rawValue : 0;
 
@@ -185,7 +185,7 @@ function getDiscountPerUnit(item: CartItem) {
 }
 
 function getCartLine(item: CartItem) {
-  const unitPrice = Number(item.product.effective_price ?? 0);
+  const unitPrice = Number(item.product.base_price ?? 0);
   const discountPerUnit = getDiscountPerUnit(item);
   const lineSubtotal = unitPrice * item.quantity;
   const lineDiscount = discountPerUnit * item.quantity;
@@ -260,7 +260,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     string | null
   >(null);
   const [showNoteField, setShowNoteField] = useState(false);
-  const [nameTooltip, setNameTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [productPopup, setProductPopup] = useState<Product | null>(null);
+  const [productPopupVisible, setProductPopupVisible] = useState(false);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isBillDiscountFieldOpen, setIsBillDiscountFieldOpen] = useState(false);
   const [billDiscountType, setBillDiscountType] = useState<
     "amount" | "percent"
@@ -315,8 +317,33 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       if (barcodeTimeoutRef.current) {
         clearTimeout(barcodeTimeoutRef.current);
       }
+
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
     };
   }, []);
+
+  function openProductPopup(product: Product) {
+    setProductPopup(product);
+    requestAnimationFrame(() => setProductPopupVisible(true));
+  }
+
+  function closeProductPopup() {
+    setProductPopupVisible(false);
+    setTimeout(() => setProductPopup(null), 200);
+  }
+
+  function handleLongPressStart(product: Product) {
+    longPressTimerRef.current = setTimeout(() => openProductPopup(product), 500);
+  }
+
+  function handleLongPressEnd() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }
 
   useEffect(() => {
     startTransition(async () => {
@@ -1371,7 +1398,12 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
                     return (
                       <div
                         key={item.product.id}
-                        className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3.5 shadow-sm"
+                        className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3.5 shadow-sm select-none"
+                        onPointerDown={() => handleLongPressStart(item.product)}
+                        onPointerUp={handleLongPressEnd}
+                        onPointerLeave={handleLongPressEnd}
+                        onPointerCancel={handleLongPressEnd}
+                        onContextMenu={(e) => e.preventDefault()}
                       >
                         {/* Thumbnail */}
                         {item.product.image_url ? (
@@ -1389,28 +1421,11 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
                         {/* Name + unit price */}
                         <div className="min-w-0 flex-1">
-                          <p
-                            className="cursor-default truncate text-sm font-semibold text-slate-900"
-                            tabIndex={0}
-                            onMouseEnter={(e) => {
-                              const el = e.currentTarget;
-                              if (el.scrollWidth > el.clientWidth) {
-                                const r = el.getBoundingClientRect();
-                                setNameTooltip({ x: r.left, y: r.top, text: item.product.name });
-                              }
-                            }}
-                            onMouseLeave={() => setNameTooltip(null)}
-                            onFocus={(e) => {
-                              const el = e.currentTarget;
-                              const r = el.getBoundingClientRect();
-                              setNameTooltip({ x: r.left, y: r.top, text: item.product.name });
-                            }}
-                            onBlur={() => setNameTooltip(null)}
-                          >
+                          <p className="truncate text-sm font-semibold text-slate-900">
                             {item.product.name}
                           </p>
                           <p className="text-xs text-slate-400">
-                            ฿{formatAmount(line.unitPrice)}/หน่วย
+                            ฿{formatAmount(line.unitPrice)}/{item.product.product_unit_name ?? item.product.unit_type ?? "หน่วย"}
                           </p>
                         </div>
 
@@ -1704,7 +1719,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
                   const totalAmount = (bill.items ?? []).reduce(
                     (sum: number, item: any) => {
                       const price = Number(
-                        item.effective_price ?? item.price ?? 0,
+                        item.base_price ?? item.price ?? 0,
                       );
                       return sum + price * (item.quantity ?? 0);
                     },
@@ -1726,8 +1741,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
                               products.find((p) => p.id === item.product_id) ??
                               ({
                                 id: item.product_id,
-                                effective_price:
-                                  item.effective_price ?? item.price ?? 0,
+                                base_price:
+                                  item.base_price ?? item.price ?? 0,
                                 image_url: null,
                                 name: item.product_name ?? "Unknown",
                                 sku: null,
@@ -2450,14 +2465,91 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         </div>
       ) : null}
 
-      {/* Fixed product name tooltip — escapes overflow-y-auto clipping */}
-      {nameTooltip && (
+      {/* Product detail popup — triggered by long press on cart item */}
+      {productPopup && (
         <div
-          className="pointer-events-none fixed z-[400] max-w-[260px] break-words rounded-xl bg-slate-800 px-3 py-1.5 text-xs font-medium leading-snug text-white shadow-xl"
-          style={{ left: nameTooltip.x, top: nameTooltip.y - 40 }}
+          className={`fixed inset-0 z-[500] flex items-end justify-center p-4 pb-6 transition-opacity duration-200 sm:items-center ${productPopupVisible ? "opacity-100" : "opacity-0"}`}
+          style={{ background: "rgba(15,10,50,0.65)", backdropFilter: "blur(4px)" }}
+          onClick={closeProductPopup}
         >
-          {nameTooltip.text}
-          <div className="absolute left-3 top-full h-2 w-2 -translate-y-0.5 rotate-45 bg-slate-800" />
+          <div
+            className={`w-full max-w-2xl overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-2xl transition-all duration-200 ${productPopupVisible ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-95 opacity-0"}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex min-h-72">
+              {/* Left — image / initials */}
+              <div className="w-64 shrink-0">
+                {productPopup.image_url ? (
+                  <img
+                    alt={productPopup.name}
+                    className="h-full w-full object-cover"
+                    src={productPopup.image_url}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-violet-100">
+                    <span className="text-7xl font-bold text-violet-400">
+                      {productPopup.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Right — details */}
+              <div className="min-w-0 flex-1 p-7">
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-xl font-bold leading-snug text-slate-900">
+                    {productPopup.name}
+                  </h3>
+                  <button
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    onClick={closeProductPopup}
+                    type="button"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-2.5 text-base">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-slate-500">ราคา</span>
+                    <span className="font-semibold text-slate-800">฿{formatAmount(productPopup.base_price)}</span>
+                  </div>
+                  {productPopup.special_price != null && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">ราคาพิเศษ</span>
+                      <span className="font-semibold text-rose-600">฿{formatAmount(productPopup.special_price)}</span>
+                    </div>
+                  )}
+                  {productPopup.sku && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">SKU</span>
+                      <span className="truncate font-medium text-slate-700">{productPopup.sku}</span>
+                    </div>
+                  )}
+                  {productPopup.barcode && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">บาร์โค้ด</span>
+                      <span className="truncate font-medium text-slate-700">{productPopup.barcode}</span>
+                    </div>
+                  )}
+                  {productPopup.total_stock !== undefined && (
+                    <div className="flex justify-between gap-3">
+                      <span className="text-slate-500">สต็อก</span>
+                      <span className="font-medium text-slate-700">
+                        {productPopup.total_stock} {productPopup.product_unit_name ?? ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {productPopup.description && (
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+                    {productPopup.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </>
