@@ -533,12 +533,12 @@ export function StoreManagementPanel({ dictionary }: Props) {
       {isCreateModalOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm smooth-fade"
             onClick={() => setIsCreateModalOpen(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-              className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[2rem] bg-white shadow-[0_32px_80px_rgba(59,130,246,0.2)]"
+              className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-[2rem] bg-white shadow-[0_32px_80px_rgba(59,130,246,0.2)] smooth-fade-up"
               onClick={(e) => e.stopPropagation()}
               ref={createModalRef}
               tabIndex={-1}

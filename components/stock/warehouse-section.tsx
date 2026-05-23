@@ -1,5 +1,6 @@
 "use client";
 
+import * as XLSX from "xlsx";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,7 +34,6 @@ import {
   removeWarehouseProduct,
   transferWarehouseProduct,
   updateWarehouse,
-  updateWarehouseProductQuantity,
 } from "@/services/warehouses";
 import { listProducts } from "@/services/products";
 import { listMyStores } from "@/services/stores";
@@ -359,45 +359,39 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   // Selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  // Inline edit quantity
-  const [editingQty, setEditingQty] = useState<{[key: string]: boolean}>({});
-  const [editingQtyValues, setEditingQtyValues] = useState<{[key: string]: string}>({});
-
-  const startQtyEdit = useCallback((wp: WarehouseProduct) => {
-    setEditingQty((prev) => ({ ...prev, [wp.product_id]: true }));
-    setEditingQtyValues((prev) => ({ ...prev, [wp.product_id]: String(wp.quantity) }));
-  }, []);
-
-  const cancelQtyEdit = useCallback((productId: string) => {
-    setEditingQty((prev) => ({ ...prev, [productId]: false }));
-    setEditingQtyValues((prev) => {
-      const next = { ...prev };
-      delete next[productId];
-      return next;
-    });
-  }, []);
-
-  const confirmQtyEdit = useCallback(
-    async (productId: string) => {
-      if (!selectedWarehouseId) return;
-      const value = editingQtyValues[productId];
-      const quantity = parseInt(value ?? "", 10);
-      if (isNaN(quantity) || quantity < 0) return;
-
-      setError("");
-      try {
-        await updateWarehouseProductQuantity(selectedWarehouseId, productId, quantity);
-        await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
-        cancelQtyEdit(productId);
-      } catch (nextErr: any) {
-        setError(nextErr?.message || "ไม่สามารถอัปเดตจำนวนได้");
-      }
-    },
-    [selectedWarehouseId, editingQtyValues, queryClient, cancelQtyEdit],
-  );
-
   // Barcode preview
   const [previewSku, setPreviewSku] = useState<string | null>(null);
+
+  // Export column picker
+  const EXPORT_COLUMNS = [
+    { key: "ชื่อสินค้า",  getValue: (wp: WarehouseProduct) => wp.product_name || "" },
+    { key: "SKU",         getValue: (wp: WarehouseProduct) => wp.product_sku || "" },
+    { key: "บาร์โค้ด",   getValue: (wp: WarehouseProduct) => wp.product_barcode || "" },
+    { key: "หมวดหมู่",   getValue: (wp: WarehouseProduct) => wp.product_type_name || "" },
+    { key: "ราคาขาย",    getValue: (wp: WarehouseProduct) => wp.product_price || 0 },
+    { key: "ราคาต้นทุน", getValue: (wp: WarehouseProduct) => wp.cost_price || 0 },
+    { key: "จำนวน",      getValue: (wp: WarehouseProduct) => wp.quantity },
+    { key: "Min Stock",   getValue: (wp: WarehouseProduct) => wp.product_min_stock ?? "" },
+    { key: "Max Stock",   getValue: (wp: WarehouseProduct) => wp.product_max_stock ?? "" },
+    { key: "หน่วย",      getValue: (wp: WarehouseProduct) => wp.product_unit_name || "" },
+    { key: "รูปภาพ (URL)", getValue: (wp: WarehouseProduct) => wp.image_url || "" },
+  ] as const;
+  const DEFAULT_EXPORT_COLS = new Set(
+    EXPORT_COLUMNS.filter((c) => c.key !== "รูปภาพ (URL)").map((c) => c.key)
+  );
+  const EXPORT_COLS_STORAGE_KEY = "warehouse-export-cols";
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportCols, setExportCols] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(EXPORT_COLS_STORAGE_KEY);
+      if (stored) {
+        const parsed: string[] = JSON.parse(stored);
+        const valid = parsed.filter((k) => EXPORT_COLUMNS.some((c) => c.key === k));
+        if (valid.length > 0) return new Set(valid);
+      }
+    } catch {}
+    return new Set(DEFAULT_EXPORT_COLS);
+  });
 
   // Transfer modal state
   const [transferTarget, setTransferTarget] = useState<WarehouseProduct | null>(null);
@@ -978,29 +972,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             <button
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
               disabled={selectedIds.size === 0}
-              onClick={() => {
-                const selectedProducts = warehouseProducts.filter((wp) => selectedIds.has(wp.product_id));
-                if (selectedProducts.length === 0) return;
-                const rows = selectedProducts.map((wp) => [
-                  wp.product_name || '',
-                  wp.product_sku || '',
-                  wp.product_barcode || '',
-                  wp.product_type_name || '',
-                  (wp.product_price || 0).toString(),
-                  String(wp.quantity),
-                ]);
-                const header = [['ชื่อ', 'SKU', 'บาร์โค้ด', 'หมวดหมู่', 'ราคา', 'จำนวน']];
-                const csv = [...header, ...rows]
-                  .map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(','))
-                  .join('\n');
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'warehouse-products.csv';
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
+              onClick={() => setIsExportModalOpen(true)}
               type="button"
             >
               <Download className="h-3.5 w-3.5" />
@@ -1302,123 +1274,73 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   </td>
                   <td className="px-2 py-4">
                     <div className="flex flex-col">
-                      {editingQty[wp.product_id] ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            autoFocus
-                            className="w-16 rounded-lg border border-violet-400 px-2 py-1 text-sm font-semibold text-center outline-none ring-2 ring-violet-100 transition-all duration-200"
-                            min={0}
-                            onChange={(e) =>
-                              setEditingQtyValues((prev) => ({ ...prev, [wp.product_id]: e.target.value }))
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") confirmQtyEdit(wp.product_id);
-                              if (e.key === "Escape") cancelQtyEdit(wp.product_id);
-                            }}
-                            type="number"
-                            value={editingQtyValues[wp.product_id] ?? String(wp.quantity)}
-                          />
-                        </div>
-                      ) : (
-                        <>
-                          <span
-                            className={`inline-flex items-center gap-1.5 text-sm font-semibold ${
-                              (wp.product_quantity ?? wp.quantity) <= 0
-                                ? "text-rose-700"
-                                : wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock
-                                  ? "text-amber-700"
-                                  : "text-slate-900"
-                            }`}
-                          >
-                            {(wp.product_quantity ?? wp.quantity) <= 0 ? (
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
-                                <X className="h-3.5 w-3.5" />
-                                {dictionary.outOfStockLabel}
-                              </span>
-                            ) : (
-                              <>
-                                {wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock ? (
-                                  <AlertTriangle
-                                    aria-label={dictionary.lowStockLabel}
-                                    className="h-4 w-4 text-amber-500"
-                                  />
-                                ) : null}
-                                <span>
-                                  {wp.product_max_stock != null
-                                    ? `${wp.quantity} / ${wp.product_max_stock}`
-                                    : wp.quantity}
-                                  {wp.product_unit_name ? ` ${wp.product_unit_name}` : ""}
-                                </span>
-                              </>
-                            )}
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-sm font-semibold ${
+                          (wp.product_quantity ?? wp.quantity) <= 0
+                            ? "text-rose-700"
+                            : wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock
+                              ? "text-amber-700"
+                              : "text-slate-900"
+                        }`}
+                      >
+                        {(wp.product_quantity ?? wp.quantity) <= 0 ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                            <X className="h-3.5 w-3.5" />
+                            {dictionary.outOfStockLabel}
                           </span>
-                          {(wp.product_min_stock != null && wp.product_min_stock > 0) || wp.product_max_stock != null ? (
-                            <span
-                              className={`mt-0.5 text-[11px] ${
-                                (wp.product_quantity ?? wp.quantity) <= 0
-                                  ? "text-rose-400"
-                                  : wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock
-                                    ? "text-amber-400"
-                                    : "text-slate-400"
-                              }`}
-                            >
-                              {wp.product_min_stock != null && wp.product_min_stock > 0 ? `Min ${wp.product_min_stock}` : ""}
-                              {wp.product_min_stock != null && wp.product_min_stock > 0 && wp.product_max_stock != null ? " / " : ""}
-                              {wp.product_max_stock != null ? `Max ${wp.product_max_stock}` : ""}
+                        ) : (
+                          <>
+                            {wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock ? (
+                              <AlertTriangle
+                                aria-label={dictionary.lowStockLabel}
+                                className="h-4 w-4 text-amber-500"
+                              />
+                            ) : null}
+                            <span>
+                              {wp.product_max_stock != null
+                                ? `${wp.quantity} / ${wp.product_max_stock}`
+                                : wp.quantity}
+                              {wp.product_unit_name ? ` ${wp.product_unit_name}` : ""}
                             </span>
-                          ) : null}
-                        </>
-                      )}
+                          </>
+                        )}
+                      </span>
+                      {(wp.product_min_stock != null && wp.product_min_stock > 0) || wp.product_max_stock != null ? (
+                        <span
+                          className={`mt-0.5 text-[11px] ${
+                            (wp.product_quantity ?? wp.quantity) <= 0
+                              ? "text-rose-400"
+                              : wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock
+                                ? "text-amber-400"
+                                : "text-slate-400"
+                          }`}
+                        >
+                          {wp.product_min_stock != null && wp.product_min_stock > 0 ? `Min ${wp.product_min_stock}` : ""}
+                          {wp.product_min_stock != null && wp.product_min_stock > 0 && wp.product_max_stock != null ? " / " : ""}
+                          {wp.product_max_stock != null ? `Max ${wp.product_max_stock}` : ""}
+                        </span>
+                      ) : null}
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      {editingQty[wp.product_id] ? (
-                        <>
-                          <button
-                            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
-                            onClick={() => confirmQtyEdit(wp.product_id)}
-                            type="button"
-                          >
-                            {dictionary.saveLabel}
-                          </button>
-                          <button
-                            className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-500 transition hover:bg-slate-100"
-                            onClick={() => cancelQtyEdit(wp.product_id)}
-                            type="button"
-                          >
-                            {dictionary.cancel}
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            className="rounded-lg p-2 text-slate-500 transition hover:bg-violet-50 hover:text-violet-600"
-                            disabled={!(wp.product_barcode)}
-                            onClick={() => setPreviewSku(wp.product_barcode || null)}
-                            title={dictionary.barcodeTooltip}
-                            type="button"
-                          >
-                            <Barcode className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="rounded-lg p-2 text-slate-500 transition hover:bg-violet-50 hover:text-violet-600"
-                            onClick={() => startQtyEdit(wp)}
-                            title={dictionary.editQtyTitle}
-                            type="button"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            className="rounded-lg p-2 text-rose-600 transition hover:bg-rose-50"
-                            onClick={() => handleRemoveProduct(wp.product_id)}
-                            title={dictionary.deleteLabel}
-                            type="button"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
+                      <button
+                        className="rounded-lg p-2 text-slate-500 transition hover:bg-violet-50 hover:text-violet-600"
+                        disabled={!(wp.product_barcode)}
+                        onClick={() => setPreviewSku(wp.product_barcode || null)}
+                        title={dictionary.barcodeTooltip}
+                        type="button"
+                      >
+                        <Barcode className="h-4 w-4" />
+                      </button>
+                      <button
+                        className="rounded-lg p-2 text-rose-600 transition hover:bg-rose-50"
+                        onClick={() => handleRemoveProduct(wp.product_id)}
+                        title={dictionary.deleteLabel}
+                        type="button"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -1499,8 +1421,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 
       {/* Barcode Preview Modal */}
       {previewSku ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl smooth-fade-up">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-base font-semibold text-slate-900">
                 {dictionary.barcodeTitle}
@@ -1546,8 +1468,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 
       {/* Transfer Modal */}
       {transferTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl smooth-fade-up">
             <h3 className="text-lg font-bold text-slate-900">{dictionary.transferTitle}</h3>
             <p className="mt-1 text-sm text-slate-500">
               {dictionary.transferDestLabel}: {transferTarget.product_name}
@@ -1702,10 +1624,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       {/* Create/Edit Warehouse Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/45"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/45 smooth-fade"
         >
           <div
-            className="h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl z-[60]"
+            className="h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl z-[60] smooth-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b border-slate-200 bg-gradient-to-br from-violet-700 via-violet-600 to-pink-500 px-6 py-6 text-white">
@@ -1865,10 +1787,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       {/* Manage Warehouses Modal */}
       {isManageModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 smooth-fade"
         >
           <div
-            className="flex h-[80vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl"
+            className="flex h-[80vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl smooth-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-br from-violet-700 via-violet-600 to-pink-500 px-6 py-5 text-white rounded-t-2xl">
@@ -1987,7 +1909,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       {/* Receive Stock Modal */}
       {isReceiveModalOpen && selectedWarehouse ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade"
           onClick={() => setIsReceiveModalOpen(false)}
         >
           <div
@@ -2116,7 +2038,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       {/* Batch Transfer Modal */}
       {isBatchTransferModalOpen && selectedWarehouse ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade"
           onClick={() => setIsBatchTransferModalOpen(false)}
         >
           <div
@@ -2312,6 +2234,110 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </div>
         </div>
       ) : null}
+
+      {/* Export column picker modal */}
+      {isExportModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 smooth-fade"
+          onClick={() => setIsExportModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-violet-100 bg-white shadow-2xl smooth-fade-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-violet-100 px-5 py-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">เลือกคอลัมน์ที่ต้องการ</h3>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  เลือก {selectedIds.size} รายการ
+                </p>
+              </div>
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                onClick={() => setIsExportModalOpen(false)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Select all toggle */}
+            <div className="flex items-center justify-between border-b border-violet-50 px-5 py-2.5">
+              <span className="text-xs font-semibold text-slate-500">คอลัมน์</span>
+              <button
+                className="text-xs font-semibold text-violet-600 transition hover:text-violet-800"
+                onClick={() => {
+                  const next = exportCols.size === EXPORT_COLUMNS.length
+                    ? new Set<string>()
+                    : new Set(EXPORT_COLUMNS.map((c) => c.key));
+                  setExportCols(next);
+                  localStorage.setItem(EXPORT_COLS_STORAGE_KEY, JSON.stringify([...next]));
+                }}
+                type="button"
+              >
+                {exportCols.size === EXPORT_COLUMNS.length ? "ยกเลิกทั้งหมด" : "เลือกทั้งหมด"}
+              </button>
+            </div>
+
+            {/* Column checkboxes */}
+            <div className="divide-y divide-violet-50 px-5">
+              {EXPORT_COLUMNS.map((col) => (
+                <label
+                  key={col.key}
+                  className="flex cursor-pointer items-center gap-3 py-2.5"
+                >
+                  <input
+                    checked={exportCols.has(col.key)}
+                    className="h-4 w-4 accent-violet-600"
+                    onChange={() => {
+                      setExportCols((prev) => {
+                        const next = new Set(prev);
+                        next.has(col.key) ? next.delete(col.key) : next.add(col.key);
+                        localStorage.setItem(EXPORT_COLS_STORAGE_KEY, JSON.stringify([...next]));
+                        return next;
+                      });
+                    }}
+                    type="checkbox"
+                  />
+                  <span className="text-sm text-slate-700">{col.key}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 border-t border-violet-100 px-5 py-4">
+              <button
+                className="rounded-lg border border-violet-200 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                onClick={() => setIsExportModalOpen(false)}
+                type="button"
+              >
+                ยกเลิก
+              </button>
+              <button
+                className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40"
+                disabled={exportCols.size === 0}
+                onClick={() => {
+                  const selectedProducts = warehouseProducts.filter((wp) => selectedIds.has(wp.product_id));
+                  const activeCols = EXPORT_COLUMNS.filter((c) => exportCols.has(c.key));
+                  const rows = selectedProducts.map((wp) =>
+                    Object.fromEntries(activeCols.map((c) => [c.key, c.getValue(wp)]))
+                  );
+                  const ws = XLSX.utils.json_to_sheet(rows);
+                  const wb = XLSX.utils.book_new();
+                  XLSX.utils.book_append_sheet(wb, ws, "สินค้าในคลัง");
+                  XLSX.writeFile(wb, `${selectedWarehouse?.name ?? "warehouse"}-products.xlsx`);
+                  setIsExportModalOpen(false);
+                }}
+                type="button"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export Excel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Success Popup Modal */}
       <SuccessPopup

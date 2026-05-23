@@ -64,6 +64,7 @@ type SalesManagerProps = {
   externalSearch?: string;
   onExternalSearchChange?: (value: string) => void;
   onCartStateChange?: (state: { applyVat: boolean; showNoteField: boolean }) => void;
+  onHoldBillSuccess?: () => void;
 };
 
 const productViewStorageKey = "pos-sales-product-view";
@@ -112,9 +113,23 @@ function parsePaidAmountAsCeilInt(value: string) {
   return Math.max(Math.ceil(parsed), 0);
 }
 
-function removeReceiptPreviewToolbar(html: string) {
+function removeReceiptPreviewToolbar(html: string, paymentMethod?: string) {
   const document = new DOMParser().parseFromString(html, "text/html");
   document.querySelector(".toolbar")?.remove();
+
+  if (paymentMethod === "cash") {
+    const qrSelectors = [
+      "[class*='qr']",
+      "[id*='qr']",
+      "[class*='promptpay']",
+      "[id*='promptpay']",
+      "[class*='prompt-pay']",
+      "img[alt*='QR']",
+      "img[alt*='PromptPay']",
+      "img[alt*='promptpay']",
+    ];
+    document.querySelectorAll(qrSelectors.join(",")).forEach((el) => el.remove());
+  }
   const style = document.createElement("style");
   style.textContent = `
     :root {
@@ -205,6 +220,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   externalSearch,
   onExternalSearchChange,
   onCartStateChange,
+  onHoldBillSuccess,
 }: SalesManagerProps, ref) {
   const [hasMounted, setHasMounted] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -282,6 +298,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [isPending, startTransition] = useTransition();
   const [isRestoreDrawerOpen, setIsRestoreDrawerOpen] = useState(false);
   const [parkedBills, setParkedBills] = useState<any[]>([]);
+  const [restoreConfirmBill, setRestoreConfirmBill] = useState<any | null>(null);
   const [isHoldingBill, setIsHoldingBill] = useState(false);
   const [holdBillLabel, setHoldBillLabel] = useState("");
   const numpadCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -1204,7 +1221,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         if (response.data?.id) {
           setReceiptPreviewHtml("");
           setIsPrintPromptOpen(true);
-          void prepareReceiptPreview(response.data.id);
+          void prepareReceiptPreview(response.data.id, paymentMethod);
         }
       } catch (nextError) {
         setError(
@@ -1214,12 +1231,12 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     });
   }
 
-  async function prepareReceiptPreview(saleId: string) {
+  async function prepareReceiptPreview(saleId: string, method?: string) {
     setIsReceiptPreviewLoading(true);
 
     try {
       const html = await getSaleReceiptPreviewHtml(saleId);
-      setReceiptPreviewHtml(removeReceiptPreviewToolbar(html));
+      setReceiptPreviewHtml(removeReceiptPreviewToolbar(html, method));
     } catch (nextError) {
       setError(
         nextError instanceof Error ? nextError.message : "Request failed",
@@ -1245,6 +1262,39 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   function closeReceiptPreview() {
     setIsPrintPromptOpen(false);
     setReceiptPreviewHtml("");
+  }
+
+  function confirmRestoreBill(bill: any) {
+    const items = (bill.items ?? []).map((item: any) => ({
+      discountType: item.discount_type ?? "none",
+      discountValue: item.discount_value ?? "0",
+      product:
+        products.find((p) => p.id === item.product_id) ??
+        ({
+          id: item.product_id,
+          base_price: item.base_price ?? item.price ?? 0,
+          image_url: null,
+          name: item.product_name ?? "Unknown",
+          sku: null,
+        } as Product),
+      quantity: item.quantity ?? 0,
+    }));
+    setCart(items);
+    setSelectedCustomerId(bill.selectedCustomerId ?? "");
+    setCustomerSettlementMode(bill.customerSettlementMode ?? "cash_now");
+    setPaymentMethod(bill.paymentMethod ?? "cash");
+    setNote(bill.note ?? "");
+    setBillDiscount(
+      bill.bill_discount_type === "percent"
+        ? bill.bill_discount_percent > 0 ? String(bill.bill_discount_percent) : ""
+        : bill.bill_discount_amount > 0 ? String(bill.bill_discount_amount) : "",
+    );
+    setBillDiscountType(bill.bill_discount_type ?? "amount");
+    setApplyVat(bill.applyVat ?? true);
+    void deleteParkedBill(bill.id);
+    setRestoreConfirmBill(null);
+    setIsRestoreDrawerOpen(false);
+    setSuccessMessage(dictionary.restoreBillConfirmLabel);
   }
 
   if (!hasMounted) {
@@ -1540,8 +1590,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       </section>
 
       {isActionsMenuOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-4 shadow-2xl">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-4 shadow-2xl smooth-fade-up">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-950">
                 {dictionary.actionsLabel}
@@ -1612,8 +1662,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
       {/* Hold Bill prompt */}
       {isHoldingBill ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
             <h3 className="text-lg font-semibold text-slate-950">
               {dictionary.holdBillLabel}
             </h3>
@@ -1672,6 +1722,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
                     clearCart();
                     setSuccessMessage(dictionary.holdBillConfirmLabel);
                     await reloadData();
+                    onHoldBillSuccess?.();
                   } catch (nextError) {
                     setError(
                       nextError instanceof Error
@@ -1693,8 +1744,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
       {/* Restore Bill drawer */}
       {isRestoreDrawerOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-950">
                 {dictionary.restoreBillDrawerTitle}
@@ -1730,52 +1781,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
                     <button
                       key={bill.id}
                       className="w-full rounded-lg border border-violet-100 bg-white p-4 text-left transition hover:bg-violet-50 hover:border-violet-300"
-                      onClick={() => {
-                        if (
-                          window.confirm(dictionary.restoreBillConfirmLabel)
-                        ) {
-                          const items = (bill.items ?? []).map((item: any) => ({
-                            discountType: item.discount_type ?? "none",
-                            discountValue: item.discount_value ?? "0",
-                            product:
-                              products.find((p) => p.id === item.product_id) ??
-                              ({
-                                id: item.product_id,
-                                base_price:
-                                  item.base_price ?? item.price ?? 0,
-                                image_url: null,
-                                name: item.product_name ?? "Unknown",
-                                sku: null,
-                              } as Product),
-                            quantity: item.quantity ?? 0,
-                          }));
-
-                          setCart(items);
-                          setSelectedCustomerId(bill.selectedCustomerId ?? "");
-                          setCustomerSettlementMode(
-                            bill.customerSettlementMode ?? "cash_now",
-                          );
-                          setPaymentMethod(bill.paymentMethod ?? "cash");
-                          setNote(bill.note ?? "");
-                          setBillDiscount(
-                            bill.bill_discount_type === "percent"
-                              ? bill.bill_discount_percent > 0
-                                ? String(bill.bill_discount_percent)
-                                : ""
-                              : bill.bill_discount_amount > 0
-                                ? String(bill.bill_discount_amount)
-                                : "",
-                          );
-                          setBillDiscountType(
-                            bill.bill_discount_type ?? "amount",
-                          );
-                          setApplyVat(bill.applyVat ?? true);
-
-                          void deleteParkedBill(bill.id);
-                          setIsRestoreDrawerOpen(false);
-                          setSuccessMessage(dictionary.restoreBillConfirmLabel);
-                        }
-                      }}
+                      onClick={() => setRestoreConfirmBill(bill)}
                       type="button"
                     >
                       <div className="flex items-center justify-between gap-2">
@@ -1803,8 +1809,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       ) : null}
 
       {isCheckoutSummaryOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
-          <div className="w-full max-w-4xl rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-4xl rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-950">
                 {dictionary.checkoutSectionTitle}
@@ -2092,8 +2098,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       ) : null}
 
       {discountEditorItem ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-lg font-semibold text-slate-950">
                 {discountEditorItem.product.name}
@@ -2464,6 +2470,77 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           </div>
         </div>
       ) : null}
+
+      {/* Restore bill confirmation popup */}
+      {restoreConfirmBill && (() => {
+        const bill = restoreConfirmBill;
+        const itemCount = bill.items?.length ?? 0;
+        const totalAmount = (bill.items ?? []).reduce(
+          (sum: number, item: any) => sum + Number(item.base_price ?? item.price ?? 0) * (item.quantity ?? 0),
+          0,
+        );
+        return (
+          <div
+            className="fixed inset-0 z-[600] flex items-center justify-center bg-indigo-950/60 p-4 backdrop-blur-sm smooth-fade"
+            onClick={() => setRestoreConfirmBill(null)}
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl border border-violet-100 bg-white shadow-2xl smooth-fade-up"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center gap-3 border-b border-violet-100 px-5 py-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100">
+                  <ChevronDown className="h-5 w-5 rotate-90 text-violet-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">เรียกบิลคืน</h3>
+                  <p className="text-xs text-slate-500">บิลนี้จะถูกโหลดเข้าตะกร้าปัจจุบัน</p>
+                </div>
+              </div>
+
+              {/* Bill preview */}
+              <div className="mx-5 my-4 rounded-xl border border-violet-100 bg-violet-50/50 px-4 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-semibold text-slate-800">{bill.label || "บิลไม่มีชื่อ"}</span>
+                  <span className="text-sm font-bold text-violet-700">{formatCurrency(totalAmount)}</span>
+                </div>
+                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
+                  <span>{itemCount} รายการ</span>
+                  <span>•</span>
+                  <span>{formatDateTime(bill.created_at)}</span>
+                </div>
+              </div>
+
+              {/* Warning if cart has items */}
+              {cart.length > 0 && (
+                <div className="mx-5 mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+                  <span className="mt-px shrink-0 font-bold">⚠</span>
+                  <span>ตะกร้าปัจจุบันมี {cart.length} รายการ จะถูกแทนที่ด้วยบิลที่เลือก</span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-2 border-t border-violet-100 px-5 py-4">
+                <button
+                  className="rounded-lg border border-violet-200 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                  onClick={() => setRestoreConfirmBill(null)}
+                  type="button"
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-700"
+                  onClick={() => confirmRestoreBill(bill)}
+                  type="button"
+                >
+                  เรียกบิลคืน
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Product detail popup — triggered by long press on cart item */}
       {productPopup && (

@@ -144,10 +144,10 @@ export function StockReceiveModal({
   return (
     <>
       {/* Backdrop — does NOT close modal on click */}
-      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" />
+      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm smooth-fade" />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-[0_24px_60px_rgba(124,58,237,0.15)] animate-[fadeIn_0.2s_ease-out]"
+          className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-[0_24px_60px_rgba(124,58,237,0.15)] smooth-fade-up"
           ref={modalRef}
           tabIndex={-1}
         >

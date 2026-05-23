@@ -769,8 +769,8 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
       </section>
 
       {isReceiptOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6">
-          <div className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl sm:p-8 smooth-fade-up">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="text-2xl font-semibold text-slate-950">{dictionary.receiptTitle}</h3>
@@ -883,8 +883,8 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
       ) : null}
 
       {isPaymentModalOpen && selectedInvoice ? (
-        <div className="fixed inset-0 z-[58] flex items-center justify-center bg-slate-950/50 px-4 py-6">
-          <div className="w-full max-w-xl rounded-[1.5rem] bg-white p-6 shadow-2xl sm:p-7">
+        <div className="fixed inset-0 z-[58] flex items-center justify-center bg-slate-950/50 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-xl rounded-[1.5rem] bg-white p-6 shadow-2xl sm:p-7 smooth-fade-up">
             <div className="flex items-start justify-between gap-4">
               <h3 className="text-lg font-semibold text-slate-900">{dictionary.pendingPaymentSectionTitle}</h3>
               <button
@@ -978,8 +978,8 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
       ) : null}
 
       {isUnpayModalOpen && selectedInvoice ? (
-        <div className="fixed inset-0 z-[59] flex items-center justify-center bg-slate-950/50 px-4 py-6">
-          <div className="w-full max-w-lg rounded-[1.5rem] bg-white p-6 shadow-2xl sm:p-7">
+        <div className="fixed inset-0 z-[59] flex items-center justify-center bg-slate-950/50 px-4 py-6 smooth-fade">
+          <div className="w-full max-w-lg rounded-[1.5rem] bg-white p-6 shadow-2xl sm:p-7 smooth-fade-up">
             <div className="flex items-start justify-between gap-4">
               <h3 className="text-lg font-semibold text-slate-900">{dictionary.markUnpaidButton}</h3>
               <button

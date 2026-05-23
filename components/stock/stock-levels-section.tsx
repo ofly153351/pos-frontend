@@ -1,5 +1,6 @@
 "use client";
 
+import * as XLSX from "xlsx";
 import { ProductsTable } from "@/components/stock/products-table";
 import { createProduct } from "@/services/products";
 import { useRef, useState } from "react";
@@ -306,30 +307,22 @@ export function StockLevelsSection({
           const selectedProducts = filteredProducts.filter((p) =>
             selectedIds.includes(p.id),
           );
-          const headers = [
-            "Name", "SKU", "Category", "Cost Price", "Selling Price", "Stock",
-            "Min Stock", "Max Stock", "Unit", "Active",
-          ];
-          const rows = selectedProducts.map((p) => [
-            `"${(p.name ?? "").replace(/"/g, '""')}"`,
-            `"${(p.sku ?? "").replace(/"/g, '""')}"`,
-            `"${(p.product_type_name ?? "").replace(/"/g, '""')}"`,
-            p.cost_price ?? 0,
-            p.effective_price ?? 0,
-            p.total_stock ?? 0,
-            p.min_stock ?? 0,
-            p.max_stock ?? "",
-            `"${(p.product_unit_name ?? "").replace(/"/g, '""')}"`,
-            p.is_active ? "Yes" : "No",
-          ]);
-          const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-          const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `products-export-${new Date().toISOString().slice(0, 10)}.csv`;
-          a.click();
-          URL.revokeObjectURL(url);
+          const rows = selectedProducts.map((p) => ({
+            Name: p.name ?? "",
+            SKU: p.sku ?? "",
+            Category: p.product_type_name ?? "",
+            "Cost Price": p.cost_price ?? 0,
+            "Selling Price": p.base_price ?? 0,
+            Stock: p.total_stock ?? 0,
+            "Min Stock": p.min_stock ?? 0,
+            "Max Stock": p.max_stock ?? "",
+            Unit: p.product_unit_name ?? "",
+            Active: p.is_active ? "Yes" : "No",
+          }));
+          const ws = XLSX.utils.json_to_sheet(rows);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Products");
+          XLSX.writeFile(wb, `products-export-${new Date().toISOString().slice(0, 10)}.xlsx`);
         }}
         lowStockLabel={dictionary.filters.lowStockStatus}
         outOfStockLabel={dictionary.filters.outOfStockStatus}
@@ -359,11 +352,11 @@ export function StockLevelsSection({
 
       {isImportModalOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade"
           onClick={() => setIsImportModalOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl smooth-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-slate-900">{dictionary.table.importLabel}</h3>
@@ -375,18 +368,14 @@ export function StockLevelsSection({
               <button
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => {
-                  const template = [
-                    "Name,SKU,Price,Stock,Min Stock,Max Stock,Active",
-                    "ตัวอย่างสินค้า,BRC-001,100.00,50,10,100,Yes",
-                    "ตัวอย่างสินค้า 2,BRC-002,200.00,30,5,60,Yes",
-                  ].join("\n");
-                  const blob = new Blob(["\ufeff" + template], { type: "text/csv;charset=utf-8;" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = "product-import-template.csv";
-                  a.click();
-                  URL.revokeObjectURL(url);
+                  const rows = [
+                    { Name: 'ตัวอย่างสินค้า', SKU: 'BRC-001', Price: 100, Stock: 50, 'Min Stock': 10, 'Max Stock': 100, Active: 'Yes' },
+                    { Name: 'ตัวอย่างสินค้า 2', SKU: 'BRC-002', Price: 200, Stock: 30, 'Min Stock': 5, 'Max Stock': 60, Active: 'Yes' },
+                  ];
+                  const ws = XLSX.utils.json_to_sheet(rows);
+                  const wb = XLSX.utils.book_new();
+                  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+                  XLSX.writeFile(wb, 'product-import-template.xlsx');
                 }}
                 type="button"
               >
@@ -404,12 +393,12 @@ export function StockLevelsSection({
                 <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 10l5 5 5-5M12 15V3" />
                 </svg>
-                อัปโหลดไฟล์ CSV
+                อัปโหลดไฟล์ Excel
               </button>
             </div>
 
             <input
-              accept=".csv"
+              accept=".xlsx,.xls"
               className="hidden"
               ref={importFileRef}
               onChange={async (e) => {
@@ -417,31 +406,24 @@ export function StockLevelsSection({
                 if (!file) return;
                 e.target.value = "";
 
-                const text = await file.text();
-                const lines = text.split("\n").filter(Boolean);
-                const [headerLine, ...dataLines] = lines;
-                const headers = headerLine.split(",").map((h) => h.trim().toLowerCase());
-                const nameIdx = headers.indexOf("name");
-                const skuIdx = headers.indexOf("sku");
-                const priceIdx = headers.indexOf("price");
-                const stockIdx = headers.indexOf("stock");
-                const minStockIdx = headers.indexOf("min stock");
-                const maxStockIdx = headers.indexOf("max stock");
-                const activeIdx = headers.indexOf("active");
+                const buffer = await file.arrayBuffer();
+                const wb = XLSX.read(buffer, { type: "array" });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const dataRows: Record<string, string>[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
                 let successCount = 0;
                 let errorCount = 0;
 
-                for (const line of dataLines) {
-                  const cols = line.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
+                for (const row of dataRows) {
+                  const get = (key: string) => String(row[key] ?? row[key.toLowerCase()] ?? "").trim();
                   try {
                     await createProduct({
-                      name: cols[nameIdx] || "",
-                      base_price: cols[priceIdx] || "0",
-                      sku: skuIdx >= 0 ? cols[skuIdx] || "" : "",
-                      min_stock: minStockIdx >= 0 ? cols[minStockIdx] || "0" : "0",
-                      max_stock: maxStockIdx >= 0 ? cols[maxStockIdx] || "" : "",
-                      is_active: activeIdx >= 0 ? cols[activeIdx]?.toLowerCase() === "yes" : true,
+                      name: get("Name") || "",
+                      base_price: get("Price") || "0",
+                      sku: get("SKU"),
+                      min_stock: get("Min Stock") || "0",
+                      max_stock: get("Max Stock"),
+                      is_active: get("Active").toLowerCase() !== "no",
                       unit_id: productUnits[0]?.id ?? "",
                     });
                     successCount++;

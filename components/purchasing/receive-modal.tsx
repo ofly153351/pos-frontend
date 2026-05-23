@@ -83,9 +83,9 @@ export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModa
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm smooth-fade" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.15)]">
+        <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.15)] smooth-fade-up">
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h4 className="text-lg font-bold text-slate-900">{dictionary.receiveStock}</h4>

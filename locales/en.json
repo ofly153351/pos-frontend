@@ -783,7 +783,7 @@
       "totalStockLabel": "Total Stock",
       "totalValueLabel": "Total Value",
       "manageLabel": "Manage",
-      "exportLabel": "Export",
+      "exportLabel": "Export Excel",
       "exportBarcodeLabel": "Export Barcodes",
       "perPageLabel": "Per page",
       "prevLabel": "Previous",

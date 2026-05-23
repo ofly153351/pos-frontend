@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { CashierModal } from "@/components/sales/cashier-modal";
@@ -63,6 +63,20 @@ export function UserWorkspaceLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [isCashierOpen, setIsCashierOpen] = useState(false);
 
+  useEffect(() => {
+    if (localStorage.getItem("pos-cashier-open") === "1") setIsCashierOpen(true);
+  }, []);
+
+  function openCashier() {
+    setIsCashierOpen(true);
+    localStorage.setItem("pos-cashier-open", "1");
+  }
+
+  function closeCashier() {
+    setIsCashierOpen(false);
+    localStorage.removeItem("pos-cashier-open");
+  }
+
   const navLabels: NavLabels = {
     dashboard: shell.dashboard,
     register: shell.register,
@@ -115,7 +129,7 @@ export function UserWorkspaceLayout({
           transactions: shell.transactions,
         }}
         locale={locale}
-        onOpenCashier={() => setIsCashierOpen(true)}
+        onOpenCashier={openCashier}
         shell={shell}
       />
 
@@ -139,7 +153,7 @@ export function UserWorkspaceLayout({
           dictionary={salesDictionary}
           locale={locale}
           navLabels={navLabels}
-          onClose={() => setIsCashierOpen(false)}
+          onClose={closeCashier}
         />
       ) : null}
     </div>

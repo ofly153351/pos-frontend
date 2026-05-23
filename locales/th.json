@@ -783,7 +783,7 @@
       "totalStockLabel": "จำนวนรวม",
       "totalValueLabel": "มูลค่ารวม",
       "manageLabel": "จัดการ",
-      "exportLabel": "ส่งออก",
+      "exportLabel": "Export Excel",
       "exportBarcodeLabel": "ส่งออกบาร์โค้ด",
       "perPageLabel": "ต่อหน้า",
       "prevLabel": "ก่อนหน้า",

@@ -179,6 +179,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
               setVatOn(applyVat);
               setNoteOn(showNoteField);
             }}
+            onHoldBillSuccess={triggerClose}
           />
         </div>
       </div>
@@ -195,27 +196,57 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
 
       {/* Confirmation dialog */}
       {confirmClose ? (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-indigo-950/60 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-2xl border border-violet-100 bg-white p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-900">ยืนยันการปิดหน้าร้าน</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              มีสินค้าในตะกร้า {cartCount} รายการ หากปิดจะสูญเสียรายการที่ยังไม่ได้บันทึก
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-indigo-950/60 backdrop-blur-sm smooth-fade">
+          <div className="mx-4 w-full max-w-sm rounded-2xl border border-violet-100 bg-white shadow-2xl smooth-fade-up">
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4">
+              <h3 className="text-base font-bold text-slate-900">มีสินค้าในตะกร้า {cartCount} รายการ</h3>
+              <p className="mt-1.5 text-sm text-slate-500">
+                ต้องการพักบิลไว้ก่อน หรือปิดโดยไม่บันทึก?
+              </p>
+            </div>
+
+            {/* Options */}
+            <div className="flex flex-col gap-2 px-6 pb-4">
+              {/* Hold bill */}
               <button
-                className="rounded-lg border border-violet-200 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
+                ref={confirmRef}
+                className="flex items-start gap-3 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-left transition hover:border-violet-400 hover:bg-violet-100"
+                onClick={() => {
+                  setConfirmClose(false);
+                  salesRef.current?.holdBill();
+                }}
+                type="button"
+              >
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white text-sm">⏸</span>
+                <div>
+                  <p className="text-sm font-semibold text-violet-800">พักบิล</p>
+                  <p className="text-xs text-violet-500">บันทึกรายการไว้ แล้วปิดหน้าร้าน</p>
+                </div>
+              </button>
+
+              {/* Close without saving */}
+              <button
+                className="flex items-start gap-3 rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-left transition hover:border-rose-300 hover:bg-rose-100"
+                onClick={handleConfirmClose}
+                type="button"
+              >
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-500 text-white text-sm">✕</span>
+                <div>
+                  <p className="text-sm font-semibold text-rose-700">ปิดโดยไม่บันทึก</p>
+                  <p className="text-xs text-rose-400">รายการในตะกร้าจะหายไป</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Cancel */}
+            <div className="border-t border-violet-100 px-6 py-3">
+              <button
+                className="w-full rounded-lg py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-50"
                 onClick={handleCancelClose}
                 type="button"
               >
                 ยกเลิก
-              </button>
-              <button
-                ref={confirmRef}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700"
-                onClick={handleConfirmClose}
-                type="button"
-              >
-                ปิด
               </button>
             </div>
           </div>
