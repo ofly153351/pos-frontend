@@ -1,5 +1,5 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
-import { authorizedApiRequest, authorizedRawRequest } from "@/services/api";
+import { authorizedApiRequest } from "@/services/api";
 import type {
   CreateGoodsReceiptDraftInput,
   GenerateGoodsReceiptDocumentNoResponse,
@@ -164,14 +164,13 @@ export function getGoodsReceiptStockImpact(receiptId: string) {
 export async function fetchGoodsReceiptPrintDocument(receiptId: string) {
   const storeId = ensureStoreId();
 
-  return authorizedRawRequest<GoodsReceiptPrintDocument>(
+  return authorizedApiRequest<GoodsReceiptPrintDocument>(
     `/api/stores/${storeId}/receipts/${receiptId}/print`,
     {
       headers: {
         Accept: "application/json",
       },
       method: "GET",
-      responseType: "json",
     },
   );
 }
