@@ -4,6 +4,8 @@ export type ProductUnit = {
   id: string;
   is_active: boolean;
   name: string;
+  product_count?: number;
+  updated_at?: string;
 };
 
 export type ProductBrand = {
@@ -11,6 +13,8 @@ export type ProductBrand = {
   id: string;
   is_active: boolean;
   name: string;
+  product_count?: number;
+  updated_at?: string;
 };
 
 export type ProductType = {
@@ -19,6 +23,8 @@ export type ProductType = {
   is_active: boolean;
   name: string;
   slug: string;
+  product_count?: number;
+  updated_at?: string;
 };
 
 export type Product = {

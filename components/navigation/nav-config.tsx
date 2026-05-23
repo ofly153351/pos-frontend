@@ -7,6 +7,7 @@ import {
   Clock3,
   LayoutDashboard,
   Layers3,
+  PackagePlus,
   ReceiptText,
   Settings2,
   ShoppingCart,
@@ -52,6 +53,8 @@ export const NAV_ENTRIES: NavEntry[] = [
     icon: <Boxes className="h-4 w-4" />,
     href: (l) => `/${l}/stock`,
     children: [
+      { key: "warehouse-overview", icon: <LayoutDashboard className="h-3.5 w-3.5" />, href: (l) => `/${l}/warehouse/overview` },
+      { key: "receive-goods", icon: <PackagePlus className="h-3.5 w-3.5" />, href: (l) => `/${l}/warehouse/receive` },
       { key: "stock-levels", icon: <Layers3 className="h-3.5 w-3.5" />, href: (l) => `/${l}/stock` },
       { key: "categories", icon: <Tags className="h-3.5 w-3.5" />, href: (l) => `/${l}/stock/categories` },
       { key: "warehouses", icon: <Warehouse className="h-3.5 w-3.5" />, href: (l) => `/${l}/stock/warehouses` },

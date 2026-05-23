@@ -1,0 +1,177 @@
+import { getCurrentStoreId } from "@/lib/store-storage";
+import { authorizedApiRequest, authorizedRawRequest } from "@/services/api";
+import type {
+  CreateGoodsReceiptDraftInput,
+  GenerateGoodsReceiptDocumentNoResponse,
+  GoodsReceiptAttachment,
+  GoodsReceiptDraft,
+  GoodsReceiptListPage,
+  GoodsReceiptPrintDocument,
+  GoodsReceiptStockImpact,
+  UpdateGoodsReceiptDraftInput,
+  UpsertGoodsReceiptItemsInput,
+} from "@/types/goods-receipt";
+
+function ensureStoreId() {
+  const storeId = getCurrentStoreId();
+
+  if (!storeId) {
+    throw new Error("Missing current store");
+  }
+
+  return storeId;
+}
+
+export function generateGoodsReceiptDocumentNo() {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GenerateGoodsReceiptDocumentNoResponse>(
+    `/api/stores/${storeId}/receipts/generate-document-no`,
+    {
+      body: { store_id: storeId },
+      method: "POST",
+    },
+  );
+}
+
+export function createGoodsReceiptDraft(input: Omit<CreateGoodsReceiptDraftInput, "store_id">) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(`/api/stores/${storeId}/receipts`, {
+    body: {
+      ...input,
+      store_id: storeId,
+    } satisfies CreateGoodsReceiptDraftInput,
+    method: "POST",
+  });
+}
+
+type ListGoodsReceiptsOptions = {
+  limit?: number;
+  page?: number;
+  status?: "draft" | "confirmed" | "cancelled";
+};
+
+export async function listGoodsReceipts(options: ListGoodsReceiptsOptions = {}) {
+  const storeId = ensureStoreId();
+  const params = new URLSearchParams();
+
+  params.set("page", String(options.page ?? 1));
+  params.set("limit", String(options.limit ?? 20));
+
+  if (options.status) {
+    params.set("status", options.status);
+  }
+
+  const response = await authorizedApiRequest<GoodsReceiptDraft[] | GoodsReceiptListPage>(
+    `/api/stores/${storeId}/receipts?${params.toString()}`,
+  );
+
+  const normalizedData: GoodsReceiptListPage = Array.isArray(response.data)
+    ? {
+        has_next: false,
+        has_prev: false,
+        items: response.data,
+        limit: response.data.length,
+        page: 1,
+        total: response.data.length,
+        total_pages: 1,
+      }
+    : response.data;
+
+  return {
+    ...response,
+    data: normalizedData,
+  };
+}
+
+export function getGoodsReceipt(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}`,
+  );
+}
+
+export function updateGoodsReceipt(receiptId: string, input: UpdateGoodsReceiptDraftInput) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}`,
+    {
+      body: input,
+      method: "PUT",
+    },
+  );
+}
+
+export function upsertGoodsReceiptItems(receiptId: string, input: UpsertGoodsReceiptItemsInput) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}/items`,
+    {
+      body: {
+        items: input.items,
+        replace_existing: input.replace_existing ?? true,
+      },
+      method: "POST",
+    },
+  );
+}
+
+export function confirmGoodsReceipt(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}/confirm`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export function cancelGoodsReceipt(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}/cancel`,
+    {
+      method: "POST",
+    },
+  );
+}
+
+export function uploadGoodsReceiptAttachment(receiptId: string, file: File) {
+  const storeId = ensureStoreId();
+  const formData = new FormData();
+  formData.set("file", file);
+
+  return authorizedApiRequest<GoodsReceiptAttachment>(
+    `/api/stores/${storeId}/receipts/${receiptId}/attachments`,
+    {
+      body: formData,
+      method: "POST",
+    },
+  );
+}
+
+export function getGoodsReceiptPrintUrl(receiptId: string) {
+  const storeId = ensureStoreId();
+  return `/api/stores/${storeId}/receipts/${receiptId}/print`;
+}
+
+export function getGoodsReceiptStockImpact(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptStockImpact[]>(
+    `/api/stores/${storeId}/receipts/${receiptId}/stock-impact`,
+  );
+}
+
+export async function fetchGoodsReceiptPrintDocument(receiptId: string) {
+  const storeId = ensureStoreId();
+
+  return authorizedRawRequest<GoodsReceiptPrintDocument>(
+    `/api/stores/${storeId}/receipts/${receiptId}/print`,
+    {
+      headers: {
+        Accept: "application/json",
+      },
+      method: "GET",
+      responseType: "json",
+    },
+  );
+}

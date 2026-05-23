@@ -34,6 +34,8 @@ type UserWorkspaceLayoutProps = {
     stockCategories: string;
     stockLevels: string;
     stockWarehouses: string;
+    warehouseOverview: string;
+    receiveGoods: string;
     station: string;
     suppliers: string;
     transactions: string;
@@ -47,6 +49,8 @@ type UserWorkspaceLayoutProps = {
     stock: string;
     stockCategories: string;
     stockWarehouses: string;
+    warehouseOverview: string;
+    receiveGoods: string;
     purchaseOrders: string;
     suppliers: string;
   };
@@ -81,6 +85,8 @@ export function UserWorkspaceLayout({
     dashboard: shell.dashboard,
     register: shell.register,
     inventory: shell.inventory,
+    "warehouse-overview": shell.warehouseOverview,
+    "receive-goods": shell.receiveGoods,
     "stock-levels": shell.stockLevels,
     categories: shell.stockCategories,
     warehouses: shell.stockWarehouses,
@@ -98,6 +104,8 @@ export function UserWorkspaceLayout({
     if (pathname.endsWith("/sales")) return titles.sales;
     if (pathname.includes("/customers")) return titles.customers;
     if (pathname.includes("/documents")) return titles.documents;
+    if (pathname.includes("/warehouse/receive")) return titles.receiveGoods;
+    if (pathname.includes("/warehouse/overview")) return titles.warehouseOverview;
     if (pathname.includes("/stock/categories")) return titles.stockCategories;
     if (pathname.includes("/stock/warehouses")) return titles.stockWarehouses;
     if (pathname.includes("/stock")) return titles.stock;
@@ -125,6 +133,8 @@ export function UserWorkspaceLayout({
           stockCategories: shell.stockCategories,
           stockWarehouses: shell.stockWarehouses,
           stockLevels: shell.stockLevels,
+          warehouseOverview: shell.warehouseOverview,
+          receiveGoods: shell.receiveGoods,
           suppliers: shell.suppliers,
           transactions: shell.transactions,
         }}

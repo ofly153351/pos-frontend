@@ -190,6 +190,67 @@ export type StockManagerDictionary = {
     historyOperator?: string;
     historyLoadError?: string;
   };
+  categories?: {
+    addBrand: string;
+    addType: string;
+    addUnit: string;
+    colActions: string;
+    colLastModified: string;
+    colNameBrand: string;
+    colNameType: string;
+    colNameUnit: string;
+    colOrder: string;
+    colProductCount: string;
+    colStatus: string;
+    countItems: string;
+    deleteCancel: string;
+    deleteConfirm: string;
+    deleteMessage: string;
+    deleteTitle: string;
+    deleteWarning: string;
+    emptyAdd: string;
+    emptyTitle: string;
+    importBrowse: string;
+    importCancel: string;
+    importColDesc: string;
+    importColName: string;
+    importColStatus: string;
+    importConfirm: string;
+    importDropText: string;
+    importPreviewTitle: string;
+    importTitle: string;
+    legendActive: string;
+    legendDelete: string;
+    legendDrag: string;
+    legendEdit: string;
+    legendInactive: string;
+    of: string;
+    overviewActive: string;
+    overviewInactive: string;
+    overviewTitle: string;
+    overviewTotal: string;
+    overviewTotalProducts: string;
+    perPage: string;
+    popularTitle: string;
+    popularViewAll: string;
+    searchBrands: string;
+    searchTypes: string;
+    searchUnits: string;
+    showing: string;
+    statusActive: string;
+    statusAll: string;
+    statusInactive: string;
+    tabBrands: string;
+    tabTypes: string;
+    tabUnits: string;
+    toolsExport: string;
+    toolsExportDesc: string;
+    toolsImport: string;
+    toolsImportDesc: string;
+    toolsSort: string;
+    toolsSortDesc: string;
+    toolsTitle: string;
+  };
   units?: {
     activateLabel: string;
     codeLabel: string;
@@ -213,6 +274,7 @@ export type StockManagerProps = {
 export type ProductFormLabels = StockManagerDictionary["form"];
 export type ManagementDictionary = NonNullable<StockManagerDictionary["management"]>;
 export type UnitsDictionary = NonNullable<StockManagerDictionary["units"]>;
+export type CategoriesDictionary = NonNullable<StockManagerDictionary["categories"]>;
 export const initialProductFormState: ProductInput = {
   base_price: "",
   brand_id: "",

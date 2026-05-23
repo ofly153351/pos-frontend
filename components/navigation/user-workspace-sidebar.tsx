@@ -9,8 +9,9 @@ import {
   CircleDollarSign,
   Clock3,
   FileText,
-  Layers3,
   LayoutDashboard,
+  Layers3,
+  PackagePlus,
   ReceiptText,
   Settings2,
   ShoppingCart,
@@ -36,11 +37,13 @@ type UserWorkspaceSidebarProps = {
     inventory: string;
     purchasing: string;
     purchaseOrders: string;
+    receiveGoods: string;
     register: string;
     settings: string;
     stockCategories: string;
     stockLevels: string;
     stockWarehouses: string;
+    warehouseOverview: string;
     suppliers: string;
     transactions: string;
   };
@@ -68,12 +71,17 @@ export function UserWorkspaceSidebar({
   const stockBaseHref = `/${locale}/stock`;
   const stockCategoriesHref = `/${locale}/stock/categories`;
   const stockWarehousesHref = `/${locale}/stock/warehouses`;
+  const warehouseOverviewHref = `/${locale}/warehouse/overview`;
+  const warehouseReceiveHref = `/${locale}/warehouse/receive`;
   const documentsBaseHref = `/${locale}/documents`;
   const documentsPendingHref = `/${locale}/documents/pending`;
   const purchasesBaseHref = `/${locale}/purchases`;
   const purchasesSuppliersHref = `/${locale}/purchases/suppliers`;
   const isInventoryRoute =
-    pathname === stockBaseHref || pathname.startsWith(`${stockBaseHref}/`);
+    pathname === stockBaseHref ||
+    pathname.startsWith(`${stockBaseHref}/`) ||
+    pathname === warehouseOverviewHref ||
+    pathname.startsWith(`/${locale}/warehouse/`);
   const isDocumentsRoute =
     pathname === documentsBaseHref ||
     pathname.startsWith(`${documentsBaseHref}/`);
@@ -218,6 +226,16 @@ export function UserWorkspaceSidebar({
   const inventoryItems = useMemo(
     () => [
       {
+        href: warehouseOverviewHref,
+        key: "warehouse-overview",
+        label: labels.warehouseOverview,
+      },
+      {
+        href: warehouseReceiveHref,
+        key: "receive-goods",
+        label: labels.receiveGoods,
+      },
+      {
         href: stockBaseHref,
         key: "stock-levels",
         label: labels.stockLevels,
@@ -234,22 +252,30 @@ export function UserWorkspaceSidebar({
       },
     ],
     [
+      labels.receiveGoods,
       labels.stockCategories,
       labels.stockLevels,
       labels.stockWarehouses,
+      labels.warehouseOverview,
       stockBaseHref,
       stockCategoriesHref,
       stockWarehousesHref,
+      warehouseOverviewHref,
+      warehouseReceiveHref,
     ],
   );
 
   const activeInventoryKey = !isInventoryRoute
     ? ""
-    : pathname === stockCategoriesHref
-      ? "categories"
-      : pathname === stockWarehousesHref
-        ? "warehouses"
-        : "stock-levels";
+    : pathname === warehouseOverviewHref
+      ? "warehouse-overview"
+      : pathname === warehouseReceiveHref || pathname.startsWith(`${warehouseReceiveHref}/`)
+        ? "receive-goods"
+      : pathname === stockCategoriesHref
+        ? "categories"
+        : pathname === stockWarehousesHref
+          ? "warehouses"
+          : "stock-levels";
 
   const inventoryItemClass = isInventoryRoute
     ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
@@ -396,7 +422,11 @@ export function UserWorkspaceSidebar({
                   {inventoryItems.map((item) => {
                     const isActive = activeInventoryKey === item.key;
                     const itemIcon =
-                      item.key === "categories" ? (
+                      item.key === "warehouse-overview" ? (
+                        <LayoutDashboard className="h-3.5 w-3.5" />
+                      ) : item.key === "receive-goods" ? (
+                        <PackagePlus className="h-3.5 w-3.5" />
+                      ) : item.key === "categories" ? (
                         <Tags className="h-3.5 w-3.5" />
                       ) : item.key === "warehouses" ? (
                         <Warehouse className="h-3.5 w-3.5" />
