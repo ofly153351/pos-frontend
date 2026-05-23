@@ -553,7 +553,15 @@
       "statusLabel": "Stock Status",
       "statusValue": "All Status",
       "gridView": "Grid",
-      "listView": "List"
+      "listView": "List",
+      "filterButton": "Filters",
+      "filterPanelTitle": "Filter products",
+      "filterOptionsPlaceholder": "Find options",
+      "optionSearchPlaceholder": "Search category, unit, brand...",
+      "searchLabel": "Search text",
+      "apply": "Apply",
+      "clearAll": "Clear all",
+      "cancel": "Close"
     },
     "table": {
       "productDetails": "Product Details",

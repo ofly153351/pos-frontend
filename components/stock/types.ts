@@ -6,18 +6,26 @@ export type StockManagerDictionary = {
   };
   emptyState: string;
   filters: {
+    apply: string;
     activeStatus: string;
     allBrands: string;
     allCategories: string;
     allStatuses: string;
     allTypes: string;
     brandLabel: string;
+    cancel: string;
+    clearAll: string;
+    filterButton: string;
+    filterOptionsPlaceholder: string;
+    filterPanelTitle: string;
     categoryLabel: string;
     gridView: string;
     inactiveStatus: string;
     listView: string;
     lowStockStatus: string;
+    optionSearchPlaceholder: string;
     outOfStockStatus: string;
+    searchLabel: string;
     statusLabel: string;
     typeLabel: string;
   };

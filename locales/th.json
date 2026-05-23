@@ -553,7 +553,15 @@
       "statusLabel": "สถานะสต็อก",
       "statusValue": "ทุกสถานะ",
       "gridView": "Grid",
-      "listView": "List"
+      "listView": "List",
+      "filterButton": "ตัวกรอง",
+      "filterPanelTitle": "กรองสินค้า",
+      "filterOptionsPlaceholder": "ค้นหาตัวเลือก",
+      "optionSearchPlaceholder": "ค้นหาหมวดหมู่ หน่วย แบรนด์...",
+      "searchLabel": "ค้นหาข้อความ",
+      "apply": "นำไปใช้",
+      "clearAll": "ล้างทั้งหมด",
+      "cancel": "ปิด"
     },
     "table": {
       "productDetails": "รายละเอียดสินค้า",
