@@ -102,6 +102,7 @@ The design system uses a **violet/purple** palette throughout. Token file: `/the
 - Secondary / outline: `border border-violet-200 bg-white text-violet-700 hover:bg-violet-50`
 - Ghost / text: `text-violet-600 hover:bg-violet-50`
 - Danger: keep red (`bg-red-600`, `text-red-600`) — do NOT change
+- **Cursor:** `button:not(:disabled) { cursor: pointer }` is set globally in `globals.css` — do NOT add `cursor-pointer` to individual buttons; disabled buttons automatically get the default cursor
 
 **Form inputs / selects / textareas:**
 - `border-violet-200 bg-white outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100`

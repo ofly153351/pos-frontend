@@ -46,6 +46,12 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 .pretty-scroll {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
