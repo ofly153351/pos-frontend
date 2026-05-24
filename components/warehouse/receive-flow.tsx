@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import {
+  cancelGoodsReceipt,
   confirmGoodsReceipt,
   createGoodsReceiptDraft,
   fetchGoodsReceiptPrintDocument,
@@ -27,12 +28,14 @@ import {
   uploadGoodsReceiptAttachment,
   upsertGoodsReceiptItems,
 } from "@/services/goods-receipts";
-import { listLocations } from "@/services/locations";
+import { createLocation, listLocations } from "@/services/locations";
 import { listProducts } from "@/services/products";
 import { getPurchaseOrder, listPurchaseOrders } from "@/services/purchases";
 import { listSuppliers } from "@/services/suppliers";
 import { listWarehouses } from "@/services/warehouses";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
+import { Alert } from "@/components/ui/alert";
+import { toast } from "@/components/ui/toast";
 import type { GoodsReceiptDraft } from "@/types/goods-receipt";
 import type { Product } from "@/types/product";
 
@@ -61,7 +64,7 @@ import {
 import { ReceiptStatusBadge, SummaryCard } from "./receive-cards";
 import { ReceiveStep1 } from "./receive-step1";
 import { ReceiveStep2 } from "./receive-step2";
-import { ReceiveStep3 } from "./receive-step3";
+import { ReceiveStep3, type PendingAttachment } from "./receive-step3";
 
 export { SummaryCard } from "./receive-cards";
 
@@ -203,21 +206,49 @@ function ContextBar({
 }
 
 export function ReceiveIndexPage({ dictionary, locale }: ReceivePageProps) {
+  const queryClient = useQueryClient();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isPendingDelete, startDeleteTransition] = useTransition();
+
   const draftsQuery = useQuery({
     queryKey: ["warehouse", "receive", "index", "drafts"],
     queryFn: async () => normalizeGoodsReceiptDraftList((await listGoodsReceipts({ limit: 6, page: 1, status: "draft" })).data.items),
   });
   const recentQuery = useQuery({
     queryKey: ["warehouse", "receive", "index", "recent"],
-    queryFn: async () => normalizeGoodsReceiptDraftList((await listGoodsReceipts({ limit: 8, page: 1 })).data.items),
+    queryFn: async () => {
+      const items = normalizeGoodsReceiptDraftList((await listGoodsReceipts({ limit: 20, page: 1 })).data.items);
+      return items
+        .filter((r) => r.status !== "cancelled")
+        .sort((a, b) => {
+          const aTime = new Date(a.confirmed_at ?? a.updated_at).getTime();
+          const bTime = new Date(b.confirmed_at ?? b.updated_at).getTime();
+          return bTime - aTime;
+        })
+        .slice(0, 8);
+    },
   });
 
   const drafts = draftsQuery.data ?? [];
   const recentReceipts = recentQuery.data ?? [];
   const resumeDraft = drafts[0] ?? null;
 
+  function handleDeleteDraft(id: string) {
+    startDeleteTransition(async () => {
+      try {
+        await cancelGoodsReceipt(id);
+        await queryClient.invalidateQueries({ queryKey: ["warehouse", "receive", "index"] });
+        toast.success(dictionary.badgeCancelled);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : dictionary.stateSaving);
+      } finally {
+        setDeletingId(null);
+      }
+    });
+  }
+
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6 xl:px-2 2xl:px-4">
       <div className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
@@ -279,12 +310,22 @@ export function ReceiveIndexPage({ dictionary, locale }: ReceivePageProps) {
                         <SummaryCard label={dictionary.labelItems} value={formatNumber(receipt.items.length)} />
                       </div>
                     </div>
-                    <Link
-                      className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
-                      href={getReceiptRoute(locale, receipt)}
-                    >
-                      {dictionary.actionResumeDraft}
-                    </Link>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                        disabled={isPendingDelete}
+                        onClick={() => setDeletingId(receipt.id)}
+                        type="button"
+                      >
+                        {dictionary.actionCancel}
+                      </button>
+                      <Link
+                        className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
+                        href={getReceiptRoute(locale, receipt)}
+                      >
+                        {dictionary.actionResumeDraft}
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -334,6 +375,17 @@ export function ReceiveIndexPage({ dictionary, locale }: ReceivePageProps) {
           </div>
         </aside>
       </div>
+
+      <ConfirmDialog
+        confirmLabel={dictionary.actionCancel}
+        danger
+        isOpen={!!deletingId}
+        title={dictionary.confirmTitle}
+        onCancel={() => setDeletingId(null)}
+        onConfirm={() => deletingId && handleDeleteDraft(deletingId)}
+      >
+        {dictionary.confirmCancel}
+      </ConfirmDialog>
     </div>
   );
 }
@@ -348,17 +400,21 @@ export function ReceiveNewPage({ dictionary, locale }: ReceivePageProps) {
   const warehousesQuery = useQuery({
     queryKey: ["warehouse", "receive", "new", "warehouses"],
     queryFn: async () => (await listWarehouses()).data ?? [],
+    select: (data) => data,
   });
 
+  const warehouses = warehousesQuery.data ?? [];
+  const effectiveWarehouseId = warehouseId || warehouses[0]?.id || "";
+
   useEffect(() => {
-    if (!warehouseId && warehousesQuery.data?.[0]?.id) {
-      setWarehouseId(warehousesQuery.data[0].id);
+    if (!warehouseId && warehouses[0]?.id) {
+      setWarehouseId(warehouses[0].id);
     }
-  }, [warehouseId, warehousesQuery.data]);
+  }, [warehouseId, warehouses]);
 
   async function handleCreateDraft() {
     setError("");
-    if (!warehouseId) { setError(dictionary.validationWarehouseRequired); return; }
+    if (!effectiveWarehouseId) { setError(dictionary.validationWarehouseRequired); return; }
 
     startTransition(async () => {
       try {
@@ -368,7 +424,7 @@ export function ReceiveNewPage({ dictionary, locale }: ReceivePageProps) {
           received_at: new Date(receivedAt).toISOString(),
           vat_included: true,
           vat_percent: 7,
-          warehouse_id: warehouseId,
+          warehouse_id: effectiveWarehouseId,
         });
         router.replace(`/${locale}/warehouse/receive/${res.data.id}/step-1`);
       } catch (e) {
@@ -378,7 +434,7 @@ export function ReceiveNewPage({ dictionary, locale }: ReceivePageProps) {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 xl:px-2 2xl:px-4">
       <div className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -403,10 +459,10 @@ export function ReceiveNewPage({ dictionary, locale }: ReceivePageProps) {
             <select
               className="rounded-2xl border border-violet-200 bg-white px-4 py-3 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               onChange={(e) => setWarehouseId(e.target.value)}
-              value={warehouseId}
+              value={effectiveWarehouseId}
             >
               <option value="">{dictionary.placeholderSelectWarehouse}</option>
-              {(warehousesQuery.data ?? []).map((w) => (
+              {warehouses.map((w) => (
                 <option key={w.id} value={w.id}>{w.name}</option>
               ))}
             </select>
@@ -470,8 +526,8 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
   const [scanCode, setScanCode] = useState("");
   const [scanFeedback, setScanFeedback] = useState<{ tone: "error" | "success"; value: string } | null>(null);
   const [selectedPoId, setSelectedPoId] = useState("");
-  const [selectedZone, setSelectedZone] = useState("");
-  const [selectedFloor, setSelectedFloor] = useState("");
+  const [globalLocationId, setGlobalLocationId] = useState("");
+  const [sessionLocationIds, setSessionLocationIds] = useState<string[]>([]);
   const [headerForm, setHeaderForm] = useState<HeaderForm | null>(null);
   const [itemRows, setItemRows] = useState<Record<string, ItemFormRow>>({});
   const [headerErrors, setHeaderErrors] = useState<Partial<Record<keyof HeaderForm, string>>>({});
@@ -481,8 +537,7 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
-  const [uploadMessage, setUploadMessage] = useState<{ tone: "error" | "success"; value: string } | null>(null);
-  const [printMessage, setPrintMessage] = useState<{ tone: "error" | "success"; value: string } | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [isPrinting, setIsPrinting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const headerInitializedRef = useRef(false);
@@ -529,7 +584,8 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
     queryFn: async () => ensureArray((await getGoodsReceiptStockImpact(receiptId)).data),
   });
 
-  const locations = locationsQuery.data ?? [];
+  const allLocations = locationsQuery.data ?? [];
+  const locations = allLocations.filter((loc) => !loc.is_sale_point);
   const warehouses = warehousesQuery.data ?? [];
   const suppliers = suppliersQuery.data ?? [];
   const products = productsQuery.data ?? [];
@@ -571,6 +627,20 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
     writeSessionValue(itemsStorageKey, itemRows);
   }, [itemRows, itemsStorageKey]);
 
+  // Auto-init globalLocationId + sessionLocationIds when locations load
+  useEffect(() => {
+    if (!locations.length) return;
+    setGlobalLocationId((prev) => {
+      const valid = locations.some((l) => l.id === prev);
+      return valid ? prev : locations[0].id;
+    });
+    setSessionLocationIds((prev) => {
+      if (prev.length > 0 && prev.every((id) => locations.some((l) => l.id === id))) return prev;
+      return [locations[0].id];
+    });
+  }, [locations]);
+
+  // When warehouse changes, fix any item rows pointing to invalid locations
   useEffect(() => {
     if (!headerForm?.warehouseId || !locations.length) return;
     const defaultLocationId = locations[0]?.id;
@@ -604,41 +674,28 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
     }
   }, [receipt, router, step, stepLinks.step1, stepLinks.step2, stepLinks.step3, stepLinks.view]);
 
-  const filteredLocations = useMemo(
-    () => locations.filter((loc) => {
-      const zoneOk = selectedZone ? (loc.zone_name ?? "") === selectedZone : true;
-      const floorOk = selectedFloor ? (loc.floor_name ?? "") === selectedFloor : true;
-      return zoneOk && floorOk;
-    }),
-    [locations, selectedFloor, selectedZone],
-  );
-
   const filteredProducts = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    const scopedProductIds = new Set(
-      Object.entries(itemRows)
-        .filter(([, row]) => !selectedZone && !selectedFloor || filteredLocations.some((loc) => loc.id === row.locationId))
-        .map(([productId]) => productId),
-    );
     return (products as Product[]).filter((product) => {
-      const matchesScope = scopedProductIds.size === 0 || scopedProductIds.has(product.id) || !itemRows[product.id];
-      if (!matchesScope) return false;
       if (!keyword) return true;
       const haystack = [product.name, product.sku, product.barcode, product.brand_name].filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(keyword);
     });
-  }, [products, search, itemRows, selectedZone, selectedFloor, filteredLocations]);
+  }, [products, search]);
 
   const selectedItemsCount = useMemo(
     () => Object.values(itemRows).filter((row) => Number(row.quantity) > 0).length,
     [itemRows],
   );
 
-  const autosaveMessage =
-    autosaveState === "saving" ? dictionary.helperAutosaveSaving
-    : autosaveState === "saved" ? dictionary.helperAutosaveSaved
-    : autosaveState === "error" ? dictionary.helperAutosaveError
-    : "";
+  // Fire toast when autosave completes or fails
+  const prevAutosaveRef = useRef<AutosaveState>("idle");
+  useEffect(() => {
+    if (autosaveState === prevAutosaveRef.current) return;
+    prevAutosaveRef.current = autosaveState;
+    if (autosaveState === "saved") toast.success(dictionary.helperAutosaveSaved);
+    else if (autosaveState === "error") toast.error(dictionary.helperAutosaveError);
+  }, [autosaveState, dictionary.helperAutosaveSaved, dictionary.helperAutosaveError]);
 
   function setHeaderField<K extends keyof HeaderForm>(field: K, value: HeaderForm[K]) {
     setHeaderForm((current) => ({ ...(current ?? buildHeaderForm(receipt)), [field]: value }));
@@ -651,7 +708,7 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
       const matched = products.find((p) => p.id === productId) as Product | undefined;
       const existing = current[productId] ?? {
         discountValue: "0",
-        locationId: locations[0]?.id ?? "",
+        locationId: globalLocationId || (locations[0]?.id ?? ""),
         quantity: "",
         unitPrice: String(matched?.cost_price ?? matched?.effective_price ?? 0),
       };
@@ -659,6 +716,36 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
     });
     setAutosaveState("idle");
     setRowErrors((current) => ({ ...current, [productId]: "" }));
+  }
+
+  function handleGlobalLocationChange(locationId: string) {
+    setGlobalLocationId(locationId);
+  }
+
+  function handleAddLocationSession(locationId: string) {
+    setSessionLocationIds((prev) => prev.includes(locationId) ? prev : [...prev, locationId]);
+    setGlobalLocationId(locationId);
+  }
+
+  function handleRemoveLocationSession(locationId: string) {
+    setSessionLocationIds((prev) => {
+      const next = prev.filter((id) => id !== locationId);
+      if (next.length === 0) return prev; // keep at least one
+      return next;
+    });
+    setGlobalLocationId((prev) => {
+      if (prev !== locationId) return prev;
+      const remaining = sessionLocationIds.filter((id) => id !== locationId);
+      return remaining[0] ?? locations[0]?.id ?? "";
+    });
+  }
+
+  async function handleAddLocation(name: string, code: string) {
+    const warehouseId = headerForm?.warehouseId || receipt?.warehouse_id;
+    if (!warehouseId) return;
+    const loc = await createLocation({ warehouse_id: warehouseId, name: name.trim(), code: code.trim() || undefined, is_sale_point: false, is_active: true });
+    await queryClient.invalidateQueries({ queryKey: ["warehouse", "receive", "locations", warehouseId] });
+    handleAddLocationSession(loc.data.id);
   }
 
   function handleScanSubmit() {
@@ -696,7 +783,7 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
           const product = byId.get(item.product_id) as Product | undefined;
           next[item.product_id] = {
             discountValue: String(next[item.product_id]?.discountValue ?? 0),
-            locationId: next[item.product_id]?.locationId || filteredLocations[0]?.id || locations[0]?.id || "",
+            locationId: next[item.product_id]?.locationId || globalLocationId || locations[0]?.id || "",
             quantity: String(existingQty + item.quantity),
             unitPrice: String(next[item.product_id]?.unitPrice ?? item.unit_cost ?? product?.cost_price ?? 0),
           };
@@ -724,7 +811,10 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
     const nextRowErrors: Record<string, string> = {};
     const selectedRows = Object.entries(itemRows).filter(([, row]) => Number(row.quantity) > 0);
     if (!selectedRows.length) { setError(dictionary.validationItemsRequired); return false; }
-    if (!locations.length) { setError(dictionary.validationWarehouseWithoutLocations); return false; }
+    if (!locations.length) {
+      setError(allLocations.length > 0 ? dictionary.validationWarehouseOnlySalePoints : dictionary.validationWarehouseWithoutLocations);
+      return false;
+    }
     for (const [productId, row] of selectedRows) {
       if (Number(row.quantity) <= 0) nextRowErrors[productId] = dictionary.validationQuantityRequired;
       else if (!row.locationId) nextRowErrors[productId] = dictionary.validationLocationRequired;
@@ -810,45 +900,80 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
     setIsConfirmDialogOpen(false);
     startTransition(async () => {
       try {
+        if (pendingAttachments.length) {
+          setIsUploadingAttachment(true);
+          for (const attachment of pendingAttachments) {
+            await uploadGoodsReceiptAttachment(receiptId, attachment.file);
+          }
+          toast.success(dictionary.stateUploadSuccess);
+        }
         await confirmGoodsReceipt(receiptId);
         clearSessionValue(headerStorageKey);
         clearSessionValue(itemsStorageKey);
+        setPendingAttachments([]);
         await queryClient.invalidateQueries({ queryKey: ["warehouse", "receive", receiptId] });
         router.replace(stepLinks.view);
-      } catch (e) { setError(e instanceof Error ? e.message : dictionary.stateSaving); }
+      } catch (e) {
+        const message = e instanceof Error ? e.message : dictionary.stateSaving;
+        toast.error(message);
+        setError(message);
+      } finally {
+        setIsUploadingAttachment(false);
+      }
     });
   }
 
   async function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
     if (isUploadingAttachment) return;
-    const file = event.target.files?.[0];
-    if (!file) { setUploadMessage({ tone: "error", value: dictionary.stateAttachmentMissing }); return; }
-    if (!["application/pdf", "image/png", "image/jpeg", "image/jpg"].includes(file.type) || file.size > 10 * 1024 * 1024) {
-      setUploadMessage({ tone: "error", value: dictionary.stateUploadingFailed }); return;
+    const files = Array.from(event.target.files ?? []);
+    if (!files.length) {
+      toast.error(dictionary.stateAttachmentMissing);
+      return;
     }
-    setUploadMessage(null);
-    setIsUploadingAttachment(true);
-    try {
-      await uploadGoodsReceiptAttachment(receiptId, file);
-      setUploadMessage({ tone: "success", value: dictionary.stateUploadSuccess });
-      await queryClient.invalidateQueries({ queryKey: ["warehouse", "receive", receiptId] });
-    } catch (e) {
-      setUploadMessage({ tone: "error", value: e instanceof Error ? e.message : dictionary.stateUploadingFailed });
-    } finally {
-      setIsUploadingAttachment(false);
-      event.target.value = "";
+
+    const validMimeTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
+    const nextAttachments: PendingAttachment[] = [];
+    let hasInvalidFile = false;
+
+    for (const file of files) {
+      const isValidType = validMimeTypes.includes(file.type);
+      const isValidSize = file.size <= 10 * 1024 * 1024;
+      if (!isValidType || !isValidSize) {
+        hasInvalidFile = true;
+        continue;
+      }
+      nextAttachments.push({
+        id: `${file.name}-${file.lastModified}-${file.size}-${crypto.randomUUID()}`,
+        file,
+        isImage: file.type.startsWith("image/"),
+      });
     }
+
+    if (hasInvalidFile) {
+      toast.error(dictionary.stateUploadingFailed);
+    }
+
+    if (nextAttachments.length) {
+      setPendingAttachments((current) => [...current, ...nextAttachments]);
+      toast.success(dictionary.stateUploadSuccess);
+    }
+
+    event.target.value = "";
+  }
+
+  function handleRemovePendingAttachment(attachmentId: string) {
+    setPendingAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId));
   }
 
   async function handlePrintReceipt() {
     if (isPrinting) return;
     setError("");
-    setPrintMessage({ tone: "success", value: dictionary.statePrintPreparing });
+    toast.info(dictionary.statePrintPreparing, 2500);
     setIsPrinting(true);
     try {
       const doc = await fetchGoodsReceiptPrintDocument(receiptId);
       const html = doc.data.html?.trim();
-      if (!html) { setPrintMessage({ tone: "error", value: dictionary.statePrintMissingContent }); return; }
+      if (!html) { toast.error(dictionary.statePrintMissingContent); return; }
 
       const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const blobUrl = URL.createObjectURL(blob);
@@ -874,9 +999,9 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
         iframe.src = blobUrl;
       });
 
-      setPrintMessage({ tone: "success", value: dictionary.statePrintSuccess });
+      toast.success(dictionary.statePrintSuccess);
     } catch (e) {
-      setPrintMessage({ tone: "error", value: e instanceof Error ? e.message : dictionary.statePrintBlocked });
+      toast.error(e instanceof Error ? e.message : dictionary.statePrintBlocked);
     } finally {
       setIsPrinting(false);
     }
@@ -928,68 +1053,73 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
   const stockPreview = stockImpactQuery.data ?? receipt.stock_preview ?? [];
 
   return (
-    <div className="mx-auto flex max-w-7xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6 xl:px-2 2xl:px-4">
       {isView ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">{dictionary.badgeConfirmed}</p>
-              <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{dictionary.stepConfirmedTitle}</h1>
-              <p className="mt-2 text-sm text-slate-600">{dictionary.helperConfirmedView}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-60"
-                disabled={isPrinting}
-                onClick={handlePrintReceipt}
-                type="button"
-              >
-                {isPrinting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
-                {isPrinting ? dictionary.statePrintPreparing : dictionary.actionPrint}
-              </button>
-              <Link
-                className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
-                href={`/${locale}/warehouse/receive/new`}
-              >
-                {dictionary.actionNewReceipt}
-              </Link>
-              <Link
-                className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
-                href={`/${locale}/warehouse/overview`}
-              >
-                {dictionary.actionBackToOverview}
-              </Link>
+        receipt.status === "cancelled" ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">{dictionary.badgeCancelled}</p>
+                <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{receipt.document_no}</h1>
+                <p className="mt-2 text-sm text-slate-600">{dictionary.confirmCancel}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
+                  href={`/${locale}/warehouse/receive/new`}
+                >
+                  {dictionary.actionNewReceipt}
+                </Link>
+                <Link
+                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
+                  href={`/${locale}/warehouse/overview`}
+                >
+                  {dictionary.actionBackToOverview}
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-600">{dictionary.badgeConfirmed}</p>
+                <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900">{dictionary.stepConfirmedTitle}</h1>
+                <p className="mt-2 text-sm text-slate-600">{dictionary.helperConfirmedView}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:opacity-60"
+                  disabled={isPrinting}
+                  onClick={handlePrintReceipt}
+                  type="button"
+                >
+                  {isPrinting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Printer className="h-4 w-4" />}
+                  {isPrinting ? dictionary.statePrintPreparing : dictionary.actionPrint}
+                </button>
+                <Link
+                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
+                  href={`/${locale}/warehouse/receive/new`}
+                >
+                  {dictionary.actionNewReceipt}
+                </Link>
+                <Link
+                  className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
+                  href={`/${locale}/warehouse/overview`}
+                >
+                  {dictionary.actionBackToOverview}
+                </Link>
+              </div>
+            </div>
+          </div>
+        )
       ) : (
         <Stepper currentStep={step as 1 | 2 | 3} dictionary={dictionary} locale={locale} maxAvailableStep={maxAvailableStep} receiptId={receiptId} />
       )}
 
-      {(isStep2 || isStep3 || isView) ? (
-        <ContextBar dictionary={dictionary} locale={locale} receipt={receipt} receiptId={receiptId} step={step} supplierName={supplierName} warehouseName={warehouseName} />
-      ) : null}
+      {error && <Alert onDismiss={() => setError("")} tone="error">{error}</Alert>}
 
-      {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
-
-      {printMessage ? (
-        <div className={`rounded-2xl border px-4 py-3 text-sm ${printMessage.tone === "error" ? "border-rose-200 bg-rose-50 text-rose-700" : "border-violet-200 bg-violet-50 text-violet-700"}`}>
-          {printMessage.value}
-        </div>
-      ) : null}
-
-      {!isView && autosaveMessage ? (
-        <div className={`rounded-2xl border px-4 py-3 text-sm ${autosaveState === "error" ? "border-rose-200 bg-rose-50 text-rose-700" : autosaveState === "saved" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-violet-200 bg-violet-50 text-violet-700"}`}>
-          {autosaveMessage}
-        </div>
-      ) : null}
-
-      {isView && receipt.status !== "confirmed" ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">{dictionary.viewNotConfirmed}</div>
-      ) : null}
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
+      <div className="space-y-6">
           {(isStep1 || isView) ? (
             <ReceiveStep1
               dictionary={dictionary}
@@ -997,6 +1127,7 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
               headerForm={headerForm}
               isPending={isPending}
               isView={isView}
+              allLocationsCount={allLocations.length}
               locations={locations}
               locationsQueryError={locationsQuery.error}
               locationsQueryIsError={locationsQuery.isError}
@@ -1015,11 +1146,13 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
           {(isStep2 || isView) ? (
             <ReceiveStep2
               dictionary={dictionary}
-              filteredLocations={filteredLocations}
               filteredProducts={filteredProducts}
+              globalLocationId={globalLocationId}
               isPending={isPending}
               isView={isView}
+              allLocationsCount={allLocations.length}
               itemRows={itemRows}
+              locale={locale}
               locations={locations}
               locationsQueryError={locationsQuery.error}
               locationsQueryIsError={locationsQuery.isError}
@@ -1027,17 +1160,22 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
               products={products}
               purchaseOrders={purchaseOrdersQuery.data ?? []}
               receipt={receipt}
+              receiptId={receiptId}
               rowErrors={rowErrors}
               scanCode={scanCode}
               scanFeedback={scanFeedback}
               search={search}
-              selectedFloor={selectedFloor}
               selectedItemsCount={selectedItemsCount}
               selectedPoId={selectedPoId}
-              selectedZone={selectedZone}
               stepLinks={{ step1: stepLinks.step1, step3: stepLinks.step3 }}
+              supplierName={supplierName}
+              warehouseName={warehouseName}
+              sessionLocationIds={sessionLocationIds}
+              onAddLocation={handleAddLocation}
+              onAddLocationSession={handleAddLocationSession}
+              onRemoveLocationSession={handleRemoveLocationSession}
               onBack={() => router.push(stepLinks.step1)}
-              onFloorChange={setSelectedFloor}
+              onGlobalLocationChange={handleGlobalLocationChange}
               onImportPo={handleImportFromPo}
               onItemField={setItemField}
               onPoIdChange={setSelectedPoId}
@@ -1045,7 +1183,6 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
               onScanChange={(v) => { setScanCode(v); setScanFeedback(null); }}
               onScanSubmit={handleScanSubmit}
               onSearchChange={setSearch}
-              onZoneChange={setSelectedZone}
             />
           ) : null}
 
@@ -1056,6 +1193,7 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
               isPending={isPending}
               isUploadingAttachment={isUploadingAttachment}
               isView={isView}
+              pendingAttachments={pendingAttachments}
               receipt={receipt}
               stockImpactError={stockImpactQuery.error}
               stockImpactIsError={stockImpactQuery.isError}
@@ -1063,56 +1201,13 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
               stockPreview={stockPreview}
               stepLinks={{ step2: stepLinks.step2 }}
               supplierName={supplierName}
-              uploadMessage={uploadMessage}
               warehouseName={warehouseName}
               onAttachmentChange={handleAttachmentChange}
               onBack={() => router.push(stepLinks.step2)}
               onOpenConfirmDialog={() => setIsConfirmDialogOpen(true)}
+              onRemovePendingAttachment={handleRemovePendingAttachment}
             />
           ) : null}
-        </div>
-
-        <aside className="space-y-4">
-          <div className="rounded-3xl border border-violet-100 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-slate-900">{dictionary.summaryTitle}</p>
-            <div className="mt-4 space-y-3 text-sm text-slate-600">
-              <div className="flex items-center justify-between rounded-2xl bg-violet-50/60 px-4 py-3">
-                <span>{dictionary.labelDocumentNo}</span>
-                <span className="font-semibold text-slate-900">{receipt.document_no}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl bg-violet-50/60 px-4 py-3">
-                <span>{dictionary.labelWarehouse}</span>
-                <span className="font-semibold text-slate-900">{warehouseName}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl bg-violet-50/60 px-4 py-3">
-                <span>{dictionary.labelItems}</span>
-                <span className="font-semibold text-slate-900">{receipt.items.length}</span>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl bg-violet-50/60 px-4 py-3">
-                <span>{dictionary.labelTotal}</span>
-                <span className="font-semibold text-slate-900">{formatCurrency(receipt.total_amount)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-violet-100 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-3">
-              {receipt.status === "confirmed" ? (
-                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-              ) : (
-                <AlertTriangle className="h-5 w-5 text-amber-600" />
-              )}
-              <div>
-                <p className="text-sm font-semibold text-slate-900">
-                  {receipt.status === "confirmed" ? dictionary.badgeConfirmed : dictionary.badgeDraft}
-                </p>
-                <p className="text-sm text-slate-500">
-                  {receipt.status === "confirmed" ? dictionary.helperConfirmedView : dictionary.helperDraft}
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
       </div>
 
       <ConfirmDialog

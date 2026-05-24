@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { type ChangeEvent, type RefObject } from "react";
-import { ArrowLeft, CheckCircle2, ChevronRight, Loader2, Printer, Truck, Upload } from "lucide-react";
+import { useEffect, useState, type ChangeEvent, type RefObject } from "react";
+import { ArrowLeft, CheckCircle2, ChevronRight, Eye, Loader2, Printer, Trash2, Truck, Upload } from "lucide-react";
 
 import type { GoodsReceiptDraft, GoodsReceiptStockImpact } from "@/types/goods-receipt";
 import type { ReceiveDictionary } from "./receive-shared";
 import { formatCurrency, formatDateTimeLabel, formatFileSize, formatNumber, formatSignedNumber } from "./receive-shared";
 import { SummaryCard } from "./receive-cards";
+
+export type PendingAttachment = {
+  id: string;
+  file: File;
+  isImage: boolean;
+};
 
 export type ReceiveStep3Props = {
   dictionary: ReceiveDictionary;
@@ -15,6 +21,7 @@ export type ReceiveStep3Props = {
   isPending: boolean;
   isUploadingAttachment: boolean;
   isView: boolean;
+  pendingAttachments: PendingAttachment[];
   receipt: GoodsReceiptDraft;
   stockImpactError: unknown;
   stockImpactIsError: boolean;
@@ -22,10 +29,10 @@ export type ReceiveStep3Props = {
   stockPreview: GoodsReceiptStockImpact[];
   stepLinks: { step2: string };
   supplierName: string;
-  uploadMessage: { tone: "error" | "success"; value: string } | null;
   warehouseName: string;
   onAttachmentChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onOpenConfirmDialog: () => void;
+  onRemovePendingAttachment: (id: string) => void;
   onBack: () => void;
 };
 
@@ -35,6 +42,7 @@ export function ReceiveStep3({
   isPending,
   isUploadingAttachment,
   isView,
+  pendingAttachments,
   receipt,
   stockImpactError,
   stockImpactIsError,
@@ -42,12 +50,23 @@ export function ReceiveStep3({
   stockPreview,
   stepLinks,
   supplierName,
-  uploadMessage,
   warehouseName,
   onAttachmentChange,
   onOpenConfirmDialog,
+  onRemovePendingAttachment,
   onBack,
 }: ReceiveStep3Props) {
+  const [previewAttachment, setPreviewAttachment] = useState<PendingAttachment | null>(null);
+
+  useEffect(() => {
+    if (!previewAttachment) return;
+    function onEsc(event: KeyboardEvent) {
+      if (event.key === "Escape") setPreviewAttachment(null);
+    }
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [previewAttachment]);
+
   return (
     <section className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
       <div className="mb-5 flex items-center gap-3">
@@ -195,6 +214,7 @@ export function ReceiveStep3({
                 accept=".pdf,.png,.jpg,.jpeg"
                 className="hidden"
                 disabled={isUploadingAttachment}
+                multiple
                 onChange={onAttachmentChange}
                 ref={fileInputRef}
                 type="file"
@@ -220,21 +240,55 @@ export function ReceiveStep3({
         ) : null}
 
         <div className="mt-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-3 text-sm text-slate-600">
-          <p className="font-semibold text-slate-900">{receipt.attachment_name ?? "-"}</p>
+          <p className="font-semibold text-slate-900">{dictionary.labelAttachmentUploaded}</p>
+          <p className="mt-1 text-xs text-slate-500">{receipt.attachment_name ?? "-"}</p>
           <p className="mt-1 text-xs text-slate-500">{formatFileSize(receipt.attachment_size)}</p>
         </div>
 
-        {uploadMessage ? (
-          <div
-            className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
-              uploadMessage.tone === "error"
-                ? "border-rose-200 bg-rose-50 text-rose-700"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700"
-            }`}
-          >
-            {uploadMessage.value}
-          </div>
-        ) : null}
+        <div className="mt-3 rounded-2xl border border-violet-100 bg-white p-3">
+          <p className="text-sm font-semibold text-slate-900">{dictionary.labelAttachmentPending}</p>
+          {!pendingAttachments.length ? (
+            <p className="mt-2 text-sm text-slate-500">{dictionary.stateNoPendingAttachments}</p>
+          ) : (
+            <ul className="mt-2 space-y-2">
+              {pendingAttachments.map((attachment) => (
+                <li
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50/40 px-3 py-2"
+                  key={attachment.id}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-900">{attachment.file.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {attachment.file.type || dictionary.labelAttachmentUnknownType} • {formatFileSize(attachment.file.size)}
+                    </p>
+                  </div>
+                  {!isView ? (
+                    <div className="flex items-center gap-2">
+                      {attachment.isImage ? (
+                        <button
+                          className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
+                          onClick={() => setPreviewAttachment(attachment)}
+                          type="button"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          {dictionary.actionPreviewAttachment}
+                        </button>
+                      ) : null}
+                      <button
+                        className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                        onClick={() => onRemovePendingAttachment(attachment.id)}
+                        type="button"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {dictionary.actionRemoveAttachment}
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       {/* Actions */}
@@ -272,6 +326,36 @@ export function ReceiveStep3({
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
             {dictionary.actionConfirm}
           </button>
+        </div>
+      ) : null}
+
+      {previewAttachment ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4"
+          onClick={() => setPreviewAttachment(null)}
+          role="presentation"
+        >
+          <div
+            className="w-full max-w-3xl rounded-2xl bg-white p-4"
+            onClick={(event) => event.stopPropagation()}
+            role="presentation"
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="truncate text-sm font-semibold text-slate-900">{previewAttachment.file.name}</p>
+              <button
+                className="rounded-lg border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
+                onClick={() => setPreviewAttachment(null)}
+                type="button"
+              >
+                {dictionary.actionClose}
+              </button>
+            </div>
+            <img
+              alt={previewAttachment.file.name}
+              className="max-h-[70vh] w-full rounded-xl object-contain"
+              src={URL.createObjectURL(previewAttachment.file)}
+            />
+          </div>
         </div>
       ) : null}
     </section>

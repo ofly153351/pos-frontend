@@ -225,7 +225,7 @@ export function ProductBrowser({
             return productView === "grid" ? (
               <div
                 key={product.id}
-                className="flex h-[205px] cursor-pointer flex-col rounded-lg border border-violet-100 bg-gradient-to-b from-violet-50/50 to-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                className="flex h-[240px] cursor-pointer flex-col rounded-lg border border-violet-100 bg-gradient-to-b from-violet-50/50 to-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 onClick={() => onAddToCart(product)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -253,7 +253,7 @@ export function ProductBrowser({
                       </span>
                     </div>
                   ) : (
-                    <div className="flex h-32 w-full items-center justify-center rounded-lg border border-violet-100 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
+                    <div className="flex h-40 w-full items-center justify-center rounded-lg border border-violet-100 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
                       <span className="line-clamp-2">{product.name}</span>
                     </div>
                   )}
@@ -360,19 +360,19 @@ export function ProductBrowser({
         )}
       </div>
 
-      {/* Pagination — bottom right, small */}
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-3 flex items-center justify-end gap-1.5">
-          <span className="text-[11px] text-slate-400">
+        <div className="mt-4 flex items-center justify-end gap-2.5">
+          <span className="text-sm text-slate-500">
             {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, products.length)} / {products.length}
           </span>
           <button
-            className="flex h-6 w-6 items-center justify-center rounded-md border border-violet-200 text-violet-500 transition hover:bg-violet-50 disabled:opacity-30"
+            className="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-violet-200 px-2 text-violet-500 transition hover:bg-violet-50 disabled:opacity-30"
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
             type="button"
           >
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <ChevronLeft className="h-4.5 w-4.5" />
           </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1)
             .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
@@ -383,11 +383,11 @@ export function ProductBrowser({
             }, [])
             .map((p, i) =>
               p === "…" ? (
-                <span key={`ellipsis-${i}`} className="text-[11px] text-slate-300">…</span>
+                <span key={`ellipsis-${i}`} className="px-1 text-sm text-slate-300">…</span>
               ) : (
                 <button
                   key={p}
-                  className={`flex h-6 w-6 items-center justify-center rounded-md text-[11px] font-semibold transition ${page === p ? "bg-violet-600 text-white" : "border border-violet-200 text-slate-500 hover:bg-violet-50"}`}
+                  className={`flex min-h-10 min-w-10 items-center justify-center rounded-lg px-2 text-sm font-semibold transition ${page === p ? "bg-violet-600 text-white" : "border border-violet-200 text-slate-600 hover:bg-violet-50"}`}
                   onClick={() => setPage(p as number)}
                   type="button"
                 >
@@ -396,12 +396,12 @@ export function ProductBrowser({
               )
             )}
           <button
-            className="flex h-6 w-6 items-center justify-center rounded-md border border-violet-200 text-violet-500 transition hover:bg-violet-50 disabled:opacity-30"
+            className="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-violet-200 px-2 text-violet-500 transition hover:bg-violet-50 disabled:opacity-30"
             disabled={page === totalPages}
             onClick={() => setPage((p) => p + 1)}
             type="button"
           >
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-4.5 w-4.5" />
           </button>
         </div>
       )}

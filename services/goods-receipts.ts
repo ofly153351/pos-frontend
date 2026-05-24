@@ -129,9 +129,15 @@ export function cancelGoodsReceipt(receiptId: string) {
   const storeId = ensureStoreId();
   return authorizedApiRequest<GoodsReceiptDraft>(
     `/api/stores/${storeId}/receipts/${receiptId}/cancel`,
-    {
-      method: "POST",
-    },
+    { method: "POST" },
+  );
+}
+
+export function deleteGoodsReceiptDraft(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<void>(
+    `/api/stores/${storeId}/receipts/${receiptId}`,
+    { method: "DELETE" },
   );
 }
 

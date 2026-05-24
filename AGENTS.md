@@ -153,9 +153,48 @@ The design system uses a **violet/purple** palette throughout. Token file: `/the
 
 ---
 
+---
+
+## Shared UI Components
+
+### Notifications — always use these, never inline colored divs
+
+#### `toast` — floating notification (bottom-right, auto-dismiss)
+Use for: async action results (save, delete, API mutations, print).
+
+```tsx
+import { toast } from "@/components/ui/toast";
+
+toast.success("บันทึกสำเร็จ");
+toast.error("เกิดข้อผิดพลาด");
+toast.info("กำลังดำเนินการ...");
+toast.warning("คำเตือน");
+// Custom duration (ms):
+toast.error("ข้อความ", 8000);
+```
+
+`<Toaster />` is already mounted in `app/layout.tsx` — do **not** add it again.
+
+#### `<Alert>` — inline persistent banner
+Use for: validation errors, form-level feedback, persistent state warnings.
+
+```tsx
+import { Alert } from "@/components/ui/alert";
+
+<Alert tone="error">กรุณาเลือก warehouse ก่อน</Alert>
+<Alert tone="warning" onDismiss={() => setError("")}>{error}</Alert>
+<Alert tone="success">อัปโหลดสำเร็จ</Alert>
+<Alert tone="info" className="mt-2">ข้อมูลเพิ่มเติม</Alert>
+```
+
+Tones: `"success" | "error" | "info" | "warning"` — all match the violet/purple theme.
+
+---
+
 ## Instructions for Agent
 - Follow the tech stack strictly
 - Do not introduce new libraries
 - Keep UI and logic separated
 - Always integrate with backend API properly
+- Use `toast` / `<Alert>` for all notifications — never write inline `border-rose-200 bg-rose-50` divs
 <!-- END:nextjs-agent-rules -->

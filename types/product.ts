@@ -82,7 +82,6 @@ export type ProductInput = {
   description?: string;
   image?: File | null;
   is_active?: boolean;
-  max_stock?: string;
   min_stock?: string;
   name: string;
   product_code?: string;

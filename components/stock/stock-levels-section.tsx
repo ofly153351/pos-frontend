@@ -429,7 +429,6 @@ export function StockLevelsSection({
             "Selling Price": p.base_price ?? 0,
             Stock: p.total_stock ?? 0,
             "Min Stock": p.min_stock ?? 0,
-            "Max Stock": p.max_stock ?? "",
             Unit: p.product_unit_name ?? "",
             Active: p.is_active ? "Yes" : "No",
           }));
@@ -483,8 +482,8 @@ export function StockLevelsSection({
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
                 onClick={() => {
                   const rows = [
-                    { Name: 'ตัวอย่างสินค้า', SKU: 'BRC-001', Price: 100, Stock: 50, 'Min Stock': 10, 'Max Stock': 100, Active: 'Yes' },
-                    { Name: 'ตัวอย่างสินค้า 2', SKU: 'BRC-002', Price: 200, Stock: 30, 'Min Stock': 5, 'Max Stock': 60, Active: 'Yes' },
+                    { Name: 'ตัวอย่างสินค้า', SKU: 'BRC-001', Price: 100, Stock: 50, 'Min Stock': 10, Active: 'Yes' },
+                    { Name: 'ตัวอย่างสินค้า 2', SKU: 'BRC-002', Price: 200, Stock: 30, 'Min Stock': 5, Active: 'Yes' },
                   ];
                   const ws = XLSX.utils.json_to_sheet(rows);
                   const wb = XLSX.utils.book_new();
@@ -536,7 +535,6 @@ export function StockLevelsSection({
                       base_price: get("Price") || "0",
                       sku: get("SKU"),
                       min_stock: get("Min Stock") || "0",
-                      max_stock: get("Max Stock"),
                       is_active: get("Active").toLowerCase() !== "no",
                       unit_id: productUnits[0]?.id ?? "",
                     });

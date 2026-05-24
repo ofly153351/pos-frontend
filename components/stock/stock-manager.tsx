@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
 import { CatalogSetupSection } from "@/components/stock/catalog-setup-section";
-import { ProductFormModal } from "@/components/stock/product-form-modal";
+import { ProductFormDrawer } from "@/components/stock/product-form-modal";
 import { StockLevelsSection } from "@/components/stock/stock-levels-section";
 import {
   initialProductFormState,
@@ -191,8 +191,7 @@ export function StockManager({
     quantityHint: dictionary.form.quantityHint || dictionary.form.quantityLabel,
     minStockHint: dictionary.form.minStockHint || dictionary.form.minStockLabel,
     minStockLabel: dictionary.form.minStockLabel || "Min stock",
-    maxStockHint: dictionary.form.maxStockHint || dictionary.form.maxStockLabel,
-    maxStockLabel: dictionary.form.maxStockLabel || "Max stock",
+
     requiredLabel: dictionary.form.requiredLabel || "*",
     setupSection: dictionary.form.setupSection || dictionary.form.categoryLabel,
     setupSectionHint: dictionary.form.setupSectionHint || dictionary.form.categoryHint || dictionary.form.categoryLabel,
@@ -304,7 +303,7 @@ export function StockManager({
       name: product.name,
       product_type_id: product.product_type_id ?? "",
       min_stock: product.min_stock != null ? String(product.min_stock) : "",
-      max_stock: product.max_stock != null ? String(product.max_stock) : "",
+
       sku: product.sku ?? "",
       barcode: product.barcode ?? "",
       special_price: product.special_price ? String(product.special_price) : "",
@@ -355,6 +354,29 @@ export function StockManager({
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
     });
+  }
+
+  if (isProductModalOpen) {
+    return (
+      <div className="w-full xl:px-2 2xl:px-4">
+        <ProductFormDrawer
+          closeLabel={formLabels.cancel}
+          formLabels={formLabels}
+          formState={formState}
+          isEditing={Boolean(editingProductId)}
+          isOpen={isProductModalOpen}
+          isPending={isPending}
+          managementDictionary={managementDictionary}
+          onClose={closeProductModal}
+          onFormStateChange={setFormState}
+          onSubmit={handleSubmit}
+          productBrands={productBrands}
+          productTypes={productTypes}
+          quickActionLabel={dictionary.quickAction.label}
+          unitOptions={productUnits}
+        />
+      </div>
+    );
   }
 
   return (
@@ -408,23 +430,6 @@ export function StockManager({
           stockStatusFilter={selectedStockStatus}
         />
       ) : null}
-
-      <ProductFormModal
-        closeLabel={formLabels.cancel}
-        formLabels={formLabels}
-        formState={formState}
-        isEditing={Boolean(editingProductId)}
-        isOpen={isProductModalOpen}
-        isPending={isPending}
-        managementDictionary={managementDictionary}
-        onClose={closeProductModal}
-        onFormStateChange={setFormState}
-        onSubmit={handleSubmit}
-        productBrands={productBrands}
-        productTypes={productTypes}
-        quickActionLabel={dictionary.quickAction.label}
-        unitOptions={productUnits}
-      />
     </div>
   );
 }

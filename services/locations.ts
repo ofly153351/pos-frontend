@@ -26,6 +26,21 @@ function ensureStoreId() {
   return storeId;
 }
 
+export type CreateLocationInput = {
+  warehouse_id: string;
+  name: string;
+  code?: string;
+  is_sale_point?: boolean;
+  is_active?: boolean;
+};
+
+export type UpdateLocationInput = {
+  name?: string;
+  code?: string;
+  is_sale_point?: boolean;
+  is_active?: boolean;
+};
+
 export function listLocations(warehouseId?: string) {
   const storeId = ensureStoreId();
   const search = warehouseId
@@ -33,4 +48,30 @@ export function listLocations(warehouseId?: string) {
     : "";
 
   return authorizedApiRequest<Location[]>(`/api/stores/${storeId}/locations${search}`);
+}
+
+export function createLocation(input: CreateLocationInput) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<Location>(`/api/stores/${storeId}/locations`, {
+    body: input,
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export function updateLocation(locationId: string, input: UpdateLocationInput) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<Location>(`/api/stores/${storeId}/locations/${locationId}`, {
+    body: input,
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+  });
+}
+
+export function deleteLocation(locationId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<Record<string, never>>(`/api/stores/${storeId}/locations/${locationId}`, {
+    allowEmptyData: true,
+    method: "DELETE",
+  });
 }

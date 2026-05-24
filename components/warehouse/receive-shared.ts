@@ -17,6 +17,8 @@ export type ReceiveDictionary = {
   actionSaveAndContinue: string;
   actionScanDuplicate: string;
   actionSaving: string;
+  actionPreviewAttachment: string;
+  actionRemoveAttachment: string;
   actionUploadAttachment: string;
   actionUploadingAttachment: string;
   actionViewReceipt: string;
@@ -48,6 +50,9 @@ export type ReceiveDictionary = {
   itemCountLabel: string;
   labelAllProducts: string;
   labelAttachment: string;
+  labelAttachmentPending: string;
+  labelAttachmentUnknownType: string;
+  labelAttachmentUploaded: string;
   labelBarcode: string;
   labelConfirmedAt: string;
   labelConfirmedBy: string;
@@ -97,6 +102,7 @@ export type ReceiveDictionary = {
   stateLoadingStockPreview: string;
   stateNoDrafts: string;
   stateNoMatchingProduct: string;
+  stateNoPendingAttachments: string;
   stateNoRecentReceipts: string;
   stateNoReceipt: string;
   statePrintAfterConfirm: string;
@@ -128,6 +134,13 @@ export type ReceiveDictionary = {
   validationReceivedAtRequired: string;
   validationUnitPriceRequired: string;
   validationWarehouseRequired: string;
+  addLocationLabel: string;
+  createLocationTitle: string;
+  locationCodeLabel: string;
+  locationNameLabel: string;
+  locationNameRequired: string;
+  locationSaveLabel: string;
+  validationWarehouseOnlySalePoints: string;
   validationWarehouseWithoutLocations: string;
   viewNotConfirmed: string;
 };
@@ -152,11 +165,14 @@ export type ItemFormRow = {
 export type AutosaveState = "idle" | "saving" | "saved" | "error";
 
 export function formatDateTimeInput(value?: string | null) {
-  if (!value) return new Date().toISOString().slice(0, 16);
+  const toLocal = (d: Date) => {
+    const offsetMs = d.getTimezoneOffset() * 60_000;
+    return new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
+  };
+  if (!value) return toLocal(new Date());
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return new Date().toISOString().slice(0, 16);
-  const offsetMs = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+  if (Number.isNaN(date.getTime())) return toLocal(new Date());
+  return toLocal(date);
 }
 
 export function formatDateTimeLabel(value?: string | null) {
@@ -258,7 +274,7 @@ export function buildItemRows(receipt?: GoodsReceiptDraft | null, products: { id
 }
 
 export function getEditableReceiptStep(receipt: GoodsReceiptDraft) {
-  if (receipt.status === "confirmed") return "view" as const;
+  if (receipt.status === "confirmed" || receipt.status === "cancelled") return "view" as const;
   if (!receipt.warehouse_id || !receipt.received_at) return 1 as const;
   if (!(receipt.items?.length ?? 0)) return 2 as const;
   return 3 as const;

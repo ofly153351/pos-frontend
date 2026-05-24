@@ -5,11 +5,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   Barcode,
   Boxes,
   ChevronDown,
   Download,
+  MapPin,
   Package,
   Upload,
   Pencil,
@@ -35,6 +37,13 @@ import {
   transferWarehouseProduct,
   updateWarehouse,
 } from "@/services/warehouses";
+import {
+  createLocation,
+  deleteLocation,
+  listLocations,
+  updateLocation,
+} from "@/services/locations";
+import type { Location } from "@/services/locations";
 import { listProducts } from "@/services/products";
 import { listMyStores } from "@/services/stores";
 import type {
@@ -130,6 +139,22 @@ type WarehouseSectionDictionary = {
   availableQtyLabel: string;
   noteLabel: string;
   warehouseTransferredLabel: string;
+  locationsLabel: string;
+  manageLocationsLabel: string;
+  backToWarehousesLabel: string;
+  locationNameLabel: string;
+  locationCodeLabel: string;
+  locationSalePointLabel: string;
+  locationStorageLabel: string;
+  locationActiveLabel: string;
+  locationInactiveLabel: string;
+  addLocationLabel: string;
+  createLocationTitle: string;
+  editLocationTitle: string;
+  locationNameRequired: string;
+  locationDeleteConfirm: string;
+  noLocationsLabel: string;
+  locationSalePointHint: string;
 };
 
 type WarehouseSectionProps = {
@@ -256,42 +281,44 @@ function WarehouseComboBox({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const selected = warehouses.find((w) => w.id === value);
 
-  // Sync search with selected warehouse name
+  const getDisplayLabel = (w: (typeof warehouses)[number]) =>
+    w.name + (w.code ? ` (${w.code})` : "") + (!w.is_active ? ` — ${inactiveLabel}` : "");
+
+  const selectedLabel = selected ? selected.name + (selected.code ? ` (${selected.code})` : "") : "";
+
+  // Sync search with selected warehouse when not actively typing
   useEffect(() => {
-    if (selected) {
-      const label = selected.name + (selected.code ? ` (${selected.code})` : "");
-      setSearch(label);
-    } else if (!value) {
-      setSearch("");
+    if (!isTyping) {
+      setSearch(selectedLabel);
     }
-  }, [value, selected]);
+  }, [selectedLabel, isTyping]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
+        setIsTyping(false);
+        setSearch(selectedLabel);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [selectedLabel]);
 
   const filtered = useMemo(() => {
-    if (!search) return warehouses;
+    if (!isTyping || !search) return warehouses;
     const q = search.toLowerCase();
     return warehouses.filter(
       (w) =>
         w.name.toLowerCase().includes(q) ||
         (w.code && w.code.toLowerCase().includes(q)),
     );
-  }, [warehouses, search]);
-
-  const getDisplayLabel = (w: (typeof warehouses)[number]) =>
-    w.name + (w.code ? ` (${w.code})` : "") + (!w.is_active ? ` — ${inactiveLabel}` : "");
+  }, [warehouses, search, isTyping]);
 
   return (
     <div className="relative min-w-[220px]" ref={ref}>
@@ -299,9 +326,14 @@ function WarehouseComboBox({
         className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 pr-10 text-sm font-semibold text-slate-800 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
         onChange={(e) => {
           setSearch(e.target.value);
+          setIsTyping(true);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setIsTyping(false);
+          setSearch("");
+          setOpen(true);
+        }}
         placeholder={emptyLabel}
         value={search}
       />
@@ -322,6 +354,7 @@ function WarehouseComboBox({
                 onClick={() => {
                   onChange(w.id);
                   setSearch(getDisplayLabel(w));
+                  setIsTyping(false);
                   setOpen(false);
                 }}
                 type="button"
@@ -650,10 +683,68 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   // Manage warehouses modal
   const [isManageModalOpen, setIsManageModalOpen] = useState(false);
 
+  // Location management sub-view inside manage modal
+  const [locationsWarehouseId, setLocationsWarehouseId] = useState<string | null>(null);
+  const [locationForm, setLocationForm] = useState({ name: "", code: "", is_sale_point: false, is_active: true });
+  const [locationEditingId, setLocationEditingId] = useState<string | null>(null);
+  const [locationFormOpen, setLocationFormOpen] = useState(false);
+  const [locationDeleteConfirmId, setLocationDeleteConfirmId] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState("");
+  const [isSavingLocation, setIsSavingLocation] = useState(false);
+
+  const { data: managedLocations = [], refetch: refetchManagedLocations } = useQuery({
+    enabled: !!locationsWarehouseId,
+    queryKey: ["managed-locations", locationsWarehouseId],
+    queryFn: async () => (await listLocations(locationsWarehouseId!)).data ?? [],
+  });
+
+  function openLocationCreate() {
+    setLocationEditingId(null);
+    setLocationForm({ name: "", code: "", is_sale_point: false, is_active: true });
+    setLocationError("");
+    setLocationFormOpen(true);
+  }
+
+  function openLocationEdit(loc: Location) {
+    setLocationEditingId(loc.id);
+    setLocationForm({ name: loc.name, code: loc.code ?? "", is_sale_point: loc.is_sale_point, is_active: loc.is_active });
+    setLocationError("");
+    setLocationFormOpen(true);
+  }
+
+  async function handleSaveLocation() {
+    if (!locationForm.name.trim()) { setLocationError(dictionary.locationNameRequired); return; }
+    setIsSavingLocation(true);
+    try {
+      if (locationEditingId) {
+        await updateLocation(locationEditingId, { name: locationForm.name.trim(), code: locationForm.code.trim() || undefined, is_sale_point: locationForm.is_sale_point, is_active: locationForm.is_active });
+      } else {
+        await createLocation({ warehouse_id: locationsWarehouseId!, name: locationForm.name.trim(), code: locationForm.code.trim() || undefined, is_sale_point: locationForm.is_sale_point, is_active: locationForm.is_active });
+      }
+      setLocationFormOpen(false);
+      setLocationEditingId(null);
+      setLocationError("");
+      await refetchManagedLocations();
+      await queryClient.invalidateQueries({ queryKey: ["warehouse", "receive", "locations"] });
+    } catch { setLocationError("Save failed. Please try again."); }
+    setIsSavingLocation(false);
+  }
+
+  async function handleDeleteLocation(id: string) {
+    try {
+      await deleteLocation(id);
+      setLocationDeleteConfirmId(null);
+      await refetchManagedLocations();
+      await queryClient.invalidateQueries({ queryKey: ["warehouse", "receive", "locations"] });
+    } catch { /* ignore */ }
+  }
+
   // Close modals on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      if (locationFormOpen) { setLocationFormOpen(false); return; }
+      if (locationsWarehouseId) { setLocationsWarehouseId(null); return; }
       if (isModalOpen) {
         setIsModalOpen(false);
         setError("");
@@ -667,10 +758,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       if (previewSku) setPreviewSku(null);
       if (successMessage) setSuccessMessage(null);
     };
-    if (!isModalOpen && !isManageModalOpen && !isReceiveModalOpen && !isBatchTransferModalOpen && !transferTarget && !previewSku && !successMessage) return;
+    if (!isModalOpen && !isManageModalOpen && !isReceiveModalOpen && !isBatchTransferModalOpen && !transferTarget && !previewSku && !successMessage && !locationsWarehouseId && !locationFormOpen) return;
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isModalOpen, isManageModalOpen, isReceiveModalOpen, isBatchTransferModalOpen, transferTarget, previewSku, successMessage]);
+  }, [isModalOpen, isManageModalOpen, isReceiveModalOpen, isBatchTransferModalOpen, transferTarget, previewSku, successMessage, locationsWarehouseId, locationFormOpen]);
 
   // Fetch warehouses
   const { data: warehousesData, isLoading: warehousesLoading } = useQuery({
@@ -688,6 +779,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   }, [warehouses, selectedWarehouseId]);
 
   const selectedWarehouse = warehouses.find((w) => w.id === selectedWarehouseId);
+  const locationsWarehouse = warehouses.find((w) => w.id === locationsWarehouseId) ?? null;
 
   // Fetch products in selected warehouse
   const { data: warehouseProductsData, isLoading: productsLoading } = useQuery({
@@ -896,7 +988,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   );
 
   return (
-    <>
+    <div className="w-full xl:px-2 2xl:px-4">
       <div>
         {/* Stats Cards */}
         <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -927,7 +1019,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       </section>
 
       {/* Warehouse Selector + Actions */}
-      <section className="mt-6 rounded-xl bg-slate-100 p-4">
+      <section className="my-4 rounded-xl bg-slate-100 p-4 md:p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <WarehouseIcon className="h-5 w-5 text-slate-500" />
@@ -950,7 +1042,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
               disabled={!selectedWarehouse}
               onClick={() => {
                 setShowAddProduct(true);
@@ -958,37 +1050,37 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               }}
               type="button"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
               {dictionary.addProductLabel}
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50"
               onClick={() => setIsManageModalOpen(true)}
               type="button"
             >
-              <Settings2 className="h-3.5 w-3.5" />
+              <Settings2 className="h-4 w-4" />
               {dictionary.manageLabel}
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
               disabled={selectedIds.size === 0}
               onClick={() => setIsExportModalOpen(true)}
               type="button"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download className="h-4 w-4" />
               {dictionary.exportLabel}
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
               disabled={selectedIds.size === 0 || warehouseProducts.filter((wp) => selectedIds.has(wp.product_id) && (wp.product_barcode)).length === 0}
               onClick={exportSelectedBarcodes}
               type="button"
             >
-              <Printer className="h-3.5 w-3.5" />
+              <Printer className="h-4 w-4" />
               {dictionary.exportBarcodeLabel}
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-40"
               disabled={!selectedWarehouse || warehouseProducts.length === 0}
               onClick={() => {
                 setIsReceiveModalOpen(true);
@@ -998,11 +1090,11 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               }}
               type="button"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download className="h-4 w-4" />
               {dictionary.receiveStockLabel}
             </button>
             <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3.5 py-2 text-xs font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-40"
               disabled={!selectedWarehouse || warehouseProducts.length === 0}
               onClick={() => {
                 setIsBatchTransferModalOpen(true);
@@ -1015,7 +1107,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               }}
               type="button"
             >
-              <ArrowRight className="h-3.5 w-3.5" />
+              <ArrowRight className="h-4 w-4" />
               {dictionary.transferLabel}
             </button>
           </div>
@@ -1177,8 +1269,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
           <table className="w-full table-fixed border-collapse text-left">
             <thead>
-              <tr className="bg-slate-100 text-xs uppercase tracking-widest text-slate-500">
-                <th className="w-[5%] px-4 py-4 text-center font-bold">
+              <tr className="bg-slate-100 text-xs md:text-[13px] uppercase tracking-widest text-slate-500">
+                <th className="w-[5%] px-4 py-4.5 text-center font-bold">
                   <input
                     aria-label="Select all"
                     checked={whPageProducts.length > 0 && selectedIds.size === warehouseProducts.length}
@@ -1193,13 +1285,13 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     type="checkbox"
                   />
                 </th>
-                <th className="w-[10%] px-6 py-4 text-center font-bold">{dictionary.tableImageCol}</th>
-                <th className="w-[25%] px-6 py-4 font-bold">{dictionary.tableDetailsCol}</th>
-                <th className="w-[13%] px-6 py-4 font-bold">{dictionary.tableBarcodeCol}</th>
-                <th className="w-[14%] px-6 py-4 font-bold">{dictionary.tableCategoryCol}</th>
-                <th className="w-[10%] px-6 py-4 font-bold">{dictionary.tablePriceCol}</th>
-                <th className="w-[8%] px-2 py-4 font-bold">{dictionary.tableStockCol}</th>
-                <th className="w-[15%] px-6 py-4 text-right font-bold">{dictionary.tableActionsCol}</th>
+                <th className="w-[10%] px-6 py-4.5 text-center font-bold">{dictionary.tableImageCol}</th>
+                <th className="w-[25%] px-6 py-4.5 font-bold">{dictionary.tableDetailsCol}</th>
+                <th className="w-[13%] px-6 py-4.5 font-bold">{dictionary.tableBarcodeCol}</th>
+                <th className="w-[14%] px-6 py-4.5 font-bold">{dictionary.tableCategoryCol}</th>
+                <th className="w-[10%] px-6 py-4.5 font-bold">{dictionary.tablePriceCol}</th>
+                <th className="w-[8%] px-2 py-4.5 font-bold">{dictionary.tableStockCol}</th>
+                <th className="w-[15%] px-6 py-4.5 text-right font-bold">{dictionary.tableActionsCol}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1208,7 +1300,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   key={wp.product_id}
                   className={`${index % 2 === 1 ? "bg-slate-50/50" : "bg-white"} group transition hover:bg-slate-50`}
                 >
-                  <td className="px-4 py-4 text-center">
+                  <td className="px-4 py-4.5 text-center">
                     <input
                       aria-label={`Select ${wp.product_name}`}
                       checked={selectedIds.has(wp.product_id)}
@@ -1225,7 +1317,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       type="checkbox"
                     />
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-6 py-4.5 text-center">
                     {wp.image_url ? (
                       <img
                         alt={wp.product_name}
@@ -1239,7 +1331,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4.5">
                     <div className="flex min-w-0 flex-col">
                       <span
                         className="overflow-hidden break-all text-sm font-bold text-slate-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
@@ -1254,28 +1346,28 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-slate-500">
+                  <td className="px-6 py-4.5 text-sm md:text-[15px] text-slate-500">
                     <span className="block truncate font-mono" title={wp.product_barcode || "-"}>
                       {wp.product_barcode || "-"}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4.5">
                     <span
-                      className="block truncate rounded px-2 py-1 text-[11px] font-bold uppercase text-violet-800"
+                      className="block truncate rounded px-2 py-1 text-xs font-bold uppercase text-violet-800"
                       title={wp.product_type_name || "-"}
                     >
                       {wp.product_type_name || "-"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm font-bold text-violet-700">
+                  <td className="px-6 py-4.5 text-sm md:text-[15px] font-bold text-violet-700">
                     {(wp.product_price || 0) > 0
                       ? `฿${((wp.product_price) || 0).toLocaleString()}`
                       : "—"}
                   </td>
-                  <td className="px-2 py-4">
+                  <td className="px-2 py-4.5">
                     <div className="flex flex-col">
                       <span
-                        className={`inline-flex items-center gap-1.5 text-sm font-semibold ${
+                        className={`inline-flex items-center gap-1.5 text-sm md:text-[15px] font-semibold ${
                           (wp.product_quantity ?? wp.quantity) === 0
                             ? "text-rose-700"
                             : wp.product_min_stock != null && wp.quantity > 0 && wp.quantity <= wp.product_min_stock
@@ -1322,10 +1414,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4.5 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        className="rounded-lg p-2 text-slate-500 transition hover:bg-violet-50 hover:text-violet-600"
+                        className="rounded-lg p-2.5 text-slate-500 transition hover:bg-violet-50 hover:text-violet-600"
                         disabled={!(wp.product_barcode)}
                         onClick={() => setPreviewSku(wp.product_barcode || null)}
                         title={dictionary.barcodeTooltip}
@@ -1334,7 +1426,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                         <Barcode className="h-4 w-4" />
                       </button>
                       <button
-                        className="rounded-lg p-2 text-rose-600 transition hover:bg-rose-50"
+                        className="rounded-lg p-2.5 text-rose-600 transition hover:bg-rose-50"
                         onClick={() => handleRemoveProduct(wp.product_id)}
                         title={dictionary.deleteLabel}
                         type="button"
@@ -1353,15 +1445,15 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
 
       {/* Pagination */}
       {whTotal > 0 && (
-        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+        <section className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white px-4 py-3.5 shadow-sm">
+          <div className="flex items-center gap-2 text-xs md:text-sm text-slate-500">
             <span>{dictionary.showingLabel} {whStart + 1}-{Math.min(whEnd, whTotal)} {dictionary.fromLabel} {whTotal} {dictionary.itemsLabel}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <label className="text-xs font-semibold text-slate-500" htmlFor="wh-page-size">{dictionary.perPageLabel}</label>
+              <label className="text-xs md:text-sm font-semibold text-slate-500" htmlFor="wh-page-size">{dictionary.perPageLabel}</label>
               <select
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300"
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm md:text-[15px] font-semibold text-slate-700 outline-none transition focus:border-violet-300"
                 id="wh-page-size"
                 onChange={(e) => {
                   setWhPageSize(Number(e.target.value));
@@ -1377,7 +1469,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             </div>
             <div className="flex items-center gap-2">
               <button
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={whPage <= 1}
                 onClick={() => setWhPage((p) => Math.max(p - 1, 1))}
                 type="button"
@@ -1391,7 +1483,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 for (let i = startPage; i <= endPage; i++) pages.push(i);
                 return pages.map((page) => (
                   <button
-                    className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                    className={`rounded-lg px-4 py-2.5 text-sm md:text-[15px] font-semibold transition ${
                       page === whPage
                         ? "bg-violet-700 text-white"
                         : "border border-slate-200 text-violet-700 hover:bg-violet-50"
@@ -1405,7 +1497,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 ));
               })()}
               <button
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={whPage >= whTotalPages}
                 onClick={() => setWhPage((p) => Math.min(p + 1, whTotalPages))}
                 type="button"
@@ -1630,7 +1722,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             className="h-[90vh] w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl z-[60] smooth-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="border-b border-slate-200 bg-gradient-to-br from-violet-700 via-violet-600 to-pink-500 px-6 py-6 text-white">
+            <div className="border-b border-slate-200 bg-violet-700 px-6 py-6 text-white">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
                 {editingId ? dictionary.editTitle : dictionary.createTitle}
               </p>
@@ -1793,7 +1885,43 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             className="flex h-[80vh] w-full max-w-3xl flex-col rounded-2xl bg-white shadow-2xl smooth-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-br from-violet-700 via-violet-600 to-pink-500 px-6 py-5 text-white rounded-t-2xl">
+            {/* Header — changes based on location sub-view */}
+            {locationsWarehouseId ? (
+              <div className="flex items-center justify-between border-b border-slate-200 bg-violet-700 px-6 py-5 text-white rounded-t-2xl">
+                <div className="flex items-center gap-3">
+                  <button
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/20"
+                    onClick={() => { setLocationsWarehouseId(null); setLocationFormOpen(false); setLocationDeleteConfirmId(null); }}
+                    type="button"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </button>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">{locationsWarehouse?.name}</p>
+                    <h3 className="mt-0.5 text-xl font-bold">{dictionary.locationsLabel}</h3>
+                    <p className="mt-0.5 text-sm text-white/80">{managedLocations.length} {dictionary.locationsLabel.toLowerCase()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3.5 py-2 text-xs font-semibold backdrop-blur-sm transition hover:bg-white/30"
+                    onClick={openLocationCreate}
+                    type="button"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {dictionary.addLocationLabel}
+                  </button>
+                  <button
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/20"
+                    onClick={() => setIsManageModalOpen(false)}
+                    type="button"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+            <div className="flex items-center justify-between border-b border-slate-200 bg-violet-700 px-6 py-5 text-white rounded-t-2xl">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
                   {dictionary.title}
@@ -1807,7 +1935,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                   onClick={openCreateModal}
                   type="button"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" />
                   {dictionary.createButton}
                 </button>
                 <button
@@ -1819,7 +1947,178 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 </button>
               </div>
             </div>
+            )}
 
+            {/* Location sub-view body */}
+            {locationsWarehouseId ? (
+              <div className="flex-1 overflow-y-auto p-4">
+                {/* Inline form for create/edit */}
+                {locationFormOpen && (
+                  <div className="mb-4 rounded-2xl border border-violet-200 bg-violet-50/60 p-4">
+                    <p className="mb-3 text-sm font-semibold text-violet-800">{locationEditingId ? dictionary.editLocationTitle : dictionary.createLocationTitle}</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="mb-1 block text-xs font-medium text-slate-600">{dictionary.locationNameLabel} *</label>
+                        <input
+                          autoFocus
+                          className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                          onChange={(e) => setLocationForm((f) => ({ ...f, name: e.target.value }))}
+                          value={locationForm.name}
+                        />
+                      </div>
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="mb-1 block text-xs font-medium text-slate-600">{dictionary.locationCodeLabel}</label>
+                        <input
+                          className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-mono outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                          onChange={(e) => setLocationForm((f) => ({ ...f, code: e.target.value }))}
+                          value={locationForm.code}
+                        />
+                      </div>
+                      <div className="col-span-2 flex flex-wrap items-center gap-4">
+                        <label className="flex cursor-pointer items-center gap-2 text-sm">
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={locationForm.is_sale_point}
+                            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors ${locationForm.is_sale_point ? "bg-amber-500" : "bg-violet-200"}`}
+                            onClick={() => setLocationForm((f) => ({ ...f, is_sale_point: !f.is_sale_point }))}
+                          >
+                            <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${locationForm.is_sale_point ? "translate-x-4" : "translate-x-0"}`} />
+                          </button>
+                          <span className="font-medium text-slate-700">{dictionary.locationSalePointLabel}</span>
+                        </label>
+                        <label className="flex cursor-pointer items-center gap-2 text-sm">
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={locationForm.is_active}
+                            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors ${locationForm.is_active ? "bg-violet-700" : "bg-slate-300"}`}
+                            onClick={() => setLocationForm((f) => ({ ...f, is_active: !f.is_active }))}
+                          >
+                            <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${locationForm.is_active ? "translate-x-4" : "translate-x-0"}`} />
+                          </button>
+                          <span className="font-medium text-slate-700">{dictionary.locationActiveLabel}</span>
+                        </label>
+                      </div>
+                    </div>
+                    {locationForm.is_sale_point && (
+                      <p className="mt-2 text-xs text-amber-600">{dictionary.locationSalePointHint}</p>
+                    )}
+                    {locationError && <p className="mt-2 text-xs text-rose-600">{locationError}</p>}
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
+                        disabled={isSavingLocation}
+                        onClick={handleSaveLocation}
+                        type="button"
+                      >
+                        {dictionary.saveButton}
+                      </button>
+                      <button
+                        className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
+                        onClick={() => { setLocationFormOpen(false); setLocationError(""); }}
+                        type="button"
+                      >
+                        {dictionary.cancel}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {managedLocations.length === 0 && !locationFormOpen ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <MapPin className="mb-3 h-10 w-10 text-slate-300" />
+                    <p className="mb-3 text-sm text-slate-500">{dictionary.noLocationsLabel}</p>
+                    <button
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-violet-700"
+                      onClick={openLocationCreate}
+                      type="button"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      {dictionary.addLocationLabel}
+                    </button>
+                  </div>
+                ) : (
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-slate-100 text-xs uppercase tracking-widest text-slate-500">
+                        <th className="rounded-l-lg px-4 py-3 font-bold">{dictionary.locationNameLabel}</th>
+                        <th className="px-4 py-3 font-bold">{dictionary.locationCodeLabel}</th>
+                        <th className="px-4 py-3 font-bold">Type</th>
+                        <th className="px-4 py-3 text-center font-bold">Status</th>
+                        <th className="rounded-r-lg px-4 py-3 text-right font-bold">{dictionary.tableActionsCol}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {managedLocations.map((loc, li) => (
+                        <tr key={loc.id} className={`${li % 2 === 1 ? "bg-slate-50/50" : "bg-white"} transition hover:bg-slate-50`}>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+                              <span className="text-sm font-medium text-slate-900">{loc.name}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-mono text-sm text-slate-600">{loc.code ?? "—"}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                              loc.is_sale_point ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"
+                            }`}>
+                              {loc.is_sale_point ? dictionary.locationSalePointLabel : dictionary.locationStorageLabel}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                              loc.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+                            }`}>
+                              {loc.is_active ? dictionary.locationActiveLabel : dictionary.locationInactiveLabel}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-violet-50 hover:text-violet-600"
+                                onClick={() => openLocationEdit(loc)}
+                                title={dictionary.editLabel}
+                                type="button"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                              {locationDeleteConfirmId === loc.id ? (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    className="inline-flex h-6 items-center rounded-lg bg-red-600 px-2 text-[10px] font-semibold text-white transition hover:bg-red-700"
+                                    onClick={() => handleDeleteLocation(loc.id)}
+                                    type="button"
+                                  >
+                                    {dictionary.locationDeleteConfirm}
+                                  </button>
+                                  <button
+                                    className="inline-flex h-6 items-center rounded-lg bg-slate-100 px-2 text-[10px] font-medium text-slate-600 transition hover:bg-slate-200"
+                                    onClick={() => setLocationDeleteConfirmId(null)}
+                                    type="button"
+                                  >
+                                    {dictionary.cancel}
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                  onClick={() => setLocationDeleteConfirmId(loc.id)}
+                                  title={dictionary.deleteLabel}
+                                  type="button"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            ) : (
             <div className="flex-1 overflow-y-auto p-4">
               {warehouses.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16">
@@ -1829,7 +2128,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               ) : (
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="bg-slate-100 text-xs uppercase tracking-widest text-slate-500">
+                    <tr className="bg-slate-100 text-xs md:text-[13px] uppercase tracking-widest text-slate-500">
                       <th className="w-[28%] rounded-l-lg px-4 py-3 font-bold">{dictionary.nameLabel}</th>
                       <th className="w-[16%] px-4 py-3 font-bold">{dictionary.codeLabel}</th>
                       <th className="w-[18%] px-4 py-3 font-bold">{dictionary.phoneLabel}</th>
@@ -1859,6 +2158,15 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <button
+                              className="inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11px] font-medium text-violet-600 transition hover:bg-violet-50"
+                              onClick={() => { setLocationsWarehouseId(warehouse.id); setLocationFormOpen(false); }}
+                              title={dictionary.manageLocationsLabel}
+                              type="button"
+                            >
+                              <MapPin className="h-3.5 w-3.5" />
+                              {dictionary.locationsLabel}
+                            </button>
                             <button
                               className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-violet-50 hover:text-violet-600"
                               onClick={() => { setIsManageModalOpen(false); openEditModal(warehouse); }}
@@ -1902,6 +2210,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 </table>
               )}
             </div>
+            )}
           </div>
         </div>
       )}
@@ -1916,7 +2225,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             className="flex h-[80vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-br from-emerald-600 to-emerald-500 px-6 py-5 text-white rounded-t-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-emerald-600 px-6 py-5 text-white rounded-t-2xl">
               <div>
                 <h3 className="text-xl font-bold">{dictionary.receiveStockTitle}</h3>
                 <p className="mt-0.5 text-sm text-white/80">{warehouseProducts.length} {dictionary.productsLabel}</p>
@@ -2020,7 +2329,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                                 <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
                               </svg>
                             ) : (
-                              <Download className="h-3.5 w-3.5" />
+                              <Download className="h-4 w-4" />
                             )}
                             {dictionary.receiveStockLabel}
                           </button>
@@ -2045,7 +2354,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             className="flex h-[80vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-br from-violet-600 to-violet-500 px-6 py-5 text-white rounded-t-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-violet-600 px-6 py-5 text-white rounded-t-2xl">
               <div>
                 <h3 className="text-xl font-bold">{dictionary.transferTitle}</h3>
                 <p className="mt-0.5 text-sm text-white/80">{warehouseProducts.length} {dictionary.productsLabel}</p>
@@ -2220,7 +2529,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                                 <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
                               </svg>
                             ) : (
-                              <ArrowRight className="h-3.5 w-3.5" />
+                              <ArrowRight className="h-4 w-4" />
                             )}
                             {dictionary.transferLabel}
                           </button>
@@ -2331,7 +2640,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                 }}
                 type="button"
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-4 w-4" />
                 Export Excel
               </button>
             </div>
@@ -2350,6 +2659,6 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         }}
       />
     </div>
-    </>
+    </div>
   );
 }

@@ -56,8 +56,7 @@ export type StockManagerDictionary = {
     quantityHint: string;
     minStockLabel: string;
     minStockHint: string;
-    maxStockLabel: string;
-    maxStockHint: string;
+
     optionalLabel: string;
     requiredLabel: string;
     costPriceLabel: string;
@@ -84,6 +83,9 @@ export type StockManagerDictionary = {
     unitPiece: string;
     unitTypeLabel: string;
     unitTypeHint: string;
+    posPreviewLabel?: string;
+    posStatusActive?: string;
+    posStatusInactive?: string;
   };
   inventoryItems: Array<{
     barWidth: string;
@@ -288,7 +290,6 @@ export const initialProductFormState: ProductInput = {
   brand_id: "",
   cost_price: "",
   is_active: true,
-  max_stock: "",
   min_stock: "",
   name: "",
   product_code: "",

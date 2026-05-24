@@ -97,6 +97,7 @@ export function CatalogSetupSection({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<PageSize>(10);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Type modal
   const [typeModalOpen, setTypeModalOpen] = useState(false);
@@ -135,7 +136,7 @@ export function CatalogSetupSection({
   const [importing, startImportT] = useTransition();
 
   useEffect(() => { setMounted(true); }, []);
-  useEffect(() => { setPage(1); }, [tab, search, statusFilter]);
+  useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [tab, search, statusFilter]);
 
   const { data: types = [] } = useQuery<ProductType[]>({
     enabled: mounted,
@@ -258,6 +259,25 @@ export function CatalogSetupSection({
     if (tab === "types") openCreateType();
     else if (tab === "units") openCreateUnit();
     else openCreateBrand();
+  }
+
+  function exportSelected() {
+    const items = allFiltered.filter((i) => selectedIds.has(i.id));
+    const header = ["name", "description", "status", "product_count"];
+    const rows = items.map((i) => [
+      `"${i.name.replace(/"/g, '""')}"`,
+      `"${(i.description ?? "").replace(/"/g, '""')}"`,
+      i.is_active ? "active" : "inactive",
+      String(i.product_count),
+    ]);
+    const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${tab}-export.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   function exportCSV() {
@@ -392,8 +412,21 @@ export function CatalogSetupSection({
               <option value="active">{d.statusActive}</option>
               <option value="inactive">{d.statusInactive}</option>
             </select>
+            {selectedIds.size > 0 ? (
+              <button
+                className="ml-auto inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 active:scale-95"
+                onClick={exportSelected}
+                type="button"
+              >
+                <Download className="h-4 w-4" />
+                {d.toolsExport}
+                <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-xs font-bold text-violet-600">
+                  {selectedIds.size}
+                </span>
+              </button>
+            ) : null}
             <button
-              className="ml-auto rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-violet-700 hover:to-pink-600 active:scale-95"
+              className={selectedIds.size > 0 ? "rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-violet-700 hover:to-pink-600 active:scale-95" : "ml-auto rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-violet-700 hover:to-pink-600 active:scale-95"}
               onClick={openAdd}
               type="button"
             >
@@ -406,7 +439,21 @@ export function CatalogSetupSection({
             <table className="w-full">
               <thead>
                 <tr className="border-b border-violet-50">
-                  <th className="w-14 px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">{d.colOrder}</th>
+                  <th className="w-10 px-4 py-4 text-center">
+                    <input
+                      aria-label="Select all"
+                      checked={allFiltered.length > 0 && allFiltered.every((i) => selectedIds.has(i.id))}
+                      className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                      onChange={() => {
+                        const allSelected = allFiltered.every((i) => selectedIds.has(i.id));
+                        setSelectedIds(allSelected ? new Set() : new Set(allFiltered.map((i) => i.id)));
+                      }}
+                      ref={(el) => {
+                        if (el) el.indeterminate = selectedIds.size > 0 && !allFiltered.every((i) => selectedIds.has(i.id));
+                      }}
+                      type="checkbox"
+                    />
+                  </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">{tabColName}</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">{d.colProductCount}</th>
                   <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">{d.colStatus}</th>
@@ -444,9 +491,20 @@ export function CatalogSetupSection({
                         key={item.id}
                         className="group border-b border-violet-50/70 transition-colors last:border-0 hover:bg-violet-50/30"
                       >
-                        {/* Order */}
-                        <td className="px-6 py-4 text-center">
-                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-violet-50 text-sm font-bold text-violet-500">{n}</span>
+                        {/* Checkbox */}
+                        <td className="px-4 py-4 text-center">
+                          <input
+                            aria-label={`Select ${item.name}`}
+                            checked={selectedIds.has(item.id)}
+                            className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                            onChange={() => {
+                              const next = new Set(selectedIds);
+                              if (next.has(item.id)) next.delete(item.id);
+                              else next.add(item.id);
+                              setSelectedIds(next);
+                            }}
+                            type="checkbox"
+                          />
                         </td>
                         {/* Name */}
                         <td className="px-6 py-4">

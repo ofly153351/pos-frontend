@@ -17,6 +17,7 @@ export type ReceiveStep1Props = {
   headerForm: HeaderForm;
   isPending: boolean;
   isView: boolean;
+  allLocationsCount: number;
   locations: Location[];
   locationsQueryError: unknown;
   locationsQueryIsError: boolean;
@@ -35,6 +36,7 @@ export function ReceiveStep1({
   dictionary,
   headerErrors,
   headerForm,
+  allLocationsCount,
   isPending,
   isView,
   locations,
@@ -109,7 +111,7 @@ export function ReceiveStep1({
               </div>
             ) : locations.length === 0 && selectedWarehouseId && !locationsQueryIsLoading ? (
               <div className="md:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                {dictionary.validationWarehouseWithoutLocations}
+                {allLocationsCount > 0 ? dictionary.validationWarehouseOnlySalePoints : dictionary.validationWarehouseWithoutLocations}
               </div>
             ) : null}
 
