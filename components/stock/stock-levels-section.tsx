@@ -24,7 +24,6 @@ type StockLevelsSectionProps = {
   filteredProducts: Product[];
   isPending: boolean;
   loadingLabel: string;
-  lowStockCount: number;
   managementDictionary: ManagementDictionary;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
@@ -44,7 +43,6 @@ type StockLevelsSectionProps = {
   productBrandFilter: string;
   productBrands: ProductBrand[];
   productTypeFilter: string;
-  productTypesCount: number;
   productTypes: ProductType[];
   productUnitFilter: string;
   productUnits: ProductUnit[];
@@ -59,7 +57,6 @@ export function StockLevelsSection({
   filteredProducts,
   isPending,
   loadingLabel,
-  lowStockCount,
   managementDictionary,
   onPageChange,
   onPageSizeChange,
@@ -79,7 +76,6 @@ export function StockLevelsSection({
   productBrandFilter,
   productBrands,
   productTypeFilter,
-  productTypesCount,
   productTypes,
   productUnitFilter,
   productUnits,
@@ -191,55 +187,8 @@ export function StockLevelsSection({
 
   return (
     <>
-      <section className="grid grid-cols-1 gap-6 md:grid-cols-4">
-        <div className="rounded-xl border-b-2 border-violet-200 bg-white p-6">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {dictionary.stats.totalProductsLabel}
-          </span>
-          <p className="mt-2 text-3xl font-extrabold text-violet-700">
-            {paginationTotalItems}
-          </p>
-        </div>
-        <div className="rounded-xl border-b-2 border-rose-200 bg-white p-6">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {dictionary.stats.lowStockLabel}
-          </span>
-          <p className="mt-2 text-3xl font-extrabold text-rose-600">
-            {lowStockCount}
-          </p>
-        </div>
-        <div className="rounded-xl border-b-2 border-amber-200 bg-white p-6">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {dictionary.stats.categoriesLabel}
-          </span>
-          <p className="mt-2 text-3xl font-extrabold text-amber-700">
-            {productTypesCount}
-          </p>
-        </div>
-        <div className="relative overflow-hidden rounded-xl bg-violet-700 p-6 text-white shadow-xl">
-          <div className="relative z-10">
-            <span className="text-xs font-bold uppercase tracking-widest opacity-80">
-              {dictionary.quickAction.label}
-            </span>
-            <h3 className="mt-1 text-xl font-bold">
-              {dictionary.quickAction.title}
-            </h3>
-            <button
-              className="mt-4 rounded-lg bg-white/20 px-4 py-2 text-sm font-semibold backdrop-blur-sm transition hover:bg-white/30"
-              onClick={onOpenCreateModal}
-              type="button"
-            >
-              {dictionary.quickAction.button}
-            </button>
-          </div>
-          <div className="absolute -bottom-8 -right-4 text-8xl font-black text-white/10">
-            ST
-          </div>
-        </div>
-      </section>
-
       <section
-        className="my-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-100 p-4"
+        className="my-4 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-100 p-4 md:p-5"
         id="stock-levels"
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -248,7 +197,7 @@ export function StockLevelsSection({
               {dictionary.filters.searchLabel}
             </label>
             <input
-              className="w-[min(92vw,320px)] rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              className="w-[min(92vw,360px)] rounded-lg border border-violet-200 bg-white px-3.5 py-2.5 text-sm md:text-[15px] text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               id="stock-search-toolbar"
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder={dictionary.searchPlaceholder}
@@ -259,7 +208,7 @@ export function StockLevelsSection({
           <div className="relative" ref={filterPanelRef}>
             <button
               aria-expanded={isFilterPanelOpen}
-              className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50"
               onClick={() => setIsFilterPanelOpen((prev) => !prev)}
               type="button"
             >
@@ -268,7 +217,7 @@ export function StockLevelsSection({
               </svg>
               {dictionary.filters.filterButton}
               {activeFilterCount > 0 ? (
-                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700">
+                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs md:text-sm font-bold text-violet-700">
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -276,16 +225,16 @@ export function StockLevelsSection({
 
             {isFilterPanelVisible ? (
               <div
-                className={`absolute left-0 z-30 mt-2 w-[min(92vw,560px)] rounded-xl border border-violet-100 bg-white p-4 shadow-xl transition-all duration-200 ease-out ${
+                className={`absolute left-0 z-30 mt-2 w-[min(92vw,620px)] rounded-xl border border-violet-100 bg-white p-4 shadow-xl transition-all duration-200 ease-out ${
                   isFilterPanelOpen
                     ? "translate-y-0 scale-100 opacity-100"
                     : "pointer-events-none -translate-y-1 scale-95 opacity-0"
                 }`}
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-bold text-slate-800">{dictionary.filters.filterPanelTitle}</p>
+                  <p className="text-sm md:text-[15px] font-bold text-slate-800">{dictionary.filters.filterPanelTitle}</p>
                   <button
-                    className="text-xs font-semibold text-slate-500 transition hover:text-slate-700"
+                    className="text-xs md:text-sm font-semibold text-slate-500 transition hover:text-slate-700"
                     onClick={() => setIsFilterPanelOpen(false)}
                     type="button"
                   >
@@ -295,11 +244,11 @@ export function StockLevelsSection({
 
               <div className="mb-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-500" htmlFor="stock-option-search">
+                  <label className="mb-1 block text-xs md:text-sm font-semibold text-slate-500" htmlFor="stock-option-search">
                     {dictionary.filters.filterOptionsPlaceholder}
                   </label>
                   <input
-                    className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    className="w-full rounded-lg border border-violet-200 bg-white px-3.5 py-2.5 text-sm md:text-[15px] text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                     id="stock-option-search"
                     onChange={(event) => setOptionSearch(event.target.value)}
                     placeholder={dictionary.filters.optionSearchPlaceholder}
@@ -384,21 +333,21 @@ export function StockLevelsSection({
 
               <div className="mt-4 flex items-center justify-end gap-2 border-t border-violet-100 pt-3">
                 <button
-                  className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                  className="rounded-lg border border-violet-200 bg-white px-3.5 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50"
                   onClick={clearDraftFilters}
                   type="button"
                 >
                   {dictionary.filters.clearAll}
                 </button>
                 <button
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                  className="rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm md:text-[15px] font-semibold text-slate-600 transition hover:bg-slate-50"
                   onClick={() => setIsFilterPanelOpen(false)}
                   type="button"
                 >
                   {dictionary.filters.cancel}
                 </button>
                 <button
-                  className="rounded-lg bg-gradient-to-br from-violet-600 to-pink-500 px-3 py-2 text-sm font-semibold text-white transition hover:from-violet-700 hover:to-pink-600"
+                  className="rounded-lg bg-gradient-to-br from-violet-600 to-pink-500 px-3.5 py-2.5 text-sm md:text-[15px] font-semibold text-white transition hover:from-violet-700 hover:to-pink-600"
                   onClick={applyDraftFilters}
                   type="button"
                 >
@@ -413,13 +362,13 @@ export function StockLevelsSection({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <label
-              className="text-xs font-semibold text-slate-500"
+              className="text-xs md:text-sm font-semibold text-slate-500"
               htmlFor="stock-page-size"
             >
               {dictionary.pagination.perPage}
             </label>
             <select
-              className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm md:text-[15px] font-semibold text-slate-700 outline-none transition focus:border-violet-300"
               id="stock-page-size"
               onChange={(event) => onPageSizeChange(Number(event.target.value))}
               value={paginationPageSize}
@@ -432,7 +381,17 @@ export function StockLevelsSection({
             </select>
           </div>
           <button
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-white transition hover:from-violet-700 hover:to-pink-600"
+            onClick={onOpenCreateModal}
+            type="button"
+          >
+            <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            {dictionary.quickAction.button}
+          </button>
+          <button
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-violet-200 bg-white px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50"
             onClick={() => setIsImportModalOpen(true)}
             type="button"
           >
@@ -606,10 +565,10 @@ export function StockLevelsSection({
       ) : null}
 
       {paginationTotalPages > 1 ? (
-        <section className="my-4 flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3 shadow-sm">
+        <section className="my-4 flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3.5 shadow-sm">
           <div className="flex items-center gap-2">
             <button
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-slate-200 px-3.5 py-2 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={paginationCurrentPage <= 1 || isPending}
               onClick={() =>
                 onPageChange(Math.max(paginationCurrentPage - 1, 1))
@@ -621,7 +580,7 @@ export function StockLevelsSection({
 
             {pageNumbers.map((page) => (
               <button
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                className={`rounded-lg px-3.5 py-2 text-sm md:text-[15px] font-semibold transition ${
                   page === paginationCurrentPage
                     ? "bg-violet-700 text-white"
                     : "border border-slate-200 text-violet-700 hover:bg-violet-50"
@@ -635,7 +594,7 @@ export function StockLevelsSection({
             ))}
 
             <button
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-slate-200 px-3.5 py-2 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={
                 paginationCurrentPage >= paginationTotalPages || isPending
               }

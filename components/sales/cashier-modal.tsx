@@ -34,7 +34,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [search, setSearch] = useState("");
-  const [vatOn, setVatOn] = useState(true);
+  const [vatOn, setVatOn] = useState(false);
   const [noteOn, setNoteOn] = useState(false);
 
   useEffect(() => { closeRef.current?.focus(); }, []);

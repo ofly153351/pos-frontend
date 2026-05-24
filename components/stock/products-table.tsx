@@ -163,15 +163,13 @@ export function ProductsTable({
   }
 
   function isOutOfStock(product: Product) {
-    return getTotalStock(product) <= 0;
+    return getTotalStock(product) === 0;
   }
 
   function isLowStock(product: Product) {
     const stock = getTotalStock(product);
     if (stock <= 0) return false;
-    if (product.max_stock != null && stock < product.max_stock / 2) return true;
-    if (product.min_stock != null && product.min_stock > 0 && stock <= product.min_stock) return true;
-    return (product.min_stock == null || product.min_stock === 0) && product.max_stock == null && stock <= 20;
+    return product.min_stock != null && stock <= product.min_stock;
   }
 
   function printBarcode(svgContent: string, sku: string | null) {
@@ -303,7 +301,7 @@ export function ProductsTable({
       <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
         {selectedIds.size > 0 ? (
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-3">
-            <span className="text-sm text-slate-700">
+            <span className="text-sm md:text-[15px] text-slate-700">
               <strong className="font-semibold">{selectedIds.size}</strong> selected
             </span>
             <div className="relative" ref={actionMenuRef}>
@@ -426,8 +424,8 @@ export function ProductsTable({
         ) : null}
         <table className="w-full table-fixed border-collapse text-left">
         <thead>
-          <tr className="bg-slate-100 text-xs uppercase tracking-widest text-slate-500">
-            <th className="w-[5%] px-4 py-4 text-center">
+          <tr className="bg-slate-100 text-xs md:text-[13px] uppercase tracking-widest text-slate-500">
+            <th className="w-[5%] px-4 py-4.5 text-center">
               <input
                 aria-label="Select all"
                 checked={products.length > 0 && selectedIds.size === products.length}
@@ -442,15 +440,15 @@ export function ProductsTable({
                 type="checkbox"
               />
             </th>
-            <th className="w-[10%] px-6 py-4 text-center font-bold">รูป</th>
-            <th className="w-[22%] px-6 py-4 font-bold">{tableDictionary.productDetails}</th>
-            <th className="w-[11%] px-6 py-4 font-bold">{tableDictionary.barcode}</th>
-            <th className="w-[11%] px-6 py-4 font-bold">{tableDictionary.category}</th>
-            <th className="w-[8%] px-6 py-4 font-bold">{tableDictionary.costPrice}</th>
-            <th className="w-[8%] px-6 py-4 font-bold">{tableDictionary.sellingPrice}</th>
-            <th className="w-[10%] px-6 py-4 font-bold">{tableDictionary.stock}</th>
-            <th className="w-[9%] px-6 py-4 font-bold">{tableDictionary.status}</th>
-            <th className="w-[12%] px-6 py-4 text-right font-bold">{tableDictionary.actions}</th>
+            <th className="w-[10%] px-6 py-4.5 text-center font-bold">รูป</th>
+            <th className="w-[22%] px-6 py-4.5 font-bold">{tableDictionary.productDetails}</th>
+            <th className="w-[11%] px-6 py-4.5 font-bold">{tableDictionary.barcode}</th>
+            <th className="w-[11%] px-6 py-4.5 font-bold">{tableDictionary.category}</th>
+            <th className="w-[8%] px-6 py-4.5 font-bold">{tableDictionary.costPrice}</th>
+            <th className="w-[8%] px-6 py-4.5 font-bold">{tableDictionary.sellingPrice}</th>
+            <th className="w-[10%] px-6 py-4.5 font-bold">{tableDictionary.stock}</th>
+            <th className="w-[9%] px-6 py-4.5 font-bold">{tableDictionary.status}</th>
+            <th className="w-[12%] px-6 py-4.5 text-right font-bold">{tableDictionary.actions}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -476,7 +474,7 @@ export function ProductsTable({
               key={product.id}
               className={`${index % 2 === 1 ? "bg-slate-50/50" : "bg-white"} group transition hover:bg-slate-50`}
             >
-              <td className="px-4 py-4 text-center">
+              <td className="px-4 py-4.5 text-center">
                 <input
                   aria-label={`Select ${product.name}`}
                   checked={selectedIds.has(product.id)}
@@ -493,58 +491,58 @@ export function ProductsTable({
                   type="checkbox"
                 />
               </td>
-              <td className="px-6 py-4 text-center">
+              <td className="px-6 py-4.5 text-center">
                 {product.image_url ? (
                   <img
                     alt={product.name}
-                    className="mx-auto h-12 w-12 rounded-lg border border-slate-200 bg-slate-100 object-cover shadow-inner"
+                    className="mx-auto h-14 w-14 rounded-lg border border-slate-200 bg-slate-100 object-cover shadow-inner"
                     loading="lazy"
                     src={product.image_url}
                   />
                 ) : (
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 shadow-inner">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 shadow-inner">
                     {product.name.slice(0, 2).toUpperCase()}
                   </div>
                 )}
               </td>
-              <td className="px-6 py-4">
+              <td className="px-6 py-4.5">
                 <div className="flex min-w-0 flex-col">
                   <span
-                    className="overflow-hidden break-all text-sm font-bold text-slate-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
+                    className="overflow-hidden break-all text-sm md:text-[15px] font-bold text-slate-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
                     title={product.name}
                   >
                     {product.name}
                   </span>
                   {product.sku ? (
-                    <span className="mt-0.5 truncate text-xs text-slate-400" title={product.sku}>
+                    <span className="mt-0.5 truncate text-xs md:text-sm text-slate-400" title={product.sku}>
                       {product.sku}
                     </span>
                   ) : null}
                 </div>
               </td>
-              <td className="px-6 py-4 text-sm text-slate-500">
+              <td className="px-4 py-4.5 text-sm md:text-[15px] text-slate-500">
                 <span className="block truncate font-mono" title={product.barcode ?? "-"}>
                   {product.barcode ?? "-"}
                 </span>
               </td>
-              <td className="px-6 py-4">
+              <td className="px-6 py-4.5">
                 <span
-                  className="block truncate rounded px-2 py-1 text-[11px] font-bold uppercase text-violet-800"
+                  className="block truncate rounded px-2 py-1 text-xs font-bold uppercase text-violet-800"
                   title={product.product_type_name ?? product.product_type?.name ?? "-"}
                 >
                   {product.product_type_name ?? product.product_type?.name ?? "-"}
                 </span>
               </td>
-              <td className="px-6 py-4 text-sm font-semibold text-slate-600">
+              <td className="px-6 py-4.5 text-sm md:text-[15px] font-semibold text-slate-600">
                 {product.cost_price != null ? formatCurrency(Number(product.cost_price)) : "-"}
               </td>
-              <td className="px-6 py-4 text-sm font-bold text-violet-700">
+              <td className="px-6 py-4.5 text-sm md:text-[15px] font-bold text-violet-700">
                 {formatCurrency(Number(product.base_price ?? 0))}
               </td>
-              <td className="px-2 py-4">
+              <td className="px-2 py-4.5">
                 <div className="flex flex-col">
                   <span
-                    className={`inline-flex items-center gap-1.5 text-sm font-semibold ${
+                    className={`inline-flex items-center gap-1.5 text-sm md:text-[15px] font-semibold ${
                       isOutOfStock(product)
                         ? "text-rose-700"
                         : isLowStock(product)
@@ -580,7 +578,7 @@ export function ProductsTable({
                   </span>
                   {product.min_stock != null && product.min_stock > 0 || product.max_stock != null ? (
                     <span
-                      className={`mt-0.5 text-[11px] ${
+                      className={`mt-0.5 text-xs ${
                         isOutOfStock(product)
                           ? "text-rose-400"
                           : isLowStock(product)
@@ -596,23 +594,23 @@ export function ProductsTable({
                   ) : null}
                 </div>
               </td>
-              <td className="px-6 py-4">
+              <td className="px-6 py-4.5">
                 {product.is_active ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     {tableDictionary.statusActive}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
                     <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                     {tableDictionary.statusInactive}
                   </span>
                 )}
               </td>
-              <td className="px-6 py-4 text-right">
+              <td className="px-6 py-4.5 text-right">
                 <div className="flex items-center justify-end gap-2">
                   <button
-                    className="rounded-lg p-2 text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-lg p-2.5 text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={tableDictionary.barcodeAction}
                     disabled={!product.barcode && !product.sku}
                     onClick={() => setPreviewSku(product.barcode ?? product.sku ?? null)}
@@ -622,7 +620,7 @@ export function ProductsTable({
                     <Barcode className="h-4 w-4" />
                   </button>
                   <button
-                    className="rounded-lg p-2 text-violet-700 transition hover:bg-violet-50"
+                    className="rounded-lg p-2.5 text-violet-700 transition hover:bg-violet-50"
                     aria-label={tableDictionary.editAction}
                     onClick={() => onEdit(product)}
                     title={tableDictionary.editAction}
@@ -631,7 +629,7 @@ export function ProductsTable({
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
-                    className="rounded-lg p-2 text-rose-600 transition hover:bg-rose-50"
+                    className="rounded-lg p-2.5 text-rose-600 transition hover:bg-rose-50"
                     aria-label={tableDictionary.deleteAction}
                     onClick={() => setConfirmDeleteIds([product.id])}
                     title={tableDictionary.deleteAction}

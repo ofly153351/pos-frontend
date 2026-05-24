@@ -29,9 +29,7 @@ type ProductStockStatus = "all" | "active" | "inactive" | "low_stock" | "out_of_
 function isLowStockProduct(product: Product) {
   const stock = product.total_stock ?? 0;
   if (stock <= 0) return false;
-  if (product.max_stock != null && stock < product.max_stock / 2) return true;
-  if (product.min_stock != null && product.min_stock > 0 && stock <= product.min_stock) return true;
-  return (product.min_stock == null || product.min_stock === 0) && product.max_stock == null && stock > 0 && stock <= 10;
+  return product.min_stock != null && stock <= product.min_stock;
 }
 
 const DEFAULT_CATEGORIES_DICT: CategoriesDictionary = {
@@ -272,12 +270,11 @@ export function StockManager({
     if (selectedStockStatus === "active" && !product.is_active) return false;
     if (selectedStockStatus === "inactive" && product.is_active) return false;
     if (selectedStockStatus === "low_stock" && !isLowStockProduct(product)) return false;
-    if (selectedStockStatus === "out_of_stock" && (product.total_stock ?? 0) > 0) return false;
+    if (selectedStockStatus === "out_of_stock" && (product.total_stock ?? 0) !== 0) return false;
     if (keyword) return product.name.toLowerCase().includes(keyword) || (product.sku ?? "").toLowerCase().includes(keyword);
     return true;
   });
 
-  const lowStockCount = filteredProducts.filter(isLowStockProduct).length;
   const isCategoriesView = initialSection === "categories";
 
   async function reloadProductsPage() {
@@ -361,7 +358,7 @@ export function StockManager({
   }
 
   return (
-    <div>
+    <div className="w-full xl:px-2 2xl:px-4">
       {isCategoriesView ? (
         <CatalogSetupSection
           activeLabel={dictionary.form.activeLabel}
@@ -381,7 +378,6 @@ export function StockManager({
           filteredProducts={filteredProducts}
           isPending={isPending || isProductsFetching}
           loadingLabel={dictionary.loading}
-          lowStockCount={lowStockCount}
           managementDictionary={managementDictionary}
           onPageChange={setProductPage}
           onPageSizeChange={(size) => {
@@ -402,7 +398,6 @@ export function StockManager({
           paginationPageSize={productPageSize}
           paginationTotalItems={productTotal}
           paginationTotalPages={productTotalPages}
-          productTypesCount={productTypes.length}
           productTypeFilter={selectedProductTypeId}
           productTypes={productTypes}
           productUnitFilter={selectedProductUnitId}

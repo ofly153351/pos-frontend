@@ -1276,21 +1276,21 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     <div className="flex flex-col">
                       <span
                         className={`inline-flex items-center gap-1.5 text-sm font-semibold ${
-                          (wp.product_quantity ?? wp.quantity) <= 0
+                          (wp.product_quantity ?? wp.quantity) === 0
                             ? "text-rose-700"
-                            : wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock
+                            : wp.product_min_stock != null && wp.quantity > 0 && wp.quantity <= wp.product_min_stock
                               ? "text-amber-700"
                               : "text-slate-900"
                         }`}
                       >
-                        {(wp.product_quantity ?? wp.quantity) <= 0 ? (
+                        {(wp.product_quantity ?? wp.quantity) === 0 ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
                             <X className="h-3.5 w-3.5" />
                             {dictionary.outOfStockLabel}
                           </span>
                         ) : (
                           <>
-                            {wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock ? (
+                            {wp.product_min_stock != null && wp.quantity > 0 && wp.quantity <= wp.product_min_stock ? (
                               <AlertTriangle
                                 aria-label={dictionary.lowStockLabel}
                                 className="h-4 w-4 text-amber-500"
@@ -1308,15 +1308,15 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       {(wp.product_min_stock != null && wp.product_min_stock > 0) || wp.product_max_stock != null ? (
                         <span
                           className={`mt-0.5 text-[11px] ${
-                            (wp.product_quantity ?? wp.quantity) <= 0
+                            (wp.product_quantity ?? wp.quantity) === 0
                               ? "text-rose-400"
-                              : wp.product_min_stock != null && wp.product_min_stock > 0 && wp.quantity <= wp.product_min_stock
+                              : wp.product_min_stock != null && wp.quantity > 0 && wp.quantity <= wp.product_min_stock
                                 ? "text-amber-400"
                                 : "text-slate-400"
                           }`}
                         >
-                          {wp.product_min_stock != null && wp.product_min_stock > 0 ? `Min ${wp.product_min_stock}` : ""}
-                          {wp.product_min_stock != null && wp.product_min_stock > 0 && wp.product_max_stock != null ? " / " : ""}
+                          {wp.product_min_stock != null ? `Min ${wp.product_min_stock}` : ""}
+                          {wp.product_min_stock != null && wp.product_max_stock != null ? " / " : ""}
                           {wp.product_max_stock != null ? `Max ${wp.product_max_stock}` : ""}
                         </span>
                       ) : null}

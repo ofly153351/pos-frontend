@@ -68,7 +68,6 @@ type SalesManagerProps = {
 };
 
 const productViewStorageKey = "pos-sales-product-view";
-const applyVatStorageKey = "pos-sales-apply-vat";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -254,24 +253,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   );
   const [isAmountNumpadOpen, setIsAmountNumpadOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
-  const [applyVat, setApplyVat] = useState<boolean>(() => {
-    try {
-      const stored = localStorage.getItem(applyVatStorageKey);
-      return stored === null ? true : stored === "true";
-    } catch {
-      return true;
-    }
-  });
+  const [applyVat, setApplyVat] = useState(false);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(applyVatStorageKey, String(applyVat));
-    } catch {
-      /* ignore */
-    }
-  }, [applyVat]);
   const [discountEditorProductId, setDiscountEditorProductId] = useState<
     string | null
   >(null);
@@ -650,7 +634,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setBillDiscount("");
     setNote("");
     setPaidAmount("");
-    setApplyVat(true);
+    setApplyVat(false);
     setIsActionsMenuOpen(false);
     setIsCheckoutSummaryOpen(false);
     setDiscountEditorProductId(null);
@@ -1290,7 +1274,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         : bill.bill_discount_amount > 0 ? String(bill.bill_discount_amount) : "",
     );
     setBillDiscountType(bill.bill_discount_type ?? "amount");
-    setApplyVat(bill.applyVat ?? true);
+    setApplyVat(bill.applyVat ?? false);
     void deleteParkedBill(bill.id);
     setRestoreConfirmBill(null);
     setIsRestoreDrawerOpen(false);
