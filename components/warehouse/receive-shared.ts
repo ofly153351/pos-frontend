@@ -248,8 +248,10 @@ export function ensureArray<T>(value: T[] | null | undefined): T[] {
 export function normalizeGoodsReceiptDraft(receipt: GoodsReceiptDraft): GoodsReceiptDraft {
   return {
     ...receipt,
+    attachments: ensureArray(receipt.attachments),
     audits: ensureArray(receipt.audits),
     items: ensureArray(receipt.items),
+    pending_attachments: ensureArray(receipt.pending_attachments),
     stock_preview: ensureArray(receipt.stock_preview),
   };
 }

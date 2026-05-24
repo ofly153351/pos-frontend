@@ -13,6 +13,7 @@ export type PendingAttachment = {
   id: string;
   file: File;
   isImage: boolean;
+  isPdf: boolean;
 };
 
 export type ReceiveStep3Props = {
@@ -56,16 +57,28 @@ export function ReceiveStep3({
   onRemovePendingAttachment,
   onBack,
 }: ReceiveStep3Props) {
-  const [previewAttachment, setPreviewAttachment] = useState<PendingAttachment | null>(null);
+  type PreviewTarget = { name: string; url: string; isImage: boolean; isPdf: boolean; isBlobOwned: boolean };
+  const [preview, setPreview] = useState<PreviewTarget | null>(null);
+
+  function openPendingPreview(attachment: PendingAttachment) {
+    const url = URL.createObjectURL(attachment.file);
+    setPreview({ name: attachment.file.name, url, isImage: attachment.isImage, isPdf: attachment.isPdf, isBlobOwned: true });
+  }
+
+function closePreview() {
+    if (preview?.isBlobOwned) URL.revokeObjectURL(preview.url);
+    setPreview(null);
+  }
 
   useEffect(() => {
-    if (!previewAttachment) return;
+    if (!preview) return;
     function onEsc(event: KeyboardEvent) {
-      if (event.key === "Escape") setPreviewAttachment(null);
+      if (event.key === "Escape") closePreview();
     }
     window.addEventListener("keydown", onEsc);
     return () => window.removeEventListener("keydown", onEsc);
-  }, [previewAttachment]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview]);
 
   return (
     <section className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
@@ -239,12 +252,40 @@ export function ReceiveStep3({
           </div>
         ) : null}
 
+        {/* Confirmed attachments (all files, not just last one) */}
         <div className="mt-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-3 text-sm text-slate-600">
           <p className="font-semibold text-slate-900">{dictionary.labelAttachmentUploaded}</p>
-          <p className="mt-1 text-xs text-slate-500">{receipt.attachment_name ?? "-"}</p>
-          <p className="mt-1 text-xs text-slate-500">{formatFileSize(receipt.attachment_size)}</p>
+          {receipt.attachments.length ? (
+            <ul className="mt-2 space-y-2">
+              {receipt.attachments.map((a) => {
+                const isImg = a.mime_type.startsWith("image/");
+                const isPdf = a.mime_type === "application/pdf";
+                return (
+                  <li className="flex flex-wrap items-center gap-2" key={a.id}>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium text-slate-900">{a.name}</p>
+                      <p className="text-xs text-slate-500">{formatFileSize(a.size)}</p>
+                    </div>
+                    {(isImg || isPdf) && a.url ? (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
+                        onClick={() => setPreview({ name: a.name, url: a.url, isImage: isImg, isPdf, isBlobOwned: false })}
+                        type="button"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        {dictionary.actionPreviewAttachment}
+                      </button>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="mt-1 text-xs text-slate-500">-</p>
+          )}
         </div>
 
+        {/* Pending (local queue — will be uploaded on confirm) */}
         <div className="mt-3 rounded-2xl border border-violet-100 bg-white p-3">
           <p className="text-sm font-semibold text-slate-900">{dictionary.labelAttachmentPending}</p>
           {!pendingAttachments.length ? (
@@ -262,18 +303,18 @@ export function ReceiveStep3({
                       {attachment.file.type || dictionary.labelAttachmentUnknownType} • {formatFileSize(attachment.file.size)}
                     </p>
                   </div>
-                  {!isView ? (
-                    <div className="flex items-center gap-2">
-                      {attachment.isImage ? (
-                        <button
-                          className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
-                          onClick={() => setPreviewAttachment(attachment)}
-                          type="button"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          {dictionary.actionPreviewAttachment}
-                        </button>
-                      ) : null}
+                  <div className="flex items-center gap-2">
+                    {(attachment.isImage || attachment.isPdf) ? (
+                      <button
+                        className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
+                        onClick={() => openPendingPreview(attachment)}
+                        type="button"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        {dictionary.actionPreviewAttachment}
+                      </button>
+                    ) : null}
+                    {!isView ? (
                       <button
                         className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                         onClick={() => onRemovePendingAttachment(attachment.id)}
@@ -282,8 +323,8 @@ export function ReceiveStep3({
                         <Trash2 className="h-3.5 w-3.5" />
                         {dictionary.actionRemoveAttachment}
                       </button>
-                    </div>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -329,32 +370,40 @@ export function ReceiveStep3({
         </div>
       ) : null}
 
-      {previewAttachment ? (
+      {preview ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4"
-          onClick={() => setPreviewAttachment(null)}
+          onClick={closePreview}
           role="presentation"
         >
           <div
-            className="w-full max-w-3xl rounded-2xl bg-white p-4"
+            className="flex w-full max-w-4xl flex-col rounded-2xl bg-white p-4"
             onClick={(event) => event.stopPropagation()}
             role="presentation"
           >
             <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="truncate text-sm font-semibold text-slate-900">{previewAttachment.file.name}</p>
+              <p className="truncate text-sm font-semibold text-slate-900">{preview.name}</p>
               <button
                 className="rounded-lg border border-violet-200 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50"
-                onClick={() => setPreviewAttachment(null)}
+                onClick={closePreview}
                 type="button"
               >
                 {dictionary.actionClose}
               </button>
             </div>
-            <img
-              alt={previewAttachment.file.name}
-              className="max-h-[70vh] w-full rounded-xl object-contain"
-              src={URL.createObjectURL(previewAttachment.file)}
-            />
+            {preview.isImage ? (
+              <img
+                alt={preview.name}
+                className="max-h-[75vh] w-full rounded-xl object-contain"
+                src={preview.url}
+              />
+            ) : preview.isPdf ? (
+              <iframe
+                className="h-[75vh] w-full rounded-xl border border-violet-100"
+                src={preview.url}
+                title={preview.name}
+              />
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -19,6 +19,25 @@ export type GoodsReceiptAttachment = {
   updated_at?: string;
 };
 
+export type GoodsReceiptAttachmentItem = {
+  id: string;
+  mime_type: string;
+  name: string;
+  size: number;
+  url: string;
+  uploaded_at: string;
+  uploaded_by: string;
+};
+
+export type GoodsReceiptPendingAttachmentItem = {
+  id: string;
+  mime_type: string;
+  name: string;
+  size: number;
+  created_at: string;
+  created_by: string;
+};
+
 export type GoodsReceiptItemDraft = {
   barcode?: string;
   created_at: string;
@@ -70,6 +89,8 @@ export type GoodsReceiptDraft = {
   attachment_name?: string;
   attachment_size?: number;
   attachment_url?: string;
+  attachments: GoodsReceiptAttachmentItem[];
+  pending_attachments: GoodsReceiptPendingAttachmentItem[];
   audits: GoodsReceiptAudit[];
   cancelled_at?: string | null;
   cancelled_by?: string;

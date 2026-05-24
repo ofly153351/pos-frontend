@@ -946,6 +946,7 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
         id: `${file.name}-${file.lastModified}-${file.size}-${crypto.randomUUID()}`,
         file,
         isImage: file.type.startsWith("image/"),
+        isPdf: file.type === "application/pdf",
       });
     }
 
