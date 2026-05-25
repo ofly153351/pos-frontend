@@ -30,6 +30,8 @@ export type CreateLocationInput = {
   warehouse_id: string;
   name: string;
   code?: string;
+  zone_name?: string;
+  floor_name?: string;
   is_sale_point?: boolean;
   is_active?: boolean;
 };
@@ -37,17 +39,31 @@ export type CreateLocationInput = {
 export type UpdateLocationInput = {
   name?: string;
   code?: string;
+  zone_name?: string;
+  floor_name?: string;
   is_sale_point?: boolean;
   is_active?: boolean;
 };
 
-export function listLocations(warehouseId?: string) {
-  const storeId = ensureStoreId();
-  const search = warehouseId
-    ? `?warehouse_id=${encodeURIComponent(warehouseId)}`
-    : "";
+export type ListLocationsOptions = {
+  warehouseId?: string;
+  zoneName?: string;
+  floorName?: string;
+  search?: string;
+};
 
-  return authorizedApiRequest<Location[]>(`/api/stores/${storeId}/locations${search}`);
+export function listLocations(warehouseIdOrOptions?: string | ListLocationsOptions) {
+  const storeId = ensureStoreId();
+  const params = new URLSearchParams();
+
+  if (typeof warehouseIdOrOptions === "string") {
+    if (warehouseIdOrOptions) params.set("warehouse_id", warehouseIdOrOptions);
+  } else if (warehouseIdOrOptions) {
+    if (warehouseIdOrOptions.warehouseId) params.set("warehouse_id", warehouseIdOrOptions.warehouseId);
+  }
+
+  const qs = params.toString();
+  return authorizedApiRequest<Location[]>(`/api/stores/${storeId}/locations${qs ? `?${qs}` : ""}`);
 }
 
 export function createLocation(input: CreateLocationInput) {
