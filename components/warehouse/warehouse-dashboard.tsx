@@ -84,26 +84,26 @@ function KpiCard({
   trend?: { value: number; label: string };
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-5 rounded-2xl border border-violet-100 bg-white p-6 shadow-sm md:p-7">
       <div className="flex items-start justify-between">
-        <span className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${iconBg}`}>
+        <span className={`inline-flex h-14 w-14 items-center justify-center rounded-xl ${iconBg}`}>
           {icon}
         </span>
         {badge ? (
-          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badge.color}`}>
+          <span className={`rounded-full px-3 py-1 text-base font-semibold ${badge.color}`}>
             {badge.text}
           </span>
         ) : null}
         {trend ? (
           <span
-            className={`flex items-center gap-1 text-xs font-semibold ${
+            className={`flex items-center gap-1.5 text-base font-semibold ${
               trend.value >= 0 ? "text-emerald-600" : "text-rose-600"
             }`}
           >
             {trend.value >= 0 ? (
-              <TrendingUp className="h-3.5 w-3.5" />
+              <TrendingUp className="h-5 w-5" />
             ) : (
-              <TrendingDown className="h-3.5 w-3.5" />
+              <TrendingDown className="h-5 w-5" />
             )}
             {trend.value >= 0 ? "+" : ""}
             {trend.value.toFixed(1)}%
@@ -111,10 +111,10 @@ function KpiCard({
         ) : null}
       </div>
       <div>
-        <p className="text-2xl font-black tracking-tight text-slate-800">{value}</p>
-        <p className="mt-0.5 text-sm font-medium text-slate-500">{label}</p>
-        {sub ? <p className="mt-1 text-xs text-slate-400">{sub}</p> : null}
-        {trend ? <p className="mt-1 text-xs text-slate-400">{trend.label}</p> : null}
+        <p className="text-4xl font-black leading-tight tracking-tight text-slate-800">{value}</p>
+        <p className="mt-1 text-lg font-semibold leading-relaxed text-slate-600">{label}</p>
+        {sub ? <p className="mt-1.5 text-base leading-relaxed text-slate-500">{sub}</p> : null}
+        {trend ? <p className="mt-1.5 text-base leading-relaxed text-slate-500">{trend.label}</p> : null}
       </div>
     </div>
   );
@@ -130,32 +130,32 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col rounded-xl border border-violet-100 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-violet-50 px-5 py-4">
-        <div className="font-semibold text-slate-800">{title}</div>
+    <div className="flex flex-col rounded-2xl border border-violet-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-violet-50 px-6 py-5 md:px-7 md:py-6">
+        <div className="text-xl font-semibold leading-relaxed text-slate-800">{title}</div>
         {action ? (
-          <span className="cursor-pointer text-xs font-medium text-violet-600 hover:text-violet-800">
+          <span className="cursor-pointer text-base font-semibold text-violet-600 hover:text-violet-800">
             {action}
           </span>
         ) : null}
       </div>
-      <div className="flex-1 p-5">{children}</div>
+      <div className="flex-1 p-6 md:p-7">{children}</div>
     </div>
   );
 }
 
 function ActivityIcon({ type }: { type: string }) {
   const map: Record<string, { bg: string; icon: React.ReactNode }> = {
-    IN: { bg: "bg-emerald-100", icon: <ArrowDownToLine className="h-4 w-4 text-emerald-600" /> },
-    TRANSFER: { bg: "bg-amber-100", icon: <ArrowLeftRight className="h-4 w-4 text-amber-600" /> },
-    OUT: { bg: "bg-rose-100", icon: <ArrowUpFromLine className="h-4 w-4 text-rose-600" /> },
-    SALE: { bg: "bg-rose-100", icon: <ArrowUpFromLine className="h-4 w-4 text-rose-600" /> },
-    ADJUST: { bg: "bg-blue-100", icon: <RefreshCw className="h-4 w-4 text-blue-600" /> },
-    RETURN: { bg: "bg-emerald-100", icon: <ArrowDownToLine className="h-4 w-4 text-emerald-600" /> },
+    IN: { bg: "bg-emerald-100", icon: <ArrowDownToLine className="h-5 w-5 text-emerald-600" /> },
+    TRANSFER: { bg: "bg-amber-100", icon: <ArrowLeftRight className="h-5 w-5 text-amber-600" /> },
+    OUT: { bg: "bg-rose-100", icon: <ArrowUpFromLine className="h-5 w-5 text-rose-600" /> },
+    SALE: { bg: "bg-rose-100", icon: <ArrowUpFromLine className="h-5 w-5 text-rose-600" /> },
+    ADJUST: { bg: "bg-blue-100", icon: <RefreshCw className="h-5 w-5 text-blue-600" /> },
+    RETURN: { bg: "bg-emerald-100", icon: <ArrowDownToLine className="h-5 w-5 text-emerald-600" /> },
   };
   const { bg, icon } = map[type] ?? map.ADJUST;
   return (
-    <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${bg}`}>
+    <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${bg}`}>
       {icon}
     </span>
   );
@@ -174,15 +174,15 @@ function ChartTooltip({ active, payload, label }: {
     total_value: "มูลค่ารวม",
   };
   return (
-    <div className="rounded-xl border border-violet-100 bg-white p-3 shadow-lg text-sm">
-      <p className="mb-2 font-semibold text-slate-700">{label}</p>
+    <div className="rounded-xl border border-violet-100 bg-white p-5 shadow-lg text-base">
+      <p className="mb-2 text-base font-semibold text-slate-700">{label}</p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center justify-between gap-6">
-          <span className="flex items-center gap-1.5 text-slate-500">
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: entry.color }} />
+          <span className="flex items-center gap-2 text-base text-slate-500">
+            <span className="inline-block h-3 w-3 rounded-full" style={{ background: entry.color }} />
             {labelMap[entry.name] ?? entry.name}
           </span>
-          <span className="font-semibold text-slate-800">{fmt(entry.value)}</span>
+          <span className="text-base font-semibold text-slate-800">{fmt(entry.value)}</span>
         </div>
       ))}
     </div>
@@ -197,24 +197,24 @@ function Skeleton({ className }: { className?: string }) {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div>
-        <Skeleton className="h-7 w-64" />
-        <Skeleton className="mt-2 h-4 w-96" />
+        <Skeleton className="h-9 w-80" />
+        <Skeleton className="mt-3 h-6 w-[32rem]" />
       </div>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-28" />
+          <Skeleton key={i} className="h-44 rounded-2xl" />
         ))}
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <Skeleton className="h-72 lg:col-span-3" />
-        <Skeleton className="h-72 lg:col-span-2" />
+      <div className="grid grid-cols-1 gap-7 lg:grid-cols-5">
+        <Skeleton className="h-96 lg:col-span-3" />
+        <Skeleton className="h-96 lg:col-span-2" />
       </div>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <Skeleton className="h-64 lg:col-span-5" />
-        <Skeleton className="h-64 lg:col-span-4" />
-        <Skeleton className="h-64 lg:col-span-3" />
+      <div className="grid grid-cols-1 gap-7 lg:grid-cols-12">
+        <Skeleton className="h-72 lg:col-span-5" />
+        <Skeleton className="h-72 lg:col-span-4" />
+        <Skeleton className="h-72 lg:col-span-3" />
       </div>
     </div>
   );
@@ -224,16 +224,16 @@ function DashboardSkeleton() {
 
 function KpiSection({ kpi }: { kpi: WarehouseKPI }) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
       <KpiCard
-        icon={<DollarSign className="h-5 w-5 text-violet-600" />}
+        icon={<DollarSign className="h-7 w-7 text-violet-600" />}
         iconBg="bg-violet-100"
         label="มูลค่าสินค้าคงเหลือ"
         value={fmt(kpi.stock_value)}
         trend={{ value: kpi.stock_value_change_pct, label: "เทียบ 30 วันก่อน" }}
       />
       <KpiCard
-        icon={<Package className="h-5 w-5 text-teal-600" />}
+        icon={<Package className="h-7 w-7 text-teal-600" />}
         iconBg="bg-teal-100"
         label="จำนวน SKU ทั้งหมด"
         value={`${kpi.total_skus.toLocaleString()} รายการ`}
@@ -244,21 +244,21 @@ function KpiSection({ kpi }: { kpi: WarehouseKPI }) {
         }
       />
       <KpiCard
-        icon={<ArrowDownToLine className="h-5 w-5 text-emerald-600" />}
+        icon={<ArrowDownToLine className="h-7 w-7 text-emerald-600" />}
         iconBg="bg-emerald-100"
         label="รับเข้าวันนี้"
         value={`${kpi.received_today_qty.toLocaleString()} รายการ`}
         sub={`มูลค่า ${fmt(kpi.received_today_value)}`}
       />
       <KpiCard
-        icon={<ArrowUpFromLine className="h-5 w-5 text-rose-600" />}
+        icon={<ArrowUpFromLine className="h-7 w-7 text-rose-600" />}
         iconBg="bg-rose-100"
         label="จ่ายออกวันนี้"
         value={`${kpi.issued_today_qty.toLocaleString()} รายการ`}
         sub={`มูลค่า ${fmt(kpi.issued_today_value)}`}
       />
       <KpiCard
-        icon={<ArrowLeftRight className="h-5 w-5 text-orange-600" />}
+        icon={<ArrowLeftRight className="h-7 w-7 text-orange-600" />}
         iconBg="bg-orange-100"
         label="โอนย้ายวันนี้"
         value={`${kpi.transferred_today_qty.toLocaleString()} รายการ`}
@@ -287,7 +287,7 @@ function MovementChartSection({
             <button
               key={p}
               onClick={() => onPeriodChange(p)}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
                 period === p ? "bg-violet-600 text-white" : "text-violet-600 hover:bg-violet-50"
               }`}
               type="button"
@@ -299,11 +299,11 @@ function MovementChartSection({
       }
     >
       {data.length === 0 ? (
-        <div className="flex h-52 items-center justify-center text-sm text-slate-400">
+        <div className="flex h-60 items-center justify-center text-base text-slate-400">
           ไม่มีข้อมูลการเคลื่อนไหวในช่วงนี้
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer width="100%" height={280}>
           <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0eaff" />
             <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
@@ -362,14 +362,14 @@ function LowStockSection({ alerts }: { alerts: LowStockAlert[] }) {
     <SectionCard
       title={
         <span className="flex items-center gap-2">
-          <Bell className="h-4 w-4 text-amber-500" />
+          <Bell className="h-5 w-5 text-amber-500" />
           แจ้งเตือน ({alerts.length})
         </span>
       }
       action="ดูทั้งหมด ›"
     >
       {alerts.length === 0 ? (
-        <p className="text-sm text-slate-400">ไม่มีสินค้าใกล้หมดสต็อก</p>
+        <p className="text-base text-slate-400">ไม่มีสินค้าใกล้หมดสต็อก</p>
       ) : (
         <div className="space-y-3">
           {alerts.map((item) => {
@@ -377,30 +377,30 @@ function LowStockSection({ alerts }: { alerts: LowStockAlert[] }) {
             return (
               <div
                 key={item.product_id}
-                className="flex items-center gap-3 rounded-lg border border-violet-50 bg-violet-50/30 px-3 py-2.5"
+                className="flex items-center gap-3 rounded-lg border border-violet-50 bg-violet-50/30 px-4 py-3"
               >
                 <span
-                  className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                  className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${
                     isCritical ? "bg-rose-100" : "bg-amber-100"
                   }`}
                 >
-                  <AlertTriangle className={`h-4 w-4 ${isCritical ? "text-rose-600" : "text-amber-600"}`} />
+                  <AlertTriangle className={`h-5 w-5 ${isCritical ? "text-rose-600" : "text-amber-600"}`} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-800">{item.name}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="truncate text-base font-semibold text-slate-800">{item.name}</p>
+                  <p className="text-sm text-slate-500">
                     คงเหลือ {item.total_stock} / {item.min_stock} {item.unit}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                    className={`rounded-full px-3 py-0.5 text-sm font-bold ${
                       isCritical ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
                     }`}
                   >
                     {isCritical ? "น้อยมาก" : "ใกล้หมด"}
                   </span>
-                  <button className="text-xs font-medium text-violet-600 hover:text-violet-800" type="button">
+                  <button className="text-sm font-medium text-violet-600 hover:text-violet-800" type="button">
                     เติมสต็อก
                   </button>
                 </div>
@@ -417,44 +417,44 @@ function TopSellersSection({ sellers }: { sellers: TopSeller[] }) {
   return (
     <SectionCard title="สินค้าขายดี (Top 5)" action="ดูรายงาน ›">
       {sellers.length === 0 ? (
-        <p className="text-sm text-slate-400">ไม่มีข้อมูลการขายในช่วงนี้</p>
+        <p className="text-base text-slate-400">ไม่มีข้อมูลการขายในช่วงนี้</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-base">
             <thead>
-              <tr className="border-b border-violet-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                <th className="pb-2 text-left">#</th>
-                <th className="pb-2 text-left">สินค้า</th>
-                <th className="pb-2 text-right">วันนี้</th>
-                <th className="pb-2 text-right">7 วัน</th>
-                <th className="pb-2 text-right">มูลค่า</th>
-                <th className="pb-2 text-right">Trend</th>
+              <tr className="border-b border-violet-50 text-sm font-semibold uppercase tracking-wide text-slate-400">
+                <th className="pb-3 text-left">#</th>
+                <th className="pb-3 text-left">สินค้า</th>
+                <th className="pb-3 text-right">วันนี้</th>
+                <th className="pb-3 text-right">7 วัน</th>
+                <th className="pb-3 text-right">มูลค่า</th>
+                <th className="pb-3 text-right">Trend</th>
               </tr>
             </thead>
             <tbody>
               {sellers.map((row) => (
                 <tr key={row.product_id} className="border-b border-violet-50/60 last:border-0">
-                  <td className="py-2.5 pr-2 font-bold text-violet-400">{row.rank}</td>
-                  <td className="py-2.5 font-medium text-slate-800">{row.name}</td>
-                  <td className="py-2.5 text-right text-slate-600">
+                  <td className="py-3 pr-2 font-bold text-violet-400">{row.rank}</td>
+                  <td className="py-3 font-medium text-slate-800">{row.name}</td>
+                  <td className="py-3 text-right text-slate-600">
                     {row.today_qty} {row.unit}
                   </td>
-                  <td className="py-2.5 text-right text-slate-500">
+                  <td className="py-3 text-right text-slate-500">
                     {row.week_qty} {row.unit}
                   </td>
-                  <td className="py-2.5 text-right font-semibold text-slate-700">
+                  <td className="py-3 text-right font-semibold text-slate-700">
                     {fmtFull(row.today_value)}
                   </td>
-                  <td className="py-2.5 text-right">
+                  <td className="py-3 text-right">
                     <span
-                      className={`flex items-center justify-end gap-0.5 text-xs font-bold ${
+                      className={`flex items-center justify-end gap-0.5 text-sm font-bold ${
                         row.trend_pct >= 0 ? "text-emerald-600" : "text-rose-600"
                       }`}
                     >
                       {row.trend_pct >= 0 ? (
-                        <TrendingUp className="h-3.5 w-3.5" />
+                        <TrendingUp className="h-4 w-4" />
                       ) : (
-                        <TrendingDown className="h-3.5 w-3.5" />
+                        <TrendingDown className="h-4 w-4" />
                       )}
                       {row.trend_pct >= 0 ? "+" : ""}
                       {row.trend_pct.toFixed(1)}%
@@ -476,7 +476,7 @@ function WarehouseDonutSection({ distribution }: { distribution: WarehouseDistri
     <SectionCard
       title={
         <span className="flex items-center gap-2">
-          <Warehouse className="h-4 w-4 text-violet-500" />
+          <Warehouse className="h-5 w-5 text-violet-500" />
           การกระจายสินค้าตามคลัง
         </span>
       }
@@ -484,13 +484,13 @@ function WarehouseDonutSection({ distribution }: { distribution: WarehouseDistri
     >
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <PieChart width={160} height={160}>
+          <PieChart width={180} height={180}>
             <Pie
               data={distribution.length > 0 ? distribution : [{ name: "ว่าง", total_value: 1 }]}
-              cx={75}
-              cy={75}
-              innerRadius={48}
-              outerRadius={72}
+              cx={85}
+              cy={85}
+              innerRadius={54}
+              outerRadius={80}
               paddingAngle={2}
               dataKey="total_value"
               strokeWidth={0}
@@ -502,18 +502,18 @@ function WarehouseDonutSection({ distribution }: { distribution: WarehouseDistri
             </Pie>
           </PieChart>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-lg font-black text-slate-800">{distribution.length}</p>
-            <p className="text-[10px] text-slate-500">คลัง</p>
+            <p className="text-xl font-black text-slate-800">{distribution.length}</p>
+            <p className="text-xs text-slate-500">คลัง</p>
           </div>
         </div>
 
         <div className="w-full space-y-2">
           {distribution.map((wh, i) => (
             <div key={wh.warehouse_id}>
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-1.5 text-slate-600">
                   <span
-                    className="inline-block h-2 w-2 rounded-full"
+                    className="inline-block h-3 w-3 rounded-full"
                     style={{ background: wh.total_value > 0 ? WAREHOUSE_COLORS[i % WAREHOUSE_COLORS.length] : "#d1d5db" }}
                   />
                   {wh.name}
@@ -522,7 +522,7 @@ function WarehouseDonutSection({ distribution }: { distribution: WarehouseDistri
                   {wh.total_value > 0 ? fmt(wh.total_value) : "—"}
                 </span>
               </div>
-              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-violet-100/50">
+              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-violet-100/50">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -543,19 +543,19 @@ function ActivitySection({ activity }: { activity: RecentActivity[] }) {
   return (
     <SectionCard title="กิจกรรมล่าสุด" action="ดูทั้งหมด ›">
       {activity.length === 0 ? (
-        <p className="text-sm text-slate-400">ยังไม่มีกิจกรรม</p>
+        <p className="text-base text-slate-400">ยังไม่มีกิจกรรม</p>
       ) : (
         <div className="space-y-3">
           {activity.slice(0, 8).map((item) => (
             <div key={item.id} className="flex items-start gap-3">
               <ActivityIcon type={item.type} />
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium leading-snug text-slate-700">{item.description}</p>
+                <p className="text-sm font-medium leading-snug text-slate-700">{item.description}</p>
                 {item.reference_id ? (
-                  <p className="mt-0.5 font-mono text-[10px] text-slate-400">{item.reference_id}</p>
+                  <p className="mt-0.5 font-mono text-xs text-slate-400">{item.reference_id}</p>
                 ) : null}
               </div>
-              <span className="shrink-0 text-[11px] text-slate-400">{item.time}</span>
+              <span className="shrink-0 text-xs text-slate-400">{item.time}</span>
             </div>
           ))}
         </div>
@@ -566,26 +566,26 @@ function ActivitySection({ activity }: { activity: RecentActivity[] }) {
 
 function SummaryBar({ kpi }: { kpi: WarehouseKPI }) {
   return (
-    <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-5 py-4">
-      <div className="flex flex-wrap items-center gap-6 text-sm">
+    <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-6 py-5">
+      <div className="flex flex-wrap items-center gap-6 text-base">
         <div className="flex items-center gap-2">
-          <PackageOpen className="h-4 w-4 text-violet-500" />
+          <PackageOpen className="h-5 w-5 text-violet-500" />
           <span className="text-slate-500">มูลค่ารวมทุกคลัง:</span>
           <span className="font-bold text-slate-800">{fmt(kpi.stock_value)}</span>
         </div>
-        <div className="h-4 w-px bg-violet-200" />
+        <div className="h-5 w-px bg-violet-200" />
         <div className="flex items-center gap-2">
           <span className="text-slate-500">รับเข้าวันนี้:</span>
           <span className="font-bold text-emerald-700">{fmt(kpi.received_today_value)}</span>
         </div>
-        <div className="h-4 w-px bg-violet-200" />
+        <div className="h-5 w-px bg-violet-200" />
         <div className="flex items-center gap-2">
           <span className="text-slate-500">จ่ายออกวันนี้:</span>
           <span className="font-bold text-rose-700">{fmt(kpi.issued_today_value)}</span>
         </div>
         {kpi.low_stock_count > 0 ? (
           <>
-            <div className="h-4 w-px bg-violet-200" />
+            <div className="h-5 w-px bg-violet-200" />
             <div className="flex items-center gap-2">
               <span className="text-slate-500">แจ้งเตือนที่ต้องดูแล:</span>
               <span className="font-bold text-amber-700">{kpi.low_stock_count} รายการ</span>
@@ -613,22 +613,22 @@ export function WarehouseDashboard() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-800">แดชบอร์ดคลังสินค้า</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-3xl font-black tracking-tight text-slate-800">แดชบอร์ดคลังสินค้า</h1>
+          <p className="mt-1.5 text-base text-slate-500">
             ภาพรวมการเคลื่อนไหวสินค้า สต็อกคงเหลือ และการแจ้งเตือน
           </p>
         </div>
         {!isLoading && (
           <button
             onClick={() => refetch()}
-            className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-medium text-violet-600 hover:bg-violet-50"
+            className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-4 py-2.5 text-sm font-medium text-violet-600 hover:bg-violet-50"
             type="button"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
+            <RefreshCw className="h-4 w-4" />
             รีเฟรช
           </button>
         )}
@@ -637,11 +637,11 @@ export function WarehouseDashboard() {
       {isLoading && <DashboardSkeleton />}
 
       {isError && (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-rose-100 bg-rose-50 py-12 text-center">
-          <p className="font-semibold text-rose-700">ไม่สามารถโหลดข้อมูลได้</p>
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-rose-100 bg-rose-50 py-16 text-center">
+          <p className="text-lg font-semibold text-rose-700">ไม่สามารถโหลดข้อมูลได้</p>
           <button
             onClick={() => refetch()}
-            className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-700"
+            className="rounded-lg bg-rose-600 px-5 py-2.5 text-base font-medium text-white hover:bg-rose-700"
             type="button"
           >
             ลองใหม่
@@ -683,8 +683,8 @@ export function WarehouseDashboard() {
       )}
 
       {isLoading && (
-        <div className="flex items-center justify-center gap-2 text-sm text-slate-400">
-          <Loader2 className="h-4 w-4 animate-spin" />
+        <div className="flex items-center justify-center gap-2 text-base text-slate-400">
+          <Loader2 className="h-5 w-5 animate-spin" />
           กำลังโหลด...
         </div>
       )}

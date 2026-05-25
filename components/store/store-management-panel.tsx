@@ -4,9 +4,9 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Building2,
+  Camera,
   Check,
   CreditCard,
-  Image,
   MapPin,
   Phone,
   Plus,
@@ -145,6 +145,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
   const [isCreatePending, startCreateTransition] = useTransition();
 
   const createModalRef = useRef<HTMLDivElement>(null);
+  const editLogoInputRef = useRef<HTMLInputElement>(null);
 
   // ── mount ──
   useEffect(() => { setHasMounted(true); }, []);
@@ -308,7 +309,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
   return (
     <div className="space-y-6">
       {/* ── Page header ── */}
-      <div className="rounded-[2rem] bg-gradient-to-br from-indigo-950 via-violet-800 to-purple-700 p-7 text-white shadow-[0_16px_48px_rgba(124,58,237,0.35)]">
+      <div className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">{dictionary.pageTitle}</p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">{dictionary.switchSectionTitle}</h1>
         <p className="mt-1.5 max-w-xl text-sm text-white/70">{dictionary.pageDescription}</p>
@@ -360,7 +361,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                   <button
                     className={`w-full rounded-2xl border px-4 py-3.5 text-left transition ${
                       isSelected
-                        ? "border-violet-500 bg-gradient-to-br from-violet-600 to-violet-700 shadow-[0_6px_20px_rgba(124,58,237,0.25)]"
+                        ? "border-violet-200 bg-white shadow-[0_6px_20px_rgba(124,58,237,0.12)] hover:border-violet-300 hover:bg-violet-50/60"
                         : "border-violet-100 bg-white hover:border-violet-200 hover:bg-violet-50/60"
                     }`}
                     key={store.id}
@@ -370,17 +371,17 @@ export function StoreManagementPanel({ dictionary }: Props) {
                     <div className="flex items-center gap-3">
                       <StoreAvatar logoUrl={store.logo_url ?? undefined} name={store.name ?? ""} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <p className={`truncate text-sm font-semibold ${isSelected ? "text-white" : "text-slate-800"}`}>
+                        <p className={`truncate text-sm font-semibold ${isSelected ? "text-slate-900" : "text-slate-800"}`}>
                           {store.name}
                         </p>
                         {isActive && (
-                          <span className={`mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium ${isSelected ? "text-emerald-300" : "text-emerald-600"}`}>
-                            <span className={`inline-block h-1.5 w-1.5 rounded-full ${isSelected ? "bg-emerald-300" : "bg-emerald-500"}`} />
+                          <span className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                             {dictionary.activeLabel}
                           </span>
                         )}
                       </div>
-                      {isSelected && <Check className="h-4 w-4 shrink-0 text-white" />}
+                      {isSelected && <Check className="h-4 w-4 shrink-0 text-violet-600" />}
                     </div>
                   </button>
                 );
@@ -412,18 +413,60 @@ export function StoreManagementPanel({ dictionary }: Props) {
             onSubmit={handleUpdateStore}
           >
             {/* Store identity header */}
-            <div className="mb-7 flex items-center gap-4">
-              <div className="relative">
-                <StoreAvatar logoUrl={editLogoPreviewUrl || currentStore.logo_url || undefined} name={editName} size="lg" />
-                {isEditLogoLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/70">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-300 border-t-violet-600" />
+            <div className="mb-8 overflow-hidden rounded-[1.75rem] border border-violet-100 bg-gradient-to-br from-white via-white to-violet-50/80 p-4 shadow-[0_10px_30px_rgba(124,58,237,0.08)] sm:p-5">
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-4">
+                  <div
+                    aria-label={dictionary.logoLabel}
+                    className="group relative shrink-0 cursor-pointer rounded-[1.35rem] border border-slate-200 bg-white p-1 shadow-[0_12px_28px_rgba(15,23,42,0.08)] transition hover:border-violet-300 hover:shadow-[0_14px_32px_rgba(124,58,237,0.16)] focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2"
+                    onClick={() => editLogoInputRef.current?.click()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        editLogoInputRef.current?.click();
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-[1.1rem] border border-slate-100 bg-white transition group-hover:border-violet-200 group-hover:bg-violet-50/40 sm:h-28 sm:w-28">
+                      {isEditLogoLoading ? (
+                        <span className="h-6 w-6 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
+                      ) : editLogoPreviewUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img alt={editName} className="h-full w-full object-cover" src={editLogoPreviewUrl} />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-violet-50 text-2xl font-bold text-violet-400 transition group-hover:bg-violet-100/70">
+                          {getInitials(editName)}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      aria-label={dictionary.logoLabel}
+                      className="absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center rounded-full border-4 border-white bg-violet-600 text-white shadow-sm transition hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:ring-offset-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        editLogoInputRef.current?.click();
+                      }}
+                      type="button"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </button>
                   </div>
-                )}
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">{editName || currentStore.name}</h2>
-                <p className="mt-0.5 text-sm text-violet-500">{dictionary.updateStoreTitle}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">{dictionary.logoSection}</p>
+                    <h2 className="mt-1 truncate text-xl font-semibold text-slate-900 sm:text-2xl">{editName || currentStore.name}</h2>
+                    <p className="mt-1 text-sm text-violet-500">{dictionary.updateStoreTitle}</p>
+                  </div>
+                </div>
+
+                <input
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => setEditLogoFile(e.target.files?.[0] ?? null)}
+                  ref={editLogoInputRef}
+                  type="file"
+                />
               </div>
             </div>
 
@@ -468,43 +511,6 @@ export function StoreManagementPanel({ dictionary }: Props) {
                   />
                 </Field>
               </div>
-
-              {/* Logo */}
-              <div>
-                <SectionLabel icon={<Image className="h-3.5 w-3.5" />} label={dictionary.logoSection} />
-                <div className="flex items-start gap-4">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-violet-100 bg-violet-50">
-                    {isEditLogoLoading ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
-                    ) : editLogoPreviewUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img alt={editName} className="h-full w-full object-cover" src={editLogoPreviewUrl} />
-                    ) : (
-                      <span className="text-sm font-bold text-slate-400">{getInitials(editName)}</span>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <label className="block cursor-pointer rounded-lg border border-dashed border-violet-200 bg-violet-50/60 px-4 py-3 text-center text-sm text-violet-600 transition hover:bg-violet-100">
-                      <span>{dictionary.logoLabel}</span>
-                      <input
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={(e) => setEditLogoFile(e.target.files?.[0] ?? null)}
-                        type="file"
-                      />
-                    </label>
-                    {editLogoPreviewUrl && editLogoFile && (
-                      <button
-                        className="mt-1.5 w-full text-xs text-slate-400 hover:text-rose-500 transition"
-                        onClick={() => setEditLogoFile(null)}
-                        type="button"
-                      >
-                        {dictionary.noLogoLabel}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* Save */}
@@ -533,7 +539,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
       {isCreateModalOpen && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm smooth-fade"
+            className="fixed inset-0 z-40 cursor-pointer bg-slate-900/40 backdrop-blur-sm smooth-fade"
             onClick={() => setIsCreateModalOpen(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
