@@ -226,16 +226,22 @@ export function StorageLocationPage({ dictionary, locale }: { dictionary: Storag
   // ── Data ─────────────────────────────────────────────────────────────────────
   const warehousesQuery = useQuery({
     queryKey: ["warehouses"],
-    queryFn: async () => (await listWarehouses()).data ?? [],
+    queryFn: async () => {
+      const res = await listWarehouses();
+      return Array.isArray(res.data) ? res.data : [];
+    },
   });
 
   const locationsQuery = useQuery({
     queryKey: ["storage-locations", selectedWarehouseId],
-    queryFn: async () => (await listLocations({ warehouseId: selectedWarehouseId })).data ?? [],
+    queryFn: async () => {
+      const res = await listLocations({ warehouseId: selectedWarehouseId });
+      return Array.isArray(res.data) ? res.data : [];
+    },
     enabled: !!selectedWarehouseId,
   });
 
-  const warehouses  = warehousesQuery.data ?? [];
+  const warehouses   = warehousesQuery.data ?? [];
   const allLocations = locationsQuery.data ?? [];
 
   // auto-select first warehouse
