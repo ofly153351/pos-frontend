@@ -42,6 +42,7 @@ export default async function WorkspaceLayout({
         register: dictionary.stock.shell.register,
         searchPlaceholder: dictionary.stock.shell.searchPlaceholder,
         settings: dictionary.stock.shell.settings,
+        storageLocations: dictionary.stock.shell.storageLocations,
         storeLabel: dictionary.stock.shell.storeLabel,
         stockCategories: dictionary.stock.shell.stockCategories,
         stockLevels: dictionary.stock.shell.stockLevels,

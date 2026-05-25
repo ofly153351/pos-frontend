@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Boxes,
   ChevronDown,
@@ -11,10 +11,12 @@ import {
   FileText,
   LayoutDashboard,
   Layers3,
+  MapPin,
   PackagePlus,
   ReceiptText,
   Settings2,
   ShoppingCart,
+  Store,
   Tags,
   Users,
   Warehouse,
@@ -40,6 +42,7 @@ type UserWorkspaceSidebarProps = {
     receiveGoods: string;
     register: string;
     settings: string;
+    storageLocations: string;
     stockCategories: string;
     stockLevels: string;
     stockWarehouses: string;
@@ -77,6 +80,9 @@ export function UserWorkspaceSidebar({
   const documentsPendingHref = `/${locale}/documents/pending`;
   const purchasesBaseHref = `/${locale}/purchases`;
   const purchasesSuppliersHref = `/${locale}/purchases/suppliers`;
+  const settingsBaseHref = `/${locale}/settings`;
+  const storageLocationsHref = `/${locale}/settings/storage-locations`;
+  const isSettingsRoute = pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`);
   const isInventoryRoute =
     pathname === stockBaseHref ||
     pathname.startsWith(`${stockBaseHref}/`) ||
@@ -88,12 +94,15 @@ export function UserWorkspaceSidebar({
   const isPurchasingRoute =
     pathname === purchasesBaseHref ||
     pathname.startsWith(`${purchasesBaseHref}/`);
-  const [inventoryExpanded, setInventoryExpanded] = useState(isInventoryRoute);
-  const [documentsExpanded, setDocumentsExpanded] = useState(isDocumentsRoute);
-  const [purchasingExpanded, setPurchasingExpanded] = useState(isPurchasingRoute);
-  const wasInventoryRouteRef = useRef(isInventoryRoute);
-  const wasDocumentsRouteRef = useRef(isDocumentsRoute);
-  const wasPurchasingRouteRef = useRef(isPurchasingRoute);
+  const [manualInventoryExpanded, setManualInventoryExpanded] = useState(false);
+  const [manualDocumentsExpanded, setManualDocumentsExpanded] = useState(false);
+  const [manualPurchasingExpanded, setManualPurchasingExpanded] = useState(false);
+  const [manualSettingsExpanded, setManualSettingsExpanded] = useState(false);
+  const inventoryExpanded = !collapsed && (manualInventoryExpanded || isInventoryRoute);
+  const documentsExpanded = !collapsed && (manualDocumentsExpanded || isDocumentsRoute);
+  const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
+  const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
+  const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : "store-settings";
 
   useEffect(() => {
     let isMounted = true;
@@ -146,70 +155,6 @@ export function UserWorkspaceSidebar({
     };
   }, [shell.station]);
 
-  useEffect(() => {
-    if (collapsed) {
-      setInventoryExpanded(false);
-      setDocumentsExpanded(false);
-      setPurchasingExpanded(false);
-    }
-  }, [collapsed]);
-
-  useEffect(() => {
-    if (collapsed) {
-      wasInventoryRouteRef.current = isInventoryRoute;
-      return;
-    }
-
-    const wasInventoryRoute = wasInventoryRouteRef.current;
-
-    if (isInventoryRoute && !wasInventoryRoute) {
-      setInventoryExpanded(true);
-    }
-
-    if (!isInventoryRoute && wasInventoryRoute) {
-      setInventoryExpanded(false);
-    }
-
-    wasInventoryRouteRef.current = isInventoryRoute;
-  }, [collapsed, isInventoryRoute]);
-
-  useEffect(() => {
-    if (collapsed) {
-      wasDocumentsRouteRef.current = isDocumentsRoute;
-      return;
-    }
-
-    const wasDocumentsRoute = wasDocumentsRouteRef.current;
-
-    if (isDocumentsRoute && !wasDocumentsRoute) {
-      setDocumentsExpanded(true);
-    }
-
-    if (!isDocumentsRoute && wasDocumentsRoute) {
-      setDocumentsExpanded(false);
-    }
-
-    wasDocumentsRouteRef.current = isDocumentsRoute;
-  }, [collapsed, isDocumentsRoute]);
-
-  useEffect(() => {
-    if (collapsed) {
-      wasPurchasingRouteRef.current = isPurchasingRoute;
-      return;
-    }
-
-    const wasPurchasingRoute = wasPurchasingRouteRef.current;
-
-    if (isPurchasingRoute && !wasPurchasingRoute) {
-      setPurchasingExpanded(true);
-    }
-
-    if (!isPurchasingRoute && wasPurchasingRoute) {
-      setPurchasingExpanded(false);
-    }
-
-    wasPurchasingRouteRef.current = isPurchasingRoute;
-  }, [collapsed, isPurchasingRoute]);
 
   const navItems = [
     {
@@ -219,7 +164,6 @@ export function UserWorkspaceSidebar({
     },
     { href: `/${locale}/sales`, key: "register", label: labels.register },
     { href: `/${locale}/customers`, key: "customers", label: labels.customers },
-    { href: `/${locale}/settings`, key: "settings", label: labels.settings },
   ];
   const [topNavItems, trailingNavItems] = [navItems.slice(0, 2), navItems.slice(2)];
 
@@ -398,7 +342,7 @@ export function UserWorkspaceSidebar({
                     ? "text-white hover:bg-white/10"
                     : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
                 }`}
-                onClick={() => setInventoryExpanded((current) => !current)}
+                onClick={() => setManualInventoryExpanded((current) => !current)}
                 type="button"
               >
                 <ChevronDown
@@ -495,7 +439,7 @@ export function UserWorkspaceSidebar({
                     ? "text-white hover:bg-white/10"
                     : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
                 }`}
-                onClick={() => setPurchasingExpanded((current) => !current)}
+                onClick={() => setManualPurchasingExpanded((current) => !current)}
                 type="button"
               >
                 <ChevronDown
@@ -591,7 +535,7 @@ export function UserWorkspaceSidebar({
                     ? "text-white hover:bg-white/10"
                     : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
                 }`}
-                onClick={() => setDocumentsExpanded((current) => !current)}
+                onClick={() => setManualDocumentsExpanded((current) => !current)}
                 type="button"
               >
                 <ChevronDown
@@ -674,6 +618,95 @@ export function UserWorkspaceSidebar({
             </Link>
           );
         })}
+
+        {/* Settings section */}
+        <div className="space-y-1">
+          <div
+            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
+              isSettingsRoute
+                ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
+                : "text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
+            } ${collapsed ? "justify-center px-2" : ""}`}
+          >
+            <Link
+              className={`flex min-w-0 flex-1 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
+              href={settingsBaseHref}
+            >
+              <span
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+                  isSettingsRoute ? "bg-white/15 text-white" : "bg-violet-900/60 text-violet-300"
+                }`}
+              >
+                <Settings2 className="h-4 w-4" />
+              </span>
+              {!collapsed ? <span className="truncate">{labels.settings}</span> : null}
+            </Link>
+            {!collapsed ? (
+              <button
+                aria-expanded={settingsExpanded}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                  isSettingsRoute
+                    ? "text-white hover:bg-white/10"
+                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
+                }`}
+                onClick={() => setManualSettingsExpanded((v) => !v)}
+                type="button"
+              >
+                <ChevronDown
+                  aria-hidden="true"
+                  className={`h-4 w-4 transition-transform duration-200 ${settingsExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+            ) : null}
+          </div>
+
+          {!collapsed ? (
+            <div
+              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
+                settingsExpanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+              }`}
+            >
+              <div className="min-h-0">
+                <div className="space-y-1 pt-1 pl-6">
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      activeSettingsKey === "store-settings"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
+                    }`}
+                    href={settingsBaseHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activeSettingsKey === "store-settings" ? "bg-violet-700 text-violet-200" : "bg-violet-900/60 text-violet-400"
+                      }`}
+                    >
+                      <Store className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.settings}</span>
+                  </Link>
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      activeSettingsKey === "storage-locations"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
+                    }`}
+                    href={storageLocationsHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activeSettingsKey === "storage-locations" ? "bg-violet-700 text-violet-200" : "bg-violet-900/60 text-violet-400"
+                      }`}
+                    >
+                      <MapPin className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.storageLocations}</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </nav>
 
       <div className="mt-auto">

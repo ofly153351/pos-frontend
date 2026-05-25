@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 
-import { CashierModal } from "@/components/sales/cashier-modal";
 import { UserWorkspaceSidebar } from "@/components/navigation/user-workspace-sidebar";
 import { UserWorkspaceTopbar } from "@/components/navigation/user-workspace-topbar";
 import type { NavLabels } from "@/components/navigation/nav-config";
 import type { SalesDictionary } from "@/components/sales/types";
 import type { Locale } from "@/lib/locale-config";
+
+const CashierModal = dynamic(() =>
+  import("@/components/sales/cashier-modal").then((mod) => mod.CashierModal),
+);
 
 type UserWorkspaceLayoutProps = {
   children: React.ReactNode;
@@ -30,6 +34,7 @@ type UserWorkspaceLayoutProps = {
     register: string;
     searchPlaceholder: string;
     settings: string;
+    storageLocations: string;
     storeLabel: string;
     stockCategories: string;
     stockLevels: string;
@@ -68,7 +73,11 @@ export function UserWorkspaceLayout({
   const [isCashierOpen, setIsCashierOpen] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem("pos-cashier-open") === "1") setIsCashierOpen(true);
+    const storedCashierOpen = localStorage.getItem("pos-cashier-open") === "1";
+    if (!storedCashierOpen) return;
+
+    const frame = requestAnimationFrame(() => setIsCashierOpen(true));
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   function openCashier() {
@@ -130,6 +139,7 @@ export function UserWorkspaceLayout({
           purchaseOrders: shell.purchaseOrders,
           register: shell.register,
           settings: shell.settings,
+          storageLocations: shell.storageLocations,
           stockCategories: shell.stockCategories,
           stockWarehouses: shell.stockWarehouses,
           stockLevels: shell.stockLevels,

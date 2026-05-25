@@ -519,6 +519,7 @@
       "receiveGoods": "Receive ",
       "transactions": "Transactions",
       "settings": "Store Settings",
+      "storageLocations": "Storage Locations",
       "completeSale": "Complete Sale",
       "searchPlaceholder": "Search Barcode or Name..."
     },
