@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import { ChevronLeft, ChevronRight, LayoutGrid, List, Search } from "lucide-react";
 
 const PAGE_SIZE_GRID = 20;
@@ -59,13 +60,11 @@ export function ProductBrowser({
 
   const pageSize = productView === "grid" ? PAGE_SIZE_GRID : PAGE_SIZE_LIST;
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
   const pagedProducts = useMemo(
-    () => products.slice((page - 1) * pageSize, page * pageSize),
-    [products, page, pageSize],
+    () => products.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [products, currentPage, pageSize],
   );
-
-  // Reset to page 1 when filters/view change
-  useMemo(() => { setPage(1); }, [products.length, productView, pageSize]);
 
   const suggestionProducts = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -142,11 +141,14 @@ export function ProductBrowser({
                     type="button"
                   >
                     {product.image_url ? (
-                      <img
+                      <Image
                         alt={product.name}
                         className="h-9 w-12 rounded-lg border border-violet-100 bg-white object-cover"
+                        height={36}
                         loading="lazy"
                         src={product.image_url}
+                        unoptimized
+                        width={48}
                       />
                     ) : (
                       <div className="flex h-9 w-12 items-center justify-center rounded-lg border border-violet-100 bg-violet-50 text-xs font-bold text-slate-500">
@@ -242,11 +244,14 @@ export function ProductBrowser({
                   </span>
                   {product.image_url ? (
                     <div className="relative">
-                      <img
+                      <Image
                         alt={product.name}
                         className="h-32 w-full rounded-lg border border-violet-100 bg-white object-contain shadow-sm"
+                        height={128}
                         loading="lazy"
                         src={product.image_url}
+                        unoptimized
+                        width={320}
                       />
                       <span className="absolute bottom-1.5 right-1.5 max-w-[85%] truncate rounded bg-slate-950/75 px-2 py-0.5 text-[10px] font-semibold text-white">
                         {product.name}
@@ -299,11 +304,14 @@ export function ProductBrowser({
                 tabIndex={0}
               >
                 {product.image_url ? (
-                  <img
+                  <Image
                     alt={product.name}
                     className="h-14 w-20 rounded-lg border border-violet-100 bg-white object-cover"
+                    height={56}
                     loading="lazy"
                     src={product.image_url}
+                    unoptimized
+                    width={80}
                   />
                 ) : (
                   <div className="flex h-14 w-20 items-center justify-center rounded-lg border border-violet-100 bg-violet-50 text-sm font-bold text-slate-500">
@@ -364,12 +372,12 @@ export function ProductBrowser({
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-end gap-2.5">
           <span className="text-sm text-slate-500">
-            {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, products.length)} / {products.length}
+            {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, products.length)} / {products.length}
           </span>
           <button
             className="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-violet-200 px-2 text-violet-500 transition hover:bg-violet-50 disabled:opacity-30"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
+            disabled={currentPage === 1}
+            onClick={() => setPage(currentPage - 1)}
             type="button"
           >
             <ChevronLeft className="h-4.5 w-4.5" />
@@ -387,7 +395,7 @@ export function ProductBrowser({
               ) : (
                 <button
                   key={p}
-                  className={`flex min-h-10 min-w-10 items-center justify-center rounded-lg px-2 text-sm font-semibold transition ${page === p ? "bg-violet-600 text-white" : "border border-violet-200 text-slate-600 hover:bg-violet-50"}`}
+                  className={`flex min-h-10 min-w-10 items-center justify-center rounded-lg px-2 text-sm font-semibold transition ${currentPage === p ? "bg-violet-600 text-white" : "border border-violet-200 text-slate-600 hover:bg-violet-50"}`}
                   onClick={() => setPage(p as number)}
                   type="button"
                 >
@@ -397,8 +405,8 @@ export function ProductBrowser({
             )}
           <button
             className="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-violet-200 px-2 text-violet-500 transition hover:bg-violet-50 disabled:opacity-30"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
+            disabled={currentPage === totalPages}
+            onClick={() => setPage(currentPage + 1)}
             type="button"
           >
             <ChevronRight className="h-4.5 w-4.5" />

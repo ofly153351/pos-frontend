@@ -35,6 +35,7 @@ type UserWorkspaceLayoutProps = {
     searchPlaceholder: string;
     settings: string;
     storageLocations: string;
+    receiptPayment: string;
     storeLabel: string;
     stockCategories: string;
     stockLevels: string;
@@ -140,6 +141,7 @@ export function UserWorkspaceLayout({
           register: shell.register,
           settings: shell.settings,
           storageLocations: shell.storageLocations,
+          receiptPayment: shell.receiptPayment,
           stockCategories: shell.stockCategories,
           stockWarehouses: shell.stockWarehouses,
           stockLevels: shell.stockLevels,

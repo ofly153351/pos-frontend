@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, CircleDollarSign, X } from "lucide-react";
 
 import { NAV_ENTRIES, isNavGroup } from "@/components/navigation/nav-config";
@@ -19,19 +19,13 @@ type SidebarDrawerProps = {
 export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: SidebarDrawerProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  // Auto-expand groups that contain the active route on first open
-  useEffect(() => {
-    setExpanded((prev) => {
-      const next = { ...prev };
-      NAV_ENTRIES.forEach((entry) => {
-        if (!isNavGroup(entry)) return;
-        const base = entry.href(locale);
-        const active = pathname === base || pathname.startsWith(`${base}/`);
-        if (active && !(entry.key in next)) next[entry.key] = true;
-      });
-      return next;
-    });
+  const activeExpanded = useMemo(() => {
+    return NAV_ENTRIES.reduce<Record<string, boolean>>((groups, entry) => {
+      if (!isNavGroup(entry)) return groups;
+      const base = entry.href(locale);
+      groups[entry.key] = pathname === base || pathname.startsWith(`${base}/`);
+      return groups;
+    }, {});
   }, [locale, pathname]);
 
   function label(key: string) {
@@ -83,7 +77,7 @@ export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: S
               if (isNavGroup(entry)) {
                 const base = entry.href(locale);
                 const groupActive = pathname === base || pathname.startsWith(`${base}/`);
-                const isExpanded = expanded[entry.key] ?? false;
+                const isExpanded = expanded[entry.key] ?? activeExpanded[entry.key] ?? false;
 
                 return (
                   <div key={entry.key}>

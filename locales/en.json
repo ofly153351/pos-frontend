@@ -521,7 +521,8 @@
       "settings": "Store Settings",
       "storageLocations": "Storage Locations",
       "completeSale": "Complete Sale",
-      "searchPlaceholder": "Search Barcode or Name..."
+      "searchPlaceholder": "Search Barcode or Name...",
+      "receiptPayment": "Receipt & Payment"
     },
     "stats": {
       "totalProductsLabel": "Total Products",
@@ -669,7 +670,6 @@
       "quantityHint": "Current stock on hand. Use whole numbers only.",
       "minStockLabel": "Min stock",
       "minStockHint": "Minimum stock level before reorder is needed.",
-
       "basePriceLabel": "Base price",
       "basePriceHint": "Standard selling price before any special pricing is applied.",
       "amountLabel": "Amount",
@@ -1180,6 +1180,19 @@
     "allZones": "All zones",
     "allFloors": "All floors",
     "unzoned": "No zone",
-    "unfloored": "No floor"
+    "unfloored": "No floor",
+    "addZoneButton": "Add zone",
+    "addFloorButton": "Add floor",
+    "renameZoneTitle": "Rename zone",
+    "renameFloorTitle": "Rename floor",
+    "newNameLabel": "New name",
+    "confirmDeleteZoneTitle": "Delete zone",
+    "confirmDeleteZoneBody": "Delete zone \"{name}\" and all locations in it? This cannot be undone.",
+    "confirmDeleteFloorTitle": "Delete floor",
+    "confirmDeleteFloorBody": "Delete floor \"{name}\" and all locations in it? This cannot be undone.",
+    "toastZoneRenamed": "Zone renamed",
+    "toastZoneDeleted": "Zone deleted",
+    "toastFloorRenamed": "Floor renamed",
+    "toastFloorDeleted": "Floor deleted"
   }
 }

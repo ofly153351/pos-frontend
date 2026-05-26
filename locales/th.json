@@ -521,7 +521,8 @@
       "settings": "ตั้งค่าร้านค้า",
       "storageLocations": "ตำแหน่งจัดเก็บ",
       "completeSale": "ปิดการขาย",
-      "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า..."
+      "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า...",
+      "receiptPayment": "ใบเสร็จและการชำระเงิน"
     },
     "stats": {
       "totalProductsLabel": "จำนวนสินค้าทั้งหมด",
@@ -669,7 +670,6 @@
       "quantityHint": "จำนวนสต็อกปัจจุบัน ให้กรอกเป็นเลขจำนวนเต็มเท่านั้น",
       "minStockLabel": "สต็อกขั้นต่ำ",
       "minStockHint": "ระดับสต็อกต่ำสุดที่ต้องสั่งเพิ่ม",
-
       "basePriceLabel": "ราคาปกติ",
       "basePriceHint": "ราคาขายมาตรฐานก่อนใช้ราคาพิเศษหรือโปรโมชัน",
       "amountLabel": "จำนวนเงิน",
@@ -1180,6 +1180,19 @@
     "allZones": "ทุกโซน",
     "allFloors": "ทุกชั้น",
     "unzoned": "ไม่ระบุโซน",
-    "unfloored": "ไม่ระบุชั้น"
+    "unfloored": "ไม่ระบุชั้น",
+    "addZoneButton": "เพิ่มโซน",
+    "addFloorButton": "เพิ่มชั้น",
+    "renameZoneTitle": "เปลี่ยนชื่อโซน",
+    "renameFloorTitle": "เปลี่ยนชื่อชั้น",
+    "newNameLabel": "ชื่อใหม่",
+    "confirmDeleteZoneTitle": "ลบโซน",
+    "confirmDeleteZoneBody": "ต้องการลบโซน \"{name}\" และที่เก็บทั้งหมดในโซนนี้ใช่หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้",
+    "confirmDeleteFloorTitle": "ลบชั้น",
+    "confirmDeleteFloorBody": "ต้องการลบชั้น \"{name}\" และที่เก็บทั้งหมดในชั้นนี้ใช่หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้",
+    "toastZoneRenamed": "เปลี่ยนชื่อโซนสำเร็จ",
+    "toastZoneDeleted": "ลบโซนสำเร็จ",
+    "toastFloorRenamed": "เปลี่ยนชื่อชั้นสำเร็จ",
+    "toastFloorDeleted": "ลบชั้นสำเร็จ"
   }
 }

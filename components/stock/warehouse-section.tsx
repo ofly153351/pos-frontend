@@ -695,7 +695,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const { data: managedLocations = [], refetch: refetchManagedLocations } = useQuery({
     enabled: !!locationsWarehouseId,
     queryKey: ["managed-locations", locationsWarehouseId],
-    queryFn: async () => (await listLocations(locationsWarehouseId!)).data ?? [],
+    queryFn: async () => (await listLocations({ warehouseId: locationsWarehouseId! })).data?.items ?? [],
   });
 
   function openLocationCreate() {

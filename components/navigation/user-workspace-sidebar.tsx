@@ -43,6 +43,7 @@ type UserWorkspaceSidebarProps = {
     register: string;
     settings: string;
     storageLocations: string;
+    receiptPayment: string;
     stockCategories: string;
     stockLevels: string;
     stockWarehouses: string;
@@ -82,6 +83,7 @@ export function UserWorkspaceSidebar({
   const purchasesSuppliersHref = `/${locale}/purchases/suppliers`;
   const settingsBaseHref = `/${locale}/settings`;
   const storageLocationsHref = `/${locale}/settings/storage-locations`;
+  const receiptPaymentHref = `/${locale}/settings/receipt-payment`;
   const isSettingsRoute = pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`);
   const isInventoryRoute =
     pathname === stockBaseHref ||
@@ -102,7 +104,7 @@ export function UserWorkspaceSidebar({
   const documentsExpanded = !collapsed && (manualDocumentsExpanded || isDocumentsRoute);
   const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
   const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
-  const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : "store-settings";
+  const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : pathname === receiptPaymentHref ? "receipt-payment" : "store-settings";
 
   useEffect(() => {
     let isMounted = true;
@@ -701,6 +703,23 @@ export function UserWorkspaceSidebar({
                       <MapPin className="h-3.5 w-3.5" />
                     </span>
                     <span>{labels.storageLocations}</span>
+                  </Link>
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      activeSettingsKey === "receipt-payment"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
+                    }`}
+                    href={receiptPaymentHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activeSettingsKey === "receipt-payment" ? "bg-violet-700 text-violet-200" : "bg-violet-900/60 text-violet-400"
+                      }`}
+                    >
+                      <ReceiptText className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.receiptPayment}</span>
                   </Link>
                 </div>
               </div>
