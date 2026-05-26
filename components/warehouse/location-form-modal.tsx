@@ -230,7 +230,7 @@ export function LocationFormModal({
                 role="switch"
                 aria-checked={form.is_active}
               >
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${form.is_active ? "translate-x-4" : "translate-x-0.5"}`} />
+                <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${form.is_active ? "translate-x-4" : "translate-x-0"}`} />
               </div>
               <span className="text-sm font-medium text-slate-700">{dictionary.formActive}</span>
             </label>
@@ -241,7 +241,7 @@ export function LocationFormModal({
                 role="switch"
                 aria-checked={form.is_sale_point}
               >
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${form.is_sale_point ? "translate-x-4" : "translate-x-0.5"}`} />
+                <span className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${form.is_sale_point ? "translate-x-4" : "translate-x-0"}`} />
               </div>
               <span className="text-sm font-medium text-slate-700">{dictionary.formSalePoint}</span>
             </label>
