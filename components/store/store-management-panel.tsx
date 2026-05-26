@@ -392,7 +392,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
           {/* Switch active store */}
           {selectedStoreId && !isActiveSelected && (
             <button
-              className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-700 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-violet-700 hover:to-violet-800 disabled:opacity-60"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-2xl bg-violet-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-60"
               disabled={isSwitchPending}
               onClick={switchStore}
               type="button"

@@ -1560,7 +1560,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
             {/* ── Checkout button ── */}
             <div className="shrink-0 border-t border-violet-50 px-4 pb-4 pt-3">
               <button
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={cart.length === 0 || isPending}
                 onClick={() => setIsCheckoutSummaryOpen(true)}
                 type="button"
@@ -2067,7 +2067,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
             </div>
 
             <button
-              className="mt-5 w-full rounded-lg bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-3 text-base font-semibold text-white transition hover:from-violet-700 hover:to-pink-600 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-5 w-full rounded-lg bg-violet-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={cart.length === 0 || isPending}
               onClick={() => {
                 setIsCheckoutSummaryOpen(false);

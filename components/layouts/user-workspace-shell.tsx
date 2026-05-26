@@ -68,7 +68,7 @@ export function UserWorkspaceShell({
                     key={item.key}
                     className={`rounded-lg px-4 py-3 text-sm font-semibold transition ${
                       isActive
-                        ? "bg-gradient-to-br from-violet-600 to-pink-500 text-white"
+                        ? "bg-violet-600 text-white"
                         : "border border-violet-200 text-violet-700 hover:bg-violet-50"
                     }`}
                     href={item.href}

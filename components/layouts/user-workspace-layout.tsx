@@ -125,7 +125,7 @@ export function UserWorkspaceLayout({
   }, [pathname, titles]);
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
+    <div className="h-screen overflow-hidden bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
       <UserWorkspaceSidebar
         collapsed={collapsed}
         labels={{
@@ -154,7 +154,7 @@ export function UserWorkspaceLayout({
       />
 
       <div
-        className={`flex min-h-screen flex-col transition-all duration-300 ${
+        className={`flex h-full flex-col transition-all duration-300 ${
           collapsed ? "ml-20" : "ml-64"
         }`}
       >
@@ -165,7 +165,7 @@ export function UserWorkspaceLayout({
           onToggle={() => setCollapsed((current) => !current)}
           title={title}
         />
-        <main className="flex-1 p-6 lg:p-8">{children}</main>
+        <main className="flex-1 min-h-0 overflow-auto p-6 lg:p-8 pretty-scroll">{children}</main>
       </div>
 
       {isCashierOpen ? (

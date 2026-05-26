@@ -77,6 +77,39 @@
   background-color: #94a3b8;
 }
 
+/* Ultra-minimal scrollbar for tight panels (file tree, sidebars) */
+.tree-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 200ms;
+}
+
+.tree-scroll:hover {
+  scrollbar-color: #ddd6fe transparent;
+}
+
+.tree-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+
+.tree-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tree-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 200ms;
+}
+
+.tree-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: #ddd6fe;
+}
+
+.tree-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: #a78bfa;
+}
+
 @keyframes smooth-fade-up {
   from {
     opacity: 0;

@@ -199,7 +199,7 @@ export function ReceiveStep1({
               {dictionary.actionCancel}
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-3 text-sm font-semibold text-white hover:from-violet-700 hover:to-pink-600 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
               disabled={isPending}
               onClick={() => onSave(stepLinks.step2)}
               type="button"

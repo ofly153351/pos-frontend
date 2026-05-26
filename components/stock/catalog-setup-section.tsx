@@ -426,7 +426,7 @@ export function CatalogSetupSection({
               </button>
             ) : null}
             <button
-              className={selectedIds.size > 0 ? "rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-violet-700 hover:to-pink-600 active:scale-95" : "ml-auto rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-violet-700 hover:to-pink-600 active:scale-95"}
+              className={selectedIds.size > 0 ? "rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-95" : "ml-auto rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 active:scale-95"}
               onClick={openAdd}
               type="button"
             >
@@ -474,7 +474,7 @@ export function CatalogSetupSection({
                           <p className="mt-1 text-sm text-slate-400">{d.emptyAdd}</p>
                         </div>
                         <button
-                          className="mt-1 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-2.5 text-base font-semibold text-white shadow-sm hover:from-violet-700 hover:to-pink-600"
+                          className="mt-1 rounded-xl bg-violet-600 px-5 py-2.5 text-base font-semibold text-white shadow-sm hover:bg-violet-700"
                           onClick={openAdd}
                           type="button"
                         >
@@ -897,7 +897,7 @@ export function CatalogSetupSection({
                 </button>
                 {importRows.length > 0 && (
                   <button
-                    className="rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:from-violet-700 hover:to-pink-600 disabled:opacity-50"
+                    className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
                     disabled={importing}
                     onClick={confirmImport}
                     type="button"

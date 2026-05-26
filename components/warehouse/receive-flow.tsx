@@ -266,7 +266,7 @@ export function ReceiveIndexPage({ dictionary, locale }: ReceivePageProps) {
               </Link>
             ) : null}
             <Link
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-3 text-sm font-semibold text-white hover:from-violet-700 hover:to-pink-600"
+              className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700"
               href={`/${locale}/warehouse/receive/new`}
             >
               <ReceiptText className="h-4 w-4" />
@@ -485,7 +485,7 @@ export function ReceiveNewPage({ dictionary, locale }: ReceivePageProps) {
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
-            className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 px-5 py-3 text-sm font-semibold text-white hover:from-violet-700 hover:to-pink-600 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60"
             disabled={isPending || warehousesQuery.isLoading}
             onClick={handleCreateDraft}
             type="button"
@@ -574,7 +574,7 @@ export function ReceiveWizard({ dictionary, locale, receiptId, step }: ReceiveWi
   const locationsQuery = useQuery({
     enabled: Boolean(selectedWarehouseId),
     queryKey: ["warehouse", "receive", "locations", selectedWarehouseId],
-    queryFn: async () => (await listLocations(selectedWarehouseId)).data ?? [],
+    queryFn: async () => (await listLocations({ warehouseId: selectedWarehouseId })).data?.items ?? [],
   });
 
   const receipt = receiptQuery.data;
