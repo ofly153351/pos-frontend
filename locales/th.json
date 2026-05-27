@@ -596,7 +596,15 @@
       "errBankAccountName": "กรุณากรอกชื่อบัญชี",
       "errCreditTerm": "กรุณาเลือกเงื่อนไขเครดิต",
       "errCustomDays": "กรุณาระบุจำนวนวัน (1-365)"
-    }
+    },
+    "filterAll": "ทั้งหมด",
+    "searchOrders": "ค้นหาเลขที่ใบสั่งซื้อ หรือ ชัพพลายเออร์...",
+    "itemsUnit": "รายการ",
+    "kpiTotalOrders": "ใบสั่งซื้อทั้งหมด",
+    "kpiTotalValue": "มูลค่ารวม",
+    "viewOrder": "ดูรายละเอียด",
+    "emptyFilteredOrders": "ไม่มีใบสั่งซื้อที่ตรงกับตัวกรอง",
+    "confirmCancelOrder": "ยืนยันยกเลิกใบสั่งซื้อนี้?"
   },
   "stock": {
     "title": "จัดการสต็อก",

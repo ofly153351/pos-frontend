@@ -98,7 +98,7 @@ export function UserProfileMenu({
         onClick={() => setIsProfileMenuOpen((current) => !current)}
         type="button"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-pink-500 text-xs font-bold text-white ring-2 ring-white shadow-sm">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-600 text-xs font-bold text-white ring-2 ring-white shadow-sm">
           {initials}
         </div>
         <div className="min-w-0 text-left">

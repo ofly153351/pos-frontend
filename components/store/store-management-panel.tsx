@@ -72,7 +72,7 @@ function getInitials(name: string) {
 function StoreAvatar({ name, logoUrl, size = "md" }: { name: string; logoUrl?: string; size?: "sm" | "md" | "lg" }) {
   const sizeClass = size === "sm" ? "h-9 w-9 text-xs" : size === "lg" ? "h-16 w-16 text-xl" : "h-11 w-11 text-sm";
   return (
-    <div className={`${sizeClass} shrink-0 overflow-hidden rounded-xl border border-white/30 bg-gradient-to-br from-violet-400 to-violet-600 flex items-center justify-center font-bold text-white shadow-sm`}>
+    <div className={`${sizeClass} shrink-0 overflow-hidden rounded-xl border border-white/30 bg-violet-600 flex items-center justify-center font-bold text-white shadow-sm`}>
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img alt={name} className="h-full w-full object-cover" src={logoUrl} />
@@ -413,7 +413,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
             onSubmit={handleUpdateStore}
           >
             {/* Store identity header */}
-            <div className="mb-8 overflow-hidden rounded-[1.75rem] border border-violet-100 bg-gradient-to-br from-white via-white to-violet-50/80 p-4 shadow-[0_10px_30px_rgba(124,58,237,0.08)] sm:p-5">
+            <div className="mb-8 overflow-hidden rounded-[1.75rem] border border-violet-100 bg-white p-4 shadow-[0_10px_30px_rgba(124,58,237,0.08)] sm:p-5">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
                   <div
@@ -550,7 +550,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
               tabIndex={-1}
             >
               {/* Modal header */}
-              <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-violet-700 to-purple-500 px-6 py-5 text-white">
+              <div className="flex items-center justify-between border-b border-slate-100 bg-violet-700 px-6 py-5 text-white">
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
                     <Plus className="h-5 w-5" />

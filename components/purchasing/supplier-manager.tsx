@@ -191,28 +191,38 @@ function supplierInitials(name: string) {
 }
 
 const AVATAR_COLORS = [
-  "from-violet-500 to-violet-700",
-  "from-blue-500 to-blue-700",
-  "from-emerald-500 to-emerald-700",
-  "from-rose-500 to-rose-700",
-  "from-amber-500 to-amber-600",
-  "from-cyan-500 to-cyan-700",
-  "from-indigo-500 to-indigo-700",
-  "from-pink-500 to-pink-700",
+  "bg-violet-600",
+  "bg-blue-600",
+  "bg-emerald-600",
+  "bg-rose-500",
+  "bg-amber-500",
+  "bg-cyan-600",
+  "bg-indigo-600",
+  "bg-pink-500",
 ];
 
-function avatarGradient(name: string) {
+function avatarColor(name: string) {
   return AVATAR_COLORS[(name.charCodeAt(0) + (name.charCodeAt(1) || 0)) % AVATAR_COLORS.length];
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function InitialsAvatar({ name, size }: { name: string; size: "md" | "lg" }) {
+function InitialsAvatar({ name, logoUrl, size }: { name: string; logoUrl?: string; size: "md" | "lg" }) {
   const sizeClass = size === "lg"
-    ? "h-16 w-16 text-xl rounded-2xl ring-2 ring-white/30 shadow-lg"
-    : "h-11 w-11 text-sm rounded-xl shadow-sm";
+    ? "h-16 w-16 rounded-2xl ring-2 ring-white/30 shadow-lg"
+    : "h-11 w-11 rounded-xl shadow-sm";
+  if (logoUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        alt={name}
+        className={`${sizeClass} shrink-0 object-cover`}
+        src={logoUrl}
+      />
+    );
+  }
   return (
-    <div className={`flex shrink-0 items-center justify-center bg-gradient-to-br ${avatarGradient(name)} text-white font-bold ${sizeClass}`}>
+    <div className={`flex shrink-0 items-center justify-center ${avatarColor(name)} text-white font-bold ${sizeClass}`}>
       {supplierInitials(name)}
     </div>
   );
@@ -283,7 +293,7 @@ function SupplierCard({
       }`}
     >
       <div className="flex items-center gap-3 px-4 py-3.5">
-        <InitialsAvatar name={supplier.name} size="md" />
+        <InitialsAvatar name={supplier.name} logoUrl={supplier.logo_url} size="md" />
         <div className="min-w-0 flex-1">
           <div className="mb-0.5 flex items-start justify-between gap-2">
             <p className={`line-clamp-1 text-sm font-bold leading-tight ${isSelected ? "text-violet-900" : "text-slate-800"}`}>
@@ -327,7 +337,7 @@ function KpiCard({
   return (
     <div className={`flex flex-1 flex-col gap-2.5 rounded-xl p-4 ${
       primary
-        ? "bg-gradient-to-br from-violet-600 to-pink-500 shadow-md shadow-violet-200/60"
+        ? "bg-violet-600 shadow-md shadow-violet-200/60"
         : alert
         ? "border border-red-200 bg-red-50"
         : "border border-violet-100 bg-violet-50/30"
@@ -408,10 +418,10 @@ function SupplierDetail({
 
   return (
     <div className="flex h-full flex-col overflow-y-auto pretty-scroll">
-      {/* ── Gradient hero header ── */}
-      <div className="shrink-0 bg-gradient-to-br from-violet-600 via-violet-600 to-pink-500 px-6 pt-5 pb-14">
+      {/* ── Hero header ── */}
+      <div className="shrink-0 bg-violet-600 px-6 pt-5 pb-14">
         <div className="flex items-start gap-4">
-          <InitialsAvatar name={supplier.name} size="lg" />
+          <InitialsAvatar name={supplier.name} logoUrl={supplier.logo_url} size="lg" />
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -651,7 +661,7 @@ function EditSupplierModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="smooth-fade-up w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(124,58,237,0.18)]">
           {/* Accent bar */}
-          <div className="h-1 bg-gradient-to-r from-violet-500 to-pink-500" />
+          <div className="h-1 bg-violet-600" />
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
             <h4 className="text-base font-bold text-slate-900">{dict.editSupplier}</h4>
             <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100">
@@ -709,7 +719,7 @@ function EditSupplierModal({
               type="button"
               onClick={handleSave}
               disabled={isPending}
-              className="flex-1 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 py-2.5 text-sm font-semibold text-white transition-all hover:from-violet-700 hover:to-pink-600 disabled:opacity-60"
+              className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white transition-all hover:bg-violet-700 disabled:opacity-60"
             >
               {isPending ? dict.saving : dict.save}
             </button>
@@ -829,7 +839,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
         <button
           type="button"
           onClick={() => setIsAddOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition-all hover:from-violet-700 hover:to-pink-600 hover:shadow-md"
+          className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition-all hover:bg-violet-700 hover:shadow-md"
         >
           <Plus className="h-4 w-4" />
           {ui.addSupplierBtn}
@@ -908,10 +918,10 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
           {!selectedSupplier ? (
             <div className="flex h-full flex-col items-center justify-center gap-5 text-center px-8">
               <div className="relative">
-                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-100 to-pink-100">
+                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-violet-100">
                   <Building2 className="h-11 w-11 text-violet-400" />
                 </div>
-                <div className="absolute -bottom-1.5 -right-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 shadow-lg shadow-violet-200">
+                <div className="absolute -bottom-1.5 -right-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-violet-600 shadow-lg shadow-violet-200">
                   <User className="h-4.5 w-4.5 text-white" />
                 </div>
               </div>

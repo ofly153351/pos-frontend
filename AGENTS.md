@@ -88,7 +88,6 @@ The design system uses a **violet/purple** palette throughout. Token file: `/the
 | Role | Value | Tailwind |
 |---|---|---|
 | Brand primary | `#7C3AED` | `violet-600` / `sky-600` (remapped) |
-| Brand gradient | violet → pink 135° | `bg-gradient-to-br from-violet-600 to-pink-500` |
 | Sidebar bg | `#1E1B4B` | `indigo-950` |
 | Page bg | violet-tinted white | `bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)]` |
 | Card | white + violet border | `bg-white border border-violet-100 shadow-sm rounded-xl` |
@@ -98,7 +97,7 @@ The design system uses a **violet/purple** palette throughout. Token file: `/the
 **Tailwind mapping:** `sky-*` utilities are remapped to violet in `globals.css` via `@theme inline`. All `sky-*` classes render as violet automatically.
 
 **Buttons:**
-- Primary / CTA: `bg-gradient-to-br from-violet-600 to-pink-500 text-white hover:from-violet-700 hover:to-pink-600`
+- Primary / CTA: `bg-violet-600 text-white hover:bg-violet-700`
 - Secondary / outline: `border border-violet-200 bg-white text-violet-700 hover:bg-violet-50`
 - Ghost / text: `text-violet-600 hover:bg-violet-50`
 - Danger: keep red (`bg-red-600`, `text-red-600`) — do NOT change
@@ -122,7 +121,7 @@ The design system uses a **violet/purple** palette throughout. Token file: `/the
 - Table/section wrappers: `bg-violet-50/40` or `bg-white border border-violet-100`
 - Progress/track bars: `bg-violet-100/50`
 - Neutral badges: `bg-violet-100 text-violet-700`
-- Avatar / initials: `bg-gradient-to-br from-violet-600 to-pink-500 text-white`
+- Avatar / initials: `bg-violet-600 text-white`
 
 **Status colors (keep as-is):** emerald = active/success, rose/red = error/danger, amber = warning
 

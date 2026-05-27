@@ -279,7 +279,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
     <div className="space-y-5">
 
       {/* ── Hero header ─────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-violet-700 to-purple-800 p-6 text-white shadow-lg shadow-violet-200/60">
+      <section className="relative overflow-hidden rounded-3xl bg-violet-700 p-6 text-white shadow-lg shadow-violet-200/60">
         <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-24 w-80 rounded-full bg-pink-500/10 blur-2xl" />
@@ -429,7 +429,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             href={`/${locale}/sales`}
             className="group flex items-center gap-3 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600 shadow-sm">
               <ShoppingCart className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0 flex-1">
@@ -443,7 +443,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             href={`/${locale}/stock`}
             className="group flex items-center gap-3 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 shadow-sm">
               <Package className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0 flex-1">

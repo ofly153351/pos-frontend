@@ -11,6 +11,15 @@ export type Supplier = {
   contact_person?: string;
   note?: string;
   is_active: boolean;
+  email?: string;
+  line_id?: string;
+  payment_method?: "promptpay" | "bank_account";
+  promptpay_number?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
+  credit_days?: number;
+  logo_url?: string;
   created_at: string;
   updated_at: string;
 };
@@ -31,6 +40,7 @@ export type CreateSupplierInput = {
   bank_account_number?: string;
   bank_account_name?: string;
   credit_days?: number;
+  logo?: File;
 };
 
 export type UpdateSupplierInput = {
@@ -41,6 +51,16 @@ export type UpdateSupplierInput = {
   contact_person?: string;
   note?: string;
   is_active?: boolean;
+  email?: string;
+  line_id?: string;
+  payment_method?: "promptpay" | "bank_account";
+  promptpay_number?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
+  credit_days?: number;
+  logo?: File;
+  remove_logo?: boolean;
 };
 
 function ensureStoreId() {
@@ -65,15 +85,38 @@ export function getSupplier(supplierId: string) {
   );
 }
 
+function supplierToFormData(input: CreateSupplierInput | UpdateSupplierInput): FormData {
+  const fd = new FormData();
+  const append = (key: string, value: string | number | boolean | File | undefined | null) => {
+    if (value === undefined || value === null) return;
+    if (value instanceof File) fd.append(key, value);
+    else fd.append(key, String(value));
+  };
+  append("name", (input as CreateSupplierInput).name);
+  append("phone", input.phone);
+  append("address", input.address);
+  append("tax_id", input.tax_id);
+  append("contact_person", input.contact_person);
+  append("note", input.note);
+  if (input.is_active !== undefined) append("is_active", input.is_active);
+  append("email", input.email);
+  append("line_id", input.line_id);
+  append("payment_method", input.payment_method);
+  append("promptpay_number", input.promptpay_number);
+  append("bank_name", input.bank_name);
+  append("bank_account_number", input.bank_account_number);
+  append("bank_account_name", input.bank_account_name);
+  if (input.credit_days !== undefined) append("credit_days", input.credit_days);
+  if (input.logo) append("logo", input.logo);
+  if ((input as UpdateSupplierInput).remove_logo) append("remove_logo", "true");
+  return fd;
+}
+
 export function createSupplier(input: CreateSupplierInput) {
   const currentStoreId = ensureStoreId();
   return authorizedApiRequest<Supplier>(
     `/api/stores/${currentStoreId}/suppliers`,
-    {
-      body: input,
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    },
+    { body: supplierToFormData(input), method: "POST" },
   );
 }
 
@@ -81,11 +124,7 @@ export function updateSupplier(supplierId: string, input: UpdateSupplierInput) {
   const currentStoreId = ensureStoreId();
   return authorizedApiRequest<Supplier>(
     `/api/stores/${currentStoreId}/suppliers/${supplierId}`,
-    {
-      body: input,
-      headers: { "Content-Type": "application/json" },
-      method: "PUT",
-    },
+    { body: supplierToFormData(input), method: "PUT" },
   );
 }
 

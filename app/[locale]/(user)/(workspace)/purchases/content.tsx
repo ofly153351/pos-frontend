@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { PurchaseForm } from "@/components/purchasing/purchase-form";
@@ -55,6 +54,15 @@ type PurchasingDictionary = {
   emptyOrders: string;
   requestFailed: string;
   tableActions: string;
+  filterAll: string;
+  searchOrders: string;
+  itemsUnit: string;
+  kpiTotalOrders: string;
+  kpiTotalValue: string;
+  viewOrder: string;
+  emptyFilteredOrders: string;
+  confirmCancelOrder: string;
+  noProducts?: string;
 };
 
 type PurchasesContentProps = {
@@ -62,7 +70,6 @@ type PurchasesContentProps = {
 };
 
 export function PurchasesContent({ dictionary }: PurchasesContentProps) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
 

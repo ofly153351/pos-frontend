@@ -596,7 +596,15 @@
       "errBankAccountName": "Please enter account name",
       "errCreditTerm": "Please select a credit term",
       "errCustomDays": "Please enter days (1-365)"
-    }
+    },
+    "filterAll": "All",
+    "searchOrders": "Search order no. or supplier...",
+    "itemsUnit": "items",
+    "kpiTotalOrders": "Total Orders",
+    "kpiTotalValue": "Total Value",
+    "viewOrder": "View Details",
+    "emptyFilteredOrders": "No orders match the filter",
+    "confirmCancelOrder": "Cancel this purchase order?"
   },
   "stock": {
     "title": "Stock management",

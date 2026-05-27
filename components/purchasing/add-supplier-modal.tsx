@@ -388,6 +388,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
         bank_account_number: form.paymentMethod === "bank_account" ? form.bankAccountNumber : undefined,
         bank_account_name: form.paymentMethod === "bank_account" ? form.bankAccountName.trim() : undefined,
         credit_days: creditDays,
+        logo: form.logoFile ?? undefined,
       });
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast.success(`${dict.successCreated} — ${form.companyName.trim()}`);
@@ -429,11 +430,11 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
           onClick={(e) => e.stopPropagation()}
         >
           {/* Accent bar */}
-          <div className="h-1.5 shrink-0 bg-gradient-to-r from-violet-500 via-violet-600 to-pink-500" />
+          <div className="h-1.5 shrink-0 bg-violet-600" />
 
           {/* ── Header ── */}
           <div className="flex shrink-0 items-start gap-4 border-b border-slate-100 bg-gradient-to-r from-violet-50/60 to-white px-6 py-5">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 shadow-lg shadow-violet-200/60">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-violet-600 shadow-lg shadow-violet-200/60">
               <ShoppingBag className="h-7 w-7 text-white" />
             </div>
             <div className="flex-1 min-w-0">
@@ -820,7 +821,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200/60 transition-all hover:from-violet-700 hover:to-pink-600 hover:shadow-lg disabled:opacity-60"
+              className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200/60 transition-all hover:bg-violet-700 hover:shadow-lg disabled:opacity-60"
             >
               {saving ? (
                 <>

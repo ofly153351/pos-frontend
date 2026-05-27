@@ -1372,16 +1372,16 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
                         readOnly
                         value={billDiscount}
                       />
-                      <div className="flex items-center gap-1 rounded-r-xl border border-violet-200 bg-gradient-to-b from-violet-100/60 to-violet-50/60 p-1">
+                      <div className="flex items-center gap-1 rounded-r-xl border border-violet-200 bg-violet-100/60 p-1">
                         <button
-                          className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "amount" ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white" : "text-slate-600 hover:bg-white/90"}`}
+                          className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "amount" ? "bg-violet-600 text-white" : "text-slate-600 hover:bg-white/90"}`}
                           onClick={() => setBillDiscountType("amount")}
                           type="button"
                         >
                           ฿
                         </button>
                         <button
-                          className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "percent" ? "bg-gradient-to-b from-violet-600 to-violet-700 text-white" : "text-slate-600 hover:bg-white/90"}`}
+                          className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "percent" ? "bg-violet-600 text-white" : "text-slate-600 hover:bg-white/90"}`}
                           onClick={() => setBillDiscountType("percent")}
                           type="button"
                         >
