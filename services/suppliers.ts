@@ -23,6 +23,14 @@ export type CreateSupplierInput = {
   contact_person?: string;
   note?: string;
   is_active?: boolean;
+  line_id?: string;
+  email?: string;
+  payment_method?: "promptpay" | "bank_account";
+  promptpay_number?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
+  credit_days?: number;
 };
 
 export type UpdateSupplierInput = {
