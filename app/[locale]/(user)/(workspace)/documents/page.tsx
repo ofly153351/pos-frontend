@@ -1,20 +1,13 @@
 import { notFound } from "next/navigation";
-
-import { DocumentsManager } from "@/components/documents/documents-manager";
 import { getDictionary } from "@/lib/i18n";
 import { isSupportedLocale, type Locale } from "@/lib/locale-config";
+import { DocumentPageClient } from "@/components/documents/document-page-client";
 
-type DocumentsPageProps = {
-  params: Promise<{ locale: string }>;
-};
+type PageProps = { params: Promise<{ locale: string }> };
 
-export default async function DocumentsPage({ params }: DocumentsPageProps) {
+export default async function DocumentsPage({ params }: PageProps) {
   const { locale } = await params;
-
-  if (!isSupportedLocale(locale)) {
-    notFound();
-  }
-
-  const dictionary = await getDictionary(locale as Locale);
-  return <DocumentsManager dictionary={dictionary.sales} />;
+  if (!isSupportedLocale(locale)) notFound();
+  const dict = await getDictionary(locale as Locale);
+  return <DocumentPageClient dictionary={dict.documents} />;
 }

@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import {
   Boxes,
   CircleDollarSign,
-  Clock3,
   LayoutDashboard,
   Layers3,
   PackagePlus,
@@ -73,10 +72,6 @@ export const NAV_ENTRIES: NavEntry[] = [
     key: "documents",
     icon: <ReceiptText className="h-4 w-4" />,
     href: (l) => `/${l}/documents`,
-    children: [
-      { key: "document-bills", icon: <ReceiptText className="h-3.5 w-3.5" />, href: (l) => `/${l}/documents` },
-      { key: "document-pending", icon: <Clock3 className="h-3.5 w-3.5" />, href: (l) => `/${l}/documents/pending` },
-    ],
   },
   {
     key: "customers",
