@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText } from "lucide-react";
 
@@ -122,7 +122,9 @@ const DEFAULT_QUERY: DocumentListQuery = { page: 1, limit: 20 };
 
 export function DocumentPageClient({ dictionary: d }: Props) {
   const queryClient = useQueryClient();
-  const storeId = getCurrentStoreId();
+  const [storeId, setStoreId] = useState<string | null>(null);
+
+  useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
 
   const [query, setQuery] = useState<DocumentListQuery>(DEFAULT_QUERY);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);

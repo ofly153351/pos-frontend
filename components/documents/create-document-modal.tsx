@@ -89,8 +89,10 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     { description: "", quantity: 1, unit_price: 0, discount_type: "", discount_value: 0 },
   ]);
   const [error, setError] = useState("");
+  const [storeId, setStoreId] = useState<string | null>(null);
 
-  const storeId = getCurrentStoreId();
+  useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
+
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["customers-simple", storeId],
     queryFn: async () => {
