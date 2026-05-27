@@ -208,7 +208,9 @@ function avatarGradient(name: string) {
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function InitialsAvatar({ name, size }: { name: string; size: "md" | "lg" }) {
-  const sizeClass = size === "lg" ? "h-16 w-16 text-xl rounded-2xl" : "h-12 w-12 text-sm rounded-xl";
+  const sizeClass = size === "lg"
+    ? "h-16 w-16 text-xl rounded-2xl ring-2 ring-white/30 shadow-lg"
+    : "h-11 w-11 text-sm rounded-xl shadow-sm";
   return (
     <div className={`flex shrink-0 items-center justify-center bg-gradient-to-br ${avatarGradient(name)} text-white font-bold ${sizeClass}`}>
       {supplierInitials(name)}
@@ -218,11 +220,23 @@ function InitialsAvatar({ name, size }: { name: string; size: "md" | "lg" }) {
 
 function StatusBadge({ isActive, ui }: { isActive: boolean; ui: SupplierUI }) {
   return isActive ? (
-    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200/50">
       {ui.badgeActive}
     </span>
   ) : (
     <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-500">
+      {ui.badgeInactive}
+    </span>
+  );
+}
+
+function StatusBadgeOnDark({ isActive, ui }: { isActive: boolean; ui: SupplierUI }) {
+  return isActive ? (
+    <span className="inline-flex items-center rounded-full bg-emerald-400/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-300/40">
+      {ui.badgeActive}
+    </span>
+  ) : (
+    <span className="inline-flex items-center rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white/70 ring-1 ring-white/30">
       {ui.badgeInactive}
     </span>
   );
@@ -262,38 +276,38 @@ function SupplierCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left transition-all ${
+      className={`w-full text-left transition-all duration-200 ${
         isSelected
-          ? "border-l-4 border-violet-500 bg-violet-50/80"
-          : "border-l-4 border-transparent hover:bg-slate-50"
+          ? "border-l-[3px] border-violet-500 bg-violet-50"
+          : "border-l-[3px] border-transparent hover:bg-slate-50/80"
       }`}
     >
-      <div className="flex items-start gap-3 px-4 py-3">
+      <div className="flex items-center gap-3 px-4 py-3.5">
         <InitialsAvatar name={supplier.name} size="md" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <p className="line-clamp-2 text-sm font-bold text-slate-800 leading-tight">
+          <div className="mb-0.5 flex items-start justify-between gap-2">
+            <p className={`line-clamp-1 text-sm font-bold leading-tight ${isSelected ? "text-violet-900" : "text-slate-800"}`}>
               {supplier.name}
             </p>
             <StatusBadge isActive={supplier.is_active} ui={ui} />
           </div>
           {supplier.contact_person && (
-            <p className="mt-0.5 truncate text-xs text-slate-500">{supplier.contact_person}</p>
+            <p className="mb-1.5 truncate text-xs text-slate-500">{supplier.contact_person}</p>
           )}
-          {supplier.phone && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-              <Phone className="h-3 w-3 shrink-0" />
-              {supplier.phone}
-            </p>
-          )}
-          <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-400">
-            <span>{ui.creditDaysPrefix} 30 {ui.daysSuffix}</span>
-            <span>·</span>
-            <span>{ui.lastTx} {fmtDate(supplier.updated_at)}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {supplier.phone && (
+              <span className="flex items-center gap-1 text-xs text-slate-400">
+                <Phone className="h-3 w-3 shrink-0" />
+                <span className="font-mono">{supplier.phone}</span>
+              </span>
+            )}
+            <span className="inline-flex items-center rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600 ring-1 ring-violet-100">
+              {ui.creditDaysPrefix} 30 {ui.daysSuffix}
+            </span>
           </div>
         </div>
       </div>
-      <div className="mx-4 h-px bg-slate-100" />
+      <div className={`mx-4 h-px ${isSelected ? "bg-violet-100" : "bg-slate-100"}`} />
     </button>
   );
 }
@@ -301,29 +315,40 @@ function SupplierCard({
 // ── KPI card ──────────────────────────────────────────────────────────────────
 
 function KpiCard({
-  title, value, sub, icon, alert,
+  title, value, sub, icon, alert, primary,
 }: {
   title: string;
   value: string;
   sub: string;
   icon: React.ReactNode;
   alert?: boolean;
+  primary?: boolean;
 }) {
   return (
-    <div className={`flex flex-1 flex-col gap-2 rounded-2xl border p-4 ${
-      alert ? "border-red-200 bg-red-50" : "border-violet-100 bg-white"
+    <div className={`flex flex-1 flex-col gap-2.5 rounded-xl p-4 ${
+      primary
+        ? "bg-gradient-to-br from-violet-600 to-pink-500 shadow-md shadow-violet-200/60"
+        : alert
+        ? "border border-red-200 bg-red-50"
+        : "border border-violet-100 bg-violet-50/30"
     }`}>
-      <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${
-        alert ? "bg-red-100 text-red-600" : "bg-violet-100 text-violet-600"
+      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+        primary
+          ? "bg-white/20 text-white"
+          : alert
+          ? "bg-red-100 text-red-600"
+          : "bg-violet-100 text-violet-600"
       }`}>
         {icon}
       </div>
       <div>
-        <p className={`text-lg font-bold tabular-nums ${alert ? "text-red-600" : "text-slate-800"}`}>
+        <p className={`text-xl font-bold tabular-nums leading-tight ${
+          primary ? "text-white" : alert ? "text-red-600" : "text-slate-800"
+        }`}>
           {value}
         </p>
-        <p className="text-xs text-slate-500">{title}</p>
-        <p className={`mt-0.5 text-xs ${alert ? "text-red-400" : "text-slate-400"}`}>{sub}</p>
+        <p className={`mt-0.5 text-xs font-medium ${primary ? "text-violet-100" : "text-slate-600"}`}>{title}</p>
+        <p className={`text-[11px] ${primary ? "text-white/60" : alert ? "text-red-400" : "text-slate-400"}`}>{sub}</p>
       </div>
     </div>
   );
@@ -336,9 +361,25 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
     <div className="flex items-start gap-2 py-1.5">
       <span className="mt-0.5 shrink-0 text-violet-400">{icon}</span>
       <div className="min-w-0">
-        <p className="text-xs text-slate-400">{label}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
         <p className="text-sm font-medium text-slate-700 break-words">{value || "—"}</p>
       </div>
+    </div>
+  );
+}
+
+// ── Info section card ─────────────────────────────────────────────────────────
+
+function InfoCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
+      <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+          {icon}
+        </span>
+        {title}
+      </h4>
+      {children}
     </div>
   );
 }
@@ -367,25 +408,25 @@ function SupplierDetail({
 
   return (
     <div className="flex h-full flex-col overflow-y-auto pretty-scroll">
-      {/* Header */}
-      <div className="shrink-0 border-b border-slate-100 bg-white px-6 py-5">
+      {/* ── Gradient hero header ── */}
+      <div className="shrink-0 bg-gradient-to-br from-violet-600 via-violet-600 to-pink-500 px-6 pt-5 pb-14">
         <div className="flex items-start gap-4">
           <InitialsAvatar name={supplier.name} size="lg" />
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="text-xl font-bold text-slate-900 leading-tight">{supplier.name}</h2>
-                <p className="mt-0.5 text-sm text-slate-400">
-                  {ui.codeLabel}: {supplier.id.substring(0, 12).toUpperCase()}
+                <h2 className="truncate text-xl font-bold text-white leading-tight">{supplier.name}</h2>
+                <p className="mt-0.5 font-mono text-sm text-violet-200">
+                  #{supplier.id.substring(0, 8).toUpperCase()}
                 </p>
               </div>
-              <StatusBadge isActive={supplier.is_active} ui={ui} />
+              <StatusBadgeOnDark isActive={supplier.is_active} ui={ui} />
             </div>
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {supplier.phone && (
                 <a
                   href={`tel:${supplier.phone}`}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/25"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   {ui.callBtn}
@@ -394,16 +435,15 @@ function SupplierDetail({
               <button
                 type="button"
                 onClick={onEdit}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 shadow-sm transition-colors hover:bg-violet-50"
               >
                 <Pencil className="h-3.5 w-3.5" />
-                {/* edit */}
                 แก้ไข
               </button>
               <button
                 type="button"
                 onClick={onDelete}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90 backdrop-blur-sm transition-colors hover:bg-red-400/30"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 ลบ
@@ -413,98 +453,84 @@ function SupplierDetail({
         </div>
       </div>
 
-      {/* KPI row */}
-      <div className="shrink-0 border-b border-slate-100 bg-slate-50/60 px-6 py-4">
-        <div className="flex gap-3">
+      {/* ── KPI cards — floats over gradient with negative margin ── */}
+      <div className="-mt-8 shrink-0 px-6 pb-1">
+        <div className="flex gap-3 rounded-2xl border border-violet-100 bg-white p-4 shadow-[0_4px_24px_rgba(124,58,237,0.14)]">
           <KpiCard
             title={ui.kpiTotal}
-            value={`${fmtAmount(totalValue)}`}
+            value={`฿${fmtAmount(totalValue)}`}
             sub={ui.kpiAllTime}
-            icon={<ShoppingBag className="h-5 w-5" />}
+            icon={<ShoppingBag className="h-4.5 w-4.5" />}
+            primary
           />
           <KpiCard
             title={ui.kpiOutstanding}
-            value="0.00"
+            value="฿0.00"
             sub={ui.kpiNoDue}
-            icon={<CreditCard className="h-5 w-5" />}
+            icon={<CreditCard className="h-4.5 w-4.5" />}
           />
           <KpiCard
             title={ui.kpiCreditLimit}
-            value="0.00"
+            value="฿0.00"
             sub={ui.kpiNoLimit}
-            icon={<Building2 className="h-5 w-5" />}
+            icon={<Building2 className="h-4.5 w-4.5" />}
           />
           <KpiCard
             title={ui.kpiRemaining}
-            value="0.00"
+            value="฿0.00"
             sub={ui.kpiNoLimit}
-            icon={<FileText className="h-5 w-5" />}
+            icon={<FileText className="h-4.5 w-4.5" />}
           />
         </div>
       </div>
 
-      {/* Info grid */}
+      {/* ── Info grid — 2×2 cards ── */}
       <div className="shrink-0 border-b border-slate-100 px-6 py-5">
-        <div className="grid grid-cols-4 gap-6">
-          {/* Contact */}
-          <div>
-            <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-              <User className="h-3.5 w-3.5" />
-              {ui.sectionContact}
-            </h4>
-            <div className="space-y-0.5">
+        <div className="grid grid-cols-2 gap-4">
+          <InfoCard icon={<User className="h-3.5 w-3.5" />} title={ui.sectionContact}>
+            <div className="space-y-1.5">
               <InfoRow icon={<User className="h-3.5 w-3.5" />} label={ui.primaryContact} value={supplier.contact_person ?? ""} />
-              <InfoRow icon={<Phone className="h-3.5 w-3.5" />} label={/* phone */ "เบอร์โทร"} value={supplier.phone ?? ""} />
-              <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="อีเมล" value={""} />
+              <InfoRow icon={<Phone className="h-3.5 w-3.5" />} label="เบอร์โทร" value={supplier.phone ?? ""} />
+              <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="อีเมล" value="" />
             </div>
-          </div>
-          {/* Payment */}
-          <div>
-            <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-              <CreditCard className="h-3.5 w-3.5" />
-              {ui.sectionPayment}
-            </h4>
-            <div className="space-y-0.5">
+          </InfoCard>
+
+          <InfoCard icon={<CreditCard className="h-3.5 w-3.5" />} title={ui.sectionPayment}>
+            <div className="space-y-1.5">
               <InfoRow icon={<CreditCard className="h-3.5 w-3.5" />} label="วิธีการชำระ" value="PromptPay" />
               <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เลขที่บัญชี" value="" />
-              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เครดิตเทอม" value={`30 วัน`} />
+              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เครดิตเทอม" value="30 วัน" />
               <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เลขประจำตัวผู้เสียภาษี" value={supplier.tax_id ?? ""} />
             </div>
-          </div>
-          {/* Address */}
-          <div>
-            <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-              <MapPin className="h-3.5 w-3.5" />
-              {ui.sectionAddress}
-            </h4>
+          </InfoCard>
+
+          <InfoCard icon={<MapPin className="h-3.5 w-3.5" />} title={ui.sectionAddress}>
             {supplier.address ? (
               <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{supplier.address}</p>
             ) : (
-              <p className="text-sm text-slate-400 italic">{ui.noInfo}</p>
+              <p className="text-sm italic text-slate-400">{ui.noInfo}</p>
             )}
-          </div>
-          {/* Notes */}
-          <div>
-            <h4 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
-              <MessageSquare className="h-3.5 w-3.5" />
-              {ui.sectionNotes}
-            </h4>
+          </InfoCard>
+
+          <InfoCard icon={<MessageSquare className="h-3.5 w-3.5" />} title={ui.sectionNotes}>
             {supplier.note ? (
-              <div className="rounded-xl bg-slate-50 p-3">
-                <p className="text-sm italic text-slate-600 leading-relaxed whitespace-pre-line">{supplier.note}</p>
+              <div className="rounded-lg border border-violet-100 bg-violet-50/50 p-3">
+                <p className="text-sm italic leading-relaxed text-slate-600 whitespace-pre-line">{supplier.note}</p>
               </div>
             ) : (
-              <p className="text-sm text-slate-400 italic">{ui.noInfo}</p>
+              <p className="text-sm italic text-slate-400">{ui.noInfo}</p>
             )}
-          </div>
+          </InfoCard>
         </div>
       </div>
 
-      {/* Purchase history */}
+      {/* ── Purchase history ── */}
       <div className="flex-1 px-6 py-5">
         <div className="mb-4 flex items-center justify-between">
           <h4 className="flex items-center gap-2 text-sm font-bold text-slate-800">
-            <FileText className="h-4 w-4 text-violet-500" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100">
+              <FileText className="h-4 w-4 text-violet-600" />
+            </span>
             {ui.purchaseHistory}
             <span className="ml-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-600">
               {supplierPOs.length}
@@ -513,15 +539,17 @@ function SupplierDetail({
         </div>
 
         {recentPOs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
-            <FileText className="mb-3 h-10 w-10 text-slate-300" />
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 py-12 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100">
+              <FileText className="h-6 w-6 text-violet-400" />
+            </div>
             <p className="text-sm font-medium text-slate-500">{ui.emptyHistory}</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-slate-200">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <tr className="bg-violet-50/60 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <th className="px-4 py-3 text-left">{ui.colDocNo}</th>
                   <th className="px-4 py-3 text-left">{ui.colDate}</th>
                   <th className="px-4 py-3 text-right">{ui.colAmount}</th>
@@ -532,14 +560,14 @@ function SupplierDetail({
                 {recentPOs.map((po, idx) => (
                   <tr
                     key={po.id}
-                    className={`border-t border-slate-100 transition-colors hover:bg-violet-50/40 ${idx % 2 === 0 ? "" : "bg-slate-50/30"}`}
+                    className={`border-t border-slate-100 transition-colors hover:bg-violet-50/40 ${idx % 2 !== 0 ? "bg-slate-50/30" : ""}`}
                   >
                     <td className="px-4 py-3 font-mono text-xs font-medium text-slate-700">
                       {po.order_number}
                     </td>
                     <td className="px-4 py-3 text-slate-500">{fmtDate(po.created_at)}</td>
                     <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-800">
-                      {fmtAmount(po.total_cost)}
+                      ฿{fmtAmount(po.total_cost)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <POStatusBadge status={po.status} />
@@ -621,14 +649,16 @@ function EditSupplierModal({
     <>
       <div className="fixed inset-0 z-40 bg-black/40 smooth-fade" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="smooth-fade-up w-full max-w-lg rounded-2xl bg-white shadow-[0_24px_60px_rgba(124,58,237,0.15)]">
+        <div className="smooth-fade-up w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(124,58,237,0.18)]">
+          {/* Accent bar */}
+          <div className="h-1 bg-gradient-to-r from-violet-500 to-pink-500" />
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
             <h4 className="text-base font-bold text-slate-900">{dict.editSupplier}</h4>
-            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition-colors">
+            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100">
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="p-6 space-y-4">
+          <div className="space-y-4 p-6">
             {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
             <div>
               <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.supplierName} <span className="text-red-500">*</span></label>
@@ -672,14 +702,14 @@ function EditSupplierModal({
             </div>
           </div>
           <div className="flex gap-3 border-t border-slate-100 px-6 py-4">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors">
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">
               {dict.cancel}
             </button>
             <button
               type="button"
               onClick={handleSave}
               disabled={isPending}
-              className="flex-1 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 py-2.5 text-sm font-semibold text-white hover:from-violet-700 hover:to-pink-600 disabled:opacity-60 transition-all"
+              className="flex-1 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 py-2.5 text-sm font-semibold text-white transition-all hover:from-violet-700 hover:to-pink-600 disabled:opacity-60"
             >
               {isPending ? dict.saving : dict.save}
             </button>
@@ -706,7 +736,6 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(t);
@@ -770,10 +799,9 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
   return (
     <div className="-mx-6 -my-6 lg:-mx-8 lg:-my-8 flex flex-col overflow-hidden" style={{ height: "calc(100dvh - 4.5rem)" }}>
       {/* ── Top search bar ── */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-6 py-3">
-        {/* Search */}
+      <div className="flex shrink-0 items-center gap-3 border-b border-violet-100 bg-gradient-to-r from-violet-50/80 to-white px-6 py-3.5">
         <div className="relative flex-1 max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-400" />
           <input
             type="search"
             value={search}
@@ -783,7 +811,6 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
           />
         </div>
 
-        {/* Status filter */}
         <div className="relative">
           <select
             value={statusFilter}
@@ -799,11 +826,10 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
 
         <div className="flex-1" />
 
-        {/* Add button */}
         <button
           type="button"
           onClick={() => setIsAddOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:from-violet-700 hover:to-pink-600 transition-all"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition-all hover:from-violet-700 hover:to-pink-600 hover:shadow-md"
         >
           <Plus className="h-4 w-4" />
           {ui.addSupplierBtn}
@@ -814,8 +840,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* ─ Left panel ─ */}
         <div className="flex w-[320px] shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white">
-          {/* Panel header */}
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 bg-slate-50/60 px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-slate-800">{ui.allSuppliers}</span>
               <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-600">
@@ -835,7 +860,6 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
             </div>
           </div>
 
-          {/* Scrollable list */}
           <div className="flex-1 overflow-y-auto pretty-scroll">
             {loadingSuppliers ? (
               <div className="flex flex-col gap-2 p-4">
@@ -844,8 +868,10 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                 ))}
               </div>
             ) : visible.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-16 text-center px-4">
-                <Search className="h-8 w-8 text-slate-300" />
+              <div className="flex flex-col items-center justify-center gap-2 px-4 py-16 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50">
+                  <Search className="h-6 w-6 text-violet-300" />
+                </div>
                 <p className="text-sm font-medium text-slate-500">{ui.noResults}</p>
                 <p className="text-xs text-slate-400">{ui.noResultsSub}</p>
               </div>
@@ -865,7 +891,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
                     <button
                       type="button"
                       onClick={() => setVisibleCount((c) => c + 20)}
-                      className="inline-flex items-center gap-2 rounded-xl border border-violet-200 px-4 py-2 text-xs font-semibold text-violet-600 hover:bg-violet-50 transition-colors"
+                      className="inline-flex items-center gap-2 rounded-xl border border-violet-200 px-4 py-2 text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-50"
                     >
                       <ChevronDown className="h-3.5 w-3.5" />
                       {ui.loadMore}
@@ -880,17 +906,22 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
         {/* ─ Right panel ─ */}
         <div className="relative flex-1 overflow-hidden bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)]">
           {!selectedSupplier ? (
-            <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-100 to-pink-100">
-                <ShoppingBag className="h-9 w-9 text-violet-400" />
+            <div className="flex h-full flex-col items-center justify-center gap-5 text-center px-8">
+              <div className="relative">
+                <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-100 to-pink-100">
+                  <Building2 className="h-11 w-11 text-violet-400" />
+                </div>
+                <div className="absolute -bottom-1.5 -right-1.5 flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-pink-500 shadow-lg shadow-violet-200">
+                  <User className="h-4.5 w-4.5 text-white" />
+                </div>
               </div>
-              <div>
+              <div className="max-w-[220px]">
                 <p className="text-base font-bold text-slate-700">{ui.selectHint}</p>
-                <p className="mt-1 text-sm text-slate-400">{ui.selectSub}</p>
+                <p className="mt-1.5 text-sm leading-relaxed text-slate-400">{ui.selectSub}</p>
               </div>
             </div>
           ) : (
-            <div key={selectedId} className="detail-slide-in h-full">
+            <div key={selectedId} className="smooth-fade-up h-full">
               <SupplierDetail
                 supplier={selectedSupplier}
                 pos={allPOs}

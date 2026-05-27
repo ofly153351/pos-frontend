@@ -424,13 +424,16 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
-          className={`relative flex w-full max-w-[720px] max-h-[92vh] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_48px_rgba(0,0,0,0.18)] will-change-transform ${isClosing ? "modal-slide-out" : "modal-slide-in"}`}
+          className={`relative flex w-full max-w-[780px] max-h-[92vh] flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_56px_rgba(0,0,0,0.18)] will-change-transform ${isClosing ? "fade-out" : "smooth-fade-up"}`}
           onAnimationEnd={handleAnimationEnd}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Accent bar */}
+          <div className="h-1.5 shrink-0 bg-gradient-to-r from-violet-500 via-violet-600 to-pink-500" />
+
           {/* ── Header ── */}
-          <div className="flex shrink-0 items-start gap-4 border-b border-slate-100 px-6 py-5">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 shadow-lg shadow-violet-200">
+          <div className="flex shrink-0 items-start gap-4 border-b border-slate-100 bg-gradient-to-r from-violet-50/60 to-white px-6 py-5">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 shadow-lg shadow-violet-200/60">
               <ShoppingBag className="h-7 w-7 text-white" />
             </div>
             <div className="flex-1 min-w-0">
@@ -805,11 +808,11 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
           </div>
 
           {/* ── Footer ── */}
-          <div className="flex shrink-0 items-center gap-3 border-t border-slate-100 bg-white px-6 py-4">
+          <div className="flex shrink-0 items-center gap-3 border-t border-slate-100 bg-gradient-to-r from-violet-50/40 to-white px-6 py-4">
             <button
               type="button"
               onClick={handleCancel}
-              className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
             >
               {dict.cancel}
             </button>
@@ -817,7 +820,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 py-2.5 text-sm font-semibold text-white hover:from-violet-700 hover:to-pink-600 disabled:opacity-60 transition-all"
+              className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-violet-600 to-pink-500 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200/60 transition-all hover:from-violet-700 hover:to-pink-600 hover:shadow-lg disabled:opacity-60"
             >
               {saving ? (
                 <>
