@@ -48,6 +48,7 @@ type StoreManagementDictionary = {
   planLabel: string;
   plans: { growth: string; pro: string; starter: string };
   promptPayLabel: string;
+  taxIdLabel: string;
   selectStoreLabel: string;
   storeListTitle: string;
   switchStoreAction: string;
@@ -122,6 +123,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editPromptPayId, setEditPromptPayId] = useState("");
+  const [editTaxId, setEditTaxId] = useState("");
   const [editAddress, setEditAddress] = useState("");
   const [editCurrencyCode, setEditCurrencyCode] = useState("THB");
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
@@ -225,6 +227,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
     setEditName(store.name ?? "");
     setEditPhone(store.phone ?? "");
     setEditPromptPayId(store.promptpay_id ?? "");
+    setEditTaxId(store.tax_id ?? "");
     setEditAddress(store.address ?? "");
     setEditCurrencyCode(store.currency_code ?? "THB");
   }
@@ -250,7 +253,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
         const res = await updateStoreById(selectedStoreId, {
           address: editAddress, currency_code: editCurrencyCode,
           logo: editLogoFile, name: editName,
-          phone: editPhone, promptpay_id: editPromptPayId.trim(),
+          phone: editPhone, promptpay_id: editPromptPayId.trim(), tax_id: editTaxId.trim(),
         });
         const updated = res.data;
         setCurrentStore(updated);
@@ -493,6 +496,9 @@ export function StoreManagementPanel({ dictionary }: Props) {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label={dictionary.promptPayLabel}>
                     <input className={inputCls} onChange={(e) => setEditPromptPayId(e.target.value)} value={editPromptPayId} />
+                  </Field>
+                  <Field label={dictionary.taxIdLabel}>
+                    <input className={inputCls} maxLength={13} onChange={(e) => setEditTaxId(e.target.value.replace(/\D/g, ""))} value={editTaxId} placeholder="0000000000000" />
                   </Field>
                   <Field label={dictionary.currencyLabel}>
                     <input className={inputCls} maxLength={5} onChange={(e) => setEditCurrencyCode(e.target.value.toUpperCase())} value={editCurrencyCode} />

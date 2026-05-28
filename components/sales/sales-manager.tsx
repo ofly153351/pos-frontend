@@ -12,7 +12,7 @@ import {
   listCustomerLevelDiscounts,
   listCustomers,
 } from "@/services/customers";
-import { createInvoice } from "@/services/invoices";
+import { createDocument } from "@/services/documents";
 import { listProducts } from "@/services/products";
 import {
   calculateVat,
@@ -1172,12 +1172,23 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         });
 
         if (isInvoiceSettlement) {
-          await createInvoice({
+          const today = new Date().toISOString().split("T")[0];
+          await createDocument({
+            type: "BILL",
             customer_id: selectedCustomerId,
-            items: mappedItems,
-            note: note.trim() || undefined,
-            vat_included: false,
-            vat_percent: applyVat ? 7 : 0,
+            document_date: today,
+            items: cart.map((item) => ({
+              product_id: item.product.id,
+              description: item.product.name,
+              quantity: item.quantity,
+              unit_price: item.product.effective_price,
+              discount_type: Number(item.discountValue || 0) > 0
+                ? (item.discountType === "percent" ? "PERCENT" : "AMOUNT")
+                : "" as const,
+              discount_value: Number(item.discountValue || 0),
+            })),
+            vat_rate: applyVat ? 7 : 0,
+            notes: note.trim() || undefined,
           });
 
           clearCart();

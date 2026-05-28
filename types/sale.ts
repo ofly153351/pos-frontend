@@ -31,15 +31,19 @@ export type SaleItem = {
   product_image_url?: string | null;
   product_name?: string | null;
   quantity: number;
+  sku?: string | null;
   total_amount?: number;
   unit_price?: number;
+  unit_type?: string | null;
 };
 
 export type Sale = {
   bill_discount_amount?: number;
+  cashier_name?: string | null;
   change_amount?: number;
   customer_id?: string | null;
   customer_name?: string | null;
+  customer_phone?: string | null;
   created_at: string;
   discount_amount?: number;
   id: string;
@@ -47,6 +51,11 @@ export type Sale = {
   note?: string | null;
   paid_amount?: number;
   payment_method: SalePaymentMethod;
+  sale_number?: string | null;
+  store_address?: string | null;
+  store_name?: string | null;
+  store_phone?: string | null;
+  store_tax_id?: string | null;
   subtotal_amount?: number;
   total_amount?: number;
   vat_amount?: number;

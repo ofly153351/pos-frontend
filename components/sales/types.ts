@@ -114,6 +114,7 @@ export type SalesDictionary = {
   statusUnpaidLabel: string;
   statusPartiallyPaidLabel: string;
   viewReceiptButton: string;
+  printInvoiceButton: string;
   categoryFilterAll: string;
   holdBillLabel: string;
   restoreBillLabel: string;

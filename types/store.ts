@@ -9,6 +9,7 @@ export type Store = {
   owner_user_id?: string;
   phone?: string | null;
   promptpay_id?: string | null;
+  tax_id?: string | null;
   slug?: string | null;
   subscription_period_end?: string | null;
   subscription_plan_code?: string | null;
@@ -34,6 +35,7 @@ export type UpdateStoreInput = {
   name?: string;
   phone?: string;
   promptpay_id?: string;
+  tax_id?: string;
 };
 
 export type SubscriptionPlan = {
