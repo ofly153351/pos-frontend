@@ -37,7 +37,7 @@ export function DocumentFilterBar({ dict, query, onChange, onReset }: Props) {
   const activeCount = [query.type, query.status, query.payment_status].filter(Boolean).length;
 
   return (
-    <div className="border-b border-violet-100 bg-white/60 px-6 py-3">
+    <div className="border-b border-violet-100 px-6 py-3">
       <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative min-w-64 flex-1">

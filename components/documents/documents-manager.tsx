@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useParams } from "next/navigation";
 
 import type { SalesDictionary } from "@/components/sales/types";
 import {
@@ -128,6 +129,8 @@ function findLatestProofPaymentId(invoice: Invoice) {
 }
 
 export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerProps) {
+  const params = useParams();
+  const locale = (params?.locale as string) ?? "th";
   const [sales, setSales] = useState<Sale[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
@@ -682,16 +685,25 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
                       {formatCurrency(sale.total_amount ?? 0)}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
-                        disabled={saleReceiptLoadingId === sale.id}
-                        onClick={() => openSaleReceiptPreview(sale.id)}
-                        type="button"
-                      >
-                        {saleReceiptLoadingId === sale.id
-                          ? dictionary.receiptPreviewLoading
-                          : dictionary.viewReceiptButton}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={saleReceiptLoadingId === sale.id}
+                          onClick={() => openSaleReceiptPreview(sale.id)}
+                          type="button"
+                        >
+                          {saleReceiptLoadingId === sale.id
+                            ? dictionary.receiptPreviewLoading
+                            : dictionary.viewReceiptButton}
+                        </button>
+                        <button
+                          className="rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
+                          onClick={() => window.open(`/${locale}/print/invoice/${sale.id}`, "_blank", "noopener,noreferrer")}
+                          type="button"
+                        >
+                          {dictionary.printInvoiceButton}
+                        </button>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">

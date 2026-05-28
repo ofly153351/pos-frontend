@@ -22,12 +22,13 @@ type Dict = {
 type Props = {
   dict: Dict;
   stats: DocumentStats;
+  defaultCreateType?: DocumentType;
   onExport: () => void;
   onPrint: () => void;
   onCreateDocument: (type: DocumentType) => void;
 };
 
-export function DocumentStatsCards({ dict, stats, onExport, onPrint, onCreateDocument }: Props) {
+export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE", onExport, onPrint, onCreateDocument }: Props) {
   const docTypes: { type: DocumentType; label: string }[] = [
     { type: "INVOICE",     label: dict.typeInvoice },
     { type: "RECEIPT",     label: dict.typeReceipt },
@@ -38,7 +39,7 @@ export function DocumentStatsCards({ dict, stats, onExport, onPrint, onCreateDoc
   ];
 
   return (
-    <div className="border-b border-violet-100 bg-white/40 px-6 py-4">
+    <div className="border-b border-violet-100 px-6 py-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* KPI cards */}
         <div className="flex flex-wrap gap-3">
@@ -110,7 +111,7 @@ export function DocumentStatsCards({ dict, stats, onExport, onPrint, onCreateDoc
           <div className="flex">
             <button
               className="flex items-center gap-2 rounded-l-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
-              onClick={() => onCreateDocument("INVOICE")}
+              onClick={() => onCreateDocument(defaultCreateType)}
               type="button"
             >
               <Plus className="h-4 w-4" />
@@ -118,7 +119,7 @@ export function DocumentStatsCards({ dict, stats, onExport, onPrint, onCreateDoc
             </button>
             <div className="group relative">
               <button
-                className="rounded-r-lg border-l border-violet-500 bg-violet-600 px-2 py-2 text-white transition-colors hover:bg-violet-700"
+                className="rounded-r-lg border-l border-violet-500 bg-violet-600 px-2 py-3 text-white transition-colors hover:bg-violet-700"
                 type="button"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

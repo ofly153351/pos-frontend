@@ -49,6 +49,10 @@ export interface Document {
   vat_amount: number;
   total_amount: number;
   notes?: string;
+  store_name?: string;
+  store_address?: string;
+  store_phone?: string;
+  store_tax_id?: string;
   created_at: string;
   updated_at: string;
 }
