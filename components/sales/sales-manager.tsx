@@ -13,6 +13,7 @@ import {
   listCustomers,
 } from "@/services/customers";
 import { createDocument } from "@/services/documents";
+import { toast } from "@/components/ui/toast";
 import { listProducts } from "@/services/products";
 import {
   calculateVat,
@@ -256,6 +257,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [applyVat, setApplyVat] = useState(false);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
+  const [invoiceDueDate, setInvoiceDueDate] = useState("");
   const [discountEditorProductId, setDiscountEditorProductId] = useState<
     string | null
   >(null);
@@ -275,7 +277,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     null,
   );
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const [isPrintPromptOpen, setIsPrintPromptOpen] = useState(false);
   const [isReceiptPreviewLoading, setIsReceiptPreviewLoading] = useState(false);
   const [receiptPreviewHtml, setReceiptPreviewHtml] = useState("");
@@ -685,7 +686,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
   function addToCart(product: Product) {
     setError("");
-    setSuccessMessage("");
     setCart((currentCart) => {
       const existingItem = currentCart.find(
         (item) => item.product.id === product.id,
@@ -1146,7 +1146,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
   function submitSale() {
     setError("");
-    setSuccessMessage("");
 
     if (cart.length === 0) {
       setError(dictionary.emptyCart);
@@ -1174,7 +1173,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         if (isInvoiceSettlement) {
           const today = new Date().toISOString().split("T")[0];
           await createDocument({
-            type: "BILL",
+            type: "INVOICE",
             customer_id: selectedCustomerId,
             document_date: today,
             items: cart.map((item) => ({
@@ -1188,11 +1187,13 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
               discount_value: Number(item.discountValue || 0),
             })),
             vat_rate: applyVat ? 7 : 0,
+            due_date: invoiceDueDate || undefined,
             notes: note.trim() || undefined,
           });
 
+          setIsCheckoutSummaryOpen(false);
           clearCart();
-          setSuccessMessage(dictionary.checkoutSuccess);
+          toast.success(dictionary.checkoutSuccess);
           await reloadData();
           return;
         }
@@ -1210,7 +1211,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         });
 
         clearCart();
-        setSuccessMessage(dictionary.checkoutSuccess);
+        toast.success(dictionary.checkoutSuccess);
         await reloadData();
 
         if (response.data?.id) {
@@ -1289,7 +1290,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     void deleteParkedBill(bill.id);
     setRestoreConfirmBill(null);
     setIsRestoreDrawerOpen(false);
-    setSuccessMessage(dictionary.restoreBillConfirmLabel);
+    toast.success(dictionary.restoreBillConfirmLabel);
   }
 
   if (!hasMounted) {
@@ -1319,7 +1320,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           products={saleableProducts}
           search={search}
           selectedCategory={selectedCategory}
-          successMessage={successMessage}
         />
 
         {/* ── Right: Cart panel ── */}
@@ -1715,7 +1715,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
                     });
 
                     clearCart();
-                    setSuccessMessage(dictionary.holdBillConfirmLabel);
+                    toast.success(dictionary.holdBillConfirmLabel);
                     await reloadData();
                     onHoldBillSuccess?.();
                   } catch (nextError) {
@@ -1877,6 +1877,69 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
                         {dictionary.customerSettlementInvoice}
                       </button>
                     </div>
+                  </div>
+                ) : null}
+
+                {isInvoiceSettlement ? (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-violet-800">
+                      กำหนดชำระ
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {[7, 14, 30, 45].map((days) => {
+                        const target = new Date();
+                        target.setDate(target.getDate() + days);
+                        const val = target.toISOString().split("T")[0];
+                        const active = invoiceDueDate === val;
+                        return (
+                          <button
+                            key={days}
+                            type="button"
+                            onClick={() => setInvoiceDueDate(active ? "" : val)}
+                            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
+                              active
+                                ? "border-violet-600 bg-violet-600 text-white"
+                                : "border-violet-200 bg-white text-slate-600 hover:border-violet-400 hover:text-violet-700"
+                            }`}
+                          >
+                            {days} วัน
+                          </button>
+                        );
+                      })}
+                      <input
+                        type="date"
+                        value={invoiceDueDate}
+                        onChange={(e) => setInvoiceDueDate(e.target.value)}
+                        className="ml-auto rounded-lg border border-violet-200 px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                      />
+                    </div>
+                    {invoiceDueDate && (
+                      <p className="mt-1.5 text-xs text-slate-400">
+                        ครบกำหนด {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(invoiceDueDate))}
+                        <button
+                          type="button"
+                          onClick={() => setInvoiceDueDate("")}
+                          className="ml-2 text-slate-400 underline hover:text-slate-600"
+                        >
+                          ล้าง
+                        </button>
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+
+                {isInvoiceSettlement ? (
+                  <div>
+                    <label className="mb-1.5 block text-sm font-semibold text-violet-800">
+                      {dictionary.noteLabel}
+                    </label>
+                    <textarea
+                      rows={2}
+                      className="w-full resize-none rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                      placeholder={dictionary.notePlaceholder}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                    />
                   </div>
                 ) : null}
 

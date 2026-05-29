@@ -262,9 +262,15 @@ function PromptPayTab({ settings, store, onChange }: { settings: ReceiptSettings
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <SectionTitle>QR Code บนใบเสร็จ</SectionTitle>
-          <Toggle checked={settings.show_qr} onChange={(v) => onChange({ show_qr: v })} />
+          <Toggle
+            checked={settings.show_qr && !!store?.promptpay_id}
+            onChange={(v) => !store?.promptpay_id ? undefined : onChange({ show_qr: v })}
+          />
         </div>
-        <div className={`space-y-3 ${!settings.show_qr ? "pointer-events-none opacity-40" : ""}`}>
+        {!store?.promptpay_id && (
+          <p className="mb-3 text-xs text-amber-600">กรุณาตั้งค่าหมายเลขพร้อมเพย์ที่หน้าข้อมูลร้านก่อนเปิดใช้งาน QR</p>
+        )}
+        <div className={`space-y-3 ${(!settings.show_qr || !store?.promptpay_id) ? "pointer-events-none opacity-40" : ""}`}>
           <div>
             <FieldLabel>ขนาด QR</FieldLabel>
             <select className={selectCls} value={settings.qr_size} onChange={(e) => onChange({ qr_size: e.target.value as ReceiptSettingsData["qr_size"] })}>

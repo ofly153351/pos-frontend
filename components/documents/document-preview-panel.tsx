@@ -15,6 +15,7 @@ type Dict = {
 
 type Props = {
   documentId: string;
+  documentNo?: string;
   documentType?: DocumentType;
   dict: Dict;
   onClose: () => void;
@@ -27,7 +28,7 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentType, dict, onClose }: Props) {
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, dict, onClose }: Props) {
   const [isOpening, startOpenTransition] = useTransition();
   const drawer = isA4(documentType);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -101,10 +102,9 @@ export function DocumentPreviewPanel({ documentId, documentType, dict, onClose }
           <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-5 py-3">
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-slate-800">{dict.previewTitle}</span>
-              <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                ดึงจาก API
-              </span>
+              {documentNo && (
+                <span className="font-mono text-xs font-semibold text-slate-500">{documentNo}</span>
+              )}
             </div>
             <div className="flex items-center gap-1">
               <button

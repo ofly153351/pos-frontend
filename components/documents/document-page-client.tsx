@@ -446,6 +446,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
           {selectedDocId && (
             <DocumentPreviewPanel
               documentId={selectedDocId}
+              documentNo={documents.find((doc) => doc.id === selectedDocId)?.document_no}
               documentType={documents.find((doc) => doc.id === selectedDocId)?.type}
               dict={d}
               onClose={() => setSelectedDocId(null)}
@@ -614,6 +615,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                             <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.customer}</th>
                             <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.date}</th>
                             <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">{d.total}</th>
+                            <th className="w-14 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">จัดการ</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-violet-50">
@@ -636,6 +638,30 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                               <td className="px-4 py-3 text-xs text-slate-500">{fmtDateTime(sale.created_at)}</td>
                               <td className="px-4 py-3 text-right font-mono text-sm font-medium tabular-nums text-slate-800">
                                 {fmtCurrency(sale.total_amount ?? 0)}
+                              </td>
+                              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  title="พิมพ์ใบเสร็จ"
+                                  onClick={() => {
+                                    getSaleReceiptHtml(sale.id).then((html) => {
+                                      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+                                      const blobUrl = URL.createObjectURL(blob);
+                                      const frame = document.createElement("iframe");
+                                      frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
+                                      document.body.appendChild(frame);
+                                      frame.src = blobUrl;
+                                      frame.onload = () => {
+                                        frame.contentWindow?.focus();
+                                        frame.contentWindow?.print();
+                                        setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
+                                      };
+                                    }).catch(() => toast.error("ไม่สามารถพิมพ์ได้"));
+                                  }}
+                                  className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600"
+                                >
+                                  <Printer className="h-4 w-4" />
+                                </button>
                               </td>
                             </tr>
                           ))}

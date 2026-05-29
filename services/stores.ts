@@ -65,6 +65,18 @@ function buildStoreUpdateFormData(input: UpdateStoreInput) {
     formData.set("phone", input.phone);
   }
 
+  if (typeof input.fax === "string") {
+    formData.set("fax", input.fax);
+  }
+
+  if (typeof input.email === "string") {
+    formData.set("email", input.email);
+  }
+
+  if (typeof input.website === "string") {
+    formData.set("website", input.website);
+  }
+
   if (typeof input.address === "string") {
     formData.set("address", input.address);
   }

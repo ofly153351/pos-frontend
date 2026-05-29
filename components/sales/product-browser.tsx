@@ -26,7 +26,6 @@ type ProductBrowserProps = {
   products: Product[];
   search: string;
   selectedCategory: string;
-  successMessage: string;
   getCartQuantity: (productId: string) => number;
 };
 
@@ -52,7 +51,6 @@ export function ProductBrowser({
   products,
   search,
   selectedCategory,
-  successMessage,
   hideSearch = false,
 }: ProductBrowserProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -180,11 +178,6 @@ export function ProductBrowser({
         </div>
       ) : null}
 
-      {successMessage ? (
-        <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {successMessage}
-        </div>
-      ) : null}
 
       {/* Category filter pills */}
       {categories.length > 0 ? (

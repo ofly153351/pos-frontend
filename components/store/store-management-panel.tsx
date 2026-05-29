@@ -7,6 +7,7 @@ import {
   Camera,
   Check,
   CreditCard,
+  Loader2,
   MapPin,
   Phone,
   Plus,
@@ -14,6 +15,8 @@ import {
   Save,
   X,
 } from "lucide-react";
+
+import { toast } from "@/components/ui/toast";
 
 import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
@@ -117,11 +120,13 @@ export function StoreManagementPanel({ dictionary }: Props) {
   const [currentStore, setCurrentStore] = useState<Store | null>(null);
 
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   // Edit fields
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editFax, setEditFax] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editWebsite, setEditWebsite] = useState("");
   const [editPromptPayId, setEditPromptPayId] = useState("");
   const [editTaxId, setEditTaxId] = useState("");
   const [editAddress, setEditAddress] = useState("");
@@ -220,12 +225,14 @@ export function StoreManagementPanel({ dictionary }: Props) {
     }
     setEditLogoFile(null);
     setError("");
-    setSuccess("");
   }
 
   function populateEditFields(store: Store) {
     setEditName(store.name ?? "");
     setEditPhone(store.phone ?? "");
+    setEditFax(store.fax ?? "");
+    setEditEmail(store.email ?? "");
+    setEditWebsite(store.website ?? "");
     setEditPromptPayId(store.promptpay_id ?? "");
     setEditTaxId(store.tax_id ?? "");
     setEditAddress(store.address ?? "");
@@ -237,7 +244,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
     startSwitchTransition(() => {
       saveCurrentStoreId(selectedStoreId);
       setActiveStoreId(selectedStoreId);
-      setSuccess(dictionary.switchedSuccess);
+      toast.success(dictionary.switchedSuccess);
       router.refresh();
       window.location.assign(pathname);
     });
@@ -245,13 +252,14 @@ export function StoreManagementPanel({ dictionary }: Props) {
 
   function handleUpdateStore(e: React.FormEvent) {
     e.preventDefault();
-    setError(""); setSuccess("");
+    setError("");
     if (!selectedStoreId) { setError(dictionary.emptyStores); return; }
     if (!editName.trim()) { setError(dictionary.nameRequired); return; }
     startUpdateTransition(async () => {
       try {
         const res = await updateStoreById(selectedStoreId, {
           address: editAddress, currency_code: editCurrencyCode,
+          fax: editFax.trim(), email: editEmail.trim(), website: editWebsite.trim(),
           logo: editLogoFile, name: editName,
           phone: editPhone, promptpay_id: editPromptPayId.trim(), tax_id: editTaxId.trim(),
         });
@@ -259,7 +267,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
         setCurrentStore(updated);
         setStores((prev) => prev.map((s) => s.id === updated.id ? { ...s, ...updated } : s));
         setEditLogoFile(null);
-        setSuccess(dictionary.updateSuccess);
+        toast.success(dictionary.updateSuccess);
       } catch (e) {
         setError(e instanceof Error ? e.message : dictionary.errorFallback);
       }
@@ -268,7 +276,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
 
   function handleCreateStore(e: React.FormEvent) {
     e.preventDefault();
-    setError(""); setSuccess("");
+    setError("");
     if (!createName.trim()) { setError(dictionary.nameRequired); return; }
     startCreateTransition(async () => {
       try {
@@ -287,7 +295,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
         saveCurrentStoreId(next.id);
         setActiveStoreId(next.id);
         setIsCreateModalOpen(false);
-        setSuccess(dictionary.createSuccess);
+        toast.success(dictionary.createSuccess);
       } catch (e) {
         setError(e instanceof Error ? e.message : dictionary.errorFallback);
       }
@@ -324,13 +332,6 @@ export function StoreManagementPanel({ dictionary }: Props) {
           <X className="h-4 w-4 shrink-0" />
           <span>{error}</span>
           <button className="ml-auto text-rose-400 hover:text-rose-600" onClick={() => setError("")} type="button"><X className="h-3.5 w-3.5" /></button>
-        </div>
-      )}
-      {success && (
-        <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          <Check className="h-4 w-4 shrink-0" />
-          <span>{success}</span>
-          <button className="ml-auto text-emerald-400 hover:text-emerald-600" onClick={() => setSuccess("")} type="button"><X className="h-3.5 w-3.5" /></button>
         </div>
       )}
 
@@ -485,9 +486,20 @@ export function StoreManagementPanel({ dictionary }: Props) {
               {/* Contact */}
               <div>
                 <SectionLabel icon={<Phone className="h-3.5 w-3.5" />} label={dictionary.contactSection} />
-                <Field label={dictionary.phoneLabel}>
-                  <input className={inputCls} onChange={(e) => setEditPhone(e.target.value)} type="tel" value={editPhone} />
-                </Field>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label={dictionary.phoneLabel}>
+                    <input className={inputCls} onChange={(e) => setEditPhone(e.target.value)} type="tel" value={editPhone} />
+                  </Field>
+                  <Field label="โทรสาร (Fax)">
+                    <input className={inputCls} onChange={(e) => setEditFax(e.target.value)} type="tel" value={editFax} placeholder="02-000-0001" />
+                  </Field>
+                  <Field label="อีเมล (Email)">
+                    <input className={inputCls} onChange={(e) => setEditEmail(e.target.value)} type="email" value={editEmail} placeholder="store@example.com" />
+                  </Field>
+                  <Field label="เว็บไซต์ (Website)">
+                    <input className={inputCls} onChange={(e) => setEditWebsite(e.target.value)} type="url" value={editWebsite} placeholder="https://example.com" />
+                  </Field>
+                </div>
               </div>
 
               {/* Payment */}
@@ -526,7 +538,9 @@ export function StoreManagementPanel({ dictionary }: Props) {
                 disabled={!selectedStoreId || isUpdatePending}
                 type="submit"
               >
-                <Save className="h-4 w-4" />
+                {isUpdatePending
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Save className="h-4 w-4" />}
                 {isUpdatePending ? dictionary.updating : dictionary.updateSubmit}
               </button>
             </div>

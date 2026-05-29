@@ -3,6 +3,9 @@ export type Store = {
   created_at?: string;
   currency_code?: string | null;
   description?: string | null;
+  fax?: string | null;
+  email?: string | null;
+  website?: string | null;
   id: string;
   logo_url?: string | null;
   name: string;
@@ -31,6 +34,9 @@ export type CreateStoreInput = {
 export type UpdateStoreInput = {
   address?: string;
   currency_code?: string;
+  fax?: string;
+  email?: string;
+  website?: string;
   logo?: File | null;
   name?: string;
   phone?: string;
