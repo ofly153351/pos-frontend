@@ -126,6 +126,14 @@ type DocumentDict = {
   receiptInvoiceBtn: string;
   receiptEmpty: string;
   receiptLoadError: string;
+  receiptStatsTotal: string;
+  receiptStatsPaid: string;
+  receiptStatsAmount: string;
+  receiptModeName: string;
+  printAll: string;
+  printError: string;
+  productSearch: string;
+  productNotFound: string;
 };
 
 type Props = { dictionary: DocumentDict };
@@ -357,6 +365,32 @@ export function DocumentPageClient({ dictionary: d }: Props) {
               <h1 className="text-lg font-bold text-slate-800">{d.title}</h1>
               <p className="text-xs text-slate-500">{d.subtitle}</p>
             </div>
+            <div className="ml-auto flex items-center gap-1 rounded-xl border border-violet-100 bg-violet-50 p-1">
+              <button
+                type="button"
+                onClick={() => updateQuery({ type: "" as DocumentType | "", page: 1 })}
+                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-all duration-200 ${
+                  !isReceiptMode
+                    ? "bg-white text-violet-700 shadow-sm"
+                    : "text-slate-500 hover:text-violet-600"
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                เอกสาร
+              </button>
+              <button
+                type="button"
+                onClick={() => updateQuery({ type: "RECEIPT" as DocumentType, page: 1 })}
+                className={`flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition-all duration-200 ${
+                  isReceiptMode
+                    ? "bg-white text-violet-700 shadow-sm"
+                    : "text-slate-500 hover:text-violet-600"
+                }`}
+              >
+                <Receipt className="h-3.5 w-3.5" />
+                {d.receiptModeName}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -370,7 +404,6 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                   { type: "BILL",       label: d.typeBill,      Icon: FileDigit    },
                   { type: "TAX_INVOICE",label: d.typeTaxInvoice,Icon: FileBadge    },
                   { type: "QUOTATION",  label: d.typeQuotation, Icon: FileQuestion },
-                  { type: "RECEIPT",    label: "ใบเสร็จหน้าร้าน", Icon: Receipt    },
                   { type: "CREDIT_NOTE",label: d.typeCreditNote,Icon: FileMinus    },
                 ] as { type: string; label: string; Icon: React.ComponentType<{ className?: string }> }[]).map(({ type, label, Icon }) => {
                   const active = (query.type ?? "") === type;
@@ -485,7 +518,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                       {multiPrinting
                         ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         : <Printer className="h-3.5 w-3.5" />}
-                      {multiPrinting ? `กำลังพิมพ์...` : "พิมพ์ทั้งหมด"}
+                      {multiPrinting ? `${d.loading}` : d.printAll}
                     </button>
                     <button
                       type="button"
@@ -501,7 +534,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                     onClick={() => setSelectedSaleIds(new Set())}
                     className="ml-auto flex items-center gap-1 text-sm text-slate-500 hover:text-violet-600"
                   >
-                    ยกเลิก <X className="h-3.5 w-3.5" />
+                    {d.cancelSelection} <X className="h-3.5 w-3.5" />
                   </button>
                 </div>
               )}
@@ -555,7 +588,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                       <Receipt className="h-4 w-4 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs text-violet-100">ใบเสร็จทั้งหมด</p>
+                      <p className="text-xs text-violet-100">{d.receiptStatsTotal}</p>
                       <p className="tabular-nums text-xl font-bold text-white">{filtered.length}</p>
                     </div>
                   </div>
@@ -564,7 +597,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                       <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">ชำระแล้ว</p>
+                      <p className="text-xs text-slate-500">{d.receiptStatsPaid}</p>
                       <p className="tabular-nums text-xl font-bold text-emerald-600">{filtered.length}</p>
                     </div>
                   </div>
@@ -573,7 +606,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                       <FileStack className="h-4 w-4 text-violet-500" />
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500">ยอดรวม</p>
+                      <p className="text-xs text-slate-500">{d.receiptStatsAmount}</p>
                       <p className="tabular-nums text-xl font-bold text-violet-700">{fmtCurrency(totalFiltered)}</p>
                     </div>
                   </div>
@@ -656,7 +689,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                                         frame.contentWindow?.print();
                                         setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
                                       };
-                                    }).catch(() => toast.error("ไม่สามารถพิมพ์ได้"));
+                                    }).catch(() => toast.error(d.printError));
                                   }}
                                   className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600"
                                 >
@@ -676,7 +709,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                   <div className="flex w-[360px] shrink-0 flex-col border-l border-violet-100 bg-white">
                     {/* Panel header */}
                     <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
-                      <span className="text-sm font-bold text-slate-800">ใบเสร็จ</span>
+                      <span className="text-sm font-bold text-slate-800">{d.receiptViewBtn}</span>
                       <div className="flex items-center gap-1">
                         <button
                           type="button"

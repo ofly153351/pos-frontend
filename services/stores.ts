@@ -85,6 +85,10 @@ function buildStoreUpdateFormData(input: UpdateStoreInput) {
     formData.set("currency_code", input.currency_code);
   }
 
+  if (typeof input.tax_id === "string") {
+    formData.set("tax_id", input.tax_id);
+  }
+
   if (typeof input.promptpay_id === "string") {
     formData.set("promptpay_id", input.promptpay_id);
   }

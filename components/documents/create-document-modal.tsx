@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Minus, Plus, Trash2, X } from "lucide-react";
+import { Loader2, Minus, Plus, Search, Trash2, X } from "lucide-react";
 
 import { authorizedApiRequest } from "@/services/api";
 import { getCurrentStoreId } from "@/lib/store-storage";
+import { listProducts } from "@/services/products";
 import { createDocument } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import type { CreateDocumentPayload, DocumentType } from "@/types/document";
+import type { Product } from "@/types/product";
 
 type Customer = { id: string; full_name: string };
 
@@ -19,6 +21,8 @@ type Dict = {
   documentDate: string;
   optionalDueDate: string;
   description: string;
+  productSearch: string;
+  productNotFound: string;
   quantity: string;
   unitPrice: string;
   discount: string;
@@ -42,6 +46,7 @@ type Dict = {
 };
 
 type LineItem = {
+  product_id?: string;
   description: string;
   quantity: number;
   unit_price: number;
@@ -90,6 +95,12 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   ]);
   const [error, setError] = useState("");
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [productSearch, setProductSearch] = useState("");
+  const [showProductList, setShowProductList] = useState(false);
+  const productSearchRef = useRef<HTMLInputElement>(null);
+  const productWrapperRef = useRef<HTMLDivElement>(null);
+  const barcodeBuffer = useRef("");
+  const barcodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
 
@@ -102,6 +113,88 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     enabled: !!storeId,
   });
 
+  const { data: productsRaw = [] } = useQuery<Product[]>({
+    queryKey: ["products-for-doc", storeId],
+    queryFn: async () => {
+      const res = await listProducts({ limit: 500 });
+      return Array.isArray(res.data) ? res.data : ((res.data as { items: Product[] }).items ?? []);
+    },
+    enabled: !!storeId,
+  });
+
+  const filteredProducts = (() => {
+    const kw = productSearch.trim().toLowerCase();
+    const list = kw
+      ? productsRaw.filter((p) =>
+          p.name?.toLowerCase().includes(kw) ||
+          (p.sku ?? "").toLowerCase().includes(kw) ||
+          (p.barcode ?? "").toLowerCase().includes(kw),
+        )
+      : [...productsRaw];
+    return list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "th"));
+  })();
+
+  function addProductToItems(product: Product) {
+    const price = Number(product.effective_price ?? product.base_price ?? 0);
+    setItems((prev) => {
+      // ถ้ามี product_id นี้อยู่แล้ว → เพิ่ม qty แทน
+      const existing = prev.findIndex((it) => it.product_id === product.id);
+      if (existing !== -1) {
+        return prev.map((it, idx) =>
+          idx === existing ? { ...it, quantity: it.quantity + 1 } : it,
+        );
+      }
+      // ถ้า row สุดท้ายว่าง → แทนที่
+      const last = prev[prev.length - 1];
+      if (last && !last.description && last.unit_price === 0) {
+        return prev.slice(0, -1).concat({
+          product_id: product.id,
+          description: product.name,
+          quantity: 1,
+          unit_price: price,
+          discount_type: "",
+          discount_value: 0,
+        });
+      }
+      return [...prev, {
+        product_id: product.id,
+        description: product.name,
+        quantity: 1,
+        unit_price: price,
+        discount_type: "",
+        discount_value: 0,
+      }];
+    });
+    setProductSearch("");
+    setShowProductList(false);
+  }
+
+  // Barcode scanner listener
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") return;
+
+      if (e.key === "Enter" && barcodeBuffer.current.length > 2) {
+        const code = barcodeBuffer.current.trim().toLowerCase();
+        const found = productsRaw.find(
+          (p) => (p.barcode ?? "").toLowerCase() === code || (p.sku ?? "").toLowerCase() === code,
+        );
+        if (found) addProductToItems(found);
+        barcodeBuffer.current = "";
+        return;
+      }
+      if (e.key.length === 1) {
+        barcodeBuffer.current += e.key;
+        if (barcodeTimeout.current) clearTimeout(barcodeTimeout.current);
+        barcodeTimeout.current = setTimeout(() => { barcodeBuffer.current = ""; }, 100);
+      }
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productsRaw]);
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === "Escape") triggerClose(); };
     document.addEventListener("keydown", handleEsc);
@@ -109,8 +202,20 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (productWrapperRef.current && !productWrapperRef.current.contains(e.target as Node)) {
+        setShowProductList(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   function triggerClose() { setIsClosing(true); }
   function handleAnimEnd() { if (isClosing) onClose(); }
+
+  const hasProducts = items.some((it) => it.description !== "" || it.unit_price > 0);
 
   function addItem() {
     setItems([...items, { description: "", quantity: 1, unit_price: 0, discount_type: "", discount_value: 0 }]);
@@ -143,6 +248,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       vat_rate: vatEnabled ? 7 : 0,
       notes: notes || undefined,
       items: items.map((it) => ({
+        product_id: it.product_id,
         description: it.description,
         quantity: it.quantity,
         unit_price: it.unit_price,
@@ -172,6 +278,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       />
       <div className="fixed inset-0 z-50 flex flex-col md:items-center md:justify-center md:p-4">
         <div
+          style={{ fontSize: "101.5%" }}
           className={`flex h-full flex-col overflow-hidden bg-white md:h-auto md:max-h-[90vh] md:w-full md:max-w-3xl md:rounded-2xl md:shadow-[0_24px_60px_rgba(124,58,237,0.18)] ${isClosing ? "fade-out" : "smooth-fade-up"}`}
           onAnimationEnd={handleAnimEnd}
         >
@@ -184,7 +291,6 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               <h4 className="text-base font-bold">{d.createTitle}</h4>
               <p className="text-xs text-violet-200">{d.createSubtitle}</p>
             </div>
-            {/* Type tabs */}
             <div className="hidden items-center gap-1 rounded-lg bg-violet-700/50 p-1 md:flex">
               {(Object.keys(TYPE_LABELS) as DocumentType[]).map((t) => (
                 <button
@@ -230,7 +336,6 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              {/* Customer */}
               <div className="md:col-span-3">
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {d.selectCustomer}
@@ -247,7 +352,6 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 </select>
               </div>
 
-              {/* Document date */}
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {d.documentDate}
@@ -260,7 +364,6 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 />
               </div>
 
-              {/* Due date */}
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {d.optionalDueDate}
@@ -274,8 +377,56 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               </div>
             </div>
 
+            {/* Product search + barcode */}
+            <div className="relative mt-4" ref={productWrapperRef}>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  ref={productSearchRef}
+                  className="w-full rounded-xl border border-violet-200 bg-white py-2.5 pl-9 pr-4 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  placeholder={d.productSearch}
+                  value={productSearch}
+                  onChange={(e) => { setProductSearch(e.target.value); setShowProductList(true); }}
+                  onFocus={() => setShowProductList(true)}
+                />
+                {productSearch && (
+                  <button
+                    type="button"
+                    onClick={() => { setProductSearch(""); setShowProductList(false); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              {showProductList && (
+                <div className="absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-violet-100 bg-white shadow-lg">
+                  {filteredProducts.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-slate-400">{d.productNotFound}</div>
+                  ) : (
+                    filteredProducts.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => addProductToItems(p)}
+                        className="flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors hover:bg-violet-50"
+                      >
+                        <div>
+                          <span className="font-medium text-slate-800">{p.name}</span>
+                          {p.sku && <span className="ml-2 text-xs text-slate-400">{p.sku}</span>}
+                        </div>
+                        <span className="font-mono text-sm font-semibold text-violet-700">
+                          ฿{Number(p.effective_price ?? p.base_price ?? 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* Line items */}
-            <div className="mt-4">
+            <div className={`mt-3 transition-opacity duration-200 ${!hasProducts ? "pointer-events-none opacity-40" : ""}`}>
               <div className="overflow-hidden rounded-xl border border-violet-100">
                 <table className="w-full text-sm">
                   <thead>
@@ -291,12 +442,16 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                     {items.map((item, i) => (
                       <tr key={i}>
                         <td className="px-3 py-2">
-                          <input
-                            className="w-full rounded-lg border border-violet-200 px-2.5 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                            placeholder={d.description}
-                            value={item.description}
-                            onChange={(e) => updateItem(i, "description", e.target.value)}
-                          />
+                          {item.product_id ? (
+                            <span className="block truncate px-2.5 py-1.5 text-sm font-medium text-slate-700">{item.description}</span>
+                          ) : (
+                            <input
+                              className="w-full rounded-lg border border-violet-200 px-2.5 py-1.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                              placeholder={d.description}
+                              value={item.description}
+                              onChange={(e) => updateItem(i, "description", e.target.value)}
+                            />
+                          )}
                         </td>
                         <td className="px-3 py-2">
                           <div className="flex items-center gap-1">
@@ -317,12 +472,18 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                           </div>
                         </td>
                         <td className="px-3 py-2">
-                          <input
-                            type="number" min={0} step="0.01"
-                            className="w-full rounded-lg border border-violet-200 px-2.5 py-1.5 text-right font-mono text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                            value={item.unit_price}
-                            onChange={(e) => updateItem(i, "unit_price", Number(e.target.value))}
-                          />
+                          {item.product_id ? (
+                            <span className="block px-2.5 py-1.5 text-right font-mono text-sm font-medium text-slate-700">
+                              {item.unit_price.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
+                            </span>
+                          ) : (
+                            <input
+                              type="number" min={0} step="0.01"
+                              className="w-full rounded-lg border border-violet-200 px-2.5 py-1.5 text-right font-mono text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                              value={item.unit_price}
+                              onChange={(e) => updateItem(i, "unit_price", Number(e.target.value))}
+                            />
+                          )}
                         </td>
                         <td className="px-3 py-2 text-right font-mono text-sm font-semibold text-slate-800">
                           {fmt(lineAmount(item))}
@@ -354,7 +515,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               </div>
             </div>
 
-            {/* Totals + VAT toggle + Notes */}
+            {/* Totals + VAT + Notes */}
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">

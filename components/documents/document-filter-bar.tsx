@@ -1,6 +1,6 @@
 "use client";
 
-import { Filter, RotateCcw, Search, X } from "lucide-react";
+import { RotateCcw, Search, X } from "lucide-react";
 import type { DocumentListQuery, DocumentStatus, DocumentType, PaymentStatus } from "@/types/document";
 
 type Dict = {
@@ -58,32 +58,6 @@ export function DocumentFilterBar({ dict, query, onChange, onReset }: Props) {
             </button>
           )}
         </div>
-
-        {/* Filter icon */}
-        <div className="relative flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-600">
-          <Filter className="h-4 w-4" />
-          {dict.filter}
-          {activeCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-xs font-medium text-white">
-              {activeCount}
-            </span>
-          )}
-        </div>
-
-        {/* Type */}
-        <select
-          className="rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-          value={query.type ?? ""}
-          onChange={(e) => onChange({ type: e.target.value as DocumentType | "", page: 1 })}
-        >
-          <option value="">{dict.allTypes}</option>
-          <option value="INVOICE">{dict.typeInvoice}</option>
-          <option value="RECEIPT">{dict.typeReceipt}</option>
-          <option value="TAX_INVOICE">{dict.typeTaxInvoice}</option>
-          <option value="QUOTATION">{dict.typeQuotation}</option>
-          <option value="BILL">{dict.typeBill}</option>
-          <option value="CREDIT_NOTE">{dict.typeCreditNote}</option>
-        </select>
 
         {/* Status */}
         <select
