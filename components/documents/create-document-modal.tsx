@@ -20,6 +20,7 @@ type Dict = {
   selectCustomer: string;
   documentDate: string;
   optionalDueDate: string;
+  validUntil?: string;
   description: string;
   productSearch: string;
   productNotFound: string;
@@ -89,6 +90,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const [docDate, setDocDate] = useState(today());
   const [dueDate, setDueDate] = useState("");
   const [vatEnabled, setVatEnabled] = useState(false);
+  const [validUntil, setValidUntil] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([
     { description: "", quantity: 1, unit_price: 0, discount_type: "", discount_value: 0 },
@@ -245,6 +247,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       customer_id: customerId,
       document_date: docDate,
       due_date: dueDate || undefined,
+      valid_until: validUntil || undefined,
       vat_rate: vatEnabled ? 7 : 0,
       notes: notes || undefined,
       items: items.map((it) => ({
@@ -375,6 +378,20 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                   onChange={(e) => setDueDate(e.target.value)}
                 />
               </div>
+
+              {docType === "QUOTATION" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {d.validUntil ?? "ยืนราคาถึง"}
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    value={validUntil}
+                    onChange={(e) => setValidUntil(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Product search + barcode */}

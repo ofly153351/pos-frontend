@@ -1417,7 +1417,9 @@
     "receiptStatsAmount": "Total Amount",
     "receiptModeName": "POS Receipts",
     "printAll": "Print All",
-    "printError": "Failed to print"
+    "printError": "Failed to print",
+    "validUntil": "Valid Until",
+    "convertToInvoice": "Convert to Invoice"
   },
   "invoice": {
     "title": "Invoice",

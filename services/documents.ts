@@ -51,6 +51,21 @@ export async function bulkDocumentAction(payload: BulkActionPayload): Promise<vo
   await authorizedApiRequest(`${base()}/bulk`, { method: "POST", body: payload });
 }
 
+export async function convertQuotation(id: string): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert`, { method: "POST" });
+  return res.data;
+}
+
+export async function payInvoice(id: string): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/pay`, { method: "POST" });
+  return res.data;
+}
+
+export async function convertToTaxInvoice(id: string): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-tax`, { method: "POST" });
+  return res.data;
+}
+
 export async function getDocumentPrintHtml(id: string): Promise<string> {
   return authorizedRawRequest<string>(`${base()}/${id}/print`, { method: "GET", responseType: "text" });
 }

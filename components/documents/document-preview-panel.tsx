@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useTransition } from "react";
-import { Printer, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Loader2, Printer, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getDocumentPrintHtml } from "@/services/documents";
+import { convertQuotation, convertToTaxInvoice, payInvoice, getDocumentPrintHtml } from "@/services/documents";
+import { toast } from "@/components/ui/toast";
 import type { DocumentType } from "@/types/document";
 
 type Dict = {
@@ -30,8 +31,11 @@ function isA4(type?: DocumentType) {
 
 export function DocumentPreviewPanel({ documentId, documentNo, documentType, dict, onClose }: Props) {
   const [isOpening, startOpenTransition] = useTransition();
+  const [isConverting, startConvertTransition] = useTransition();
+  const [isPaying, startPayTransition] = useTransition();
   const drawer = isA4(documentType);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const qc = useQueryClient();
 
   const { data: html, isLoading } = useQuery({
     queryKey: ["document-print", documentId],
@@ -47,6 +51,45 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, dic
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [drawer, onClose]);
+
+  function handleConvert() {
+    startConvertTransition(async () => {
+      try {
+        await convertQuotation(documentId);
+        toast.success("แปลงเป็นใบแจ้งหนี้สำเร็จ");
+        qc.invalidateQueries({ queryKey: ["documents"] });
+        onClose();
+      } catch {
+        toast.error("ไม่สามารถแปลงเอกสารได้");
+      }
+    });
+  }
+
+  function handlePayInvoice() {
+    startPayTransition(async () => {
+      try {
+        await payInvoice(documentId);
+        toast.success("ชำระแล้ว — สร้างใบกำกับภาษีสำเร็จ");
+        qc.invalidateQueries({ queryKey: ["documents"] });
+        onClose();
+      } catch {
+        toast.error("ไม่สามารถดำเนินการได้");
+      }
+    });
+  }
+
+  function handleConvertToTax() {
+    startConvertTransition(async () => {
+      try {
+        await convertToTaxInvoice(documentId);
+        toast.success("สร้างใบกำกับภาษีสำเร็จ");
+        qc.invalidateQueries({ queryKey: ["documents"] });
+        onClose();
+      } catch {
+        toast.error("ไม่สามารถแปลงเอกสารได้");
+      }
+    });
+  }
 
   function handlePrint() {
     startOpenTransition(async () => {
@@ -107,6 +150,39 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, dic
               )}
             </div>
             <div className="flex items-center gap-1">
+              {documentType === "QUOTATION" && (
+                <button
+                  type="button"
+                  disabled={isConverting}
+                  onClick={handleConvert}
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
+                >
+                  {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                  แปลงเป็นใบแจ้งหนี้
+                </button>
+              )}
+              {documentType === "INVOICE" && (
+                <>
+                  <button
+                    type="button"
+                    disabled={isPaying}
+                    onClick={handlePayInvoice}
+                    className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
+                  >
+                    {isPaying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                    ชำระแล้ว
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isConverting}
+                    onClick={handleConvertToTax}
+                    className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
+                  >
+                    {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                    ใบกำกับภาษี
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 disabled={!html}

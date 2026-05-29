@@ -43,6 +43,7 @@ export interface Document {
   staff_name: string;
   document_date: string;
   due_date?: string;
+  valid_until?: string;
   items: DocumentItem[];
   subtotal: number;
   vat_rate: number;
@@ -104,6 +105,7 @@ export interface CreateDocumentPayload {
   customer_id: string;
   document_date: string;
   due_date?: string;
+  valid_until?: string;
   items: {
     product_id?: string;
     description: string;

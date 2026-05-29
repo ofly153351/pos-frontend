@@ -1417,7 +1417,9 @@
     "receiptStatsAmount": "ยอดรวม",
     "receiptModeName": "ใบเสร็จหน้าร้าน",
     "printAll": "พิมพ์ทั้งหมด",
-    "printError": "ไม่สามารถพิมพ์ได้"
+    "printError": "ไม่สามารถพิมพ์ได้",
+    "validUntil": "ยืนราคาถึง",
+    "convertToInvoice": "แปลงเป็นใบแจ้งหนี้"
   },
   "invoice": {
     "title": "ใบแจ้งหนี้",
