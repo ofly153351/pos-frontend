@@ -1419,7 +1419,8 @@
     "printAll": "พิมพ์ทั้งหมด",
     "printError": "ไม่สามารถพิมพ์ได้",
     "validUntil": "ยืนราคาถึง",
-    "convertToInvoice": "แปลงเป็นใบแจ้งหนี้"
+    "convertToInvoice": "แปลงเป็นใบแจ้งหนี้",
+    "typeDeliveryOrder": "ใบส่งของ"
   },
   "invoice": {
     "title": "ใบแจ้งหนี้",

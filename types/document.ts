@@ -4,7 +4,8 @@ export type DocumentType =
   | "TAX_INVOICE"
   | "QUOTATION"
   | "BILL"
-  | "CREDIT_NOTE";
+  | "CREDIT_NOTE"
+  | "DELIVERY_ORDER";
 
 export type DocumentStatus =
   | "DRAFT"
@@ -106,6 +107,16 @@ export interface CreateDocumentPayload {
   document_date: string;
   due_date?: string;
   valid_until?: string;
+  delivery_date?: string;
+  delivery_address?: string;
+  delivery_contact?: string;
+  delivery_phone?: string;
+  sales_zone?: string;
+  salesperson_name?: string;
+  invoice_ref_no?: string;
+  po_ref_no?: string;
+  shipping_fee?: number;
+  credit_term_days?: number;
   items: {
     product_id?: string;
     description: string;

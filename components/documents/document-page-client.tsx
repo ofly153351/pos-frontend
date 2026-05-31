@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Calendar, CheckCircle2, Download, FileBadge, FileDigit, FileMinus, FileQuestion, FileStack, FileText, LayoutGrid, Loader2, Package, Printer, Receipt, Search, X } from "lucide-react";
+import { Calendar, CheckCircle2, Download, FileBadge, FileDigit, FileMinus, FileQuestion, FileStack, FileText, LayoutGrid, Loader2, Package, Printer, Receipt, Search, Truck, X } from "lucide-react";
 
 import { getCurrentStoreId } from "@/lib/store-storage";
 import {
@@ -39,6 +39,7 @@ type DocumentDict = {
   typeQuotation: string;
   typeBill: string;
   typeCreditNote: string;
+  typeDeliveryOrder?: string;
   statusDraft: string;
   statusPending: string;
   statusOverdue: string;
@@ -404,7 +405,8 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                   { type: "BILL",       label: d.typeBill,      Icon: FileDigit    },
                   { type: "TAX_INVOICE",label: d.typeTaxInvoice,Icon: FileBadge    },
                   { type: "QUOTATION",  label: d.typeQuotation, Icon: FileQuestion },
-                  { type: "CREDIT_NOTE",label: d.typeCreditNote,Icon: FileMinus    },
+                  { type: "CREDIT_NOTE",   label: d.typeCreditNote,     Icon: FileMinus    },
+                  { type: "DELIVERY_ORDER",label: d.typeDeliveryOrder ?? "ใบส่งของ", Icon: Truck },
                 ] as { type: string; label: string; Icon: React.ComponentType<{ className?: string }> }[]).map(({ type, label, Icon }) => {
                   const active = (query.type ?? "") === type;
                   return (

@@ -1,4 +1,4 @@
-import { FileBadge, FileDigit, FileMinus, FileQuestion, FileText, Receipt } from "lucide-react";
+import { FileBadge, FileDigit, FileMinus, FileQuestion, FileText, Receipt, Truck } from "lucide-react";
 import type { DocumentType } from "@/types/document";
 
 type Dict = {
@@ -8,6 +8,7 @@ type Dict = {
   typeQuotation: string;
   typeBill: string;
   typeCreditNote: string;
+  typeDeliveryOrder?: string;
 };
 
 type Config = { label: string; className: string; darkClassName: string; icon: React.ComponentType<{ className?: string }> };
@@ -19,7 +20,8 @@ function getConfig(type: DocumentType, d: Dict): Config {
     case "TAX_INVOICE": return { label: d.typeTaxInvoice, className: "bg-blue-100 text-blue-700 ring-1 ring-blue-200",         darkClassName: "bg-white/20 text-white ring-1 ring-white/30",  icon: FileBadge };
     case "QUOTATION":   return { label: d.typeQuotation,  className: "bg-amber-100 text-amber-700 ring-1 ring-amber-200",      darkClassName: "bg-white/20 text-white ring-1 ring-white/30",  icon: FileQuestion };
     case "BILL":        return { label: d.typeBill,       className: "bg-slate-100 text-slate-600 ring-1 ring-slate-200",      darkClassName: "bg-white/20 text-white ring-1 ring-white/30",  icon: FileDigit };
-    case "CREDIT_NOTE": return { label: d.typeCreditNote, className: "bg-red-100 text-red-600 ring-1 ring-red-200",            darkClassName: "bg-white/20 text-white ring-1 ring-white/30",  icon: FileMinus };
+    case "CREDIT_NOTE":    return { label: d.typeCreditNote,     className: "bg-red-100 text-red-600 ring-1 ring-red-200",       darkClassName: "bg-white/20 text-white ring-1 ring-white/30",  icon: FileMinus };
+    case "DELIVERY_ORDER": return { label: d.typeDeliveryOrder ?? "ใบส่งของ", className: "bg-cyan-100 text-cyan-700 ring-1 ring-cyan-200", darkClassName: "bg-white/20 text-white ring-1 ring-white/30", icon: Truck };
   }
 }
 

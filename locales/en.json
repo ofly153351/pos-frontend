@@ -1419,7 +1419,8 @@
     "printAll": "Print All",
     "printError": "Failed to print",
     "validUntil": "Valid Until",
-    "convertToInvoice": "Convert to Invoice"
+    "convertToInvoice": "Convert to Invoice",
+    "typeDeliveryOrder": "Delivery Order"
   },
   "invoice": {
     "title": "Invoice",

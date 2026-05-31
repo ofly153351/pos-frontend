@@ -62,7 +62,7 @@ type Props = {
   onSuccess: () => void;
 };
 
-const TYPE_LABELS: Record<DocumentType, keyof Dict> = {
+const TYPE_LABELS: Record<string, keyof Dict> = {
   INVOICE: "typeInvoice", RECEIPT: "typeReceipt", TAX_INVOICE: "typeTaxInvoice",
   QUOTATION: "typeQuotation", BILL: "typeBill", CREDIT_NOTE: "typeCreditNote",
 };
