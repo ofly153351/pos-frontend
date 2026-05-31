@@ -70,6 +70,11 @@ export async function convertToTaxInvoice(id: string): Promise<Document> {
   return res.data;
 }
 
+export async function convertToDeliveryOrder(id: string): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-do`, { method: "POST" });
+  return res.data;
+}
+
 export async function getDocumentPrintHtml(id: string): Promise<string> {
   return authorizedRawRequest<string>(`${base()}/${id}/print`, { method: "GET", responseType: "text" });
 }

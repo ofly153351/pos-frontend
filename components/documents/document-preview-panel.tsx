@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useTransition } from "react";
-import { ArrowRight, Ban, Loader2, Printer, X } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { ArrowRight, Ban, ChevronDown, FileText, Loader2, Printer, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, convertQuotation, convertToTaxInvoice, payInvoice, getDocumentPrintHtml } from "@/services/documents";
+import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import type { DocumentType } from "@/types/document";
 
@@ -36,6 +36,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
   const [isCancelling, startCancelTransition] = useTransition();
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
 
   const isPaid = paymentStatus === "PAID";
   const isCancelled = documentStatus === "CANCELLED";
@@ -85,6 +86,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   }
 
   function handleConvertToTax() {
+    setCreateMenuOpen(false);
     startConvertTransition(async () => {
       try {
         await convertToTaxInvoice(documentId);
@@ -93,6 +95,20 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
         onClose();
       } catch {
         toast.error("ไม่สามารถแปลงเอกสารได้");
+      }
+    });
+  }
+
+  function handleConvertToDO() {
+    setCreateMenuOpen(false);
+    startConvertTransition(async () => {
+      try {
+        await convertToDeliveryOrder(documentId);
+        toast.success("สร้างใบส่งของสำเร็จ");
+        qc.invalidateQueries({ queryKey: ["documents"] });
+        onClose();
+      } catch {
+        toast.error("ไม่สามารถสร้างใบส่งของได้");
       }
     });
   }
@@ -192,15 +208,42 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                     {isPaying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
                     ชำระแล้ว
                   </button>
-                  <button
-                    type="button"
-                    disabled={isConverting}
-                    onClick={handleConvertToTax}
-                    className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
-                  >
-                    {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-                    ใบกำกับภาษี
-                  </button>
+                  {/* Create document dropdown */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      disabled={isConverting}
+                      onClick={() => setCreateMenuOpen((o) => !o)}
+                      className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
+                    >
+                      {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                      สร้างเอกสาร
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                    {createMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-[60]" onClick={() => setCreateMenuOpen(false)} />
+                        <div className="absolute right-0 top-full z-[61] mt-1 w-44 overflow-hidden rounded-lg border border-violet-100 bg-white shadow-lg">
+                          <button
+                            type="button"
+                            onClick={handleConvertToTax}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-violet-50"
+                          >
+                            <FileText className="h-3.5 w-3.5 text-violet-500" />
+                            ใบกำกับภาษี
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleConvertToDO}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-violet-50"
+                          >
+                            <Truck className="h-3.5 w-3.5 text-violet-500" />
+                            ใบส่งของ
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </>
               )}
               {!isCancelled && documentStatus !== "COMPLETED" && (
