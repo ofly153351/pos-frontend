@@ -483,6 +483,8 @@ export function DocumentPageClient({ dictionary: d }: Props) {
               documentId={selectedDocId}
               documentNo={documents.find((doc) => doc.id === selectedDocId)?.document_no}
               documentType={documents.find((doc) => doc.id === selectedDocId)?.type}
+              paymentStatus={documents.find((doc) => doc.id === selectedDocId)?.payment_status}
+              documentStatus={documents.find((doc) => doc.id === selectedDocId)?.status}
               dict={d}
               onClose={() => setSelectedDocId(null)}
             />

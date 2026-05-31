@@ -44,6 +44,7 @@ type Dict = {
   typeQuotation: string;
   typeBill: string;
   typeCreditNote: string;
+  typeDeliveryOrder?: string;
 };
 
 type LineItem = {
@@ -65,6 +66,7 @@ type Props = {
 const TYPE_LABELS: Record<string, keyof Dict> = {
   INVOICE: "typeInvoice", RECEIPT: "typeReceipt", TAX_INVOICE: "typeTaxInvoice",
   QUOTATION: "typeQuotation", BILL: "typeBill", CREDIT_NOTE: "typeCreditNote",
+  DELIVERY_ORDER: "typeDeliveryOrder",
 };
 
 function today() {
@@ -91,6 +93,14 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const [dueDate, setDueDate] = useState("");
   const [vatEnabled, setVatEnabled] = useState(false);
   const [validUntil, setValidUntil] = useState("");
+  // Delivery order fields
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryContact, setDeliveryContact] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
+  const [invoiceRefNo, setInvoiceRefNo] = useState("");
+  const [poRefNo, setPoRefNo] = useState("");
+  const [creditTermDays, setCreditTermDays] = useState(0);
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([
     { description: "", quantity: 1, unit_price: 0, discount_type: "", discount_value: 0 },
@@ -248,6 +258,13 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       document_date: docDate,
       due_date: dueDate || undefined,
       valid_until: validUntil || undefined,
+      delivery_date: deliveryDate || undefined,
+      delivery_address: deliveryAddress || undefined,
+      delivery_contact: deliveryContact || undefined,
+      delivery_phone: deliveryPhone || undefined,
+      invoice_ref_no: invoiceRefNo || undefined,
+      po_ref_no: poRefNo || undefined,
+      credit_term_days: creditTermDays || undefined,
       vat_rate: vatEnabled ? 7 : 0,
       notes: notes || undefined,
       items: items.map((it) => ({
@@ -392,7 +409,96 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                   />
                 </div>
               )}
+
+              {docType === "DELIVERY_ORDER" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    วันที่จัดส่ง
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
+
+            {/* Delivery Order specific fields */}
+            {docType === "DELIVERY_ORDER" && (
+              <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl border border-violet-100 bg-violet-50/40 p-4 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    สถานที่จัดส่ง
+                  </label>
+                  <input
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    placeholder="ที่อยู่จัดส่ง"
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    ผู้ติดต่อ
+                  </label>
+                  <input
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    placeholder="ชื่อผู้ติดต่อ"
+                    value={deliveryContact}
+                    onChange={(e) => setDeliveryContact(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    โทรศัพท์
+                  </label>
+                  <input
+                    type="tel"
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    placeholder="0XX-XXX-XXXX"
+                    value={deliveryPhone}
+                    onChange={(e) => setDeliveryPhone(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    อ้างอิงใบแจ้งหนี้ (Invoice Ref.)
+                  </label>
+                  <input
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    placeholder="INV-xxxx"
+                    value={invoiceRefNo}
+                    onChange={(e) => setInvoiceRefNo(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    เลขที่ใบสั่งซื้อ (PO No.)
+                  </label>
+                  <input
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    placeholder="PO-xxxx"
+                    value={poRefNo}
+                    onChange={(e) => setPoRefNo(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    เครดิต (วัน)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    placeholder="0"
+                    value={creditTermDays || ""}
+                    onChange={(e) => setCreditTermDays(Number(e.target.value))}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Product search + barcode */}
             <div className="relative mt-4" ref={productWrapperRef}>

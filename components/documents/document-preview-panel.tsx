@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useTransition } from "react";
-import { ArrowRight, Loader2, Printer, X } from "lucide-react";
+import { ArrowRight, Ban, Loader2, Printer, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { convertQuotation, convertToTaxInvoice, payInvoice, getDocumentPrintHtml } from "@/services/documents";
+import { cancelDocument, convertQuotation, convertToTaxInvoice, payInvoice, getDocumentPrintHtml } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import type { DocumentType } from "@/types/document";
 
@@ -18,6 +18,8 @@ type Props = {
   documentId: string;
   documentNo?: string;
   documentType?: DocumentType;
+  paymentStatus?: string;   // "UNPAID" | "PARTIAL" | "PAID"
+  documentStatus?: string;  // "PENDING" | "COMPLETED" | "CANCELLED" | ...
   dict: Dict;
   onClose: () => void;
 };
@@ -29,10 +31,14 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentNo, documentType, dict, onClose }: Props) {
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, dict, onClose }: Props) {
   const [isOpening, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
+  const [isCancelling, startCancelTransition] = useTransition();
+
+  const isPaid = paymentStatus === "PAID";
+  const isCancelled = documentStatus === "CANCELLED";
   const drawer = isA4(documentType);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const qc = useQueryClient();
@@ -87,6 +93,20 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, dic
         onClose();
       } catch {
         toast.error("ไม่สามารถแปลงเอกสารได้");
+      }
+    });
+  }
+
+  function handleCancel() {
+    if (!window.confirm("ยืนยันการยกเลิกเอกสารนี้?")) return;
+    startCancelTransition(async () => {
+      try {
+        await cancelDocument(documentId);
+        toast.success("ยกเลิกเอกสารแล้ว");
+        qc.invalidateQueries({ queryKey: ["documents"] });
+        onClose();
+      } catch {
+        toast.error("ไม่สามารถยกเลิกเอกสารได้");
       }
     });
   }
@@ -161,7 +181,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, dic
                   แปลงเป็นใบแจ้งหนี้
                 </button>
               )}
-              {documentType === "INVOICE" && (
+              {documentType === "INVOICE" && !isPaid && !isCancelled && (
                 <>
                   <button
                     type="button"
@@ -182,6 +202,17 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, dic
                     ใบกำกับภาษี
                   </button>
                 </>
+              )}
+              {!isCancelled && documentStatus !== "COMPLETED" && (
+                <button
+                  type="button"
+                  disabled={isCancelling}
+                  onClick={handleCancel}
+                  className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100 disabled:opacity-40"
+                >
+                  {isCancelling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
+                  ยกเลิก
+                </button>
               )}
               <button
                 type="button"

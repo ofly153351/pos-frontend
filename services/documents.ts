@@ -56,6 +56,10 @@ export async function convertQuotation(id: string): Promise<Document> {
   return res.data;
 }
 
+export async function cancelDocument(id: string): Promise<void> {
+  await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: { status: "CANCELLED" } });
+}
+
 export async function payInvoice(id: string): Promise<Document> {
   const res = await authorizedApiRequest<Document>(`${base()}/${id}/pay`, { method: "POST" });
   return res.data;
