@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
-import { ChevronDown, Printer, Trash2, X } from "lucide-react";
+import { ChevronDown, Loader2, Printer, Trash2, Truck, X } from "lucide-react";
 
 import { ProductBrowser } from "@/components/sales/product-browser";
 import type {
@@ -12,7 +12,7 @@ import {
   listCustomerLevelDiscounts,
   listCustomers,
 } from "@/services/customers";
-import { createDocument } from "@/services/documents";
+import { convertToDeliveryOrder, createDocument } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { listProducts } from "@/services/products";
 import {
@@ -258,6 +258,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
   const [invoiceDueDate, setInvoiceDueDate] = useState("");
+  const [postInvoiceDocId, setPostInvoiceDocId] = useState<string | null>(null);
+  const [isPostInvoicePending, startPostInvoiceTransition] = useTransition();
   const [discountEditorProductId, setDiscountEditorProductId] = useState<
     string | null
   >(null);
@@ -1144,6 +1146,20 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     closeAmountNumpad();
   }
 
+  function handlePostInvoiceConfirm() {
+    if (!postInvoiceDocId) return;
+    startPostInvoiceTransition(async () => {
+      try {
+        await convertToDeliveryOrder(postInvoiceDocId);
+        toast.success("สร้างใบส่งของสำเร็จ");
+      } catch {
+        toast.error("ไม่สามารถสร้างใบส่งของได้");
+      } finally {
+        setPostInvoiceDocId(null);
+      }
+    });
+  }
+
   function submitSale() {
     setError("");
 
@@ -1172,7 +1188,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
         if (isInvoiceSettlement) {
           const today = new Date().toISOString().split("T")[0];
-          await createDocument({
+          const newDoc = await createDocument({
             type: "INVOICE",
             customer_id: selectedCustomerId,
             document_date: today,
@@ -1195,6 +1211,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           clearCart();
           toast.success(dictionary.checkoutSuccess);
           await reloadData();
+          setPostInvoiceDocId(newDoc.id);
           return;
         }
 
@@ -2154,6 +2171,44 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           </div>
         </div>
       ) : null}
+
+      {/* Post-invoice: ถามสร้างใบส่งของ */}
+      {postInvoiceDocId && (
+        <>
+          <div className="fixed inset-0 z-[60] bg-black/30 smooth-fade" onClick={() => setPostInvoiceDocId(null)} />
+          <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-violet-100 bg-white p-6 shadow-2xl smooth-fade-up">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100">
+                  <Truck className="h-5 w-5 text-violet-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">สร้างใบส่งของ?</h3>
+                  <p className="text-xs text-slate-500">ใบส่งของ / ใบกำกับภาษี จากใบแจ้งหนี้นี้</p>
+                </div>
+              </div>
+              <div className="mt-5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPostInvoiceDocId(null)}
+                  className="flex-1 rounded-lg border border-violet-200 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-violet-50"
+                >
+                  ข้าม
+                </button>
+                <button
+                  type="button"
+                  disabled={isPostInvoicePending}
+                  onClick={handlePostInvoiceConfirm}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-violet-600 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40"
+                >
+                  {isPostInvoicePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                  สร้างใบส่งของ
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {discountEditorItem ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">

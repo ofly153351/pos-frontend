@@ -204,7 +204,7 @@
     "customerPlaceholder": "Walk-in (no customer)",
     "customerSettlementLabel": "Settlement",
     "customerSettlementCashNow": "Pay now (cash/card)",
-    "customerSettlementInvoice": "Issue invoice",
+    "customerSettlementInvoice": "Open credit bill",
     "customerTypeLabel": "Customer type",
     "customerTypeGeneral": "General customer",
     "customerTypeNetwork": "Network customer",

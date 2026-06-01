@@ -204,7 +204,7 @@
     "customerPlaceholder": "ลูกค้าทั่วไป (ไม่เลือก)",
     "customerSettlementLabel": "รูปแบบชำระเงิน",
     "customerSettlementCashNow": "ชำระทันที (เงินสด/บัตร)",
-    "customerSettlementInvoice": "ออกบิลค้างชำระ",
+    "customerSettlementInvoice": "เปิดบิลเชื่อ",
     "customerTypeLabel": "หมวดหมู่ลูกค้า",
     "customerTypeGeneral": "ลูกค้าทั่วไป",
     "customerTypeNetwork": "ลูกค้า",
