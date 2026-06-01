@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { CatalogSetupSection } from "@/components/stock/catalog-setup-section";
 import { ProductFormDrawer } from "@/components/stock/product-form-modal";
+import { StockAdjustModal } from "@/components/stock/stock-adjust-modal";
 import { StockLevelsSection } from "@/components/stock/stock-levels-section";
 import {
   initialProductFormState,
@@ -122,6 +123,7 @@ export function StockManager({
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [formState, setFormState] = useState<ProductInput>(initialProductFormState);
+  const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
 
   const unitsDictionary = dictionary.units ?? {
     activateLabel: dictionary.form.activeLabel,
@@ -222,13 +224,19 @@ export function StockManager({
     queryKey: ["stock", "product-units"],
   });
 
+  const [sortBy, setSortBy] = useState<"created_at" | "updated_at">("created_at");
+  const isSearching = search.trim().length > 0;
+
   const productsQuery = useQuery({
     enabled: hasMounted,
+    placeholderData: (prev) => prev, // keep old data while fetching new page/sort — prevents products=[] flash
     queryFn: async () => {
-      const response = await listProducts({ limit: productPageSize, page: productPage });
+      const response = isSearching
+        ? await listProducts({ limit: 9999, page: 1, sort_by: sortBy })
+        : await listProducts({ limit: productPageSize, page: productPage, sort_by: sortBy });
       return response.data;
     },
-    queryKey: ["stock", "products", productPage, productPageSize],
+    queryKey: ["stock", "products", isSearching ? "search" : productPage, isSearching ? "all" : productPageSize, sortBy],
   });
 
   useEffect(() => {
@@ -276,11 +284,7 @@ export function StockManager({
 
   const isCategoriesView = initialSection === "categories";
 
-  async function reloadProductsPage() {
-    await queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
-  }
-
-  function resetProductForm() {
+function resetProductForm() {
     setEditingProductId(null);
     setFormState(initialProductFormState);
   }
@@ -324,8 +328,11 @@ export function StockManager({
       try {
         if (editingProductId) await updateProduct(editingProductId, formState);
         else await createProduct(formState);
-        await reloadProductsPage();
+        // Close modal first — then invalidate in background
+        // Awaiting invalidateQueries inside startTransition causes React concurrent
+        // rendering to produce an intermediate empty-products state
         closeProductModal();
+        queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -337,7 +344,7 @@ export function StockManager({
     startTransition(async () => {
       try {
         await deleteProduct(productId);
-        await reloadProductsPage();
+        queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -349,7 +356,7 @@ export function StockManager({
     startTransition(async () => {
       try {
         await Promise.all(productIds.map((id) => deleteProduct(id)));
-        await reloadProductsPage();
+        queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -407,9 +414,12 @@ export function StockManager({
             setProductPage(1);
             localStorage.setItem("stock-page-size", String(size));
           }}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
           onDelete={handleDelete}
           onDeleteMany={handleDeleteMany}
           onEdit={openEditModal}
+          onAdjustStock={(product) => setAdjustingProduct(product)}
           onOpenCreateModal={openCreateModal}
           onProductTypeFilterChange={(value) => { setSelectedProductTypeId(value); setProductPage(1); }}
           onProductUnitFilterChange={(value) => { setSelectedProductUnitId(value); setProductPage(1); }}
@@ -430,6 +440,12 @@ export function StockManager({
           stockStatusFilter={selectedStockStatus}
         />
       ) : null}
+
+      <StockAdjustModal
+        product={adjustingProduct}
+        onClose={() => setAdjustingProduct(null)}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["stock", "products"] })}
+      />
     </div>
   );
 }

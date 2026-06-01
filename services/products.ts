@@ -136,14 +136,17 @@ export function deleteProductType(productTypeId: string) {
 type ListProductsOptions = {
   limit?: number;
   page?: number;
+  sort_by?: "created_at" | "updated_at";
 };
 
 export async function listProducts(options: ListProductsOptions = {}) {
   const currentStoreId = ensureStoreId();
   const page = options.page ?? 1;
   const limit = options.limit ?? 50;
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (options.sort_by) qs.set("sort_by", options.sort_by);
   const response = await authorizedApiRequest<Product[] | ProductListPage>(
-    `/api/stores/${currentStoreId}/products?page=${page}&limit=${limit}`,
+    `/api/stores/${currentStoreId}/products?${qs}`,
   );
 
   const normalizedData: ProductListPage = Array.isArray(response.data)

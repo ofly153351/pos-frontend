@@ -647,7 +647,8 @@
       "storageLocations": "Storage Locations",
       "completeSale": "Complete Sale",
       "searchPlaceholder": "Search Barcode or Name...",
-      "receiptPayment": "Receipt & Payment"
+      "receiptPayment": "Receipt & Payment",
+      "activityLogs": "Activity Logs"
     },
     "stats": {
       "totalProductsLabel": "Total Products",

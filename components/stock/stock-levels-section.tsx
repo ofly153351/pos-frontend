@@ -30,12 +30,15 @@ type StockLevelsSectionProps = {
   onDelete: (productId: string) => void;
   onDeleteMany: (productIds: string[]) => void;
   onEdit: (product: Product) => void;
+  onAdjustStock: (product: Product) => void;
   onOpenCreateModal: () => void;
   onProductBrandFilterChange: (brandId: string) => void;
   onProductTypeFilterChange: (productTypeId: string) => void;
   onProductUnitFilterChange: (productUnitId: string) => void;
   onSearchChange: (value: string) => void;
   onStockStatusFilterChange: (status: ProductStockStatus) => void;
+  sortBy: "created_at" | "updated_at";
+  onSortChange: (sort: "created_at" | "updated_at") => void;
   paginationCurrentPage: number;
   paginationPageSize: number;
   paginationTotalItems: number;
@@ -63,12 +66,15 @@ export function StockLevelsSection({
   onDelete,
   onDeleteMany,
   onEdit,
+  onAdjustStock,
   onOpenCreateModal,
   onProductBrandFilterChange,
   onProductTypeFilterChange,
   onProductUnitFilterChange,
   onSearchChange,
   onStockStatusFilterChange,
+  sortBy,
+  onSortChange,
   paginationCurrentPage,
   paginationPageSize,
   paginationTotalItems,
@@ -204,6 +210,16 @@ export function StockLevelsSection({
               value={search}
             />
           </div>
+
+          {/* Sort selector */}
+          <select
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value as "created_at" | "updated_at")}
+            className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-violet-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+          >
+            <option value="created_at">เพิ่มล่าสุด</option>
+            <option value="updated_at">แก้ไขล่าสุด</option>
+          </select>
 
           <div className="relative" ref={filterPanelRef}>
             <button
@@ -417,6 +433,7 @@ export function StockLevelsSection({
         onDelete={onDelete}
         onDeleteMany={onDeleteMany}
         onEdit={onEdit}
+        onAdjustStock={onAdjustStock}
         onExport={(selectedIds) => {
           const selectedProducts = filteredProducts.filter((p) =>
             selectedIds.includes(p.id),

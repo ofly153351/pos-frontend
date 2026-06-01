@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Barcode, MoreVertical, Pencil, Printer, Trash2, X } from "lucide-react";
+import { AlertTriangle, Barcode, MoreHorizontal, Pencil, Printer, SlidersHorizontal, Trash2, X } from "lucide-react";
 
 import type { ManagementDictionary } from "@/components/stock/types";
 import type { Product } from "@/types/product";
@@ -18,6 +18,7 @@ type ProductsTableProps = {
   onDelete: (productId: string) => void;
   onDeleteMany: (productIds: string[]) => void;
   onEdit: (product: Product) => void;
+  onAdjustStock: (product: Product) => void;
   onExport: (selectedIds: string[]) => void;
   products: Product[];
   receiveDictionary: {
@@ -77,6 +78,7 @@ export function ProductsTable({
   onDelete,
   onDeleteMany,
   onEdit,
+  onAdjustStock,
   onExport,
   products,
   receiveDictionary,
@@ -84,6 +86,16 @@ export function ProductsTable({
 }: ProductsTableProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenuId(null);
+    }
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
   function formatCurrency(value: number) {
     return new Intl.NumberFormat("th-TH", {
       currency: "THB",
@@ -311,7 +323,7 @@ export function ProductsTable({
                 onClick={() => setIsActionMenuOpen((prev) => !prev)}
                 type="button"
               >
-                <MoreVertical className="h-5 w-5" />
+                <MoreHorizontal className="h-5 w-5" />
               </button>
 
               {isActionMenuOpen ? (
@@ -608,35 +620,37 @@ export function ProductsTable({
                 )}
               </td>
               <td className="px-6 py-4.5 text-right">
-                <div className="flex items-center justify-end gap-2">
+                <div className="relative flex items-center justify-end" ref={openMenuId === product.id ? menuRef : null}>
                   <button
-                    className="rounded-lg p-2.5 text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                    aria-label={tableDictionary.barcodeAction}
-                    disabled={!product.barcode && !product.sku}
-                    onClick={() => setPreviewSku(product.barcode ?? product.sku ?? null)}
-                    title={tableDictionary.barcodeAction}
                     type="button"
+                    onClick={() => setOpenMenuId(openMenuId === product.id ? null : product.id)}
+                    className="rounded-lg p-2 text-slate-500 transition hover:bg-violet-50 hover:text-violet-700"
                   >
-                    <Barcode className="h-4 w-4" />
+                    <MoreHorizontal className="h-4 w-4" />
                   </button>
-                  <button
-                    className="rounded-lg p-2.5 text-violet-700 transition hover:bg-violet-50"
-                    aria-label={tableDictionary.editAction}
-                    onClick={() => onEdit(product)}
-                    title={tableDictionary.editAction}
-                    type="button"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    className="rounded-lg p-2.5 text-rose-600 transition hover:bg-rose-50"
-                    aria-label={tableDictionary.deleteAction}
-                    onClick={() => setConfirmDeleteIds([product.id])}
-                    title={tableDictionary.deleteAction}
-                    type="button"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {openMenuId === product.id && (
+                    <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-violet-100 bg-white shadow-lg">
+                      <button type="button" onClick={() => { onEdit(product); setOpenMenuId(null); }}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-violet-50">
+                        <Pencil className="h-3.5 w-3.5 text-violet-500" /> {tableDictionary.editAction}
+                      </button>
+                      <button type="button" onClick={() => { onAdjustStock(product); setOpenMenuId(null); }}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-violet-50">
+                        <SlidersHorizontal className="h-3.5 w-3.5 text-violet-500" /> ปรับสตอก
+                      </button>
+                      <button type="button"
+                        disabled={!product.barcode && !product.sku}
+                        onClick={() => { setPreviewSku(product.barcode ?? product.sku ?? null); setOpenMenuId(null); }}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-violet-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                        <Barcode className="h-3.5 w-3.5 text-violet-500" /> {tableDictionary.barcodeAction}
+                      </button>
+                      <div className="my-1 border-t border-violet-50" />
+                      <button type="button" onClick={() => { setConfirmDeleteIds([product.id]); setOpenMenuId(null); }}
+                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50">
+                        <Trash2 className="h-3.5 w-3.5" /> {tableDictionary.deleteAction}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </td>
             </tr>

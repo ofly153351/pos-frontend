@@ -14,6 +14,7 @@ import {
   MapPin,
   PackagePlus,
   ReceiptText,
+  ScrollText,
   Settings2,
   ShoppingCart,
   Store,
@@ -44,6 +45,7 @@ type UserWorkspaceSidebarProps = {
     settings: string;
     storageLocations: string;
     receiptPayment: string;
+    activityLogs: string;
     stockCategories: string;
     stockLevels: string;
     stockWarehouses: string;
@@ -84,6 +86,7 @@ export function UserWorkspaceSidebar({
   const settingsBaseHref = `/${locale}/settings`;
   const storageLocationsHref = `/${locale}/settings/storage-locations`;
   const receiptPaymentHref = `/${locale}/settings/receipt-payment`;
+  const activityLogsHref = `/${locale}/settings/activity-logs`;
   const isSettingsRoute = pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`);
   const isInventoryRoute =
     pathname === stockBaseHref ||
@@ -104,7 +107,7 @@ export function UserWorkspaceSidebar({
   const documentsExpanded = !collapsed && (manualDocumentsExpanded || isDocumentsRoute);
   const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
   const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
-  const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : pathname === receiptPaymentHref ? "receipt-payment" : "store-settings";
+  const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === activityLogsHref ? "activity-logs" : "store-settings";
 
   useEffect(() => {
     let isMounted = true;
@@ -507,55 +510,27 @@ export function UserWorkspaceSidebar({
         </div>
 
         <div className="space-y-1">
-          <div
-            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
+          <Link
+            href={documentsBaseHref}
+            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
               documentsItemClass
             } ${collapsed ? "justify-center px-2" : ""}`}
           >
-            <Link
-              className={`flex min-w-0 flex-1 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
-              href={documentsBaseHref}
-            >
-              <span
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
-                  isDocumentsRoute
-                    ? "bg-white/15 text-white"
-                    : "bg-violet-900/60 text-violet-300"
-                }`}
-              >
-                <ReceiptText className="h-4 w-4" />
-              </span>
-              {!collapsed ? (
-                <span className="truncate">{labels.documents}</span>
-              ) : null}
-            </Link>
-            {!collapsed ? (
-              <button
-                aria-expanded={documentsExpanded}
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                  isDocumentsRoute
-                    ? "text-white hover:bg-white/10"
-                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
-                }`}
-                onClick={() => setManualDocumentsExpanded((current) => !current)}
-                type="button"
-              >
-                <ChevronDown
-                  aria-hidden="true"
-                  className={`h-4 w-4 transition-transform duration-200 ${documentsExpanded ? "rotate-180" : ""}`}
-                />
-              </button>
-            ) : null}
-          </div>
-
-          {!collapsed ? (
-            <div
-              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
-                documentsExpanded
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0"
+            <span
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+                isDocumentsRoute
+                  ? "bg-white/15 text-white"
+                  : "bg-violet-900/60 text-violet-300"
               }`}
             >
+              <ReceiptText className="h-4 w-4" />
+            </span>
+            {!collapsed ? (
+              <span className="truncate">{labels.documents}</span>
+            ) : null}
+          </Link>
+          {false && (
+            <div>
               <div className="min-h-0">
                 <div className="space-y-1 pt-1 pl-6">
                   <Link
@@ -599,7 +574,7 @@ export function UserWorkspaceSidebar({
                 </div>
               </div>
             </div>
-          ) : null}
+          )}
         </div>
 
         {trailingNavItems.map((item) => {
@@ -720,6 +695,23 @@ export function UserWorkspaceSidebar({
                       <ReceiptText className="h-3.5 w-3.5" />
                     </span>
                     <span>{labels.receiptPayment}</span>
+                  </Link>
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      activeSettingsKey === "activity-logs"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
+                    }`}
+                    href={activityLogsHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activeSettingsKey === "activity-logs" ? "bg-violet-700 text-violet-200" : "bg-violet-900/60 text-violet-400"
+                      }`}
+                    >
+                      <ScrollText className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.activityLogs}</span>
                   </Link>
                 </div>
               </div>

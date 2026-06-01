@@ -647,7 +647,8 @@
       "storageLocations": "ตำแหน่งจัดเก็บ",
       "completeSale": "ปิดการขาย",
       "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า...",
-      "receiptPayment": "ใบเสร็จและการชำระเงิน"
+      "receiptPayment": "ใบเสร็จและการชำระเงิน",
+      "activityLogs": "Activity Logs"
     },
     "stats": {
       "totalProductsLabel": "จำนวนสินค้าทั้งหมด",

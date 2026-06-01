@@ -59,6 +59,18 @@ export function addStock(input: AddStockInput) {
   );
 }
 
+export function adjustStock(productId: string, physicalQty: number, note?: string) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest(
+    `/api/stores/${currentStoreId}/stock/adjust`,
+    {
+      body: { product_id: productId, physical_quantity: physicalQty, note: note?.trim() || undefined },
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
 export function listMovements(productId?: string, page = 1, limit = 20) {
   const currentStoreId = ensureStoreId();
   const params = new URLSearchParams();
