@@ -71,6 +71,7 @@ export interface DocumentListItem {
   document_date: string;
   due_date?: string;
   total_amount: number;
+  source_document_id?: string;
 }
 
 export interface DocumentStats {

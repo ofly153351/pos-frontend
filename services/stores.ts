@@ -1,8 +1,10 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest } from "@/services/api";
 import type {
+  CreateBankAccountInput,
   CreateStoreInput,
   Store,
+  StoreBankAccount,
   StoreSubscription,
   SubscriptionPlan,
   UpdateStoreInput,
@@ -156,4 +158,21 @@ export function updateStoreSubscription(storeId: string, planCode: string) {
 export function updateCurrentSubscription(planCode: string) {
   const storeId = ensureStoreId();
   return updateStoreSubscription(storeId, planCode);
+}
+
+export function listBankAccounts(storeId: string) {
+  return authorizedApiRequest<StoreBankAccount[]>(`/api/stores/${storeId}/bank-accounts`);
+}
+
+export function createBankAccount(storeId: string, input: CreateBankAccountInput) {
+  return authorizedApiRequest<StoreBankAccount>(`/api/stores/${storeId}/bank-accounts`, {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function deleteBankAccount(storeId: string, accountId: string) {
+  return authorizedApiRequest<null>(`/api/stores/${storeId}/bank-accounts/${accountId}`, {
+    method: "DELETE",
+  });
 }

@@ -18,20 +18,21 @@ type Props = {
   documentId: string;
   documentNo?: string;
   documentType?: DocumentType;
-  paymentStatus?: string;   // "UNPAID" | "PARTIAL" | "PAID"
-  documentStatus?: string;  // "PENDING" | "COMPLETED" | "CANCELLED" | ...
+  paymentStatus?: string;      // "UNPAID" | "PARTIAL" | "PAID"
+  documentStatus?: string;     // "PENDING" | "COMPLETED" | "CANCELLED" | ...
+  sourceDocumentId?: string;   // for DELIVERY_ORDER → linked INVOICE id
   dict: Dict;
   onClose: () => void;
 };
 
 // A4 types open as a full drawer; all others use the inline panel card.
-const A4_TYPES: DocumentType[] = ["INVOICE", "TAX_INVOICE", "BILL", "QUOTATION", "CREDIT_NOTE"];
+const A4_TYPES: DocumentType[] = ["INVOICE", "TAX_INVOICE", "BILL", "QUOTATION", "CREDIT_NOTE", "DELIVERY_ORDER"];
 
 function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, dict, onClose }: Props) {
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, sourceDocumentId, dict, onClose }: Props) {
   const [isOpening, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
@@ -109,6 +110,20 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
         onClose();
       } catch {
         toast.error("ไม่สามารถสร้างใบส่งของได้");
+      }
+    });
+  }
+
+  function handlePayDO() {
+    if (!sourceDocumentId) return;
+    startPayTransition(async () => {
+      try {
+        await payInvoice(sourceDocumentId);
+        toast.success("ชำระแล้ว — สร้างใบกำกับภาษีสำเร็จ");
+        qc.invalidateQueries({ queryKey: ["documents"] });
+        onClose();
+      } catch {
+        toast.error("ไม่สามารถดำเนินการได้");
       }
     });
   }
@@ -245,6 +260,17 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                     )}
                   </div>
                 </>
+              )}
+              {documentType === "DELIVERY_ORDER" && sourceDocumentId && !isPaid && !isCancelled && (
+                <button
+                  type="button"
+                  disabled={isPaying}
+                  onClick={handlePayDO}
+                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
+                >
+                  {isPaying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                  ชำระแล้ว
+                </button>
               )}
               {!isCancelled && documentStatus !== "COMPLETED" && (
                 <button

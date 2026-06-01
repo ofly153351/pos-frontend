@@ -52,6 +52,23 @@ export type SubscriptionPlan = {
   price?: number | null;
 };
 
+export type StoreBankAccount = {
+  id: string;
+  store_id: string;
+  bank_code: string;
+  bank_name: string;
+  account_no: string;
+  account_name: string;
+  created_at?: string;
+};
+
+export type CreateBankAccountInput = {
+  bank_code: string;
+  bank_name: string;
+  account_no: string;
+  account_name: string;
+};
+
 export type StoreSubscription = {
   plan?: SubscriptionPlan | null;
   plan_id: string;

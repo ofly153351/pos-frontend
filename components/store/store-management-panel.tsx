@@ -13,6 +13,7 @@ import {
   Plus,
   RefreshCw,
   Save,
+  Trash2,
   X,
 } from "lucide-react";
 
@@ -20,8 +21,8 @@ import { toast } from "@/components/ui/toast";
 
 import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
-import { createStore, getStoreById, listMyStores, updateStoreById } from "@/services/stores";
-import type { Store } from "@/types/store";
+import { createBankAccount, createStore, deleteBankAccount, getStoreById, listBankAccounts, listMyStores, updateStoreById } from "@/services/stores";
+import type { Store, StoreBankAccount } from "@/types/store";
 
 type StoreManagementDictionary = {
   activeLabel: string;
@@ -61,7 +62,34 @@ type StoreManagementDictionary = {
   updateSubmit: string;
   updateSuccess: string;
   updating: string;
+  bankAccountsSection?: string;
+  bankAccountsEmpty?: string;
+  bankAccountAdd?: string;
+  bankAccountBank?: string;
+  bankAccountNo?: string;
+  bankAccountName?: string;
+  bankAccountAdded?: string;
+  bankAccountDeleted?: string;
+  bankAccountError?: string;
 };
+
+const THAI_BANKS = [
+  { code: "BBL",   name: "ธนาคารกรุงเทพ" },
+  { code: "KBANK", name: "ธนาคารกสิกรไทย" },
+  { code: "SCB",   name: "ธนาคารไทยพาณิชย์" },
+  { code: "KTB",   name: "ธนาคารกรุงไทย" },
+  { code: "BAY",   name: "ธนาคารกรุงศรีอยุธยา" },
+  { code: "TTB",   name: "ธนาคารทหารไทยธนชาต" },
+  { code: "GSB",   name: "ธนาคารออมสิน" },
+  { code: "BAAC",  name: "ธ.ก.ส." },
+  { code: "UOB",   name: "ธนาคารยูโอบี" },
+  { code: "CIMBT", name: "ธนาคารซีไอเอ็มบี ไทย" },
+  { code: "LHB",   name: "ธนาคารแลนด์ แอนด์ เฮ้าส์" },
+  { code: "TISCO", name: "ธนาคารทิสโก้" },
+  { code: "KK",    name: "ธนาคารเกียรตินาคินภัทร" },
+  { code: "CITI",  name: "ธนาคารซิตี้แบงก์" },
+  { code: "OTHER", name: "ธนาคารอื่น" },
+] as const;
 
 type Props = { dictionary: StoreManagementDictionary };
 
@@ -147,6 +175,14 @@ export function StoreManagementPanel({ dictionary }: Props) {
   const [isCreateLogoLoading, setIsCreateLogoLoading] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
+  // Bank accounts
+  const [bankAccounts, setBankAccounts] = useState<StoreBankAccount[]>([]);
+  const [newBankCode, setNewBankCode] = useState("BBL");
+  const [newAccountNo, setNewAccountNo] = useState("");
+  const [newAccountName, setNewAccountName] = useState("");
+  const [isAddingBank, startAddBankTransition] = useTransition();
+  const [deletingBankId, setDeletingBankId] = useState<string | null>(null);
+
   const [isSwitchPending, startSwitchTransition] = useTransition();
   const [isUpdatePending, startUpdateTransition] = useTransition();
   const [isCreatePending, startCreateTransition] = useTransition();
@@ -225,6 +261,8 @@ export function StoreManagementPanel({ dictionary }: Props) {
     }
     setEditLogoFile(null);
     setError("");
+    // load bank accounts
+    listBankAccounts(id).then((res) => setBankAccounts(res.data ?? [])).catch(() => {});
   }
 
   function populateEditFields(store: Store) {
@@ -300,6 +338,39 @@ export function StoreManagementPanel({ dictionary }: Props) {
         setError(e instanceof Error ? e.message : dictionary.errorFallback);
       }
     });
+  }
+
+  function handleAddBank() {
+    if (!newAccountNo.trim() || !selectedStoreId) return;
+    const bank = THAI_BANKS.find((b) => b.code === newBankCode);
+    startAddBankTransition(async () => {
+      try {
+        const res = await createBankAccount(selectedStoreId, {
+          bank_code: newBankCode,
+          bank_name: bank?.name ?? newBankCode,
+          account_no: newAccountNo.trim(),
+          account_name: newAccountName.trim(),
+        });
+        setBankAccounts((prev) => [...prev, res.data]);
+        setNewAccountNo("");
+        setNewAccountName("");
+        toast.success(dictionary.bankAccountAdded ?? "เพิ่มบัญชีธนาคารแล้ว");
+      } catch {
+        toast.error(dictionary.bankAccountError ?? "ไม่สามารถเพิ่มบัญชีได้");
+      }
+    });
+  }
+
+  function handleDeleteBank(id: string) {
+    if (!selectedStoreId) return;
+    setDeletingBankId(id);
+    deleteBankAccount(selectedStoreId, id)
+      .then(() => {
+        setBankAccounts((prev) => prev.filter((a) => a.id !== id));
+        toast.success(dictionary.bankAccountDeleted ?? "ลบบัญชีธนาคารแล้ว");
+      })
+      .catch(() => toast.error(dictionary.bankAccountError ?? "ไม่สามารถลบบัญชีได้"))
+      .finally(() => setDeletingBankId(null));
   }
 
   // ── Skeleton ──
@@ -515,6 +586,82 @@ export function StoreManagementPanel({ dictionary }: Props) {
                   <Field label={dictionary.currencyLabel}>
                     <input className={inputCls} maxLength={5} onChange={(e) => setEditCurrencyCode(e.target.value.toUpperCase())} value={editCurrencyCode} />
                   </Field>
+                </div>
+
+                {/* Bank accounts */}
+                <div className="mt-5">
+                  <p className="mb-3 text-sm font-medium text-violet-700">{dictionary.bankAccountsSection ?? "บัญชีธนาคาร"}</p>
+
+                  {/* Existing accounts */}
+                  {bankAccounts.length > 0 && (
+                    <div className="mb-3 space-y-2">
+                      {bankAccounts.map((acc) => (
+                        <div key={acc.id} className="flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-2.5">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-800">{acc.bank_name}</p>
+                            <p className="text-xs text-slate-500 font-mono">{acc.account_no}{acc.account_name ? ` · ${acc.account_name}` : ""}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteBank(acc.id)}
+                            disabled={deletingBankId === acc.id}
+                            className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
+                          >
+                            {deletingBankId === acc.id
+                              ? <Loader2 className="h-4 w-4 animate-spin" />
+                              : <Trash2 className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add new account */}
+                  <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/40 p-4">
+                    <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.bankAccountBank ?? "ธนาคาร"}</label>
+                        <select
+                          className={inputCls}
+                          value={newBankCode}
+                          onChange={(e) => setNewBankCode(e.target.value)}
+                        >
+                          {THAI_BANKS.map((b) => (
+                            <option key={b.code} value={b.code}>{b.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.bankAccountNo ?? "เลขบัญชี"}</label>
+                        <input
+                          className={inputCls}
+                          placeholder="000-0-00000-0"
+                          value={newAccountNo}
+                          onChange={(e) => setNewAccountNo(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        <button
+                          type="button"
+                          disabled={!newAccountNo.trim() || isAddingBank}
+                          onClick={handleAddBank}
+                          className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40"
+                        >
+                          {isAddingBank ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                          {dictionary.bankAccountAdd ?? "เพิ่ม"}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.bankAccountName ?? "ชื่อบัญชี"}</label>
+                      <input
+                        className={inputCls}
+                        placeholder="ชื่อเจ้าของบัญชี"
+                        value={newAccountName}
+                        onChange={(e) => setNewAccountName(e.target.value)}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
