@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, LayoutGrid, List, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, Search } from "lucide-react";
 
 const PAGE_SIZE_GRID = 20;
 const PAGE_SIZE_LIST = 15;
@@ -239,8 +239,8 @@ export function ProductBrowser({
                     <div className="relative">
                       <Image
                         alt={product.name}
-                        className="h-32 w-full rounded-lg border border-violet-100 bg-white object-contain shadow-sm"
-                        height={128}
+                        className="h-[190px] w-full rounded-lg border border-violet-100 bg-white object-contain shadow-sm"
+                        height={190}
                         loading="lazy"
                         src={product.image_url}
                         unoptimized
@@ -251,36 +251,33 @@ export function ProductBrowser({
                       </span>
                     </div>
                   ) : (
-                    <div className="flex h-40 w-full items-center justify-center rounded-lg border border-violet-100 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
+                    <div className="flex h-[190px] w-full items-center justify-center rounded-lg border border-violet-100 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
                       <span className="line-clamp-2">{product.name}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-0.5 flex items-center justify-between gap-2">
+                <div className="mt-1.5 flex items-center justify-between gap-2">
                   <span className="truncate text-sm font-semibold text-slate-900">
                     {formatCurrency(product.base_price)}
                   </span>
-                  {currentQuantity > 0 ? (
-                    <span className="rounded-full bg-violet-700 px-2 py-0.5 text-[10px] font-semibold text-white">
-                      {dictionary.quantityLabel} {currentQuantity}
-                    </span>
-                  ) : null}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {currentQuantity > 0 && (
+                      <span className="rounded-full bg-violet-700 px-2 py-0.5 text-[10px] font-semibold text-white">
+                        ×{currentQuantity}
+                      </span>
+                    )}
+                    <button
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+                      disabled={currentQuantity >= (product.total_stock ?? 0)}
+                      onClick={(event) => { event.stopPropagation(); onAddToCart(product); }}
+                      type="button"
+                      title={currentQuantity >= (product.total_stock ?? 0) ? dictionary.productOutOfStock : dictionary.addButton}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-
-                <button
-                  className="mt-2 w-full rounded-lg bg-violet-600 px-3 py-1.5 text-[11px] font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300"
-                  disabled={currentQuantity >= (product.total_stock ?? 0)}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onAddToCart(product);
-                  }}
-                  type="button"
-                >
-                  {currentQuantity >= (product.total_stock ?? 0)
-                    ? dictionary.productOutOfStock
-                    : dictionary.addButton}
-                </button>
               </div>
             ) : (
               <div
