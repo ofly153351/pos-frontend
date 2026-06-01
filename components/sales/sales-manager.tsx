@@ -1,7 +1,6 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
-import { ChevronDown, Loader2, Printer, Trash2, Truck, X } from "lucide-react";
 
 import { ProductBrowser } from "@/components/sales/product-browser";
 import type {
@@ -31,23 +30,32 @@ import type {
   VatCalculateSummary,
 } from "@/types/sale";
 
+import {
+  formatAmount,
+  roundCurrency,
+  parsePaidAmountAsCeilInt,
+  removeReceiptPreviewToolbar,
+  getDiscountPerUnit,
+  getCartLine,
+} from "./utils/sales-calculations";
+import { CheckoutSummaryModal } from "./checkout-summary-modal";
+import { ReceiptPreviewModal } from "./receipt-preview-modal";
+import { PostInvoiceModal } from "./post-invoice-modal";
+import { ActionsMenuModal } from "./actions-menu-modal";
+import { ParkedBillsDrawer } from "./parked-bills-drawer";
+import { HoldBillModal } from "./hold-bill-modal";
+import { QuantityNumpad } from "./quantity-numpad";
+import { AmountNumpad } from "./amount-numpad";
+import { DiscountEditorModal } from "./discount-editor-modal";
+import { CartPanel } from "./cart-panel";
+import { ProductPopup } from "./product-popup";
+import { useNumpad } from "./use-numpad";
+
 type CartItem = {
   discountType: SaleDiscountType;
   discountValue: string;
   product: Product;
   quantity: number;
-};
-
-type QuantityNumpadState = {
-  max: number;
-  productId: string;
-  value: string;
-};
-type AmountNumpadField = "bill_discount" | "paid_amount";
-
-type AmountNumpadState = {
-  field: AmountNumpadField;
-  value: string;
 };
 
 export type SalesManagerHandle = {
@@ -69,150 +77,6 @@ type SalesManagerProps = {
 };
 
 const productViewStorageKey = "pos-sales-product-view";
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("th-TH", {
-    currency: "THB",
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-    style: "currency",
-  }).format(value);
-}
-
-function formatAmount(value: number) {
-  return new Intl.NumberFormat("th-TH", {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-  }).format(value);
-}
-
-function formatDateTime(value: string) {
-  const parsedDate = new Date(value);
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("th-TH", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(parsedDate);
-}
-
-function roundCurrency(value: number) {
-  return Math.round(value * 100) / 100;
-}
-
-function parsePaidAmountAsCeilInt(value: string) {
-  const parsed = Number(value || 0);
-
-  if (!Number.isFinite(parsed)) {
-    return 0;
-  }
-
-  return Math.max(Math.ceil(parsed), 0);
-}
-
-function removeReceiptPreviewToolbar(html: string, paymentMethod?: string) {
-  const document = new DOMParser().parseFromString(html, "text/html");
-  document.querySelector(".toolbar")?.remove();
-
-  if (paymentMethod === "cash") {
-    const qrSelectors = [
-      "[class*='qr']",
-      "[id*='qr']",
-      "[class*='promptpay']",
-      "[id*='promptpay']",
-      "[class*='prompt-pay']",
-      "img[alt*='QR']",
-      "img[alt*='PromptPay']",
-      "img[alt*='promptpay']",
-    ];
-    document.querySelectorAll(qrSelectors.join(",")).forEach((el) => el.remove());
-  }
-  const style = document.createElement("style");
-  style.textContent = `
-    :root {
-      --receipt-paper-width: 360px;
-    }
-
-    html,
-    body {
-      max-width: 100%;
-      overflow-x: hidden;
-    }
-
-    body {
-      background: #f8fafc !important;
-      margin: 0 !important;
-      width: auto !important;
-    }
-
-    .stage {
-      box-sizing: border-box;
-      max-width: 100%;
-      overflow-x: hidden;
-      padding-left: 12px !important;
-      padding-right: 12px !important;
-    }
-
-    .paper {
-      box-sizing: border-box;
-      max-width: 100%;
-      overflow: visible !important;
-      width: min(var(--receipt-paper-width), 100%) !important;
-    }
-
-    .paper > style,
-    .paper > meta,
-    .paper > title {
-      display: none !important;
-    }
-
-    @media (max-width: 383px) {
-      .stage {
-        transform: scale(calc((100vw - 24px) / 384));
-        transform-origin: top center;
-        width: 384px;
-      }
-    }
-
-    img,
-    table {
-      max-width: 100%;
-    }
-  `;
-  document.head.appendChild(style);
-
-  return document.documentElement.outerHTML;
-}
-
-function getDiscountPerUnit(item: CartItem) {
-  const unitPrice = Number(item.product.base_price ?? 0);
-  const rawValue = Number(item.discountValue || 0);
-  const discountValue = Number.isFinite(rawValue) ? rawValue : 0;
-
-  if (item.discountType === "percent") {
-    return (unitPrice * Math.min(Math.max(discountValue, 0), 100)) / 100;
-  }
-
-  return Math.min(Math.max(discountValue, 0), unitPrice);
-}
-
-function getCartLine(item: CartItem) {
-  const unitPrice = Number(item.product.base_price ?? 0);
-  const discountPerUnit = getDiscountPerUnit(item);
-  const lineSubtotal = unitPrice * item.quantity;
-  const lineDiscount = discountPerUnit * item.quantity;
-  const lineTotal = Math.max(lineSubtotal - lineDiscount, 0);
-
-  return {
-    lineDiscount,
-    lineSubtotal,
-    lineTotal,
-    unitPrice,
-  };
-}
 
 export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(function SalesManager({
   dictionary,
@@ -246,13 +110,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [note, setNote] = useState("");
   const [billDiscount, setBillDiscount] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
-  const [quantityNumpad, setQuantityNumpad] =
-    useState<QuantityNumpadState | null>(null);
-  const [isQuantityNumpadOpen, setIsQuantityNumpadOpen] = useState(false);
-  const [amountNumpad, setAmountNumpad] = useState<AmountNumpadState | null>(
-    null,
-  );
-  const [isAmountNumpadOpen, setIsAmountNumpadOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
   const [applyVat, setApplyVat] = useState(false);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
@@ -260,6 +117,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [invoiceDueDate, setInvoiceDueDate] = useState("");
   const [postInvoiceDocId, setPostInvoiceDocId] = useState<string | null>(null);
   const [isPostInvoicePending, startPostInvoiceTransition] = useTransition();
+  const [isCreatingQuotation, startQuotationTransition] = useTransition();
+  const [quotationMode, setQuotationMode] = useState(false);
+  const [quotationValidUntil, setQuotationValidUntil] = useState("");
   const [discountEditorProductId, setDiscountEditorProductId] = useState<
     string | null
   >(null);
@@ -285,13 +145,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [isPending, startTransition] = useTransition();
   const [isRestoreDrawerOpen, setIsRestoreDrawerOpen] = useState(false);
   const [parkedBills, setParkedBills] = useState<any[]>([]);
-  const [restoreConfirmBill, setRestoreConfirmBill] = useState<any | null>(null);
   const [isHoldingBill, setIsHoldingBill] = useState(false);
   const [holdBillLabel, setHoldBillLabel] = useState("");
-  const numpadCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-  const receiptPreviewFrameRef = useRef<HTMLIFrameElement | null>(null);
   const cartScrollRef = useRef<HTMLDivElement | null>(null);
   const previousCartLengthRef = useRef(0);
   const barcodeBufferRef = useRef("");
@@ -314,10 +169,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
   useEffect(() => {
     return () => {
-      if (numpadCloseTimeoutRef.current) {
-        clearTimeout(numpadCloseTimeoutRef.current);
-      }
-
       if (barcodeTimeoutRef.current) {
         clearTimeout(barcodeTimeoutRef.current);
       }
@@ -814,6 +665,41 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     });
   }
 
+  const {
+    quantityNumpad,
+    isQuantityNumpadOpen,
+    openQuantityNumpad,
+    appendNumpadDigit,
+    clearNumpadValue,
+    backspaceNumpadValue,
+    onNumpadInputChange,
+    onNumpadInputKeyDown,
+    applyNumpadQuantity,
+    closeQuantityNumpad,
+    amountNumpad,
+    isAmountNumpadOpen,
+    openAmountNumpad,
+    appendAmountNumpadDigit,
+    appendAmountNumpadDecimal,
+    clearAmountNumpadValue,
+    backspaceAmountNumpadValue,
+    onAmountNumpadInputChange,
+    onAmountNumpadInputKeyDown,
+    applyAmountNumpad,
+    closeAmountNumpad,
+    numpadCloseTimeoutRef,
+  } = useNumpad({
+    billDiscount,
+    paidAmount,
+    onBillDiscountChange: setBillDiscount,
+    onPaidAmountChange: (v) => {
+      setPaidAmount(v);
+      setIsPaidAmountTouched(true);
+      setLastQuickCashAmount(null);
+    },
+    onQuantityApply: updateCartQuantity,
+  });
+
   function updateCartDiscountType(
     productId: string,
     discountType: SaleDiscountType,
@@ -845,202 +731,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       setDiscountEditorProductId(null);
     }
   }, [cart, discountEditorProductId]);
-
-  function openQuantityNumpad(
-    productId: string,
-    currentQuantity: number,
-    maxQuantity: number,
-  ) {
-    if (numpadCloseTimeoutRef.current) {
-      clearTimeout(numpadCloseTimeoutRef.current);
-      numpadCloseTimeoutRef.current = null;
-    }
-
-    setQuantityNumpad({
-      max: maxQuantity,
-      productId,
-      value: String(currentQuantity),
-    });
-    setIsQuantityNumpadOpen(true);
-  }
-
-  function closeQuantityNumpad() {
-    setIsQuantityNumpadOpen(false);
-    numpadCloseTimeoutRef.current = setTimeout(() => {
-      setQuantityNumpad(null);
-    }, 260);
-  }
-
-  function appendNumpadDigit(digit: string) {
-    setQuantityNumpad((current) => {
-      if (!current) {
-        return current;
-      }
-
-      const nextValue =
-        current.value === "0" ? digit : `${current.value}${digit}`;
-      return { ...current, value: nextValue.slice(0, 6) };
-    });
-  }
-
-  function clearNumpadValue() {
-    setQuantityNumpad((current) =>
-      current ? { ...current, value: "" } : current,
-    );
-  }
-
-  function backspaceNumpadValue() {
-    setQuantityNumpad((current) => {
-      if (!current) {
-        return current;
-      }
-
-      return { ...current, value: current.value.slice(0, -1) };
-    });
-  }
-
-  function onNumpadInputChange(value: string) {
-    const digitsOnly = value.replace(/\D/g, "").slice(0, 6);
-    setQuantityNumpad((current) =>
-      current ? { ...current, value: digitsOnly } : current,
-    );
-  }
-
-  function onNumpadInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeQuantityNumpad();
-      return;
-    }
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-      applyNumpadQuantity();
-      return;
-    }
-
-    if (event.key === "Backspace") {
-      event.preventDefault();
-      backspaceNumpadValue();
-    }
-  }
-
-  function applyNumpadQuantity() {
-    if (!quantityNumpad) {
-      return;
-    }
-
-    const parsed = Number.parseInt(quantityNumpad.value, 10);
-
-    if (Number.isNaN(parsed)) {
-      updateCartQuantity(quantityNumpad.productId, 1);
-      closeQuantityNumpad();
-      return;
-    }
-
-    const clamped = Math.min(Math.max(parsed, 1), quantityNumpad.max);
-    updateCartQuantity(quantityNumpad.productId, clamped);
-    closeQuantityNumpad();
-  }
-
-  function openAmountNumpad(field: AmountNumpadField) {
-    const initialValue = field === "bill_discount" ? billDiscount : paidAmount;
-    setAmountNumpad({
-      field,
-      value: initialValue || "",
-    });
-    setIsAmountNumpadOpen(true);
-  }
-
-  function closeAmountNumpad() {
-    setIsAmountNumpadOpen(false);
-    setAmountNumpad(null);
-  }
-
-  function appendAmountNumpadDigit(digit: string) {
-    setAmountNumpad((current) => {
-      if (!current) {
-        return current;
-      }
-
-      const nextValue = `${current.value}${digit}`;
-      const pattern =
-        current.field === "paid_amount" ? /^\d*$/ : /^\d*(\.\d{0,2})?$/;
-
-      if (!pattern.test(nextValue)) {
-        return current;
-      }
-
-      return { ...current, value: nextValue };
-    });
-  }
-
-  function appendAmountNumpadDecimal() {
-    setAmountNumpad((current) => {
-      if (
-        !current ||
-        current.field === "paid_amount" ||
-        current.value.includes(".")
-      ) {
-        return current;
-      }
-
-      return { ...current, value: current.value ? `${current.value}.` : "0." };
-    });
-  }
-
-  function clearAmountNumpadValue() {
-    setAmountNumpad((current) =>
-      current ? { ...current, value: "" } : current,
-    );
-  }
-
-  function backspaceAmountNumpadValue() {
-    setAmountNumpad((current) => {
-      if (!current) {
-        return current;
-      }
-
-      return { ...current, value: current.value.slice(0, -1) };
-    });
-  }
-
-  function onAmountNumpadInputChange(value: string) {
-    setAmountNumpad((current) => {
-      if (!current) {
-        return current;
-      }
-
-      const pattern =
-        current.field === "paid_amount" ? /^\d*$/ : /^\d*(\.\d{0,2})?$/;
-      if (!pattern.test(value)) {
-        return current;
-      }
-
-      return { ...current, value };
-    });
-  }
-
-  function onAmountNumpadInputKeyDown(
-    event: React.KeyboardEvent<HTMLInputElement>,
-  ) {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeAmountNumpad();
-      return;
-    }
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-      applyAmountNumpad();
-      return;
-    }
-
-    if (event.key === "Backspace") {
-      event.preventDefault();
-      backspaceAmountNumpadValue();
-    }
-  }
 
   function appendDiscountEditorDigit(digit: string) {
     if (!discountEditorItem) {
@@ -1126,24 +816,36 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setDiscountEditorProductId(null);
   }
 
-  function applyAmountNumpad() {
-    if (!amountNumpad) {
-      return;
-    }
-
-    if (amountNumpad.field === "bill_discount") {
-      setBillDiscount(amountNumpad.value);
-    } else {
-      setPaidAmount(
-        amountNumpad.value
-          ? String(parsePaidAmountAsCeilInt(amountNumpad.value))
-          : "",
-      );
-      setIsPaidAmountTouched(true);
-      setLastQuickCashAmount(null);
-    }
-
-    closeAmountNumpad();
+  function handleCreateQuotation() {
+    startQuotationTransition(async () => {
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        await createDocument({
+          type: "QUOTATION",
+          customer_id: selectedCustomerId,
+          document_date: today,
+          valid_until: quotationValidUntil || undefined,
+          items: cart.map((item) => ({
+            product_id: item.product.id,
+            description: item.product.name,
+            quantity: item.quantity,
+            unit_price: item.product.effective_price,
+            discount_type: Number(item.discountValue || 0) > 0
+              ? (item.discountType === "percent" ? "PERCENT" : "AMOUNT")
+              : "" as const,
+            discount_value: Number(item.discountValue || 0),
+          })),
+          vat_rate: applyVat ? 7 : 0,
+          notes: note.trim() || undefined,
+        });
+        setIsCheckoutSummaryOpen(false);
+        setQuotationMode(false);
+        clearCart();
+        toast.success("สร้างใบเสนอราคาสำเร็จ");
+      } catch {
+        toast.error("ไม่สามารถสร้างใบเสนอราคาได้");
+      }
+    });
   }
 
   function handlePostInvoiceConfirm() {
@@ -1259,14 +961,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     }
   }
 
-  async function handlePrintFromPrompt() {
-    const frameWindow = receiptPreviewFrameRef.current?.contentWindow;
-
-    if (!frameWindow) {
-      setError(dictionary.printWindowBlockedError);
-      return;
-    }
-
+  function handlePrintFromPrompt(frameWindow: Window) {
     frameWindow.focus();
     frameWindow.print();
     setIsPrintPromptOpen(false);
@@ -1305,9 +1000,56 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setBillDiscountType(bill.bill_discount_type ?? "amount");
     setApplyVat(bill.applyVat ?? false);
     void deleteParkedBill(bill.id);
-    setRestoreConfirmBill(null);
     setIsRestoreDrawerOpen(false);
     toast.success(dictionary.restoreBillConfirmLabel);
+  }
+
+  async function handleHoldBillConfirm() {
+    if (cart.length === 0) {
+      setError(dictionary.emptyCart);
+      setIsHoldingBill(false);
+      return;
+    }
+
+    const label =
+      holdBillLabel.trim() ||
+      `${dictionary.holdBillLabel} #${Date.now()}`;
+
+    try {
+      await createParkedBill({
+        applyVat,
+        bill_discount_amount: billDiscountAmount,
+        bill_discount_percent: billDiscountPercent,
+        bill_discount_type: billDiscountType,
+        customerSettlementMode,
+        items: cart.map((item) => {
+          const dv = Number(item.discountValue);
+          return {
+            discount_type: item.discountType || undefined,
+            discount_value: dv > 0 ? dv : undefined,
+            product_id: item.product.id,
+            quantity: item.quantity,
+          };
+        }),
+        label,
+        note,
+        paymentMethod,
+        selectedCustomerId,
+      });
+
+      clearCart();
+      toast.success(dictionary.holdBillConfirmLabel);
+      await reloadData();
+      onHoldBillSuccess?.();
+    } catch (nextError) {
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "Request failed",
+      );
+    }
+
+    setIsHoldingBill(false);
   }
 
   if (!hasMounted) {
@@ -1340,1408 +1082,192 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         />
 
         {/* ── Right: Cart panel ── */}
-        <div className="xl:h-full xl:min-h-0">
-          <section className="flex h-full min-h-[74dvh] flex-col rounded-[2rem] border border-violet-100 bg-white shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh]">
-            {/* Header */}
-            <div className="shrink-0 border-b border-violet-50 px-5 pb-3 pt-5">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900">
-                    {dictionary.cartTitle}
-                  </h2>
-                  <p className="mt-0.5 text-xs text-violet-400">
-                    {cart.length > 0
-                      ? `สินค้า ${cart.length} รายการ`
-                      : "ยังไม่มีสินค้า"}
-                  </p>
-                </div>
-                <button
-                  className="flex h-8 shrink-0 items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 text-[11px] font-semibold text-rose-500 transition hover:bg-rose-100"
-                  onClick={clearCart}
-                  type="button"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  ล้าง
-                </button>
-              </div>
-
-              {/* Summary bar */}
-              <div className="mt-3 flex items-center justify-between rounded-xl bg-violet-50 px-4 py-2.5">
-                <button
-                  className="flex items-center gap-2 text-sm font-semibold text-slate-700"
-                  onClick={() => setIsBillDiscountFieldOpen((c) => !c)}
-                  type="button"
-                >
-                  <ChevronDown
-                    className={`h-4 w-4 text-violet-400 transition-transform ${isBillDiscountFieldOpen ? "rotate-180" : ""}`}
-                  />
-                  {dictionary.netTotalLabel}
-                </button>
-                <span className="text-lg font-bold text-violet-700">
-                  ฿{formatAmount(settlementTotal)}
-                </span>
-              </div>
-
-              {/* Collapsible discount/note area */}
-              {isBillDiscountFieldOpen && (
-                <div className="mt-2 space-y-2 rounded-xl border border-violet-100 bg-white p-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-violet-700">
-                      {dictionary.discountBillLabel}
-                    </label>
-                    <div className="flex items-stretch">
-                      <input
-                        className="w-full rounded-l-xl rounded-r-none border border-r-0 border-violet-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                        inputMode="decimal"
-                        min="0"
-                        onClick={() => openAmountNumpad("bill_discount")}
-                        onFocus={(e) => e.target.blur()}
-                        placeholder="0.00"
-                        readOnly
-                        value={billDiscount}
-                      />
-                      <div className="flex items-center gap-1 rounded-r-xl border border-violet-200 bg-violet-100/60 p-1">
-                        <button
-                          className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "amount" ? "bg-violet-600 text-white" : "text-slate-600 hover:bg-white/90"}`}
-                          onClick={() => setBillDiscountType("amount")}
-                          type="button"
-                        >
-                          ฿
-                        </button>
-                        <button
-                          className={`h-7 min-w-8 rounded-lg px-2 text-[11px] font-extrabold transition ${billDiscountType === "percent" ? "bg-violet-600 text-white" : "text-slate-600 hover:bg-white/90"}`}
-                          onClick={() => setBillDiscountType("percent")}
-                          type="button"
-                        >
-                          %
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>{dictionary.summary.subtotalLabel}</span>
-                    <span>฿{formatAmount(cartSummary.subtotal)}</span>
-                  </div>
-                  {totalDiscountAmount > 0 && (
-                    <div className="flex items-center justify-between text-xs text-emerald-600">
-                      <span>{dictionary.totalDiscountLabel}</span>
-                      <span>-฿{formatAmount(totalDiscountAmount)}</span>
-                    </div>
-                  )}
-                  {applyVat && (
-                    <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span>VAT 7%</span>
-                      <span>฿{formatAmount(vatAmount)}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Note field */}
-              {showNoteField && (
-                <textarea
-                  className="mt-2 min-h-16 w-full rounded-xl border border-violet-200 bg-violet-50/30 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder={dictionary.notePlaceholder}
-                  value={note}
-                />
-              )}
-            </div>
-
-            {/* ── Cart items (scrollable) ── */}
-            <div
-              className="pretty-scroll min-h-0 flex-1 overflow-y-auto px-4 py-3"
-              ref={cartScrollRef}
-            >
-              {cart.length > 0 ? (
-                <div className="space-y-2">
-                  {cart.map((item) => {
-                    const line = getCartLine(item);
-                    return (
-                      <div
-                        key={item.product.id}
-                        className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3.5 shadow-sm select-none"
-                        onPointerDown={() => handleLongPressStart(item.product)}
-                        onPointerUp={handleLongPressEnd}
-                        onPointerLeave={handleLongPressEnd}
-                        onPointerCancel={handleLongPressEnd}
-                        onContextMenu={(e) => e.preventDefault()}
-                      >
-                        {/* Thumbnail */}
-                        {item.product.image_url ? (
-                          <img
-                            alt={item.product.name}
-                            className="h-10 w-10 shrink-0 rounded-xl border border-violet-100 object-cover"
-                            loading="lazy"
-                            src={item.product.image_url}
-                          />
-                        ) : (
-                          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm font-bold text-violet-600">
-                            {item.product.name.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-
-                        {/* Name + unit price */}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-900">
-                            {item.product.name}
-                          </p>
-                          <p className="text-xs text-slate-400">
-                            ฿{formatAmount(line.unitPrice)}/{item.product.product_unit_name ?? item.product.unit_type ?? "หน่วย"}
-                          </p>
-                        </div>
-
-                        {/* Unit price badge */}
-                        {/*<span className="shrink-0 text-sm font-semibold text-slate-700">
-                          ฿{formatAmount(line.unitPrice)}
-                        </span>*/}
-
-                        {/* Discount button */}
-                        <button
-                          className="shrink-0 rounded-lg border border-violet-200 px-2.5 py-1.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
-                          onClick={() =>
-                            setDiscountEditorProductId(item.product.id)
-                          }
-                          title={dictionary.discountTypeLabel}
-                          type="button"
-                        >
-                          {line.lineDiscount > 0 ? (
-                            <span className="text-emerald-600">
-                              -฿{formatAmount(line.lineDiscount)}
-                            </span>
-                          ) : (
-                            "%ลด"
-                          )}
-                        </button>
-
-                        {/* Qty stepper */}
-                        <div className="flex shrink-0 items-center overflow-hidden rounded-xl border border-violet-200">
-                          <button
-                            className="flex h-8 w-8 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50"
-                            onClick={() =>
-                              updateCartQuantity(
-                                item.product.id,
-                                item.quantity - 1,
-                              )
-                            }
-                            type="button"
-                          >
-                            −
-                          </button>
-                          <input
-                            className="h-8 w-8 bg-white text-center text-sm font-bold text-slate-900 outline-none"
-                            inputMode="numeric"
-                            max={item.product.total_stock ?? 0}
-                            min="1"
-                            onClick={() =>
-                              openQuantityNumpad(
-                                item.product.id,
-                                item.quantity,
-                                item.product.total_stock ?? 0,
-                              )
-                            }
-                            onFocus={(e) => e.target.blur()}
-                            pattern="[0-9]*"
-                            readOnly
-                            type="number"
-                            value={item.quantity}
-                          />
-                          <button
-                            className="flex h-8 w-8 items-center justify-center text-sm font-bold text-violet-600 transition hover:bg-violet-50"
-                            onClick={() =>
-                              updateCartQuantity(
-                                item.product.id,
-                                item.quantity + 1,
-                              )
-                            }
-                            type="button"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        {/* Line total */}
-                        <span className="shrink-0 w-20 text-right text-sm font-bold text-slate-900">
-                          ฿{formatAmount(line.lineTotal)}
-                        </span>
-
-                        {/* Delete */}
-                        <button
-                          aria-label={dictionary.removeItemButton}
-                          className="shrink-0 flex h-8 w-8 items-center justify-center rounded-lg text-rose-400 transition hover:bg-rose-50 hover:text-rose-600"
-                          onClick={() => updateCartQuantity(item.product.id, 0)}
-                          type="button"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex h-full min-h-[120px] items-center justify-center rounded-xl border border-dashed border-violet-200 bg-violet-50/40 text-sm text-violet-300">
-                  {dictionary.emptyCart}
-                </div>
-              )}
-            </div>
-
-            {/* ── Checkout button ── */}
-            <div className="shrink-0 border-t border-violet-50 px-4 pb-4 pt-3">
-              <button
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={cart.length === 0 || isPending}
-                onClick={() => setIsCheckoutSummaryOpen(true)}
-                type="button"
-              >
-                {dictionary.checkoutButton} (฿{formatAmount(settlementTotal)})
-                <span className="ml-1">→</span>
-              </button>
-            </div>
-          </section>
-        </div>
+        <CartPanel
+          cart={cart}
+          cartSummary={cartSummary}
+          settlementTotal={settlementTotal}
+          vatAmount={vatAmount}
+          applyVat={applyVat}
+          billDiscount={billDiscount}
+          billDiscountType={billDiscountType}
+          totalDiscountAmount={totalDiscountAmount}
+          showNoteField={showNoteField}
+          note={note}
+          isPending={isPending}
+          isBillDiscountFieldOpen={isBillDiscountFieldOpen}
+          cartScrollRef={cartScrollRef}
+          dictionary={dictionary}
+          onClearCart={clearCart}
+          onToggleBillDiscountField={() => setIsBillDiscountFieldOpen((c) => !c)}
+          onBillDiscountTypeChange={setBillDiscountType}
+          onOpenAmountNumpad={openAmountNumpad}
+          onNoteChange={setNote}
+          onOpenDiscountEditor={setDiscountEditorProductId}
+          onUpdateQuantity={updateCartQuantity}
+          onOpenQuantityNumpad={openQuantityNumpad}
+          onOpenCheckout={() => setIsCheckoutSummaryOpen(true)}
+          onLongPressStart={handleLongPressStart}
+          onLongPressEnd={handleLongPressEnd}
+        />
       </section>
 
-      {isActionsMenuOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-4 shadow-2xl smooth-fade-up">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-950">
-                {dictionary.actionsLabel}
-              </h3>
-              <button
-                className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={() => setIsActionsMenuOpen(false)}
-                type="button"
-              >
-                {dictionary.closeReceiptButton}
-              </button>
-            </div>
+      {/* ── Actions menu modal ── */}
+      <ActionsMenuModal
+        isOpen={isActionsMenuOpen}
+        showNoteField={showNoteField}
+        onClose={() => setIsActionsMenuOpen(false)}
+        onToggleNote={() => setShowNoteField((c) => !c)}
+        onHoldBill={() => { setHoldBillLabel(""); setIsHoldingBill(true); }}
+        onOpenRestoreDrawer={(bills) => { setParkedBills(bills); setIsRestoreDrawerOpen(true); }}
+        onClearCart={clearCart}
+        dictionary={dictionary}
+      />
 
-            <div className="mt-4 space-y-2">
-              <button
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
-                  showNoteField
-                    ? "bg-violet-50 text-violet-700"
-                    : "text-violet-700 hover:bg-violet-50"
-                }`}
-                onClick={() => {
-                  setShowNoteField((current) => !current);
-                  setIsActionsMenuOpen(false);
-                }}
-                type="button"
-              >
-                <span>{dictionary.noteLabel}</span>
-                <span>{showNoteField ? "✓" : ""}</span>
-              </button>
-              <button
-                className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
-                onClick={() => {
-                  setHoldBillLabel("");
-                  setIsHoldingBill(true);
-                }}
-                type="button"
-              >
-                <span>{dictionary.holdBillLabel}</span>
-              </button>
-              <button
-                className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
-                onClick={async () => {
-                  try {
-                    const response = await listParkedBills();
-                    setParkedBills(response.data ?? []);
-                  } catch {
-                    setParkedBills([]);
-                  }
-                  setIsRestoreDrawerOpen(true);
-                  setIsActionsMenuOpen(false);
-                }}
-                type="button"
-              >
-                <span>{dictionary.restoreBillLabel}</span>
-              </button>
-              <div className="my-1 border-t border-violet-100" />
-              <button
-                className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
-                onClick={clearCart}
-                type="button"
-              >
-                {dictionary.clearCartButton}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* ── Hold bill modal ── */}
+      <HoldBillModal
+        isOpen={isHoldingBill}
+        label={holdBillLabel}
+        onLabelChange={setHoldBillLabel}
+        onCancel={() => setIsHoldingBill(false)}
+        onConfirm={handleHoldBillConfirm}
+        dictionary={dictionary}
+      />
 
-      {/* Hold Bill prompt */}
-      {isHoldingBill ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
-            <h3 className="text-lg font-semibold text-slate-950">
-              {dictionary.holdBillLabel}
-            </h3>
-            <div className="mt-4">
-              <input
-                className="w-full rounded-lg border border-violet-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                onChange={(e) => setHoldBillLabel(e.target.value)}
-                placeholder={dictionary.holdBillPlaceholderLabel}
-                type="text"
-                value={holdBillLabel}
-              />
-            </div>
-            <div className="mt-5 flex gap-3">
-              <button
-                className="flex-1 rounded-lg border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={() => setIsHoldingBill(false)}
-                type="button"
-              >
-                {dictionary.holdBillCancelLabel}
-              </button>
-              <button
-                className="flex-1 rounded-lg bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
-                onClick={async () => {
-                  if (cart.length === 0) {
-                    setError(dictionary.emptyCart);
-                    setIsHoldingBill(false);
-                    return;
-                  }
+      {/* ── Parked bills drawer ── */}
+      <ParkedBillsDrawer
+        isOpen={isRestoreDrawerOpen}
+        bills={parkedBills}
+        cartLength={cart.length}
+        onClose={() => setIsRestoreDrawerOpen(false)}
+        onConfirmRestore={confirmRestoreBill}
+        dictionary={dictionary}
+      />
 
-                  const label =
-                    holdBillLabel.trim() ||
-                    `${dictionary.holdBillLabel} #${Date.now()}`;
+      {/* ── Checkout summary modal ── */}
+      <CheckoutSummaryModal
+        isOpen={isCheckoutSummaryOpen}
+        customers={customers}
+        customerLevelDiscounts={customerLevelDiscounts}
+        cartSummary={cartSummary}
+        settlementTotal={settlementTotal}
+        vatAmount={vatAmount}
+        applyVat={applyVat}
+        selectedCustomerId={selectedCustomerId}
+        setSelectedCustomerId={setSelectedCustomerId}
+        customerSettlementMode={customerSettlementMode}
+        setCustomerSettlementMode={setCustomerSettlementMode}
+        invoiceDueDate={invoiceDueDate}
+        setInvoiceDueDate={setInvoiceDueDate}
+        paymentMethod={paymentMethod}
+        setPaymentMethod={setPaymentMethod}
+        paidAmount={paidAmount}
+        note={note}
+        setNote={setNote}
+        billDiscountAmount={billDiscountAmount}
+        billDiscountPercent={billDiscountPercent}
+        billDiscountType={billDiscountType}
+        customerDiscountAmount={customerDiscountAmount}
+        customerDiscountPercent={customerDiscountPercent}
+        effectivePaidAmount={effectivePaidAmount}
+        changeAmount={changeAmount}
+        isPending={isPending}
+        isCreatingQuotation={isCreatingQuotation}
+        quotationMode={quotationMode}
+        setQuotationMode={setQuotationMode}
+        quotationValidUntil={quotationValidUntil}
+        setQuotationValidUntil={setQuotationValidUntil}
+        quickCashOptions={quickCashOptions}
+        lastQuickCashAmount={lastQuickCashAmount}
+        isNetworkCustomerSelected={isNetworkCustomerSelected}
+        isInvoiceSettlement={isInvoiceSettlement}
+        customerTypeLabel={customerTypeLabel}
+        cartLength={cart.length}
+        onClose={() => { setIsCheckoutSummaryOpen(false); setQuotationMode(false); }}
+        onSubmit={() => { setIsCheckoutSummaryOpen(false); submitSale(); }}
+        onCreateQuotation={handleCreateQuotation}
+        onApplyQuickCash={applyQuickCash}
+        onOpenAmountNumpad={openAmountNumpad}
+        dictionary={dictionary}
+      />
 
-                  try {
-                    await createParkedBill({
-                      applyVat,
-                      bill_discount_amount: billDiscountAmount,
-                      bill_discount_percent: billDiscountPercent,
-                      bill_discount_type: billDiscountType,
-                      customerSettlementMode,
-                      items: cart.map((item) => {
-                        const dv = Number(item.discountValue);
-                        return {
-                          discount_type: item.discountType || undefined,
-                          discount_value: dv > 0 ? dv : undefined,
-                          product_id: item.product.id,
-                          quantity: item.quantity,
-                        };
-                      }),
-                      label,
-                      note,
-                      paymentMethod,
-                      selectedCustomerId,
-                    });
+      {/* ── Post invoice modal ── */}
+      <PostInvoiceModal
+        docId={postInvoiceDocId}
+        isPending={isPostInvoicePending}
+        onConfirm={handlePostInvoiceConfirm}
+        onClose={() => setPostInvoiceDocId(null)}
+      />
 
-                    clearCart();
-                    toast.success(dictionary.holdBillConfirmLabel);
-                    await reloadData();
-                    onHoldBillSuccess?.();
-                  } catch (nextError) {
-                    setError(
-                      nextError instanceof Error
-                        ? nextError.message
-                        : "Request failed",
-                    );
-                  }
+      {/* ── Discount editor ── */}
+      <DiscountEditorModal
+        item={discountEditorItem}
+        onClose={() => setDiscountEditorProductId(null)}
+        onDiscountTypeChange={updateCartDiscountType}
+        onInputChange={onDiscountEditorInputChange}
+        onInputKeyDown={onDiscountEditorInputKeyDown}
+        onDigit={appendDiscountEditorDigit}
+        onDecimal={appendDiscountEditorDecimal}
+        onClear={clearDiscountEditorValue}
+        onBackspace={backspaceDiscountEditorValue}
+        onApply={applyDiscountEditor}
+        dictionary={dictionary}
+      />
 
-                  setIsHoldingBill(false);
-                }}
-                type="button"
-              >
-                {dictionary.holdBillConfirmLabel}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* ── Receipt preview modal ── */}
+      <ReceiptPreviewModal
+        isOpen={isPrintPromptOpen}
+        html={receiptPreviewHtml}
+        isLoading={isReceiptPreviewLoading}
+        onClose={closeReceiptPreview}
+        onPrint={handlePrintFromPrompt}
+        dictionary={{
+          receiptPreviewLoading: dictionary.receiptPreviewLoading,
+          receiptPreviewTitle: dictionary.receiptPreviewTitle,
+          printReceiptNowButton: dictionary.printReceiptNowButton,
+          closeReceiptButton: dictionary.closeReceiptButton,
+        }}
+      />
 
-      {/* Restore Bill drawer */}
-      {isRestoreDrawerOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-950">
-                {dictionary.restoreBillDrawerTitle}
-              </h3>
-              <button
-                className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={() => setIsRestoreDrawerOpen(false)}
-                type="button"
-              >
-                {dictionary.closeReceiptButton}
-              </button>
-            </div>
-
-            <div className="mt-4 max-h-[60dvh] space-y-2 overflow-y-auto">
-              {parkedBills.length === 0 ? (
-                <p className="py-8 text-center text-sm text-slate-500">
-                  {dictionary.noParkedBillsLabel}
-                </p>
-              ) : (
-                parkedBills.map((bill) => {
-                  const itemCount = bill.items?.length ?? 0;
-                  const totalAmount = (bill.items ?? []).reduce(
-                    (sum: number, item: any) => {
-                      const price = Number(
-                        item.base_price ?? item.price ?? 0,
-                      );
-                      return sum + price * (item.quantity ?? 0);
-                    },
-                    0,
-                  );
-
-                  return (
-                    <button
-                      key={bill.id}
-                      className="w-full rounded-lg border border-violet-100 bg-white p-4 text-left transition hover:bg-violet-50 hover:border-violet-300"
-                      onClick={() => setRestoreConfirmBill(bill)}
-                      type="button"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-slate-800">
-                          {bill.label}
-                        </span>
-                        <span className="text-sm font-medium text-violet-600">
-                          {formatCurrency(totalAmount)}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-center gap-3 text-xs text-slate-500">
-                        <span>
-                          {itemCount} {dictionary.productCountLabel}
-                        </span>
-                        <span>•</span>
-                        <span>{formatDateTime(bill.created_at)}</span>
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {isCheckoutSummaryOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
-          <div className="w-full max-w-4xl rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-950">
-                {dictionary.checkoutSectionTitle}
-              </h3>
-              <button
-                className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={() => setIsCheckoutSummaryOpen(false)}
-                type="button"
-              >
-                {dictionary.closeReceiptButton}
-              </button>
-            </div>
-
-            <div className="mt-4 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="space-y-3">
-                <div>
-                  <label className="mb-2 block text-sm font-semibold text-violet-800">
-                    {dictionary.customerLabel}
-                  </label>
-                  <select
-                    className="w-full rounded-lg border border-violet-200 bg-violet-50/30 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                    onChange={(event) =>
-                      setSelectedCustomerId(event.target.value)
-                    }
-                    value={selectedCustomerId}
-                  >
-                    <option value="">{dictionary.customerPlaceholder}</option>
-                    {customers.map((customer) => (
-                      <option key={customer.id} value={customer.id}>
-                        {customer.full_name} (L{customer.level ?? 1} •{" "}
-                        {customerLevelDiscounts.find(
-                          (rule) => rule.level === Number(customer.level ?? 1),
-                        )?.discount_percent ?? 0}
-                        %)
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-2 text-xs font-medium text-slate-600">
-                    {dictionary.customerTypeLabel}: {customerTypeLabel}
-                  </p>
-                </div>
-
-                {isNetworkCustomerSelected ? (
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-violet-800">
-                      {dictionary.customerSettlementLabel}
-                    </label>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <button
-                        className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                          customerSettlementMode === "cash_now"
-                            ? "border-violet-600 bg-violet-600 text-white"
-                            : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                        }`}
-                        onClick={() => setCustomerSettlementMode("cash_now")}
-                        type="button"
-                      >
-                        {dictionary.customerSettlementCashNow}
-                      </button>
-                      <button
-                        className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                          customerSettlementMode === "invoice"
-                            ? "border-violet-600 bg-violet-600 text-white"
-                            : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                        }`}
-                        onClick={() => setCustomerSettlementMode("invoice")}
-                        type="button"
-                      >
-                        {dictionary.customerSettlementInvoice}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                {isInvoiceSettlement ? (
-                  <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-violet-800">
-                      กำหนดชำระ
-                    </label>
-                    <div className="flex items-center gap-2">
-                      {[7, 14, 30, 45].map((days) => {
-                        const target = new Date();
-                        target.setDate(target.getDate() + days);
-                        const val = target.toISOString().split("T")[0];
-                        const active = invoiceDueDate === val;
-                        return (
-                          <button
-                            key={days}
-                            type="button"
-                            onClick={() => setInvoiceDueDate(active ? "" : val)}
-                            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
-                              active
-                                ? "border-violet-600 bg-violet-600 text-white"
-                                : "border-violet-200 bg-white text-slate-600 hover:border-violet-400 hover:text-violet-700"
-                            }`}
-                          >
-                            {days} วัน
-                          </button>
-                        );
-                      })}
-                      <input
-                        type="date"
-                        value={invoiceDueDate}
-                        onChange={(e) => setInvoiceDueDate(e.target.value)}
-                        className="ml-auto rounded-lg border border-violet-200 px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                      />
-                    </div>
-                    {invoiceDueDate && (
-                      <p className="mt-1.5 text-xs text-slate-400">
-                        ครบกำหนด {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(invoiceDueDate))}
-                        <button
-                          type="button"
-                          onClick={() => setInvoiceDueDate("")}
-                          className="ml-2 text-slate-400 underline hover:text-slate-600"
-                        >
-                          ล้าง
-                        </button>
-                      </p>
-                    )}
-                  </div>
-                ) : null}
-
-                {isInvoiceSettlement ? (
-                  <div>
-                    <label className="mb-1.5 block text-sm font-semibold text-violet-800">
-                      {dictionary.noteLabel}
-                    </label>
-                    <textarea
-                      rows={2}
-                      className="w-full resize-none rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                      placeholder={dictionary.notePlaceholder}
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                    />
-                  </div>
-                ) : null}
-
-                {!isInvoiceSettlement ? (
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-violet-800">
-                      {dictionary.paymentMethodLabel}
-                    </label>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        {
-                          label: dictionary.paymentMethodCashLabel,
-                          value: "cash",
-                        },
-                        {
-                          label: dictionary.paymentMethodPromptPay,
-                          value: "transfer",
-                        },
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
-                            paymentMethod === option.value
-                              ? "border-violet-600 bg-violet-600 text-white"
-                              : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                          }`}
-                          onClick={() => setPaymentMethod(option.value)}
-                          type="button"
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {!isInvoiceSettlement ? (
-                  <div className="flex flex-col gap-3">
-                    <div
-                      className={`grid gap-3 ${
-                        paymentMethod === "transfer"
-                          ? "grid-cols-1"
-                          : "grid-cols-2"
-                      }`}
-                    >
-                      <div>
-                        <label className="mb-2 block text-sm font-semibold text-violet-800">
-                          {dictionary.customerPaymentLabel}
-                        </label>
-                        <input
-                          className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-right text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                          inputMode="numeric"
-                          min="0"
-                          onClick={() => openAmountNumpad("paid_amount")}
-                          onFocus={(event) => event.target.blur()}
-                          placeholder="0"
-                          readOnly
-                          value={
-                            paidAmount
-                              ? `฿${formatAmount(parsePaidAmountAsCeilInt(paidAmount))}`
-                              : ""
-                          }
-                        />
-                      </div>
-                      {paymentMethod !== "transfer" ? (
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-violet-800">
-                            {dictionary.changeLabel}
-                          </label>
-                          <input
-                            className="w-full rounded-lg border border-violet-100 bg-violet-50 px-3 py-2.5 text-right text-xs font-semibold text-slate-700 outline-none"
-                            readOnly
-                            value={formatCurrency(Math.max(changeAmount, 0))}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <div>
-                      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                        {dictionary.quickCashLabel}
-                      </span>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {quickCashOptions.map((option) => (
-                          <button
-                            key={
-                              option.isExact
-                                ? `exact-${option.amount}`
-                                : option.amount
-                            }
-                            className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition ${
-                              lastQuickCashAmount === option.amount
-                                ? "border-violet-600 bg-violet-600 text-white"
-                                : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                            }`}
-                            onClick={() =>
-                              applyQuickCash(option.amount, option.isExact)
-                            }
-                            type="button"
-                          >
-                            {option.isExact
-                              ? dictionary.quickCashExactAmountLabel
-                              : `+฿${option.amount}`}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="flex flex-col-reverse lg:flex-col">
-                <div className="space-y-1.5 border-t border-violet-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-                  {/* Secondary rows */}
-                  <div className="flex items-center justify-between text-sm text-slate-400">
-                    <span>{dictionary.summary.subtotalLabel}</span>
-                    <span>{formatCurrency(cartSummary.subtotal)}</span>
-                  </div>
-                  <div
-                    className={`flex items-center justify-between text-sm ${cartSummary.discountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
-                  >
-                    <span>{dictionary.summary.discountLabel}</span>
-                    <span>
-                      {cartSummary.discountAmount > 0
-                        ? `-${formatCurrency(cartSummary.discountAmount)}`
-                        : formatCurrency(0)}
-                    </span>
-                  </div>
-                  <div
-                    className={`flex items-center justify-between text-sm ${billDiscountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
-                  >
-                    <span>
-                      {dictionary.discountBillLabel}
-                      {billDiscountType === "percent" && billDiscountPercent > 0
-                        ? ` (${billDiscountPercent}%)`
-                        : ""}
-                    </span>
-                    <span>
-                      {billDiscountAmount > 0
-                        ? `-${formatCurrency(billDiscountAmount)}`
-                        : formatCurrency(0)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-slate-400">
-                    <span>{dictionary.customerTypeLabel}</span>
-                    <span className="font-medium text-slate-600">
-                      {customerTypeLabel}
-                    </span>
-                  </div>
-                  {selectedCustomerId && customerDiscountAmount > 0 ? (
-                    <div className="flex items-center justify-between text-sm text-emerald-600">
-                      <span>
-                        {dictionary.customerDiscountLabel} (
-                        {customerDiscountPercent}%)
-                      </span>
-                      <span>-{formatCurrency(customerDiscountAmount)}</span>
-                    </div>
-                  ) : null}
-                  {applyVat && (
-                    <div className="flex items-center justify-between text-sm text-slate-400">
-                      <span>{dictionary.vatAmountLabel}</span>
-                      <span>{formatCurrency(vatAmount)}</span>
-                    </div>
-                  )}
-
-                  <div className="my-1.5 border-t border-dashed border-violet-100" />
-
-                  {/* Net total */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-base font-semibold text-slate-700">
-                      {dictionary.summary.totalLabel}
-                    </span>
-                    <span className="text-xl font-bold text-violet-700">
-                      {formatCurrency(settlementTotal)}
-                    </span>
-                  </div>
-
-                  {/* Paid & change */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">
-                      {dictionary.totalPaidLabel}
-                    </span>
-                    <span className="text-sm font-semibold text-slate-800">
-                      {formatCurrency(effectivePaidAmount)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">
-                      {dictionary.changeLabel}
-                    </span>
-                    <span
-                      className={`text-sm font-bold ${changeAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
-                    >
-                      {formatCurrency(Math.max(changeAmount, 0))}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <button
-              className="mt-5 w-full rounded-lg bg-violet-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={cart.length === 0 || isPending}
-              onClick={() => {
-                setIsCheckoutSummaryOpen(false);
-                submitSale();
-              }}
-              type="button"
-            >
-              {dictionary.confirmPaymentButton}
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {/* Post-invoice: ถามสร้างใบส่งของ */}
-      {postInvoiceDocId && (
-        <>
-          <div className="fixed inset-0 z-[60] bg-black/30 smooth-fade" onClick={() => setPostInvoiceDocId(null)} />
-          <div className="fixed inset-0 z-[61] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm rounded-2xl border border-violet-100 bg-white p-6 shadow-2xl smooth-fade-up">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100">
-                  <Truck className="h-5 w-5 text-violet-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-800">สร้างใบส่งของ?</h3>
-                  <p className="text-xs text-slate-500">ใบส่งของ / ใบกำกับภาษี จากใบแจ้งหนี้นี้</p>
-                </div>
-              </div>
-              <div className="mt-5 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPostInvoiceDocId(null)}
-                  className="flex-1 rounded-lg border border-violet-200 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-violet-50"
-                >
-                  ข้าม
-                </button>
-                <button
-                  type="button"
-                  disabled={isPostInvoicePending}
-                  onClick={handlePostInvoiceConfirm}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-violet-600 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40"
-                >
-                  {isPostInvoicePending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
-                  สร้างใบส่งของ
-                </button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {discountEditorItem ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-950">
-                {discountEditorItem.product.name}
-              </h3>
-              <button
-                className="rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={() => setDiscountEditorProductId(null)}
-                type="button"
-              >
-                {dictionary.closeReceiptButton}
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <div>
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  {dictionary.discountTypeLabel}
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    {
-                      icon: "฿",
-                      label: dictionary.discountAmountLabel,
-                      value: "amount" as const,
-                    },
-                    {
-                      icon: "%",
-                      label: dictionary.discountPercentLabel,
-                      value: "percent" as const,
-                    },
-                  ].map((option) => (
-                    <button
-                      aria-label={option.label}
-                      key={option.value}
-                      className={`rounded-lg border px-3 py-2 text-base font-bold transition ${
-                        discountEditorItem.discountType === option.value
-                          ? "border-violet-600 bg-violet-600 text-white"
-                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                      }`}
-                      onClick={() =>
-                        updateCartDiscountType(
-                          discountEditorItem.product.id,
-                          option.value,
-                        )
-                      }
-                      type="button"
-                    >
-                      {option.icon}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <label className="block">
-                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                  {dictionary.discountValueLabel}
-                </span>
-                <input
-                  autoFocus
-                  className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                  inputMode="decimal"
-                  min="0"
-                  onChange={(event) =>
-                    onDiscountEditorInputChange(event.target.value)
-                  }
-                  onKeyDown={onDiscountEditorInputKeyDown}
-                  placeholder="0"
-                  value={discountEditorItem.discountValue}
-                />
-              </label>
-
-              <div className="grid grid-cols-3 gap-2">
-                {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
-                  <button
-                    className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
-                    key={digit}
-                    onClick={() => appendDiscountEditorDigit(digit)}
-                    type="button"
-                  >
-                    {digit}
-                  </button>
-                ))}
-                <button
-                  className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                  onClick={clearDiscountEditorValue}
-                  type="button"
-                >
-                  {dictionary.quantityNumpadClear}
-                </button>
-                <button
-                  className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
-                  onClick={() => appendDiscountEditorDigit("0")}
-                  type="button"
-                >
-                  0
-                </button>
-                <button
-                  className="rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-violet-50"
-                  onClick={appendDiscountEditorDecimal}
-                  type="button"
-                >
-                  .
-                </button>
-              </div>
-
-              <button
-                className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={backspaceDiscountEditorValue}
-                type="button"
-              >
-                {dictionary.quantityNumpadBackspace}
-              </button>
-
-              <button
-                className="w-full rounded-lg bg-violet-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700"
-                onClick={applyDiscountEditor}
-                type="button"
-              >
-                {dictionary.quantityNumpadApply}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {isPrintPromptOpen ? (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-950/45 px-4 py-5 backdrop-blur-[2px] transition-opacity duration-300">
-          <div className="relative flex max-h-[94dvh] w-fit max-w-[calc(100vw-2rem)] flex-col rounded-[1.75rem] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] ring-1 ring-white/70 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] sm:p-6">
-            <button
-              aria-label={dictionary.closeReceiptButton}
-              className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-violet-50 text-violet-400 shadow-sm transition hover:bg-violet-100 hover:text-violet-600"
-              onClick={closeReceiptPreview}
-              type="button"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="min-h-0 w-[384px] max-w-[calc(100vw-4rem)] flex-1 rounded-lg bg-violet-50/60 p-0 shadow-inner sm:max-w-[calc(100vw-5rem)]">
-              {isReceiptPreviewLoading ? (
-                <div className="flex h-[70dvh] max-h-[35rem] min-h-[30rem] w-full items-center justify-center rounded-md border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 shadow-sm">
-                  <span className="rounded-full bg-violet-100 px-4 py-2">
-                    {dictionary.receiptPreviewLoading}
-                  </span>
-                </div>
-              ) : receiptPreviewHtml ? (
-                <div className="rounded-md bg-white shadow-[0_12px_34px_rgba(15,23,42,0.12)] ring-1 ring-violet-200/60">
-                  <iframe
-                    className="h-[70dvh] max-h-[35rem] min-h-[30rem] w-full border-0 bg-white"
-                    ref={receiptPreviewFrameRef}
-                    srcDoc={receiptPreviewHtml}
-                    title={dictionary.receiptPreviewTitle}
-                  />
-                </div>
-              ) : (
-                <div className="flex h-[70dvh] max-h-[35rem] min-h-[30rem] w-full items-center justify-center rounded-md border border-dashed border-slate-300 bg-white text-sm font-medium text-slate-500 shadow-sm">
-                  <span className="rounded-full bg-violet-100 px-4 py-2">
-                    {dictionary.receiptPreviewLoading}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-3">
-              <button
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300 disabled:shadow-none"
-                disabled={isReceiptPreviewLoading || !receiptPreviewHtml}
-                onClick={handlePrintFromPrompt}
-                type="button"
-              >
-                <Printer className="h-4 w-4" />
-                {dictionary.printReceiptNowButton}
-              </button>
-              <button
-                className="min-h-12 rounded-lg border border-violet-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50"
-                onClick={closeReceiptPreview}
-                type="button"
-              >
-                {dictionary.closeReceiptButton}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
+      {/* ── Quantity numpad ── */}
       {quantityNumpad ? (
-        <div
-          className={`fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300 sm:items-center ${
-            isQuantityNumpadOpen
-              ? "pointer-events-auto opacity-100"
-              : "pointer-events-none opacity-0"
-          }`}
-          onClick={closeQuantityNumpad}
-        >
-          <div
-            className={`w-full max-w-sm rounded-[1.75rem] bg-white p-5 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              isQuantityNumpadOpen ? "translate-y-0" : "translate-y-8"
-            }`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold text-slate-950">
-              {dictionary.quantityNumpadTitle}
-            </h3>
-            <input
-              autoFocus
-              className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-              inputMode="numeric"
-              onChange={(event) => onNumpadInputChange(event.target.value)}
-              onKeyDown={onNumpadInputKeyDown}
-              pattern="[0-9]*"
-              type="text"
-              value={quantityNumpad.value}
-            />
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
-                <button
-                  className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
-                  key={digit}
-                  onClick={() => appendNumpadDigit(digit)}
-                  type="button"
-                >
-                  {digit}
-                </button>
-              ))}
-              <button
-                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={clearNumpadValue}
-                type="button"
-              >
-                {dictionary.quantityNumpadClear}
-              </button>
-              <button
-                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
-                onClick={() => appendNumpadDigit("0")}
-                type="button"
-              >
-                0
-              </button>
-              <button
-                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={backspaceNumpadValue}
-                type="button"
-              >
-                {dictionary.quantityNumpadBackspace}
-              </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                className="rounded-lg border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={closeQuantityNumpad}
-                type="button"
-              >
-                {dictionary.quantityNumpadCancel}
-              </button>
-              <button
-                className="rounded-lg bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
-                onClick={applyNumpadQuantity}
-                type="button"
-              >
-                {dictionary.quantityNumpadApply}
-              </button>
-            </div>
-          </div>
-        </div>
+        <QuantityNumpad
+          value={quantityNumpad.value}
+          isOpen={isQuantityNumpadOpen}
+          onInputChange={onNumpadInputChange}
+          onInputKeyDown={onNumpadInputKeyDown}
+          onDigit={appendNumpadDigit}
+          onClear={clearNumpadValue}
+          onBackspace={backspaceNumpadValue}
+          onCancel={closeQuantityNumpad}
+          onApply={applyNumpadQuantity}
+          dictionary={dictionary}
+        />
       ) : null}
 
+      {/* ── Amount numpad ── */}
       {amountNumpad ? (
-        <div
-          className={`fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300 sm:items-center ${
-            isAmountNumpadOpen
-              ? "pointer-events-auto opacity-100"
-              : "pointer-events-none opacity-0"
-          }`}
-          onClick={closeAmountNumpad}
-        >
-          <div
-            className={`w-full max-w-sm rounded-[1.75rem] bg-white p-5 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-              isAmountNumpadOpen ? "translate-y-0" : "translate-y-8"
-            }`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold text-slate-950">
-              {amountNumpad.field === "bill_discount"
-                ? dictionary.discountBillLabel
-                : dictionary.customerPaymentLabel}
-            </h3>
-            <input
-              autoFocus
-              className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-center text-2xl font-bold text-slate-900 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-              inputMode={
-                amountNumpad.field === "paid_amount" ? "numeric" : "decimal"
-              }
-              onChange={(event) =>
-                onAmountNumpadInputChange(event.target.value)
-              }
-              onKeyDown={onAmountNumpadInputKeyDown}
-              pattern={
-                amountNumpad.field === "paid_amount"
-                  ? "^\\d*$"
-                  : "^\\d*(\\.\\d{0,2})?$"
-              }
-              type="text"
-              value={amountNumpad.value}
-            />
-
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((digit) => (
-                <button
-                  className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
-                  key={digit}
-                  onClick={() => appendAmountNumpadDigit(digit)}
-                  type="button"
-                >
-                  {digit}
-                </button>
-              ))}
-              <button
-                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={clearAmountNumpadValue}
-                type="button"
-              >
-                {dictionary.quantityNumpadClear}
-              </button>
-              <button
-                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
-                onClick={() => appendAmountNumpadDigit("0")}
-                type="button"
-              >
-                0
-              </button>
-              <button
-                className="rounded-lg border border-violet-100 bg-white px-3 py-3 text-base font-semibold text-slate-900 transition hover:bg-violet-50"
-                onClick={appendAmountNumpadDecimal}
-                type="button"
-                disabled={amountNumpad.field === "paid_amount"}
-              >
-                .
-              </button>
-            </div>
-
-            <div className="mt-2">
-              <button
-                className="w-full rounded-lg border border-violet-100 bg-white px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={backspaceAmountNumpadValue}
-                type="button"
-              >
-                {dictionary.quantityNumpadBackspace}
-              </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                className="rounded-lg border border-violet-200 px-3 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={closeAmountNumpad}
-                type="button"
-              >
-                {dictionary.quantityNumpadCancel}
-              </button>
-              <button
-                className="rounded-lg bg-violet-600 px-3 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
-                onClick={applyAmountNumpad}
-                type="button"
-              >
-                {dictionary.quantityNumpadApply}
-              </button>
-            </div>
-          </div>
-        </div>
+        <AmountNumpad
+          field={amountNumpad.field}
+          value={amountNumpad.value}
+          isOpen={isAmountNumpadOpen}
+          onInputChange={onAmountNumpadInputChange}
+          onInputKeyDown={onAmountNumpadInputKeyDown}
+          onDigit={appendAmountNumpadDigit}
+          onDecimal={appendAmountNumpadDecimal}
+          onClear={clearAmountNumpadValue}
+          onBackspace={backspaceAmountNumpadValue}
+          onCancel={closeAmountNumpad}
+          onApply={applyAmountNumpad}
+          dictionary={dictionary}
+        />
       ) : null}
-
-      {/* Restore bill confirmation popup */}
-      {restoreConfirmBill && (() => {
-        const bill = restoreConfirmBill;
-        const itemCount = bill.items?.length ?? 0;
-        const totalAmount = (bill.items ?? []).reduce(
-          (sum: number, item: any) => sum + Number(item.base_price ?? item.price ?? 0) * (item.quantity ?? 0),
-          0,
-        );
-        return (
-          <div
-            className="fixed inset-0 z-[600] flex items-center justify-center bg-indigo-950/60 p-4 backdrop-blur-sm smooth-fade"
-            onClick={() => setRestoreConfirmBill(null)}
-          >
-            <div
-              className="w-full max-w-sm rounded-2xl border border-violet-100 bg-white shadow-2xl smooth-fade-up"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center gap-3 border-b border-violet-100 px-5 py-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100">
-                  <ChevronDown className="h-5 w-5 rotate-90 text-violet-600" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">เรียกบิลคืน</h3>
-                  <p className="text-xs text-slate-500">บิลนี้จะถูกโหลดเข้าตะกร้าปัจจุบัน</p>
-                </div>
-              </div>
-
-              {/* Bill preview */}
-              <div className="mx-5 my-4 rounded-xl border border-violet-100 bg-violet-50/50 px-4 py-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-slate-800">{bill.label || "บิลไม่มีชื่อ"}</span>
-                  <span className="text-sm font-bold text-violet-700">{formatCurrency(totalAmount)}</span>
-                </div>
-                <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                  <span>{itemCount} รายการ</span>
-                  <span>•</span>
-                  <span>{formatDateTime(bill.created_at)}</span>
-                </div>
-              </div>
-
-              {/* Warning if cart has items */}
-              {cart.length > 0 && (
-                <div className="mx-5 mb-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
-                  <span className="mt-px shrink-0 font-bold">⚠</span>
-                  <span>ตะกร้าปัจจุบันมี {cart.length} รายการ จะถูกแทนที่ด้วยบิลที่เลือก</span>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-2 border-t border-violet-100 px-5 py-4">
-                <button
-                  className="rounded-lg border border-violet-200 px-4 py-2 text-sm font-medium text-violet-700 transition hover:bg-violet-50"
-                  onClick={() => setRestoreConfirmBill(null)}
-                  type="button"
-                >
-                  ยกเลิก
-                </button>
-                <button
-                  className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-700"
-                  onClick={() => confirmRestoreBill(bill)}
-                  type="button"
-                >
-                  เรียกบิลคืน
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Product detail popup — triggered by long press on cart item */}
-      {productPopup && (
-        <div
-          className={`fixed inset-0 z-[500] flex items-end justify-center p-4 pb-6 transition-opacity duration-200 sm:items-center ${productPopupVisible ? "opacity-100" : "opacity-0"}`}
-          style={{ background: "rgba(15,10,50,0.65)", backdropFilter: "blur(4px)" }}
-          onClick={closeProductPopup}
-        >
-          <div
-            className={`w-full max-w-2xl overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-2xl transition-all duration-200 ${productPopupVisible ? "translate-y-0 scale-100 opacity-100" : "translate-y-4 scale-95 opacity-0"}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex min-h-72">
-              {/* Left — image / initials */}
-              <div className="w-64 shrink-0">
-                {productPopup.image_url ? (
-                  <img
-                    alt={productPopup.name}
-                    className="h-full w-full object-cover"
-                    src={productPopup.image_url}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-violet-100">
-                    <span className="text-7xl font-bold text-violet-400">
-                      {productPopup.name.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Right — details */}
-              <div className="min-w-0 flex-1 p-7">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-xl font-bold leading-snug text-slate-900">
-                    {productPopup.name}
-                  </h3>
-                  <button
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
-                    onClick={closeProductPopup}
-                    type="button"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-
-                <div className="mt-4 space-y-2.5 text-base">
-                  <div className="flex justify-between gap-3">
-                    <span className="text-slate-500">ราคา</span>
-                    <span className="font-semibold text-slate-800">฿{formatAmount(productPopup.base_price)}</span>
-                  </div>
-                  {productPopup.special_price != null && (
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-500">ราคาพิเศษ</span>
-                      <span className="font-semibold text-rose-600">฿{formatAmount(productPopup.special_price)}</span>
-                    </div>
-                  )}
-                  {productPopup.sku && (
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-500">SKU</span>
-                      <span className="truncate font-medium text-slate-700">{productPopup.sku}</span>
-                    </div>
-                  )}
-                  {productPopup.barcode && (
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-500">บาร์โค้ด</span>
-                      <span className="truncate font-medium text-slate-700">{productPopup.barcode}</span>
-                    </div>
-                  )}
-                  {productPopup.total_stock !== undefined && (
-                    <div className="flex justify-between gap-3">
-                      <span className="text-slate-500">สต็อก</span>
-                      <span className="font-medium text-slate-700">
-                        {productPopup.total_stock} {productPopup.product_unit_name ?? ""}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {productPopup.description && (
-                  <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-                    {productPopup.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ProductPopup
+        product={productPopup}
+        visible={productPopupVisible}
+        onClose={closeProductPopup}
+      />
     </>
   );
 });
