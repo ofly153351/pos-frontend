@@ -8,10 +8,11 @@ import { Calendar, CheckCircle2, Download, FileBadge, FileDigit, FileMinus, File
 import { getCurrentStoreId } from "@/lib/store-storage";
 import {
   bulkDocumentAction,
+  createDocument,
   getDocuments,
   updateDocumentStatus,
 } from "@/services/documents";
-import { listSales, getSaleReceiptHtml } from "@/services/sales";
+import { getSaleById, listSales, getSaleReceiptHtml } from "@/services/sales";
 import { toast } from "@/components/ui/toast";
 import type { DocumentListQuery, DocumentStatus, DocumentType } from "@/types/document";
 import type { Sale } from "@/types/sale";
@@ -268,6 +269,40 @@ export function DocumentPageClient({ dictionary: d }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  function handleCreateTaxInvoiceFromSale(saleId: string) {
+    startTaxInvoiceTransition(async () => {
+      try {
+        const saleRes = await getSaleById(saleId);
+        const sale = saleRes.data;
+        const today = new Date().toISOString().split("T")[0];
+        await createDocument({
+          type: "TAX_INVOICE",
+          customer_id: sale.customer_id ?? "",
+          // Walk-in fallback: use sale's snapshotted customer info when no customer_id
+          ...((!sale.customer_id) && {
+            customer_name: sale.customer_name ?? "ลูกค้าทั่วไป",
+            customer_address: "",
+            customer_phone: sale.customer_phone ?? "",
+          }),
+          document_date: today,
+          vat_rate: sale.vat_included ? (sale.vat_percent ?? 7) : 0,
+          items: (sale.items ?? []).map((item) => ({
+            product_id: item.product_id ?? undefined,
+            description: item.product_name ?? "",
+            quantity: item.quantity,
+            unit_price: item.unit_price ?? 0,
+            discount_type: "" as const,
+            discount_value: 0,
+          })),
+          notes: sale.note ?? undefined,
+        });
+        toast.success("สร้างใบกำกับภาษีสำเร็จ");
+      } catch {
+        toast.error("ไม่สามารถสร้างใบกำกับภาษีได้");
+      }
+    });
+  }
+
   function toggleSaleId(id: string) {
     setSelectedSaleIds((prev) => {
       const next = new Set(prev);
@@ -280,6 +315,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [createModalType, setCreateModalType] = useState<DocumentType | null>(null);
   const [isBulkPending, startBulkTransition] = useTransition();
+  const [isTaxInvoicePending, startTaxInvoiceTransition] = useTransition();
 
   const { data, isLoading } = useQuery({
     queryKey: ["documents", storeId, query],
@@ -716,6 +752,15 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                     <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
                       <span className="text-sm font-bold text-slate-800">{d.receiptViewBtn}</span>
                       <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={isTaxInvoicePending}
+                          onClick={() => handleCreateTaxInvoiceFromSale(selectedReceiptId)}
+                          className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
+                        >
+                          {isTaxInvoicePending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+                          ใบกำกับภาษี
+                        </button>
                         <button
                           type="button"
                           disabled={!receiptHtml}

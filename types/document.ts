@@ -105,6 +105,9 @@ export interface DocumentListQuery {
 export interface CreateDocumentPayload {
   type: DocumentType;
   customer_id: string;
+  customer_name?: string;
+  customer_address?: string;
+  customer_phone?: string;
   document_date: string;
   due_date?: string;
   valid_until?: string;
