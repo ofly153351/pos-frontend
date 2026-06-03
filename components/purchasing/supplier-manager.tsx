@@ -604,11 +604,30 @@ type EditFormData = {
   name: string;
   phone: string;
   contact_person: string;
+  email: string;
+  line_id: string;
   address: string;
   tax_id: string;
   note: string;
   is_active: boolean;
+  payment_method: "promptpay" | "bank_account" | "";
+  promptpay_number: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_name: string;
+  credit_days: number | "";
+  logo?: File;
+  remove_logo: boolean;
 };
+
+const THAI_BANKS = [
+  "ธนาคารกรุงเทพ (BBL)", "ธนาคารกสิกรไทย (KBANK)", "ธนาคารกรุงไทย (KTB)",
+  "ธนาคารไทยพาณิชย์ (SCB)", "ธนาคารกรุงศรีอยุธยา (BAY)", "ธนาคารทหารไทยธนชาต (TTB)",
+  "ธนาคารออมสิน (GSB)", "ธนาคารเพื่อการเกษตร (BAAC)", "ธนาคารซีไอเอ็มบีไทย (CIMB)",
+  "ธนาคารยูโอบี (UOB)", "ธนาคารแลนด์ แอนด์ เฮ้าส์ (LH)", "ธนาคารอาคารสงเคราะห์ (GHB)",
+];
+
+const CREDIT_PRESETS = [0, 7, 15, 30, 45, 60, 90];
 
 function EditSupplierModal({
   supplier,
@@ -621,17 +640,29 @@ function EditSupplierModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const m = dict.addSupplierModal;
   const [isPending, startTransition] = useTransition();
   const [form, setForm] = useState<EditFormData>({
     name: supplier.name,
     phone: supplier.phone ?? "",
     contact_person: supplier.contact_person ?? "",
+    email: supplier.email ?? "",
+    line_id: supplier.line_id ?? "",
     address: supplier.address ?? "",
     tax_id: supplier.tax_id ?? "",
     note: supplier.note ?? "",
     is_active: supplier.is_active,
+    payment_method: supplier.payment_method ?? "",
+    promptpay_number: supplier.promptpay_number ?? "",
+    bank_name: supplier.bank_name ?? "",
+    bank_account_number: supplier.bank_account_number ?? "",
+    bank_account_name: supplier.bank_account_name ?? "",
+    credit_days: supplier.credit_days ?? "",
+    remove_logo: false,
   });
+  const [logoPreview, setLogoPreview] = useState<string | null>(supplier.logo_url ?? null);
   const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -639,11 +670,35 @@ function EditSupplierModal({
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/png", "image/jpeg"].includes(file.type)) { setError(m.logoErrType); return; }
+    if (file.size > 2 * 1024 * 1024) { setError(m.logoErrSize); return; }
+    setForm((f) => ({ ...f, logo: file, remove_logo: false }));
+    setLogoPreview(URL.createObjectURL(file));
+    setError("");
+  }
+
+  function handleRemoveLogo() {
+    setForm((f) => ({ ...f, logo: undefined, remove_logo: true }));
+    setLogoPreview(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function set<K extends keyof EditFormData>(k: K, v: EditFormData[K]) {
+    setForm((f) => ({ ...f, [k]: v }));
+  }
+
   function handleSave() {
     if (!form.name.trim()) { setError(dict.supplierName + " is required"); return; }
     startTransition(async () => {
       try {
-        await updateSupplier(supplier.id, form);
+        await updateSupplier(supplier.id, {
+          ...form,
+          credit_days: form.credit_days === "" ? undefined : Number(form.credit_days),
+          payment_method: form.payment_method || undefined,
+        });
         toast.success(dict.successUpdated);
         onSuccess();
         onClose();
@@ -653,74 +708,198 @@ function EditSupplierModal({
     });
   }
 
-  const inputCls = "w-full rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100";
+  const inp = "w-full rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100";
+  const sectionTitle = "mb-3 text-xs font-bold uppercase tracking-wide text-violet-600";
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/40 smooth-fade" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/40" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="smooth-fade-up w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(124,58,237,0.18)]">
-          {/* Accent bar */}
-          <div className="h-1 bg-violet-600" />
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-            <h4 className="text-base font-bold text-slate-900">{dict.editSupplier}</h4>
-            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100">
+        <div className="flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-[0_24px_60px_rgba(124,58,237,0.18)]" style={{ maxHeight: "92vh" }}>
+          {/* Header */}
+          <div className="h-1 shrink-0 bg-gradient-to-r from-violet-600 to-violet-400" />
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100">
+                <Pencil className="h-4 w-4 text-violet-600" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-slate-900">{dict.editSupplier}</h4>
+                <p className="text-xs text-slate-400">{supplier.name}</p>
+              </div>
+            </div>
+            <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="space-y-4 p-6">
-            {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
+
+            {/* Logo */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.supplierName} <span className="text-red-500">*</span></label>
-              <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.supplierPhone}</label>
-                <input className={inputCls} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+              <p className={sectionTitle}>{m.sectionLogo}</p>
+              <div className="flex items-center gap-4">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-violet-200 bg-violet-50">
+                  {logoPreview
+                    ? <img src={logoPreview} alt="logo" className="h-full w-full object-cover" />
+                    : <Building2 className="h-8 w-8 text-violet-300" />}
+                </div>
+                <div className="space-y-2">
+                  <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleLogoChange} />
+                  <button type="button" onClick={() => fileRef.current?.click()}
+                    className="rounded-lg border border-violet-200 bg-white px-4 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50">
+                    {m.logoUploadText}
+                  </button>
+                  {logoPreview && (
+                    <button type="button" onClick={handleRemoveLogo}
+                      className="ml-2 rounded-lg border border-red-100 bg-white px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50">
+                      {m.logoRemove}
+                    </button>
+                  )}
+                  <p className="text-xs text-slate-400">{m.logoUploadHint}</p>
+                </div>
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.contactPerson}</label>
-                <input className={inputCls} value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} />
-              </div>
             </div>
+
+            {/* Contact */}
             <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.address}</label>
-              <textarea className={inputCls + " resize-none"} rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.taxId}</label>
-                <input className={inputCls} value={form.tax_id} onChange={(e) => setForm({ ...form, tax_id: e.target.value })} />
+              <p className={sectionTitle}>{m.sectionContact}</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600">{m.companyName} <span className="text-red-500">*</span></label>
+                  <input className={inp} value={form.name} onChange={(e) => set("name", e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.contactPerson}</label>
+                    <input className={inp} value={form.contact_person} onChange={(e) => set("contact_person", e.target.value)} placeholder={m.contactNamePlaceholder} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.supplierPhone}</label>
+                    <input className={inp} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder={m.phonePlaceholder} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.email}</label>
+                    <input className={inp} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder={m.emailPlaceholder} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.lineId}</label>
+                    <input className={inp} value={form.line_id} onChange={(e) => set("line_id", e.target.value)} placeholder={m.lineIdPlaceholder} />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.note}</label>
-                <input className={inputCls} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+            </div>
+
+            {/* Payment */}
+            <div>
+              <p className={sectionTitle}>{m.sectionFinancial}</p>
+              <div className="space-y-3">
+                {/* Payment method toggle */}
+                <div>
+                  <label className="mb-2 block text-xs font-semibold text-slate-600">{m.paymentMethodLabel}</label>
+                  <div className="flex gap-2">
+                    {(["promptpay", "bank_account", ""] as const).map((v) => (
+                      <button key={v} type="button" onClick={() => set("payment_method", v)}
+                        className={`rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${form.payment_method === v ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
+                        {v === "promptpay" ? m.promptpay : v === "bank_account" ? m.bankAccount : dict.cancel.replace("ยกเลิก", "ไม่ระบุ")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {form.payment_method === "promptpay" && (
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.promptpayNumber}</label>
+                    <input className={inp} value={form.promptpay_number} onChange={(e) => set("promptpay_number", e.target.value)} placeholder={m.promptpayNumberPlaceholder} />
+                    <p className="mt-1 text-xs text-slate-400">{m.promptpayHint}</p>
+                  </div>
+                )}
+                {form.payment_method === "bank_account" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1 block text-xs font-semibold text-slate-600">{m.bankNameLabel}</label>
+                      <select className={inp} value={form.bank_name} onChange={(e) => set("bank_name", e.target.value)}>
+                        <option value="">{m.selectBankPlaceholder}</option>
+                        {THAI_BANKS.map((b) => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">{m.bankAccountNumber}</label>
+                        <input className={inp} value={form.bank_account_number} onChange={(e) => set("bank_account_number", e.target.value)} placeholder={m.bankAccountNumberPlaceholder} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-semibold text-slate-600">{m.bankAccountName}</label>
+                        <input className={inp} value={form.bank_account_name} onChange={(e) => set("bank_account_name", e.target.value)} placeholder={m.bankAccountNamePlaceholder} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Credit term */}
+                <div>
+                  <label className="mb-2 block text-xs font-semibold text-slate-600">{m.creditTerm}</label>
+                  <div className="flex flex-wrap gap-2">
+                    {CREDIT_PRESETS.map((d) => (
+                      <button key={d} type="button" onClick={() => set("credit_days", d)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${form.credit_days === d ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
+                        {d === 0 ? m.creditCash : `${d} ${m.creditSuffix}`}
+                      </button>
+                    ))}
+                    <button type="button" onClick={() => set("credit_days", "")}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${form.credit_days === "" ? "border-slate-400 bg-slate-100 text-slate-700" : !CREDIT_PRESETS.includes(Number(form.credit_days)) ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
+                      {m.creditCustom}
+                    </button>
+                  </div>
+                  {!CREDIT_PRESETS.includes(Number(form.credit_days)) && (
+                    <input type="number" min={0} max={365} className={inp + " mt-2"} value={form.credit_days} onChange={(e) => set("credit_days", e.target.value === "" ? "" : Number(e.target.value))} placeholder={m.creditCustomPlaceholder} />
+                  )}
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={form.is_active}
-                onClick={() => setForm({ ...form, is_active: !form.is_active })}
-                className={`relative h-6 w-11 rounded-full transition-colors ${form.is_active ? "bg-violet-600" : "bg-slate-300"}`}
-              >
+
+            {/* Address & Notes */}
+            <div>
+              <p className={sectionTitle}>{dict.address}</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.address}</label>
+                  <textarea className={inp + " resize-none"} rows={2} value={form.address} onChange={(e) => set("address", e.target.value)} placeholder={m.addressPlaceholder} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.taxId}</label>
+                  <input className={inp} value={form.tax_id} onChange={(e) => set("tax_id", e.target.value)} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.note}</label>
+                  <textarea className={inp + " resize-none"} rows={2} value={form.note} onChange={(e) => set("note", e.target.value)} placeholder={m.notesPlaceholder} />
+                </div>
+              </div>
+            </div>
+
+            {/* Status */}
+            <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+              <button type="button" role="switch" aria-checked={form.is_active}
+                onClick={() => set("is_active", !form.is_active)}
+                className={`relative h-6 w-11 rounded-full transition-colors ${form.is_active ? "bg-violet-600" : "bg-slate-300"}`}>
                 <span className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${form.is_active ? "translate-x-5" : "translate-x-0"}`} />
               </button>
-              <span className="text-sm font-medium text-slate-700">{dict.supplierIsActive}</span>
+              <div>
+                <p className="text-sm font-medium text-slate-700">{dict.supplierIsActive}</p>
+                <p className="text-xs text-slate-400">{form.is_active ? dict.supplierUI.badgeActive : dict.supplierUI.badgeInactive}</p>
+              </div>
             </div>
           </div>
-          <div className="flex gap-3 border-t border-slate-100 px-6 py-4">
-            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50">
+
+          {/* Footer */}
+          <div className="flex shrink-0 gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
+            <button type="button" onClick={onClose} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
               {dict.cancel}
             </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isPending}
-              className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white transition-all hover:bg-violet-700 disabled:opacity-60"
-            >
+            <button type="button" onClick={handleSave} disabled={isPending}
+              className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-60">
               {isPending ? dict.saving : dict.save}
             </button>
           </div>

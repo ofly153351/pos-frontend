@@ -11,11 +11,6 @@ export async function GET(request: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   const { storeId } = await context.params;
-  const body = await request.text();
-
-  return proxyApiRequest(
-    request,
-    `/api/v1/stores/${storeId}/suppliers`,
-    { body, method: "POST" },
-  );
+  const body = await request.blob();
+  return proxyApiRequest(request, `/api/v1/stores/${storeId}/suppliers`, { body, method: "POST" });
 }

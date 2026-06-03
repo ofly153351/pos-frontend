@@ -324,7 +324,7 @@ export function UserWorkspaceSidebar({
           >
             <Link
               className={`flex min-w-0 flex-1 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
-              href={stockBaseHref}
+              href={warehouseOverviewHref}
             >
               <span
                 className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${

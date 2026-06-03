@@ -11,21 +11,11 @@ export async function GET(request: Request, context: RouteContext) {
 
 export async function PUT(request: Request, context: RouteContext) {
   const { storeId, supplierId } = await context.params;
-  const body = await request.text();
-
-  return proxyApiRequest(
-    request,
-    `/api/v1/stores/${storeId}/suppliers/${supplierId}`,
-    { body, method: "PUT" },
-  );
+  const body = await request.blob();
+  return proxyApiRequest(request, `/api/v1/stores/${storeId}/suppliers/${supplierId}`, { body, method: "PUT" });
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
   const { storeId, supplierId } = await context.params;
-
-  return proxyApiRequest(
-    request,
-    `/api/v1/stores/${storeId}/suppliers/${supplierId}`,
-    { method: "DELETE" },
-  );
+  return proxyApiRequest(request, `/api/v1/stores/${storeId}/suppliers/${supplierId}`, { method: "DELETE" });
 }
