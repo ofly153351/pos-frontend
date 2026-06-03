@@ -11,6 +11,7 @@ import {
   updateCustomer,
   upsertCustomerLevelDiscount,
 } from "@/services/customers";
+import { friendlyMessage } from "@/lib/form-errors";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 
 type CustomerNetworkDictionary = {
@@ -112,7 +113,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
         setCustomers(customerResponse.data ?? []);
         setDiscounts(discountResponse.data ?? []);
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : dictionary.requestFailed);
+        setError(friendlyMessage(nextError));
       }
     });
   }, [dictionary.requestFailed, hasMounted]);
@@ -276,7 +277,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
         setSuccess(editingCustomerId ? dictionary.successUpdated : dictionary.successCreated);
         setIsCustomerDrawerOpen(false);
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : dictionary.requestFailed);
+        setError(friendlyMessage(nextError));
       }
     });
   }
@@ -314,7 +315,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
         }
         setSuccess(dictionary.deletedSuccess);
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : dictionary.requestFailed);
+        setError(friendlyMessage(nextError));
       }
     });
   }
@@ -344,7 +345,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
         setDiscountSuccess(dictionary.successDiscountUpdated);
         setIsDiscountDrawerOpen(false);
       } catch (nextError) {
-        setDiscountError(nextError instanceof Error ? nextError.message : dictionary.requestFailed);
+        setDiscountError(friendlyMessage(nextError));
       }
     });
   }
@@ -358,7 +359,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
         await deleteCustomerLevelDiscount(level);
         await reloadData();
       } catch (nextError) {
-        setDiscountError(nextError instanceof Error ? nextError.message : dictionary.requestFailed);
+        setDiscountError(friendlyMessage(nextError));
       }
     });
   }

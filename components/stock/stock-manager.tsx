@@ -23,6 +23,9 @@ import {
   listProducts,
   updateProduct,
 } from "@/services/products";
+import { ApiError } from "@/services/api";
+import { friendlyMessage } from "@/lib/form-errors";
+import { toast } from "@/components/ui/toast";
 import type { Product, ProductBrand, ProductInput, ProductType, ProductUnit } from "@/types/product";
 
 type ProductStockStatus = "all" | "active" | "inactive" | "low_stock" | "out_of_stock";
@@ -328,13 +331,16 @@ function resetProductForm() {
       try {
         if (editingProductId) await updateProduct(editingProductId, formState);
         else await createProduct(formState);
-        // Close modal first — then invalidate in background
-        // Awaiting invalidateQueries inside startTransition causes React concurrent
-        // rendering to produce an intermediate empty-products state
         closeProductModal();
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
+        const msg = friendlyMessage(nextError);
+        setError(msg);
+        // Also show inline field errors if available
+        if (nextError instanceof ApiError && nextError.fields?.length) {
+          const first = nextError.fields[0];
+          setError(`${first.field}: ${first.message}`);
+        }
       }
     });
   }
@@ -345,8 +351,9 @@ function resetProductForm() {
       try {
         await deleteProduct(productId);
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
+        toast.success("ลบสินค้าสำเร็จ");
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
+        toast.error(friendlyMessage(nextError));
       }
     });
   }
@@ -357,8 +364,9 @@ function resetProductForm() {
       try {
         await Promise.all(productIds.map((id) => deleteProduct(id)));
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
+        toast.success("ลบสินค้าสำเร็จ");
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
+        toast.error(friendlyMessage(nextError));
       }
     });
   }

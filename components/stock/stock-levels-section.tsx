@@ -2,6 +2,7 @@
 
 import * as XLSX from "xlsx";
 import { ProductsTable } from "@/components/stock/products-table";
+import { ImportProductModal } from "@/components/stock/import-product-modal";
 import { createProduct } from "@/services/products";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -481,102 +482,11 @@ export function StockLevelsSection({
       />
 
       {isImportModalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade"
-          onClick={() => setIsImportModalOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl smooth-fade-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-slate-900">{dictionary.table.importLabel}</h3>
-            <p className="mt-2 text-sm text-slate-500">
-              ดาวน์โหลด Template แล้วกรอกข้อมูลสินค้าที่ต้องการนำเข้า
-            </p>
-
-            <div className="mt-6 flex flex-col gap-3">
-              <button
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={() => {
-                  const rows = [
-                    { Name: 'ตัวอย่างสินค้า', SKU: 'BRC-001', Price: 100, Stock: 50, 'Min Stock': 10, Active: 'Yes' },
-                    { Name: 'ตัวอย่างสินค้า 2', SKU: 'BRC-002', Price: 200, Stock: 30, 'Min Stock': 5, Active: 'Yes' },
-                  ];
-                  const ws = XLSX.utils.json_to_sheet(rows);
-                  const wb = XLSX.utils.book_new();
-                  XLSX.utils.book_append_sheet(wb, ws, 'Template');
-                  XLSX.writeFile(wb, 'product-import-template.xlsx');
-                }}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0-3-3m3 3 3-3m2 8H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
-                </svg>
-                ดาวน์โหลด Template
-              </button>
-
-              <button
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
-                onClick={() => importFileRef.current?.click()}
-                type="button"
-              >
-                <svg aria-hidden="true" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 10l5 5 5-5M12 15V3" />
-                </svg>
-                อัปโหลดไฟล์ Excel
-              </button>
-            </div>
-
-            <input
-              accept=".xlsx,.xls"
-              className="hidden"
-              ref={importFileRef}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                e.target.value = "";
-
-                const buffer = await file.arrayBuffer();
-                const wb = XLSX.read(buffer, { type: "array" });
-                const ws = wb.Sheets[wb.SheetNames[0]];
-                const dataRows: Record<string, string>[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-                let successCount = 0;
-                let errorCount = 0;
-
-                for (const row of dataRows) {
-                  const get = (key: string) => String(row[key] ?? row[key.toLowerCase()] ?? "").trim();
-                  try {
-                    await createProduct({
-                      name: get("Name") || "",
-                      base_price: get("Price") || "0",
-                      sku: get("SKU"),
-                      min_stock: get("Min Stock") || "0",
-                      is_active: get("Active").toLowerCase() !== "no",
-                      unit_id: productUnits[0]?.id ?? "",
-                    });
-                    successCount++;
-                  } catch {
-                    errorCount++;
-                  }
-                }
-
-                setIsImportModalOpen(false);
-                onPageChange(1);
-                alert(`นำเข้า: ${successCount} รายการสำเร็จ${errorCount > 0 ? `, ${errorCount} รายการล้มเหลว` : ""}`);
-              }}
-              type="file"
-            />
-
-            <button
-              className="mt-4 w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-              onClick={() => setIsImportModalOpen(false)}
-              type="button"
-            >
-              ยกเลิก
-            </button>
-          </div>
-        </div>
+        <ImportProductModal
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={() => { setIsImportModalOpen(false); onPageChange(1); }}
+          importFileRef={importFileRef}
+        />
       ) : null}
 
       {paginationTotalPages > 1 ? (

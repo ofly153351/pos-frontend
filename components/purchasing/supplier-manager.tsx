@@ -17,6 +17,7 @@ import {
 } from "@/services/suppliers";
 import { listPurchaseOrders, type PurchaseOrder } from "@/services/purchases";
 import { toast } from "@/components/ui/toast";
+import { friendlyMessage } from "@/lib/form-errors";
 import { AddSupplierModal } from "./add-supplier-modal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -703,7 +704,7 @@ function EditSupplierModal({
         onSuccess();
         onClose();
       } catch (err) {
-        setError(err instanceof Error ? err.message : dict.requestFailed);
+        setError(friendlyMessage(err));
       }
     });
   }

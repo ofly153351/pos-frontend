@@ -14,13 +14,34 @@ type RequestOptions = {
   responseType?: "arraybuffer" | "blob" | "json" | "text";
 };
 
+export type ApiFieldError = { field: string; message: string };
+
+export type ApiErrorCode =
+  | "VALIDATION_ERROR"
+  | "NOT_FOUND"
+  | "FORBIDDEN"
+  | "CONFLICT"
+  | "UNAUTHORIZED"
+  | "INTERNAL_ERROR"
+  | "BAD_REQUEST";
+
 export class ApiError extends Error {
   status: number;
+  code?: ApiErrorCode;
+  fields?: ApiFieldError[];
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: ApiErrorCode, fields?: ApiFieldError[]) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
+    this.fields = fields;
+  }
+
+  /** Returns a map of field → first error message, useful for inline validation UI. */
+  fieldMap(): Record<string, string> {
+    if (!this.fields?.length) return {};
+    return Object.fromEntries(this.fields.map((f) => [f.field, f.message]));
   }
 }
 
@@ -85,19 +106,19 @@ apiClient.interceptors.response.use(
 );
 
 function toApiError(error: unknown) {
-  if (error instanceof ApiError) {
-    return error;
-  }
+  if (error instanceof ApiError) return error;
 
   if (error instanceof AxiosError) {
     const status = error.response?.status ?? 500;
-    const payload = error.response?.data as ApiResponse<unknown> | undefined;
-    const message =
-      payload?.message ||
-      error.message ||
-      "Request failed";
+    const payload = error.response?.data as
+      | { success: boolean; message?: string; error?: { code?: ApiErrorCode; message?: string; fields?: ApiFieldError[] } }
+      | undefined;
 
-    return new ApiError(message, status);
+    const message = payload?.message || error.message || "Request failed";
+    const code = payload?.error?.code;
+    const fields = payload?.error?.fields;
+
+    return new ApiError(message, status, code, fields);
   }
 
   return new ApiError("Request failed", 500);
