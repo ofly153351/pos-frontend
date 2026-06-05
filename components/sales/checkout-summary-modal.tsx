@@ -364,13 +364,12 @@ export function CheckoutSummaryModal({
             <div>
               <label className="mb-2 block text-sm font-semibold text-violet-800">
                 {dictionary.customerLabel}
-                {!quotationMode && customerSettlementMode === "cash_now" && (
-                  <span className="ml-1.5 text-[11px] font-normal text-slate-400">
-                    (เพื่อออกใบกำกับภาษี — ไม่บังคับ)
-                  </span>
-                )}
               </label>
-              {customerSettlementMode === "invoice" ? (
+              {!quotationMode && customerSettlementMode === "cash_now" ? (
+                <div className="w-full rounded-lg border border-violet-100 bg-violet-50/30 px-4 py-3 text-sm text-slate-400 select-none">
+                  {dictionary.customerPlaceholder}
+                </div>
+              ) : customerSettlementMode === "invoice" ? (
                 <CustomerCombobox
                   customers={customers}
                   customerLevelDiscounts={customerLevelDiscounts}
@@ -378,7 +377,7 @@ export function CheckoutSummaryModal({
                   onChange={setSelectedCustomerId}
                   placeholder="เลือกลูกค้า..."
                 />
-              ) : quotationMode ? (
+              ) : (
                 <select
                   className="w-full rounded-lg border border-violet-200 bg-violet-50/30 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   onChange={(event) => setSelectedCustomerId(event.target.value)}
@@ -395,15 +394,6 @@ export function CheckoutSummaryModal({
                     </option>
                   ))}
                 </select>
-              ) : (
-                /* cash_now — optional customer for tax invoice */
-                <CustomerCombobox
-                  customers={customers}
-                  customerLevelDiscounts={customerLevelDiscounts}
-                  value={selectedCustomerId}
-                  onChange={setSelectedCustomerId}
-                  placeholder={dictionary.customerPlaceholder}
-                />
               )}
               <p className="mt-2 text-xs font-medium text-slate-600">
                 {dictionary.customerTypeLabel}: {customerTypeLabel}

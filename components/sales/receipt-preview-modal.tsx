@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { FileText, Loader2, Printer, X } from "lucide-react";
+import { Printer, X } from "lucide-react";
 
 type Dict = {
   receiptPreviewLoading: string;
@@ -17,11 +17,9 @@ type Props = {
   onClose: () => void;
   onPrint: (frameWindow: Window) => void;
   dictionary: Dict;
-  onCreateTaxInvoice?: () => void;
-  isTaxInvoicePending?: boolean;
 };
 
-export function ReceiptPreviewModal({ isOpen, html, isLoading, onClose, onPrint, dictionary, onCreateTaxInvoice, isTaxInvoicePending }: Props) {
+export function ReceiptPreviewModal({ isOpen, html, isLoading, onClose, onPrint, dictionary }: Props) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
 
   if (!isOpen) {
@@ -73,39 +71,23 @@ export function ReceiptPreviewModal({ isOpen, html, isLoading, onClose, onPrint,
           )}
         </div>
 
-        <div className="mt-5 flex flex-col gap-2">
-          <div className="grid grid-cols-[1.1fr_0.9fr] gap-3">
-            <button
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300 disabled:shadow-none"
-              disabled={isLoading || !html}
-              onClick={handlePrint}
-              type="button"
-            >
-              <Printer className="h-4 w-4" />
-              {dictionary.printReceiptNowButton}
-            </button>
-            <button
-              className="min-h-12 rounded-lg border border-violet-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50"
-              onClick={onClose}
-              type="button"
-            >
-              {dictionary.closeReceiptButton}
-            </button>
-          </div>
-
-          {onCreateTaxInvoice && (
-            <button
-              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-60"
-              disabled={isTaxInvoicePending}
-              onClick={onCreateTaxInvoice}
-              type="button"
-            >
-              {isTaxInvoicePending
-                ? <Loader2 className="h-4 w-4 animate-spin" />
-                : <FileText className="h-4 w-4" />}
-              ออกใบกำกับภาษี
-            </button>
-          )}
+        <div className="mt-5 grid grid-cols-[1.1fr_0.9fr] gap-3">
+          <button
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_10px_24px_rgba(124,58,237,0.28)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-violet-300 disabled:shadow-none"
+            disabled={isLoading || !html}
+            onClick={handlePrint}
+            type="button"
+          >
+            <Printer className="h-4 w-4" />
+            {dictionary.printReceiptNowButton}
+          </button>
+          <button
+            className="min-h-12 rounded-lg border border-violet-200 bg-white px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50"
+            onClick={onClose}
+            type="button"
+          >
+            {dictionary.closeReceiptButton}
+          </button>
         </div>
       </div>
     </div>

@@ -1,25 +1,21 @@
-"use client";
+import { notFound } from "next/navigation";
 
-import { useEffect, use } from "react";
-import { useRouter } from "next/navigation";
+import { SalesManager } from "@/components/sales/sales-manager";
+import { getDictionary } from "@/lib/i18n";
+import { isSupportedLocale, type Locale } from "@/lib/locale-config";
 
-type Props = { params: Promise<{ locale: string }> };
+type SalesPageProps = {
+  params: Promise<{ locale: string }>;
+};
 
-// Sales page ไม่มี UI ของตัวเอง — set flag แล้ว redirect
-// Cashier modal ถูกควบคุมโดย UserWorkspaceLayout ผ่าน localStorage "pos-cashier-open"
-export default function SalesPage({ params }: Props) {
-  const { locale } = use(params);
-  const router = useRouter();
+export default async function SalesPage({ params }: SalesPageProps) {
+  const { locale } = await params;
 
-  useEffect(() => {
-    localStorage.setItem("pos-cashier-open", "1");
-    // ถ้ามี history → back, ถ้าไม่มี (เพิ่ง login) → ไป dashboard
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      router.replace(`/${locale}/dashboard`);
-    }
-  }, [locale, router]);
+  if (!isSupportedLocale(locale)) {
+    notFound();
+  }
 
-  return null;
+  const dictionary = await getDictionary(locale as Locale);
+
+  return <SalesManager dictionary={dictionary.sales} />;
 }

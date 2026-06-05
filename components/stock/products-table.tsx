@@ -7,7 +7,6 @@ import type { ManagementDictionary } from "@/components/stock/types";
 import type { Product } from "@/types/product";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { StockReceiveModal } from "@/components/stock/stock-receive-modal";
-import { Skeleton } from "@/components/ui/skeleton";
 
 type ProductsTableProps = {
   emptyState: string;
@@ -465,27 +464,20 @@ export function ProductsTable({
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {isPending && products.length === 0 ? (
-            [...Array(8)].map((_, i) => (
-              <tr key={i} className="border-b border-slate-100">
-                <td className="px-4 py-3"><Skeleton className="h-4 w-4 bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-10 w-10 rounded-xl bg-slate-200" /></td>
-                <td className="px-4 py-3">
-                  <Skeleton className="mb-1.5 h-4 w-36 bg-slate-200" />
-                  <Skeleton className="h-3 w-20 bg-slate-100" />
-                </td>
-                <td className="px-4 py-3"><Skeleton className="h-4 w-16 bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-4 w-14 bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-5 w-12 rounded-full bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-5 w-14 rounded-full bg-slate-100" /></td>
-                <td className="px-4 py-3 text-center"><Skeleton className="h-4 w-8 mx-auto bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-7 w-7 rounded-lg bg-slate-100" /></td>
-              </tr>
-            ))
-          ) : products.length === 0 ? (
+          {products.length === 0 ? (
             <tr>
               <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={10}>
-                {emptyState}
+                {isPending ? (
+                  <span className="inline-flex items-center gap-3">
+                    <svg aria-hidden="true" className="h-5 w-5 animate-spin text-violet-500" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
+                    </svg>
+                    <span className="animate-pulse">{loadingLabel}</span>
+                  </span>
+                ) : (
+                  emptyState
+                )}
               </td>
             </tr>
           ) : null}

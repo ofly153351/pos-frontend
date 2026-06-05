@@ -18,7 +18,6 @@ import {
 import { listPurchaseOrders, type PurchaseOrder } from "@/services/purchases";
 import { toast } from "@/components/ui/toast";
 import { friendlyMessage } from "@/lib/form-errors";
-import { SkeletonListItem } from "@/components/ui/skeleton";
 import { AddSupplierModal } from "./add-supplier-modal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -1054,8 +1053,8 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
           <div className="flex-1 overflow-y-auto pretty-scroll">
             {loadingSuppliers ? (
               <div className="flex flex-col gap-2 p-4">
-                {Array.from({ length: 7 }).map((_, i) => (
-                  <SkeletonListItem key={i} />
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-20 animate-pulse rounded-xl bg-slate-100" />
                 ))}
               </div>
             ) : visible.length === 0 ? (

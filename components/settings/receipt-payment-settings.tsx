@@ -23,7 +23,6 @@ import { getStoreById } from "@/services/stores";
 import { getCurrentStoreId } from "@/lib/store-storage";
 import type { ReceiptSettingsData, UpdateReceiptSettingsInput, PaymentChannelSetting } from "@/types/receipt-settings";
 import type { Store as StoreType } from "@/types/store";
-import { SkeletonSettingsPanel } from "@/components/ui/skeleton";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TaxMode = "none" | "inclusive" | "exclusive";
@@ -514,9 +513,8 @@ export function ReceiptPaymentSettings() {
   // ── Loading state ─────────────────────────────────────────────────────────
   if (settingsLoading || !localSettings) {
     return (
-      <div className="space-y-4">
-        <SkeletonSettingsPanel rows={5} />
-        <SkeletonSettingsPanel rows={3} />
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-violet-400" />
       </div>
     );
   }
