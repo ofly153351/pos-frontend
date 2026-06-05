@@ -142,6 +142,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [isPrintPromptOpen, setIsPrintPromptOpen] = useState(false);
   const [isReceiptPreviewLoading, setIsReceiptPreviewLoading] = useState(false);
   const [receiptPreviewHtml, setReceiptPreviewHtml] = useState("");
+  const [completedSaleId, setCompletedSaleId] = useState<string | null>(null);
+  const [isTaxInvoicePending, startTaxInvoiceTransition] = useTransition();
   const [isPending, startTransition] = useTransition();
   const [isRestoreDrawerOpen, setIsRestoreDrawerOpen] = useState(false);
   const [parkedBills, setParkedBills] = useState<any[]>([]);
@@ -934,6 +936,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         await reloadData();
 
         if (response.data?.id) {
+          setCompletedSaleId(response.data.id);
           setReceiptPreviewHtml("");
           setIsPrintPromptOpen(true);
           void prepareReceiptPreview(response.data.id, paymentMethod);
@@ -970,6 +973,44 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   function closeReceiptPreview() {
     setIsPrintPromptOpen(false);
     setReceiptPreviewHtml("");
+    setCompletedSaleId(null);
+  }
+
+  function handleCreateTaxInvoiceFromReceipt() {
+    if (!completedSaleId) return;
+    startTaxInvoiceTransition(async () => {
+      try {
+        const { getSaleById } = await import("@/services/sales");
+        const { createDocument } = await import("@/services/documents");
+        const saleRes = await getSaleById(completedSaleId);
+        const sale = saleRes.data;
+        const today = new Date().toISOString().split("T")[0];
+        await createDocument({
+          type: "TAX_INVOICE",
+          customer_id: sale.customer_id ?? "",
+          ...(!sale.customer_id && {
+            customer_name: sale.customer_name ?? "ลูกค้าทั่วไป",
+            customer_address: "",
+            customer_phone: sale.customer_phone ?? "",
+          }),
+          document_date: today,
+          vat_rate: sale.vat_included ? (sale.vat_percent ?? 7) : 0,
+          items: (sale.items ?? []).map((item) => ({
+            product_id: item.product_id ?? undefined,
+            description: item.product_name ?? "",
+            quantity: item.quantity,
+            unit_price: item.unit_price ?? 0,
+            discount_type: "" as const,
+            discount_value: 0,
+          })),
+          notes: sale.note ?? undefined,
+        });
+        toast.success("สร้างใบกำกับภาษีสำเร็จ");
+        closeReceiptPreview();
+      } catch {
+        toast.error("ไม่สามารถสร้างใบกำกับภาษีได้");
+      }
+    });
   }
 
   function confirmRestoreBill(bill: any) {
@@ -1220,6 +1261,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         isLoading={isReceiptPreviewLoading}
         onClose={closeReceiptPreview}
         onPrint={handlePrintFromPrompt}
+        onCreateTaxInvoice={completedSaleId ? handleCreateTaxInvoiceFromReceipt : undefined}
+        isTaxInvoicePending={isTaxInvoicePending}
         dictionary={{
           receiptPreviewLoading: dictionary.receiptPreviewLoading,
           receiptPreviewTitle: dictionary.receiptPreviewTitle,
