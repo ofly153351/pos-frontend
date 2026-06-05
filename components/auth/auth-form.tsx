@@ -103,11 +103,12 @@ export function AuthForm({
 
         setMessageTone("success");
         setMessage(payload.message);
-        router.replace(
-          mode === "login" && payload.data.store_id
-            ? `/${locale}/stock`
-            : `/${locale}/subscription`,
-        );
+        if (mode === "login" && payload.data.store_id) {
+          localStorage.setItem("pos-cashier-open", "1");
+          router.replace(`/${locale}/sales`);
+        } else {
+          router.replace(`/${locale}/subscription`);
+        }
       } catch (error) {
         const nextMessage =
           error instanceof Error ? error.message : validation.genericError;

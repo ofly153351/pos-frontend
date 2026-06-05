@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
+import { Skeleton, SkeletonStatRow, SkeletonChart } from "@/components/ui/skeleton";
 import {
   Area,
   AreaChart,
@@ -468,7 +469,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <div className="min-w-0">
               <p className="truncate text-xs font-medium text-slate-500">{label}</p>
               {isLoading
-                ? <div className="mt-1 h-6 w-24 animate-pulse rounded-lg bg-violet-50" />
+                ? <Skeleton className="mt-1 h-7 w-28 bg-violet-50" />
                 : <p className="mt-0.5 truncate text-xl font-black text-slate-900">{value}</p>}
             </div>
           </article>
@@ -491,7 +492,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
 
           <div className="h-[280px] rounded-xl bg-gradient-to-b from-violet-50/60 to-transparent p-3">
             {isLoading ? (
-              <div className="flex h-full items-center justify-center text-sm text-slate-400">{dictionary.loading}</div>
+              <SkeletonChart height="h-full" className="rounded-xl" />
             ) : chartData.length === 0 ? (
               <div className="flex h-full items-center justify-center text-sm text-slate-400">{dictionary.empty}</div>
             ) : (
@@ -530,7 +531,14 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
         <article className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-base font-bold text-slate-900">{dictionary.sections.paymentBreakdown}</h2>
           {isLoading ? (
-            <p className="text-sm text-slate-400">{dictionary.loading}</p>
+            <div className="space-y-2">
+              {[70, 45, 30].map((w, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-3 w-3 rounded-full bg-violet-100" />
+                  <Skeleton className={`h-3.5 bg-slate-200`} style={{ width: `${w}%` }} />
+                </div>
+              ))}
+            </div>
           ) : paymentBreakdown.length === 0 ? (
             <p className="text-sm text-slate-400">{dictionary.empty}</p>
           ) : (
@@ -588,7 +596,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
         <article className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-base font-bold text-slate-900">{dictionary.sections.topProducts}</h2>
           {isLoading ? (
-            <p className="text-sm text-slate-400">{dictionary.loading}</p>
+            <SkeletonChart height="h-48" />
           ) : topProducts.length === 0 ? (
             <p className="text-sm text-slate-400">{dictionary.empty}</p>
           ) : (
@@ -634,7 +642,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               <h3 className="text-sm font-bold text-rose-700">{dictionary.sections.lowStockProducts}</h3>
             </div>
             {isLoading ? (
-              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="h-8 animate-pulse rounded-xl bg-rose-50" />)}</div>
+              <div className="space-y-1.5">{[1,2,3].map((i) => <SkeletonStatRow key={i} className="bg-rose-50/40" />)}</div>
             ) : lowStockList.length === 0 ? (
               <p className="text-sm text-slate-400">{dictionary.empty}</p>
             ) : (
@@ -663,7 +671,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               <h3 className="text-sm font-bold text-emerald-700">{dictionary.sections.highStockProducts}</h3>
             </div>
             {isLoading ? (
-              <div className="space-y-2">{[1,2,3].map((i) => <div key={i} className="h-8 animate-pulse rounded-xl bg-emerald-50" />)}</div>
+              <div className="space-y-1.5">{[1,2,3].map((i) => <SkeletonStatRow key={i} className="bg-emerald-50/40" />)}</div>
             ) : highStockList.length === 0 ? (
               <p className="text-sm text-slate-400">{dictionary.empty}</p>
             ) : (
@@ -708,11 +716,12 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             </thead>
             <tbody>
               {isLoading ? (
-                [...Array(4)].map((_, i) => (
-                  <tr key={i}>
-                    <td colSpan={4} className="px-3 py-2">
-                      <div className="h-8 animate-pulse rounded-xl bg-violet-50" />
-                    </td>
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="border-b border-violet-50/70">
+                    <td className="px-3 py-2.5"><Skeleton className="h-4 w-20 bg-violet-50" /></td>
+                    <td className="px-3 py-2.5 text-right"><Skeleton className="h-4 w-16 ml-auto bg-slate-100" /></td>
+                    <td className="px-3 py-2.5"><Skeleton className="h-5 w-16 rounded-full bg-slate-100" /></td>
+                    <td className="px-3 py-2.5"><Skeleton className="h-4 w-24 bg-slate-100" /></td>
                   </tr>
                 ))
               ) : (data?.recent_sales.length ?? 0) === 0 ? (
