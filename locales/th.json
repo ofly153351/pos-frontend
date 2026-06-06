@@ -8,7 +8,26 @@
     "switchToRegister": "เพิ่งเริ่มใช้งาน?",
     "createAccount": "สมัครสมาชิก",
     "signIn": "เข้าสู่ระบบ",
-    "footerNote": "เลย์เอาต์รองรับทั้งหน้าร้านและทีมหลังบ้าน"
+    "footerNote": "เลย์เอาต์รองรับทั้งหน้าร้านและทีมหลังบ้าน",
+    "authBrand": {
+      "badge": "ENTERPRISE POS PLATFORM",
+      "features": [
+        "จัดการสินค้าและสต็อก",
+        "ออกใบเสร็จ ใบกำกับภาษี ใบส่งของ",
+        "รองรับการขายหน้าร้าน POS",
+        "รายงานยอดขายและสรุปสต็อก"
+      ],
+      "statProductsValue": "1,000+",
+      "statProductsLabel": "สินค้า",
+      "statDocumentsValue": "หลากหลาย",
+      "statDocumentsLabel": "เอกสาร",
+      "statReadyValue": "24/7",
+      "statReadyLabel": "พร้อมใช้งาน",
+      "version": "เวอร์ชัน 1.0.0",
+      "secureNote": "ข้อมูลถูกเข้ารหัสและป้องกันด้วยมาตรฐานความปลอดภัย",
+      "rememberMe": "จดจำการเข้าสู่ระบบ",
+      "forgotPassword": "ลืมรหัสผ่าน?"
+    }
   },
   "validation": {
     "required": "กรุณากรอกข้อมูล",
@@ -47,7 +66,19 @@
     "passwordPlaceholder": "สร้างรหัสผ่าน",
     "submit": "สร้างบัญชี",
     "secondaryTitle": "เหมาะกับหน้าร้านที่ต้องทำงานเร็ว",
-    "secondaryDescription": "เริ่มต้นด้วยหน้าสมัครที่ชัดเจน เพื่อให้ร้านพร้อมต่อยอดไปยังสินค้า พนักงาน และการตั้งค่าการชำระเงิน"
+    "secondaryDescription": "เริ่มต้นด้วยหน้าสมัครที่ชัดเจน เพื่อให้ร้านพร้อมต่อยอดไปยังสินค้า พนักงาน และการตั้งค่าการชำระเงิน",
+    "confirmPasswordLabel": "ยืนยันรหัสผ่าน",
+    "confirmPasswordPlaceholder": "กรอกรหัสผ่านอีกครั้ง",
+    "passwordMismatch": "รหัสผ่านไม่ตรงกัน",
+    "strengthWeak": "อ่อน — ควรเพิ่มความยาว",
+    "strengthMedium": "ปานกลาง",
+    "strengthGood": "ดี",
+    "strengthStrong": "แข็งแรงมาก",
+    "termsPrefix": "ฉันยอมรับ",
+    "termsLink": "ข้อกำหนดการใช้งาน",
+    "termsAnd": "และ",
+    "privacyLink": "นโยบายความเป็นส่วนตัว",
+    "termsRequired": "กรุณายอมรับข้อกำหนดการใช้งาน"
   },
   "dashboard": {
     "title": "แดชบอร์ดร้านค้า",
@@ -1534,5 +1565,90 @@
     "vatExcluded": "ราคาไม่รวม VAT",
     "page": "หน้า",
     "of": "จาก"
+  },
+  "receiptSettings": {
+    "tabs": {
+      "receipt": "ใบเสร็จ",
+      "payment": "การชำระเงิน",
+      "promptpay": "PromptPay",
+      "printer": "เครื่องพิมพ์",
+      "display": "การแสดงผล"
+    },
+    "save": "บันทึก",
+    "saving": "กำลังบันทึก...",
+    "saveSuccess": "บันทึกการเปลี่ยนแปลงเรียบร้อย",
+    "previewLabel": "ตัวอย่างใบเสร็จ",
+    "previewApiLabel": "ดึงจาก API",
+    "receipt": {
+      "sectionTemplate": "เทมเพลตใบเสร็จ",
+      "labelTemplate": "รูปแบบใบเสร็จ",
+      "sectionPaper": "กระดาษใบเสร็จ",
+      "labelPaperSize": "ขนาดกระดาษ",
+      "paper80mm": "80mm (Thermal)",
+      "paperA4": "A4",
+      "labelPaperLength": "ความยาวใบเสร็จ",
+      "lengthAuto": "Auto (แบบน้ำ)",
+      "sectionTax": "การแสดงภาษี",
+      "taxNone": "ไม่แสดงภาษี",
+      "taxInclusive": "รวมภาษีแล้ว",
+      "taxExclusive": "แยกภาษี (VAT)",
+      "labelVatRate": "อัตรา VAT",
+      "vat7": "7% (มาตรฐาน)",
+      "vat0": "0%",
+      "labelTaxLabel": "ระบุภาษี",
+      "sectionLogo": "การแสดงโลโก้",
+      "changeLogo": "เปลี่ยนโลโก้",
+      "labelLogoPosition": "ตำแหน่งโลโก้",
+      "logoCenter": "ด้านบน (กึ่งกลาง)",
+      "logoLeft": "ด้านบน (ซ้าย)",
+      "logoRight": "ด้านบน (ขวา)",
+      "sectionStoreInfo": "ข้อมูลร้านในใบเสร็จ",
+      "showStoreName": "ชื่อร้าน",
+      "showAddress": "ที่อยู่",
+      "showPhone": "เบอร์โทรศัพท์",
+      "showTaxId": "เลขประจำตัวผู้เสียภาษี",
+      "sectionFooter": "ข้อความท้ายใบเสร็จ (Footer)"
+    },
+    "payment": {
+      "sectionChannels": "ช่องทางการชำระเงิน",
+      "channelsHint": "เปิดใช้งานช่องทางการชำระเงินที่ต้องการรับ"
+    },
+    "promptpay": {
+      "sectionInfo": "ข้อมูล PromptPay",
+      "labelNumber": "หมายเลขพร้อมเพย์",
+      "numberPlaceholder": "ยังไม่ได้ตั้งค่า — กรุณาแก้ไขที่หน้าข้อมูลร้าน",
+      "editHint": "แก้ไขได้ที่",
+      "editLink": "ตั้งค่าร้านค้า",
+      "sectionQr": "QR Code บนใบเสร็จ",
+      "qrNoPromptPay": "กรุณาตั้งค่าหมายเลขพร้อมเพย์ที่หน้าข้อมูลร้านก่อนเปิดใช้งาน QR",
+      "labelQrSize": "ขนาด QR",
+      "qrSmall": "เล็ก (Small)",
+      "qrMedium": "กลาง (Medium)",
+      "qrLarge": "ใหญ่ (Large)"
+    },
+    "printer": {
+      "sectionPrinter": "การตั้งค่าเครื่องพิมพ์",
+      "labelType": "ประเภทเครื่องพิมพ์",
+      "typeThermal": "Thermal",
+      "typeInkjet": "Inkjet",
+      "typePdf": "PDF Export",
+      "labelName": "ชื่อเครื่องพิมพ์",
+      "namePlaceholder": "ระบุชื่อเครื่องพิมพ์...",
+      "labelAutoPrint": "พิมพ์อัตโนมัติหลังชำระเงิน",
+      "labelCopies": "จำนวนสำเนา",
+      "testPrint": "พิมพ์หน้าทดสอบ"
+    },
+    "display": {
+      "sectionDisplay": "การแสดงผล",
+      "labelCustomerDisplay": "หน้าจอลูกค้า (Customer Display)",
+      "labelShowProductImages": "แสดงรูปสินค้าบนใบเสร็จ",
+      "labelDateFormat": "รูปแบบวันที่",
+      "labelTimeFormat": "รูปแบบเวลา",
+      "time24h": "24 ชั่วโมง",
+      "time12h": "12 ชั่วโมง (AM/PM)",
+      "labelCurrencyPosition": "ตำแหน่งสกุลเงิน",
+      "currencyBefore": "ก่อน (฿100)",
+      "currencyAfter": "หลัง (100฿)"
+    }
   }
 }

@@ -51,6 +51,7 @@ export default async function LoginPage({ params }: LoginPageProps) {
       switchLocaleHref="login"
       thaiLabel={dictionary.common.thai}
       englishLabel={dictionary.common.english}
+      authBrand={dictionary.common.authBrand}
       validation={dictionary.validation}
     />
   );

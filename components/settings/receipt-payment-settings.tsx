@@ -24,10 +24,13 @@ import { getCurrentStoreId } from "@/lib/store-storage";
 import type { ReceiptSettingsData, UpdateReceiptSettingsInput, PaymentChannelSetting } from "@/types/receipt-settings";
 import type { Store as StoreType } from "@/types/store";
 import { SkeletonSettingsPanel } from "@/components/ui/skeleton";
+import th from "@/locales/th.json";
+
+type T = typeof th.receiptSettings;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type TaxMode = "none" | "inclusive" | "exclusive";
-type PaperSize = "58mm" | "80mm" | "a4";
+type PaperSize = "80mm" | "a4";
 type LogoPosition = "top_center" | "top_left" | "top_right";
 type TabKey = "receipt" | "payment" | "promptpay" | "printer" | "display";
 
@@ -56,13 +59,13 @@ function toChannels(raw: PaymentChannelSetting[]): PaymentChannel[] {
   }));
 }
 
-const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: "receipt",   label: "ใบเสร็จ",       icon: <ReceiptText className="h-4 w-4" /> },
-  { key: "payment",   label: "การชำระเงิน",    icon: <CreditCard  className="h-4 w-4" /> },
-  { key: "promptpay", label: "PromptPay",      icon: <QrCode      className="h-4 w-4" /> },
-  { key: "printer",   label: "เครื่องพิมพ์",   icon: <Printer     className="h-4 w-4" /> },
-  { key: "display",   label: "การแสดงผล",      icon: <Monitor     className="h-4 w-4" /> },
-];
+function makeTabs(t: T) {
+  return [
+    { key: "receipt"   as TabKey, label: t.tabs.receipt,   icon: <ReceiptText className="h-4 w-4" /> },
+    { key: "payment"   as TabKey, label: t.tabs.payment,   icon: <CreditCard  className="h-4 w-4" /> },
+    { key: "promptpay" as TabKey, label: t.tabs.promptpay, icon: <QrCode      className="h-4 w-4" /> },
+  ];
+}
 
 // ── Toggle switch ─────────────────────────────────────────────────────────────
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
@@ -96,12 +99,20 @@ const inputCls = "w-full rounded-xl border border-violet-200 bg-white px-3 py-2.
 const selectCls = "w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100";
 
 // ── Tab panels ────────────────────────────────────────────────────────────────
-function ReceiptTab({ settings, onChange }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void }) {
+function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
+  const r = t.receipt;
+  const taxLabels: Record<TaxMode, string> = { none: r.taxNone, inclusive: r.taxInclusive, exclusive: r.taxExclusive };
+  const storeInfoFields: [keyof ReceiptSettingsData, string][] = [
+    ["show_store_name", r.showStoreName],
+    ["show_address",    r.showAddress],
+    ["show_phone",      r.showPhone],
+    ["show_tax_id",     r.showTaxId],
+  ];
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>เทมเพลตใบเสร็จ</SectionTitle>
-        <FieldLabel>รูปแบบใบเสร็จ</FieldLabel>
+        <SectionTitle>{r.sectionTemplate}</SectionTitle>
+        <FieldLabel>{r.labelTemplate}</FieldLabel>
         <select className={selectCls} value={settings.template_key} onChange={(e) => onChange({ template_key: e.target.value })}>
           <option value="modern_classic">Modern Classic</option>
           <option value="minimal">Minimal</option>
@@ -111,20 +122,19 @@ function ReceiptTab({ settings, onChange }: { settings: ReceiptSettingsData; onC
       </div>
 
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>กระดาษใบเสร็จ</SectionTitle>
+        <SectionTitle>{r.sectionPaper}</SectionTitle>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <FieldLabel>ขนาดกระดาษ</FieldLabel>
+            <FieldLabel>{r.labelPaperSize}</FieldLabel>
             <select className={selectCls} value={settings.paper_size} onChange={(e) => onChange({ paper_size: e.target.value as PaperSize })}>
-              <option value="58mm">58mm (Thermal)</option>
-              <option value="80mm">80mm (Thermal)</option>
-              <option value="a4">A4</option>
+              <option value="80mm">{r.paper80mm}</option>
+              <option value="a4">{r.paperA4}</option>
             </select>
           </div>
           <div>
-            <FieldLabel>ความยาวใบเสร็จ</FieldLabel>
+            <FieldLabel>{r.labelPaperLength}</FieldLabel>
             <select className={selectCls} value={settings.paper_length} onChange={(e) => onChange({ paper_length: e.target.value })}>
-              <option value="auto">Auto (แบบน้ำ)</option>
+              <option value="auto">{r.lengthAuto}</option>
               <option value="150mm">Fixed 150mm</option>
               <option value="200mm">Fixed 200mm</option>
             </select>
@@ -133,33 +143,25 @@ function ReceiptTab({ settings, onChange }: { settings: ReceiptSettingsData; onC
       </div>
 
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>การแสดงภาษี</SectionTitle>
+        <SectionTitle>{r.sectionTax}</SectionTitle>
         <div className="mb-4 flex gap-2">
-          {(["none", "inclusive", "exclusive"] as TaxMode[]).map((mode) => {
-            const labels: Record<TaxMode, string> = { none: "ไม่แสดงภาษี", inclusive: "รวมภาษีแล้ว", exclusive: "แยกภาษี (VAT)" };
-            const active = settings.tax_mode === mode;
-            return (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => onChange({ tax_mode: mode })}
-                className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition ${active ? "border-violet-600 bg-violet-600 text-white" : "border-violet-200 bg-white text-slate-600 hover:border-violet-400"}`}
-              >
-                {labels[mode]}
-              </button>
-            );
-          })}
+          {(["none", "inclusive", "exclusive"] as TaxMode[]).map((mode) => (
+            <button key={mode} type="button" onClick={() => onChange({ tax_mode: mode })}
+              className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition ${settings.tax_mode === mode ? "border-violet-600 bg-violet-600 text-white" : "border-violet-200 bg-white text-slate-600 hover:border-violet-400"}`}>
+              {taxLabels[mode]}
+            </button>
+          ))}
         </div>
         <div className={`grid grid-cols-2 gap-3 ${settings.tax_mode === "none" ? "pointer-events-none opacity-40" : ""}`}>
           <div>
-            <FieldLabel>อัตรา VAT</FieldLabel>
+            <FieldLabel>{r.labelVatRate}</FieldLabel>
             <select className={selectCls} value={settings.vat_rate} onChange={(e) => onChange({ vat_rate: Number(e.target.value) })}>
-              <option value={7}>7% (มาตรฐาน)</option>
-              <option value={0}>0%</option>
+              <option value={7}>{r.vat7}</option>
+              <option value={0}>{r.vat0}</option>
             </select>
           </div>
           <div>
-            <FieldLabel>ระบุภาษี</FieldLabel>
+            <FieldLabel>{r.labelTaxLabel}</FieldLabel>
             <input className={inputCls} value={settings.tax_label} onChange={(e) => onChange({ tax_label: e.target.value })} />
           </div>
         </div>
@@ -167,33 +169,28 @@ function ReceiptTab({ settings, onChange }: { settings: ReceiptSettingsData; onC
 
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
-          <SectionTitle>การแสดงโลโก้</SectionTitle>
+          <SectionTitle>{r.sectionLogo}</SectionTitle>
           <Toggle checked={settings.show_logo} onChange={(v) => onChange({ show_logo: v })} />
         </div>
         <div className={`space-y-3 ${!settings.show_logo ? "pointer-events-none opacity-40" : ""}`}>
           <button type="button" className="flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50">
-            <Upload className="h-4 w-4" /> เปลี่ยนโลโก้
+            <Upload className="h-4 w-4" /> {r.changeLogo}
           </button>
           <div>
-            <FieldLabel>ตำแหน่งโลโก้</FieldLabel>
+            <FieldLabel>{r.labelLogoPosition}</FieldLabel>
             <select className={selectCls} value={settings.logo_position} onChange={(e) => onChange({ logo_position: e.target.value as LogoPosition })}>
-              <option value="top_center">ด้านบน (กึ่งกลาง)</option>
-              <option value="top_left">ด้านบน (ซ้าย)</option>
-              <option value="top_right">ด้านบน (ขวา)</option>
+              <option value="top_center">{r.logoCenter}</option>
+              <option value="top_left">{r.logoLeft}</option>
+              <option value="top_right">{r.logoRight}</option>
             </select>
           </div>
         </div>
       </div>
 
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>ข้อมูลร้านในใบเสร็จ</SectionTitle>
+        <SectionTitle>{r.sectionStoreInfo}</SectionTitle>
         <div className="space-y-3">
-          {([
-            ["show_store_name", "ชื่อร้าน"],
-            ["show_address",    "ที่อยู่"],
-            ["show_phone",      "เบอร์โทรศัพท์"],
-            ["show_tax_id",     "เลขประจำตัวผู้เสียภาษี"],
-          ] as [keyof ReceiptSettingsData, string][]).map(([key, label]) => (
+          {storeInfoFields.map(([key, label]) => (
             <label key={key} className="flex items-center justify-between">
               <span className="text-sm text-slate-700">{label}</span>
               <Toggle checked={settings[key] as boolean} onChange={(v) => onChange({ [key]: v })} />
@@ -203,26 +200,21 @@ function ReceiptTab({ settings, onChange }: { settings: ReceiptSettingsData; onC
       </div>
 
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>ข้อความท้ายใบเสร็จ (Footer)</SectionTitle>
-        <textarea
-          className={`${inputCls} resize-none`}
-          rows={5}
-          maxLength={300}
-          value={settings.footer_text}
-          onChange={(e) => onChange({ footer_text: e.target.value })}
-        />
+        <SectionTitle>{r.sectionFooter}</SectionTitle>
+        <textarea className={`${inputCls} resize-none`} rows={5} maxLength={300}
+          value={settings.footer_text} onChange={(e) => onChange({ footer_text: e.target.value })} />
         <p className="mt-1 text-right text-xs text-slate-400">{settings.footer_text.length} / 300</p>
       </div>
     </div>
   );
 }
 
-function PaymentTab({ channels, onChange }: { channels: PaymentChannel[]; onChange: (key: string, enabled: boolean) => void }) {
+function PaymentTab({ channels, onChange, t }: { channels: PaymentChannel[]; onChange: (key: string, enabled: boolean) => void; t: T }) {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>ช่องทางการชำระเงิน</SectionTitle>
-        <p className="mb-4 text-xs text-slate-500">เปิดใช้งานช่องทางการชำระเงินที่ต้องการรับ</p>
+        <SectionTitle>{t.payment.sectionChannels}</SectionTitle>
+        <p className="mb-4 text-xs text-slate-500">{t.payment.channelsHint}</p>
         <div className="space-y-1">
           {channels.map((ch) => (
             <div
@@ -242,42 +234,33 @@ function PaymentTab({ channels, onChange }: { channels: PaymentChannel[]; onChan
   );
 }
 
-function PromptPayTab({ settings, store, onChange }: { settings: ReceiptSettingsData; store: StoreType | null; onChange: (p: Partial<ReceiptSettingsData>) => void }) {
+function PromptPayTab({ settings, store, onChange, t }: { settings: ReceiptSettingsData; store: StoreType | null; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
+  const p = t.promptpay;
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>ข้อมูล PromptPay</SectionTitle>
+        <SectionTitle>{p.sectionInfo}</SectionTitle>
         <div className="space-y-4">
           <div>
-            <FieldLabel>หมายเลขพร้อมเพย์</FieldLabel>
-            <input
-              className={inputCls}
-              value={store?.promptpay_id ?? ""}
-              readOnly
-              placeholder="ยังไม่ได้ตั้งค่า — กรุณาแก้ไขที่หน้าข้อมูลร้าน"
-            />
-            <p className="mt-1 text-xs text-slate-400">แก้ไขได้ที่ <Link href="../" className="text-violet-600 hover:underline">ตั้งค่าร้านค้า</Link></p>
+            <FieldLabel>{p.labelNumber}</FieldLabel>
+            <input className={inputCls} value={store?.promptpay_id ?? ""} readOnly placeholder={p.numberPlaceholder} />
+            <p className="mt-1 text-xs text-slate-400">{p.editHint} <Link href="../" className="text-violet-600 hover:underline">{p.editLink}</Link></p>
           </div>
         </div>
       </div>
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
-          <SectionTitle>QR Code บนใบเสร็จ</SectionTitle>
-          <Toggle
-            checked={settings.show_qr && !!store?.promptpay_id}
-            onChange={(v) => !store?.promptpay_id ? undefined : onChange({ show_qr: v })}
-          />
+          <SectionTitle>{p.sectionQr}</SectionTitle>
+          <Toggle checked={settings.show_qr && !!store?.promptpay_id} onChange={(v) => !store?.promptpay_id ? undefined : onChange({ show_qr: v })} />
         </div>
-        {!store?.promptpay_id && (
-          <p className="mb-3 text-xs text-amber-600">กรุณาตั้งค่าหมายเลขพร้อมเพย์ที่หน้าข้อมูลร้านก่อนเปิดใช้งาน QR</p>
-        )}
+        {!store?.promptpay_id && <p className="mb-3 text-xs text-amber-600">{p.qrNoPromptPay}</p>}
         <div className={`space-y-3 ${(!settings.show_qr || !store?.promptpay_id) ? "pointer-events-none opacity-40" : ""}`}>
           <div>
-            <FieldLabel>ขนาด QR</FieldLabel>
+            <FieldLabel>{p.labelQrSize}</FieldLabel>
             <select className={selectCls} value={settings.qr_size} onChange={(e) => onChange({ qr_size: e.target.value as ReceiptSettingsData["qr_size"] })}>
-              <option value="small">เล็ก (Small)</option>
-              <option value="medium">กลาง (Medium)</option>
-              <option value="large">ใหญ่ (Large)</option>
+              <option value="small">{p.qrSmall}</option>
+              <option value="medium">{p.qrMedium}</option>
+              <option value="large">{p.qrLarge}</option>
             </select>
           </div>
         </div>
@@ -286,57 +269,59 @@ function PromptPayTab({ settings, store, onChange }: { settings: ReceiptSettings
   );
 }
 
-function PrinterTab({ settings, onChange }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void }) {
+function PrinterTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
+  const p = t.printer;
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>การตั้งค่าเครื่องพิมพ์</SectionTitle>
+        <SectionTitle>{p.sectionPrinter}</SectionTitle>
         <div className="space-y-4">
           <div>
-            <FieldLabel>ประเภทเครื่องพิมพ์</FieldLabel>
+            <FieldLabel>{p.labelType}</FieldLabel>
             <select className={selectCls} value={settings.printer_type} onChange={(e) => onChange({ printer_type: e.target.value as ReceiptSettingsData["printer_type"] })}>
-              <option value="thermal">Thermal</option>
-              <option value="inkjet">Inkjet</option>
-              <option value="pdf">PDF Export</option>
+              <option value="thermal">{p.typeThermal}</option>
+              <option value="inkjet">{p.typeInkjet}</option>
+              <option value="pdf">{p.typePdf}</option>
             </select>
           </div>
           <div>
-            <FieldLabel>ชื่อเครื่องพิมพ์</FieldLabel>
-            <input className={inputCls} value={settings.printer_name} onChange={(e) => onChange({ printer_name: e.target.value })} placeholder="ระบุชื่อเครื่องพิมพ์..." />
+            <FieldLabel>{p.labelName}</FieldLabel>
+            <input className={inputCls} value={settings.printer_name} onChange={(e) => onChange({ printer_name: e.target.value })} placeholder={p.namePlaceholder} />
           </div>
           <div className="flex items-center justify-between">
-            <FieldLabel>พิมพ์อัตโนมัติหลังชำระเงิน</FieldLabel>
+            <FieldLabel>{p.labelAutoPrint}</FieldLabel>
             <Toggle checked={settings.auto_print} onChange={(v) => onChange({ auto_print: v })} />
           </div>
           <div>
-            <FieldLabel>จำนวนสำเนา</FieldLabel>
+            <FieldLabel>{p.labelCopies}</FieldLabel>
             <input type="number" min={1} max={5} className={inputCls} value={settings.copies} onChange={(e) => onChange({ copies: Math.min(5, Math.max(1, Number(e.target.value))) })} />
           </div>
         </div>
       </div>
       <button type="button" className="w-full rounded-xl border border-violet-200 bg-white py-2.5 text-sm font-semibold text-violet-700 hover:bg-violet-50">
-        <Printer className="mr-2 inline h-4 w-4" />พิมพ์หน้าทดสอบ
+        <Printer className="mr-2 inline h-4 w-4" />{p.testPrint}
       </button>
     </div>
   );
 }
 
-function DisplayTab({ settings, onChange }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void }) {
+function DisplayTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
+  const d = t.display;
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
-        <SectionTitle>การแสดงผล</SectionTitle>
+        <SectionTitle>{d.sectionDisplay}</SectionTitle>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <FieldLabel>หน้าจอลูกค้า (Customer Display)</FieldLabel>
+            <FieldLabel>{d.labelCustomerDisplay}</FieldLabel>
             <Toggle checked={settings.show_customer_display} onChange={(v) => onChange({ show_customer_display: v })} />
           </div>
           <div className="flex items-center justify-between">
-            <FieldLabel>แสดงรูปสินค้าบนใบเสร็จ</FieldLabel>
+            <FieldLabel>{d.labelShowProductImages}</FieldLabel>
             <Toggle checked={settings.show_product_images} onChange={(v) => onChange({ show_product_images: v })} />
           </div>
           <div>
-            <FieldLabel>รูปแบบวันที่</FieldLabel>
+            <FieldLabel>{d.labelDateFormat}</FieldLabel>
             <select className={selectCls} value={settings.date_format} onChange={(e) => onChange({ date_format: e.target.value })}>
               <option value="DD/MM/YYYY">DD/MM/YYYY</option>
               <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -344,17 +329,17 @@ function DisplayTab({ settings, onChange }: { settings: ReceiptSettingsData; onC
             </select>
           </div>
           <div>
-            <FieldLabel>รูปแบบเวลา</FieldLabel>
+            <FieldLabel>{d.labelTimeFormat}</FieldLabel>
             <select className={selectCls} value={settings.time_format} onChange={(e) => onChange({ time_format: e.target.value as ReceiptSettingsData["time_format"] })}>
-              <option value="24h">24 ชั่วโมง</option>
-              <option value="12h">12 ชั่วโมง (AM/PM)</option>
+              <option value="24h">{d.time24h}</option>
+              <option value="12h">{d.time12h}</option>
             </select>
           </div>
           <div>
-            <FieldLabel>ตำแหน่งสกุลเงิน</FieldLabel>
+            <FieldLabel>{d.labelCurrencyPosition}</FieldLabel>
             <select className={selectCls} value={settings.currency_position} onChange={(e) => onChange({ currency_position: e.target.value as ReceiptSettingsData["currency_position"] })}>
-              <option value="before">ก่อน (฿100)</option>
-              <option value="after">หลัง (100฿)</option>
+              <option value="before">{d.currencyBefore}</option>
+              <option value="after">{d.currencyAfter}</option>
             </select>
           </div>
         </div>
@@ -364,7 +349,7 @@ function DisplayTab({ settings, onChange }: { settings: ReceiptSettingsData; onC
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export function ReceiptPaymentSettings() {
+export function ReceiptPaymentSettings({ t }: { t: T }) {
   const queryClient = useQueryClient();
   const [storeId, setStoreId] = useState("");
 
@@ -397,10 +382,10 @@ export function ReceiptPaymentSettings() {
       queryClient.setQueryData(["receipt-settings", storeId], res.data);
       setLocalSettings(res.data);
       setIsDirty(false);
-      toast.success("บันทึกการเปลี่ยนแปลงเรียบร้อย");
+      toast.success(t.saveSuccess);
     },
     onError: () => {
-      toast.error("บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      toast.error(t.save + " failed");
     },
   });
 
@@ -441,7 +426,8 @@ export function ReceiptPaymentSettings() {
   const [direction, setDirection] = useState<"left" | "right">("right");
   const [animating, setAnimating] = useState(false);
 
-  const tabIndex = (k: TabKey) => TABS.findIndex((t) => t.key === k);
+  const TABS = makeTabs(t);
+  const tabIndex = (k: TabKey) => TABS.findIndex((tab) => tab.key === k);
 
   function switchTab(next: TabKey) {
     if (next === activeTab || animating) return;
@@ -524,11 +510,11 @@ export function ReceiptPaymentSettings() {
   const channels = toChannels(localSettings.payment_channels);
 
   const panelContent: Record<TabKey, React.ReactNode> = {
-    receipt:   <ReceiptTab   settings={localSettings} onChange={update} />,
-    payment:   <PaymentTab   channels={channels}       onChange={updateChannel} />,
-    promptpay: <PromptPayTab settings={localSettings} store={storeData ?? null} onChange={update} />,
-    printer:   <PrinterTab   settings={localSettings} onChange={update} />,
-    display:   <DisplayTab   settings={localSettings} onChange={update} />,
+    receipt:   <ReceiptTab   settings={localSettings} onChange={update}        t={t} />,
+    payment:   <PaymentTab   channels={channels}       onChange={updateChannel} t={t} />,
+    promptpay: <PromptPayTab settings={localSettings} store={storeData ?? null} onChange={update} t={t} />,
+    printer:   <PrinterTab   settings={localSettings} onChange={update}        t={t} />,
+    display:   <DisplayTab   settings={localSettings} onChange={update}        t={t} />,
   };
 
   const isSaving = saveMutation.isPending;
@@ -559,7 +545,7 @@ export function ReceiptPaymentSettings() {
             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : isDirty ? <Save className="h-4 w-4" /> : <Check className="h-4 w-4" />}
-            {isSaving ? "กำลังบันทึก..." : "บันทึกการเปลี่ยนแปลง"}
+            {isSaving ? t.saving : t.save}
           </button>
         </div>
       </div>
@@ -570,12 +556,12 @@ export function ReceiptPaymentSettings() {
         {/* ── Left: Preview (iframe — identical to real receipt) ─────────── */}
         <div className="flex w-[360px] shrink-0 flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
           <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
-            <span className="text-sm font-bold text-slate-800">ตัวอย่างใบเสร็จ</span>
+            <span className="text-sm font-bold text-slate-800">{t.previewLabel}</span>
             <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
               {previewLoading
                 ? <Loader2 className="h-3 w-3 animate-spin text-emerald-500" />
                 : <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-              {previewLoading ? "กำลังอัปเดต..." : "Layout จริง"}
+              {t.previewApiLabel}
             </span>
           </div>
           <div className="relative flex-1 overflow-hidden">
