@@ -4,6 +4,7 @@ import { Copy, Loader2, MoreVertical, Package, Printer, Send, Trash2, X } from "
 import type { DocumentListItem, DocumentStatus } from "@/types/document";
 import { DocumentTypeBadge } from "./document-type-badge";
 import { DocumentStatusBadge, PaymentStatusBadge } from "./document-status-badge";
+import { SkeletonDocumentRow } from "@/components/ui/skeleton";
 
 type Dict = {
   colDocumentNo: string;
@@ -157,9 +158,10 @@ export function DocumentTable({
       {/* Table */}
       <div className="flex-1 overflow-auto">
         {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
-            <span className="ml-2 text-sm text-slate-400">{d.loading}</span>
+          <div className="divide-y divide-slate-50">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <SkeletonDocumentRow key={i} />
+            ))}
           </div>
         ) : documents.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">

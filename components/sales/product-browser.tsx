@@ -1,10 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, Search, SlidersHorizontal } from "lucide-react";
 
-const PAGE_SIZE_GRID = 20;
+import { CardSettingsModal } from "@/components/sales/card-settings-modal";
+import { ProductCard } from "@/components/sales/product-card";
+import {
+  CARD_SIZE_MIN,
+  DEFAULT_CARD_SETTINGS,
+  cacheCardSettings,
+  loadCardSettings,
+  type CardSettings,
+} from "@/lib/card-settings";
+import { fetchCardSettings } from "@/services/card-settings";
+
 const PAGE_SIZE_LIST = 15;
 
 import type {
@@ -56,7 +66,59 @@ export function ProductBrowser({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [page, setPage] = useState(1);
 
-  const pageSize = productView === "grid" ? PAGE_SIZE_GRID : PAGE_SIZE_LIST;
+  const [cardSettingsOpen, setCardSettingsOpen] = useState(false);
+  const [cardSettings, setCardSettings] = useState<CardSettings>(DEFAULT_CARD_SETTINGS);
+
+  useEffect(() => {
+    // Instant render from local cache, then reconcile with the server (per-user, cross-device).
+    setCardSettings(loadCardSettings());
+    const refresh = () => setCardSettings(loadCardSettings());
+    window.addEventListener("pos-card-settings-changed", refresh);
+    window.addEventListener("storage", refresh);
+
+    let active = true;
+    fetchCardSettings()
+      .then((res) => {
+        if (!active || !res.data) return;
+        cacheCardSettings(res.data);
+        setCardSettings(res.data);
+      })
+      .catch(() => {/* offline / unauthenticated → keep local cache */});
+
+    return () => {
+      active = false;
+      window.removeEventListener("pos-card-settings-changed", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  // Grid column width is the only size-driven style; the card itself is config-driven.
+  const gridStyle: React.CSSProperties = {
+    gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_SIZE_MIN[cardSettings.size]}, 1fr))`,
+  };
+
+  // Measure how many columns fit → page size = 3 rows worth of cards.
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const [cols, setCols] = useState(4);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el || productView !== "grid") return;
+    const minPx = parseInt(CARD_SIZE_MIN[cardSettings.size], 10) || 180;
+    const gap = 12; // gap-3
+    const measure = () => {
+      const w = el.clientWidth;
+      setCols(Math.max(1, Math.floor((w + gap) / (minPx + gap))));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [productView, cardSettings.size]);
+
+  const GRID_ROWS = 3;
+  const pageSize =
+    productView === "grid" ? Math.max(cols * GRID_ROWS, cols) : PAGE_SIZE_LIST;
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const pagedProducts = useMemo(
@@ -87,6 +149,16 @@ export function ProductBrowser({
           {dictionary.title}
         </h2>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <button
+            type="button"
+            onClick={() => setCardSettingsOpen(true)}
+            aria-label={dictionary.cardSettings}
+            title={dictionary.cardSettings}
+            className="inline-flex h-[42px] items-center gap-1.5 self-start rounded-lg border border-violet-200 bg-white px-3.5 text-xs font-semibold text-violet-600 transition hover:border-violet-400 hover:bg-violet-50"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            <span className="hidden sm:inline">{dictionary.cardSettings}</span>
+          </button>
           <div className="inline-flex items-center gap-1 self-start rounded-lg border border-violet-200 bg-white p-1">
             <button
               aria-label={dictionary.productViewGrid}
@@ -211,74 +283,33 @@ export function ProductBrowser({
       ) : null}
 
       <div
-        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-4" : "space-y-3"}`}
+        ref={gridRef}
+        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid gap-3" : "space-y-3"}`}
+        style={productView === "grid" ? gridStyle : undefined}
       >
         {pagedProducts.length > 0 ? (
           pagedProducts.map((product) => {
             const currentQuantity = getCartQuantity(product.id);
 
             return productView === "grid" ? (
-              <div
+              <ProductCard
                 key={product.id}
-                className="flex h-[240px] cursor-pointer flex-col rounded-lg border border-violet-100 bg-gradient-to-b from-violet-50/50 to-white p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                onClick={() => onAddToCart(product)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onAddToCart(product);
-                  }
+                item={{
+                  id: product.id,
+                  name: product.name,
+                  price: product.base_price,
+                  stock: product.total_stock ?? 0,
+                  image: product.image_url,
                 }}
-                role="button"
-                tabIndex={0}
-              >
-                <div className="relative">
-                  <span className="absolute right-1.5 top-1.5 z-10 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-slate-700 shadow-sm">
-                    {dictionary.stockLabel} {product.total_stock ?? 0}
-                  </span>
-                  {product.image_url ? (
-                    <div className="relative">
-                      <Image
-                        alt={product.name}
-                        className="h-[190px] w-full rounded-lg border border-violet-100 bg-white object-contain shadow-sm"
-                        height={190}
-                        loading="lazy"
-                        src={product.image_url}
-                        unoptimized
-                        width={320}
-                      />
-                      <span className="absolute bottom-1.5 right-1.5 max-w-[85%] truncate rounded bg-slate-950/75 px-2 py-0.5 text-[10px] font-semibold text-white">
-                        {product.name}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="flex h-[190px] w-full items-center justify-center rounded-lg border border-violet-100 bg-white px-3 text-center text-sm font-semibold text-slate-700 shadow-sm">
-                      <span className="line-clamp-2">{product.name}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-1.5 flex items-center justify-between gap-2">
-                  <span className="truncate text-sm font-semibold text-slate-900">
-                    {formatCurrency(product.base_price)}
-                  </span>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {currentQuantity > 0 && (
-                      <span className="rounded-full bg-violet-700 px-2 py-0.5 text-[10px] font-semibold text-white">
-                        ×{currentQuantity}
-                      </span>
-                    )}
-                    <button
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                      disabled={currentQuantity >= (product.total_stock ?? 0)}
-                      onClick={(event) => { event.stopPropagation(); onAddToCart(product); }}
-                      type="button"
-                      title={currentQuantity >= (product.total_stock ?? 0) ? dictionary.productOutOfStock : dictionary.addButton}
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                config={cardSettings}
+                qtyInCart={currentQuantity}
+                onAdd={() => onAddToCart(product)}
+                labels={{
+                  stock: dictionary.stockLabel,
+                  outOfStock: dictionary.productOutOfStock,
+                  add: dictionary.addButton,
+                }}
+              />
             ) : (
               <div
                 key={product.id}
@@ -403,6 +434,12 @@ export function ProductBrowser({
           </button>
         </div>
       )}
+
+      <CardSettingsModal
+        open={cardSettingsOpen}
+        onClose={() => setCardSettingsOpen(false)}
+        dictionary={dictionary.cardSettingsModal}
+      />
     </div>
   );
 }

@@ -26,17 +26,17 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
       description={dictionary.register.description}
       fields={[
         {
-          autoComplete: "name",
-          label: dictionary.register.nameLabel,
-          name: "name",
-          placeholder: dictionary.register.namePlaceholder,
-          type: "text",
-        },
-        {
           autoComplete: "organization",
           label: dictionary.register.storeLabel,
           name: "storeName",
           placeholder: dictionary.register.storePlaceholder,
+          type: "text",
+        },
+        {
+          autoComplete: "name",
+          label: dictionary.register.nameLabel,
+          name: "name",
+          placeholder: dictionary.register.namePlaceholder,
           type: "text",
         },
         {
@@ -52,6 +52,16 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
           name: "password",
           placeholder: dictionary.register.passwordPlaceholder,
           type: "password",
+          half: true,
+        },
+        {
+          autoComplete: "new-password",
+          label: dictionary.register.confirmPasswordLabel,
+          name: "confirmPassword",
+          placeholder: dictionary.register.confirmPasswordPlaceholder,
+          type: "password",
+          half: true,
+          confirmOf: "password",
         },
       ]}
       footerNote={dictionary.common.footerNote}
@@ -66,6 +76,22 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
       switchLocaleHref="register"
       thaiLabel={dictionary.common.thai}
       englishLabel={dictionary.common.english}
+      authBrand={dictionary.common.authBrand}
+      showStrength
+      strengthLabels={{
+        weak: dictionary.register.strengthWeak,
+        medium: dictionary.register.strengthMedium,
+        good: dictionary.register.strengthGood,
+        strong: dictionary.register.strengthStrong,
+      }}
+      mismatchMessage={dictionary.register.passwordMismatch}
+      terms={{
+        prefix: dictionary.register.termsPrefix,
+        termsLink: dictionary.register.termsLink,
+        and: dictionary.register.termsAnd,
+        privacyLink: dictionary.register.privacyLink,
+        required: dictionary.register.termsRequired,
+      }}
       validation={dictionary.validation}
     />
   );

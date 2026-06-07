@@ -77,19 +77,18 @@ export function UserWorkspaceLayout({
   useEffect(() => {
     const storedCashierOpen = localStorage.getItem("pos-cashier-open") === "1";
     if (!storedCashierOpen) return;
-
+    // ล้าง flag ทันที แล้วเปิด modal — ป้องกันเปิดซ้ำเมื่อ navigate กลับมา
+    localStorage.removeItem("pos-cashier-open");
     const frame = requestAnimationFrame(() => setIsCashierOpen(true));
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [pathname]);
 
   function openCashier() {
     setIsCashierOpen(true);
-    localStorage.setItem("pos-cashier-open", "1");
   }
 
   function closeCashier() {
     setIsCashierOpen(false);
-    localStorage.removeItem("pos-cashier-open");
   }
 
   const navLabels: NavLabels = {

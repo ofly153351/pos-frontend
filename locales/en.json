@@ -8,7 +8,26 @@
     "switchToRegister": "New to the system?",
     "createAccount": "Create account",
     "signIn": "Sign in",
-    "footerNote": "Responsive layout for front store and back office teams"
+    "footerNote": "Responsive layout for front store and back office teams",
+    "authBrand": {
+      "badge": "ENTERPRISE POS PLATFORM",
+      "features": [
+        "Product & stock management",
+        "Receipts, tax invoices, delivery notes",
+        "Front-store POS checkout",
+        "Sales reports & stock summaries"
+      ],
+      "statProductsValue": "1,000+",
+      "statProductsLabel": "Products",
+      "statDocumentsValue": "Multi",
+      "statDocumentsLabel": "Documents",
+      "statReadyValue": "24/7",
+      "statReadyLabel": "Ready",
+      "version": "Version 1.0.0",
+      "secureNote": "Your data is encrypted and protected by security standards",
+      "rememberMe": "Remember me",
+      "forgotPassword": "Forgot password?"
+    }
   },
   "validation": {
     "required": "This field is required.",
@@ -47,7 +66,19 @@
     "passwordPlaceholder": "Create a password",
     "submit": "Create account",
     "secondaryTitle": "Built for busy counters",
-    "secondaryDescription": "A clean setup flow gives your team a stable starting point before products, staff roles, and payment settings are added."
+    "secondaryDescription": "A clean setup flow gives your team a stable starting point before products, staff roles, and payment settings are added.",
+    "confirmPasswordLabel": "Confirm password",
+    "confirmPasswordPlaceholder": "Re-enter your password",
+    "passwordMismatch": "Passwords do not match",
+    "strengthWeak": "Weak — add more length",
+    "strengthMedium": "Medium",
+    "strengthGood": "Good",
+    "strengthStrong": "Very strong",
+    "termsPrefix": "I accept the",
+    "termsLink": "Terms of Service",
+    "termsAnd": "and",
+    "privacyLink": "Privacy Policy",
+    "termsRequired": "Please accept the Terms of Service"
   },
   "dashboard": {
     "title": "Store dashboard",
@@ -280,6 +311,37 @@
       "discountLabel": "Discount",
       "subtotalLabel": "Subtotal",
       "totalLabel": "Total"
+    },
+    "cardSettings": "Card settings",
+    "cardSettingsModal": {
+      "title": "Product card settings (POS)",
+      "subtitle": "Customize product cards in the cashier · applies instantly after save",
+      "namePos": "Name position",
+      "nameBottom": "Below image",
+      "nameTop": "Above image",
+      "imageFit": "Image display",
+      "imageFitHint": "fill / show full",
+      "fitCover": "Fill frame",
+      "fitContain": "Show full",
+      "aspect": "Image aspect ratio",
+      "nameLines": "Name lines",
+      "nameLinesHint": "prevent long-name overflow",
+      "line1": "1 line",
+      "line2": "2 lines",
+      "line3": "3 lines",
+      "cardSize": "Card size",
+      "sizeSm": "Small",
+      "sizeMd": "Medium",
+      "sizeLg": "Large",
+      "stockBadge": "Stock badge",
+      "show": "Show",
+      "hide": "Hide",
+      "previewTitle": "POS preview",
+      "livePreview": "Live",
+      "reset": "Reset",
+      "save": "Save settings",
+      "saved": "Settings saved",
+      "resetDone": "Reset to defaults"
     }
   },
   "customers": {
@@ -1534,5 +1596,90 @@
     "vatExcluded": "VAT Excluded",
     "page": "Page",
     "of": "of"
+  },
+  "receiptSettings": {
+    "tabs": {
+      "receipt": "Receipt",
+      "payment": "Payment",
+      "promptpay": "PromptPay",
+      "printer": "Printer",
+      "display": "Display"
+    },
+    "save": "Save",
+    "saving": "Saving...",
+    "saveSuccess": "Settings saved successfully",
+    "previewLabel": "Receipt Preview",
+    "previewApiLabel": "Live from API",
+    "receipt": {
+      "sectionTemplate": "Receipt Template",
+      "labelTemplate": "Template style",
+      "sectionPaper": "Paper Settings",
+      "labelPaperSize": "Paper size",
+      "paper80mm": "80mm (Thermal)",
+      "paperA4": "A4",
+      "labelPaperLength": "Receipt length",
+      "lengthAuto": "Auto (continuous)",
+      "sectionTax": "Tax Display",
+      "taxNone": "No tax",
+      "taxInclusive": "Tax inclusive",
+      "taxExclusive": "Tax exclusive (VAT)",
+      "labelVatRate": "VAT rate",
+      "vat7": "7% (Standard)",
+      "vat0": "0%",
+      "labelTaxLabel": "Tax label",
+      "sectionLogo": "Logo Display",
+      "changeLogo": "Change logo",
+      "labelLogoPosition": "Logo position",
+      "logoCenter": "Top center",
+      "logoLeft": "Top left",
+      "logoRight": "Top right",
+      "sectionStoreInfo": "Store info on receipt",
+      "showStoreName": "Store name",
+      "showAddress": "Address",
+      "showPhone": "Phone number",
+      "showTaxId": "Tax ID",
+      "sectionFooter": "Footer text"
+    },
+    "payment": {
+      "sectionChannels": "Payment channels",
+      "channelsHint": "Enable the payment methods you accept"
+    },
+    "promptpay": {
+      "sectionInfo": "PromptPay Info",
+      "labelNumber": "PromptPay number",
+      "numberPlaceholder": "Not configured — edit in store settings",
+      "editHint": "Edit at",
+      "editLink": "Store settings",
+      "sectionQr": "QR Code on receipt",
+      "qrNoPromptPay": "Please set up a PromptPay number in store settings before enabling QR",
+      "labelQrSize": "QR size",
+      "qrSmall": "Small",
+      "qrMedium": "Medium",
+      "qrLarge": "Large"
+    },
+    "printer": {
+      "sectionPrinter": "Printer settings",
+      "labelType": "Printer type",
+      "typeThermal": "Thermal",
+      "typeInkjet": "Inkjet",
+      "typePdf": "PDF Export",
+      "labelName": "Printer name",
+      "namePlaceholder": "Enter printer name...",
+      "labelAutoPrint": "Auto-print after payment",
+      "labelCopies": "Copies",
+      "testPrint": "Print test page"
+    },
+    "display": {
+      "sectionDisplay": "Display settings",
+      "labelCustomerDisplay": "Customer display screen",
+      "labelShowProductImages": "Show product images on receipt",
+      "labelDateFormat": "Date format",
+      "labelTimeFormat": "Time format",
+      "time24h": "24-hour",
+      "time12h": "12-hour (AM/PM)",
+      "labelCurrencyPosition": "Currency position",
+      "currencyBefore": "Before (฿100)",
+      "currencyAfter": "After (100฿)"
+    }
   }
 }
