@@ -51,6 +51,7 @@ export default async function WorkspaceLayout({
         storeLabel: dictionary.stock.shell.storeLabel,
         stockCategories: dictionary.stock.shell.stockCategories,
         stockLevels: dictionary.stock.shell.stockLevels,
+        stockCount: dictionary.stock.shell.stockCount,
         stockWarehouses: dictionary.stock.shell.stockWarehouses,
         warehouseOverview: dictionary.stock.shell.warehouseOverview,
         receiveGoods: dictionary.stock.shell.receiveGoods,

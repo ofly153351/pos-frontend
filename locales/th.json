@@ -703,6 +703,7 @@
       "productList": "รายการสินค้า",
       "masterData": "หมวดหมู่",
       "stockLevels": "ระดับสต็อก",
+      "stockCount": "ตรวจนับสต็อก",
       "stockCategories": "หมวดหมู่",
       "stockWarehouses": "คลังสินค้า",
       "warehouseOverview": "แดชบอร์ดคลัง",
@@ -1796,5 +1797,149 @@
       "currencyBefore": "ก่อน (฿100)",
       "currencyAfter": "หลัง (100฿)"
     }
+  },
+  "inventory": {
+    "title": "จัดการสต็อก",
+    "subtitle": "จัดการจำนวนคงเหลือ การเคลื่อนไหว และการตรวจนับ",
+    "search": "ค้นหาสินค้า, SKU, บาร์โค้ด...",
+    "empty": "ไม่พบสินค้า",
+    "loading": "กำลังโหลด...",
+    "openCount": "ตรวจนับสต็อก",
+    "kpi": {
+      "totalProducts": "สินค้าทั้งหมด",
+      "lowStock": "ใกล้หมด",
+      "outOfStock": "หมดสต็อก",
+      "stockValue": "มูลค่าสต็อก",
+      "movementsToday": "เคลื่อนไหววันนี้"
+    },
+    "col": {
+      "product": "สินค้า",
+      "currentStock": "คงเหลือ",
+      "minStock": "ขั้นต่ำ",
+      "status": "สถานะ",
+      "location": "ตำแหน่งจัดเก็บ",
+      "lastMovement": "เคลื่อนไหวล่าสุด",
+      "actions": "การจัดการ"
+    },
+    "status": {
+      "ready": "พร้อมขาย",
+      "low": "ใกล้หมด",
+      "out": "หมดสต็อก",
+      "over": "เกินสต็อก",
+      "inactive": "ปิดใช้"
+    },
+    "unassigned": "ยังไม่ระบุ",
+    "noMovement": "ยังไม่มีการเคลื่อนไหว",
+    "min": "ขั้นต่ำ",
+    "selected": "รายการที่เลือก",
+    "action": {
+      "adjust": "ปรับสต็อก",
+      "history": "ประวัติ",
+      "viewProduct": "ดูสินค้า"
+    },
+    "adjust": {
+      "title": "ปรับสต็อก",
+      "typeReceive": "รับเข้า",
+      "typeDecrease": "ตัดออก",
+      "typeSet": "ตั้งค่าจำนวน",
+      "quantity": "จำนวน",
+      "reason": "เหตุผล / หมายเหตุ",
+      "reasonPlaceholder": "ระบุเหตุผลในการปรับสต็อก...",
+      "reasonRequired": "กรุณาระบุเหตุผล",
+      "reference": "เลขอ้างอิง (ถ้ามี)",
+      "referencePlaceholder": "เช่น PO-001",
+      "currentStock": "คงเหลือปัจจุบัน",
+      "newStock": "คงเหลือใหม่",
+      "difference": "ส่วนต่าง",
+      "preview": "สรุปการปรับ",
+      "confirm": "ยืนยันการปรับสต็อก",
+      "back": "แก้ไข",
+      "save": "บันทึก",
+      "saving": "กำลังบันทึก...",
+      "cancel": "ยกเลิก",
+      "invalidNegative": "สต็อกติดลบไม่ได้",
+      "success": "ปรับสต็อกสำเร็จ",
+      "error": "ปรับสต็อกไม่สำเร็จ",
+      "location": "ตำแหน่งจัดเก็บ (ถ้ามี)"
+    }
+  },
+  "count": {
+    "title": "ตรวจนับสต็อก",
+    "subtitle": "นับจำนวนจริงและเทียบกับระบบ",
+    "back": "กลับ",
+    "newSession": "สร้างรอบตรวจนับ",
+    "noSessions": "ยังไม่มีรอบตรวจนับ — เริ่มสร้างรอบแรก",
+    "sessionList": "รอบตรวจนับ",
+    "items": "รายการ",
+    "create": {
+      "title": "สร้างรอบตรวจนับใหม่",
+      "name": "ชื่อรอบ",
+      "namePlaceholder": "เช่น ตรวจนับประจำเดือน มิ.ย.",
+      "warehouse": "คลัง",
+      "allWarehouses": "ทุกคลัง",
+      "zone": "โซน (ถ้ามี)",
+      "zonePlaceholder": "เช่น A",
+      "category": "หมวดหมู่ (ถ้ามี)",
+      "allCategories": "ทุกหมวดหมู่",
+      "note": "หมายเหตุ",
+      "start": "เริ่มตรวจนับ",
+      "cancel": "ยกเลิก"
+    },
+    "status": {
+      "draft": "ฉบับร่าง",
+      "counting": "กำลังนับ",
+      "review": "ตรวจทาน",
+      "completed": "เสร็จสิ้น",
+      "cancelled": "ยกเลิก"
+    },
+    "col": {
+      "product": "สินค้า",
+      "sku": "SKU",
+      "barcode": "บาร์โค้ด",
+      "systemQty": "ระบบ",
+      "countedQty": "นับได้",
+      "variance": "ส่วนต่าง",
+      "status": "สถานะ",
+      "note": "หมายเหตุ"
+    },
+    "variance": {
+      "match": "ตรงกัน",
+      "short": "ขาด",
+      "over": "เกิน",
+      "notCounted": "ยังไม่นับ"
+    },
+    "summary": {
+      "totalItems": "รายการทั้งหมด",
+      "counted": "นับแล้ว",
+      "matched": "ตรงกัน",
+      "short": "ขาด",
+      "over": "เกิน",
+      "totalVariance": "ผลต่างรวม"
+    },
+    "scanPlaceholder": "สแกนหรือพิมพ์บาร์โค้ด / SKU แล้ว Enter",
+    "scanNotFound": "ไม่พบสินค้าในรอบนี้",
+    "action": {
+      "saveDraft": "บันทึกร่าง",
+      "review": "ตรวจทานผลต่าง",
+      "continue": "นับต่อ",
+      "apply": "ปรับปรุงตามผลนับ",
+      "applying": "กำลังปรับปรุง...",
+      "cancel": "ยกเลิกรอบ",
+      "export": "ส่งออกใบนับ",
+      "back": "กลับ"
+    },
+    "review": {
+      "title": "ตรวจทานผลต่าง",
+      "subtitle": "แสดงเฉพาะรายการที่มีผลต่าง — ยืนยันเพื่อปรับสต็อกตามจำนวนที่นับได้",
+      "noVariance": "ไม่มีผลต่าง ทุกรายการตรงกับระบบ",
+      "applyConfirm": "ปรับสต็อก {n} รายการตามจำนวนที่นับได้?",
+      "applied": "ปรับปรุงสต็อกสำเร็จ {n} รายการ",
+      "applyNote": "ปรับปรุงจากการตรวจนับ",
+      "applyError": "ปรับปรุงบางรายการไม่สำเร็จ"
+    },
+    "empty": "ไม่มีสินค้าให้นับในรอบนี้",
+    "draftSaved": "บันทึกร่างแล้ว",
+    "cancelConfirm": "ยกเลิกรอบตรวจนับนี้?",
+    "deleteSession": "ลบรอบ"
   }
 }

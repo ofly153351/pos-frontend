@@ -13,6 +13,7 @@ import {
   Layers3,
   MapPin,
   Package,
+  ClipboardCheck,
   PackagePlus,
   ReceiptText,
   ScrollText,
@@ -52,6 +53,7 @@ type UserWorkspaceSidebarProps = {
     activityLogs: string;
     stockCategories: string;
     stockLevels: string;
+    stockCount: string;
     stockWarehouses: string;
     warehouseOverview: string;
     suppliers: string;
@@ -187,6 +189,7 @@ export function UserWorkspaceSidebar({
   const warehouseOverviewHref = `/${locale}/warehouse/overview`;
   const warehouseReceiveHref = `/${locale}/warehouse/receive`;
   const inventoryLevelsHref = `/${locale}/inventory`;
+  const stockCountHref = `/${locale}/inventory/counts`;
   const documentsBaseHref = `/${locale}/documents`;
   const documentsPendingHref = `/${locale}/documents/pending`;
   const purchasesBaseHref = `/${locale}/purchases`;
@@ -298,13 +301,16 @@ export function UserWorkspaceSidebar({
   const stockItems: SidebarGroupItem[] = useMemo(
     () => [
       { href: inventoryLevelsHref, key: "stock-levels", label: labels.stockLevels, icon: <Layers3 className="h-3.5 w-3.5" /> },
+      { href: stockCountHref, key: "stock-count", label: labels.stockCount, icon: <ClipboardCheck className="h-3.5 w-3.5" /> },
       { href: warehouseReceiveHref, key: "receive-goods", label: labels.receiveGoods, icon: <PackagePlus className="h-3.5 w-3.5" /> },
       { href: warehouseOverviewHref, key: "warehouse-overview", label: labels.warehouseOverview, icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
       { href: stockWarehousesHref, key: "warehouses", label: labels.stockWarehouses, icon: <Warehouse className="h-3.5 w-3.5" /> },
     ],
     [
       inventoryLevelsHref,
+      stockCountHref,
       labels.receiveGoods,
+      labels.stockCount,
       labels.stockLevels,
       labels.stockWarehouses,
       labels.warehouseOverview,

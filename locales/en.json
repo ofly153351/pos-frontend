@@ -703,6 +703,7 @@
       "productList": "Product List",
       "masterData": "Categories",
       "stockLevels": "Stock Levels",
+      "stockCount": "Stock Count",
       "stockCategories": "Categories",
       "stockWarehouses": "Warehouses",
       "warehouseOverview": "Warehouse Dashboard",
@@ -1796,5 +1797,149 @@
       "currencyBefore": "Before (฿100)",
       "currencyAfter": "After (100฿)"
     }
+  },
+  "inventory": {
+    "title": "Inventory",
+    "subtitle": "Manage stock quantity, movements and counting",
+    "search": "Search product, SKU, barcode...",
+    "empty": "No products found",
+    "loading": "Loading...",
+    "openCount": "Stock Count",
+    "kpi": {
+      "totalProducts": "Total Products",
+      "lowStock": "Low Stock",
+      "outOfStock": "Out of Stock",
+      "stockValue": "Stock Value",
+      "movementsToday": "Movements Today"
+    },
+    "col": {
+      "product": "Product",
+      "currentStock": "Current Stock",
+      "minStock": "Min Stock",
+      "status": "Status",
+      "location": "Location",
+      "lastMovement": "Last Movement",
+      "actions": "Actions"
+    },
+    "status": {
+      "ready": "Ready",
+      "low": "Low Stock",
+      "out": "Out of Stock",
+      "over": "Overstock",
+      "inactive": "Inactive"
+    },
+    "unassigned": "Unassigned",
+    "noMovement": "No movement yet",
+    "min": "Min",
+    "selected": "selected",
+    "action": {
+      "adjust": "Adjust Stock",
+      "history": "History",
+      "viewProduct": "View Product"
+    },
+    "adjust": {
+      "title": "Adjust Stock",
+      "typeReceive": "Receive",
+      "typeDecrease": "Decrease",
+      "typeSet": "Set Exact",
+      "quantity": "Quantity",
+      "reason": "Reason / Note",
+      "reasonPlaceholder": "Reason for this adjustment...",
+      "reasonRequired": "Reason is required",
+      "reference": "Reference (optional)",
+      "referencePlaceholder": "e.g. PO-001",
+      "currentStock": "Current Stock",
+      "newStock": "New Stock",
+      "difference": "Difference",
+      "preview": "Adjustment summary",
+      "confirm": "Confirm adjustment",
+      "back": "Edit",
+      "save": "Save",
+      "saving": "Saving...",
+      "cancel": "Cancel",
+      "invalidNegative": "Stock cannot be negative",
+      "success": "Stock adjusted",
+      "error": "Failed to adjust stock",
+      "location": "Storage location (optional)"
+    }
+  },
+  "count": {
+    "title": "Stock Count",
+    "subtitle": "Count physical stock and compare with system",
+    "back": "Back",
+    "newSession": "New count session",
+    "noSessions": "No count sessions yet — create the first one",
+    "sessionList": "Count sessions",
+    "items": "items",
+    "create": {
+      "title": "Create count session",
+      "name": "Session name",
+      "namePlaceholder": "e.g. Monthly count - June",
+      "warehouse": "Warehouse",
+      "allWarehouses": "All warehouses",
+      "zone": "Zone (optional)",
+      "zonePlaceholder": "e.g. A",
+      "category": "Category (optional)",
+      "allCategories": "All categories",
+      "note": "Note",
+      "start": "Start counting",
+      "cancel": "Cancel"
+    },
+    "status": {
+      "draft": "Draft",
+      "counting": "Counting",
+      "review": "Review",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "col": {
+      "product": "Product",
+      "sku": "SKU",
+      "barcode": "Barcode",
+      "systemQty": "System",
+      "countedQty": "Counted",
+      "variance": "Variance",
+      "status": "Status",
+      "note": "Note"
+    },
+    "variance": {
+      "match": "Match",
+      "short": "Short",
+      "over": "Over",
+      "notCounted": "Not counted"
+    },
+    "summary": {
+      "totalItems": "Total Items",
+      "counted": "Counted",
+      "matched": "Matched",
+      "short": "Short",
+      "over": "Over",
+      "totalVariance": "Total Variance"
+    },
+    "scanPlaceholder": "Scan or type barcode / SKU then Enter",
+    "scanNotFound": "Product not found in this session",
+    "action": {
+      "saveDraft": "Save draft",
+      "review": "Review variance",
+      "continue": "Continue counting",
+      "apply": "Apply correction",
+      "applying": "Applying...",
+      "cancel": "Cancel session",
+      "export": "Export count sheet",
+      "back": "Back"
+    },
+    "review": {
+      "title": "Review variance",
+      "subtitle": "Showing only items with variance — confirm to set stock to the counted quantity",
+      "noVariance": "No variance — everything matches the system",
+      "applyConfirm": "Apply correction to {n} items using counted quantity?",
+      "applied": "Applied correction to {n} items",
+      "applyNote": "Stock count session correction",
+      "applyError": "Some items failed to update"
+    },
+    "empty": "No products to count in this session",
+    "draftSaved": "Draft saved",
+    "cancelConfirm": "Cancel this count session?",
+    "deleteSession": "Delete session"
   }
 }
