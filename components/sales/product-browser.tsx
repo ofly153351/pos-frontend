@@ -284,7 +284,7 @@ export function ProductBrowser({
 
       <div
         ref={gridRef}
-        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid gap-3" : "space-y-3"}`}
+        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid content-start auto-rows-max gap-3" : "space-y-3"}`}
         style={productView === "grid" ? gridStyle : undefined}
       >
         {pagedProducts.length > 0 ? (

@@ -229,7 +229,7 @@ export function CardSettingsModal({ open, onClose, dictionary: d }: Props) {
               </div>
               <div className="flex-1 overflow-y-auto bg-[linear-gradient(160deg,#f5f3ff_0%,#faf5ff_45%,#f8fafc_100%)] p-5">
                 <div
-                  className="grid gap-3"
+                  className="grid content-start auto-rows-max gap-3"
                   style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_SIZE_MIN[cfg.size]}, 1fr))` }}
                 >
                   {SAMPLE.map((p) => (

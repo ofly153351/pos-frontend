@@ -31,6 +31,21 @@ export const CARD_SIZE_MIN: Record<CardSize, string> = {
   lg: "212px",
 };
 
+// Fixed image-area height (px) per size × aspect ratio.
+// Fixed (not CSS aspect-ratio) so the height is deterministic and identical in the
+// settings preview and the real grid, and can never be squeezed by flex shrink.
+const CARD_IMAGE_HEIGHT: Record<CardSize, Record<CardAspect, number>> = {
+  sm: { "1/1": 128, "4/3": 100, "3/4": 168 },
+  md: { "1/1": 156, "4/3": 120, "3/4": 204 },
+  lg: { "1/1": 192, "4/3": 148, "3/4": 252 },
+};
+
+// Single source of truth for the card image-area height, shared by ProductCard
+// (real grid) and the settings-modal preview (same component).
+export function resolveCardImageHeight(settings: CardSettings): number {
+  return CARD_IMAGE_HEIGHT[settings.size][settings.aspect];
+}
+
 const BASE_KEY = "pos-card-settings";
 
 function storageKey(): string {
