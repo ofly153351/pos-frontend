@@ -28,6 +28,9 @@ type UserWorkspaceLayoutProps = {
     documents: string;
     editProfile: string;
     inventory: string;
+    products: string;
+    productList: string;
+    masterData: string;
     logout: string;
     purchasing: string;
     purchaseOrders: string;
@@ -95,11 +98,16 @@ export function UserWorkspaceLayout({
     dashboard: shell.dashboard,
     register: shell.register,
     inventory: shell.inventory,
+    products: shell.products,
+    "product-list": shell.productList,
+    "master-data": shell.masterData,
+    stock: shell.inventory,
     "warehouse-overview": shell.warehouseOverview,
     "receive-goods": shell.receiveGoods,
     "stock-levels": shell.stockLevels,
     categories: shell.stockCategories,
     warehouses: shell.stockWarehouses,
+    "storage-locations": shell.storageLocations,
     purchasing: shell.purchasing,
     "purchase-orders": shell.purchaseOrders,
     suppliers: shell.suppliers,
@@ -118,6 +126,7 @@ export function UserWorkspaceLayout({
     if (pathname.includes("/warehouse/overview")) return titles.warehouseOverview;
     if (pathname.includes("/stock/categories")) return titles.stockCategories;
     if (pathname.includes("/stock/warehouses")) return titles.stockWarehouses;
+    if (pathname.includes("/inventory")) return titles.stock;
     if (pathname.includes("/stock")) return titles.stock;
     if (pathname.includes("/purchases/suppliers")) return titles.suppliers;
     if (pathname.includes("/purchases")) return titles.purchaseOrders;
@@ -136,6 +145,9 @@ export function UserWorkspaceLayout({
           documentPending: shell.documentPending,
           documents: shell.documents,
           inventory: shell.inventory,
+          products: shell.products,
+          productList: shell.productList,
+          masterData: shell.masterData,
           purchasing: shell.purchasing,
           purchaseOrders: shell.purchaseOrders,
           register: shell.register,

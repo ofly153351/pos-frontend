@@ -1,7 +1,12 @@
 "use client";
 
 import * as XLSX from "xlsx";
+import { LayoutGrid, List } from "lucide-react";
 import { ProductsTable } from "@/components/stock/products-table";
+import { ProductCardGrid } from "@/components/stock/product-card-grid";
+import { BarcodeModal, type BarcodeModalLabels } from "@/components/stock/barcode-modal";
+import { BarcodeBatchModal } from "@/components/stock/barcode-batch-modal";
+import { ProductDetailView } from "@/components/stock/product-detail-view";
 import { ImportProductModal } from "@/components/stock/import-product-modal";
 import { createProduct } from "@/services/products";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,6 +25,9 @@ type ProductStockStatus =
 
 type StockLevelsSectionProps = {
   dictionary: StockManagerDictionary;
+  /** Stock mode (Inventory page): show stock-mutating actions and force table view.
+   * Default false = Product master-data list (read-only stock, card/table toggle). */
+  allowStockActions?: boolean;
   emptyState: string;
   error: string;
   filteredProducts: Product[];
@@ -56,6 +64,7 @@ type StockLevelsSectionProps = {
 
 export function StockLevelsSection({
   dictionary,
+  allowStockActions = false,
   emptyState,
   error,
   filteredProducts,
@@ -96,6 +105,9 @@ export function StockLevelsSection({
     (_, index) => startPage + index,
   );
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [barcodingProduct, setBarcodingProduct] = useState<Product | null>(null);
+  const [barcodeBatchProducts, setBarcodeBatchProducts] = useState<Product[] | null>(null);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isFilterPanelVisible, setIsFilterPanelVisible] = useState(false);
   const [draftProductTypeFilter, setDraftProductTypeFilter] = useState(productTypeFilter);
@@ -103,8 +115,86 @@ export function StockLevelsSection({
   const [draftProductBrandFilter, setDraftProductBrandFilter] = useState(productBrandFilter);
   const [draftStockStatusFilter, setDraftStockStatusFilter] = useState<ProductStockStatus>(stockStatusFilter);
   const [optionSearch, setOptionSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const importFileRef = useRef<HTMLInputElement>(null);
+
+  const barcodeLabels: BarcodeModalLabels = {
+    title:               dictionary.table.barcodePreviewTitle,
+    printLabel:          dictionary.table.barcodePrintLabel,
+    downloadPng:         dictionary.table.barcodeDownloadPng,
+    downloadPdf:         dictionary.table.barcodeDownloadPdf,
+    exporting:           dictionary.table.barcodeExporting,
+    copyCode:            dictionary.table.barcodeCopyCode,
+    copied:              dictionary.table.barcodeCopied,
+    noBarcodeLabel:      dictionary.table.noBarcodeLabel,
+    invalidBarcodeLabel: dictionary.table.invalidBarcodeLabel,
+    templateLabel:       dictionary.table.barcodeTemplateLabel,
+    templateSmall:       dictionary.table.barcodeTemplateSmall,
+    templateMedium:      dictionary.table.barcodeTemplateMedium,
+    templateLarge:       dictionary.table.barcodeTemplateLarge,
+    templateShelf:       dictionary.table.barcodeTemplateShelf,
+    templateQr:          dictionary.table.barcodeTemplateQr,
+    barcodeTypeLabel:    dictionary.table.barcodeTypeLabel,
+    barcodeTypeCode128:  dictionary.table.barcodeTypeCode128,
+    barcodeTypeEan13:    dictionary.table.barcodeTypeEan13,
+    barcodeTypeEan8:     dictionary.table.barcodeTypeEan8,
+    barcodeTypeUpca:     dictionary.table.barcodeTypeUpca,
+    barcodeTypeQr:       dictionary.table.barcodeTypeQr,
+    contentOptionsLabel: dictionary.table.barcodeContentOptions,
+    showName:            dictionary.table.barcodeShowName,
+    showSku:             dictionary.table.barcodeShowSku,
+    showPrice:           dictionary.table.barcodeShowPrice,
+    showBarcodeNumber:   dictionary.table.barcodeShowBarcodeNumber,
+    showCategory:        dictionary.table.barcodeShowCategory,
+    showBrand:           dictionary.table.barcodeShowBrand,
+    showLocation:        dictionary.table.barcodeShowLocation,
+    showStoreName:       dictionary.table.barcodeShowStoreName,
+    quantityLabel:       dictionary.table.barcodeQuantityLabel,
+    printerModeLabel:    dictionary.table.barcodePrinterModeLabel,
+    printerLabel:        dictionary.table.barcodePrinterLabel,
+    printerA4:           dictionary.table.barcodePrinterA4,
+    printer58mm:         dictionary.table.barcodePrinter58mm,
+    printer80mm:         dictionary.table.barcodePrinter80mm,
+    a4LayoutLabel:       dictionary.table.barcodeA4LayoutLabel,
+    previewLabel:        dictionary.table.barcodePreviewLabel,
+    infoTemplate:        dictionary.table.barcodeInfoTemplate,
+    infoSize:            dictionary.table.barcodeInfoSize,
+    infoType:            dictionary.table.barcodeInfoType,
+    infoMode:            dictionary.table.barcodeInfoMode,
+    infoQuantity:        dictionary.table.barcodeInfoQuantity,
+    infoPages:           dictionary.table.barcodeInfoPages,
+    pagesUnit:           dictionary.table.barcodePagesUnit,
+    labelsUnit:          dictionary.table.barcodeLabelsUnit,
+    pagesWillPrint:      dictionary.table.barcodePagesWillPrint,
+    sampleNote:          dictionary.table.barcodeSampleNote,
+    labelPrinterNote:    dictionary.table.barcodeLabelPrinterNote,
+    closeLabel:          dictionary.table.barcodeClose,
+    batchTitle:          dictionary.table.barcodeBatchTitle,
+    batchProducts:       dictionary.table.barcodeBatchProducts,
+    batchQtyPerProduct:  dictionary.table.barcodeBatchQtyPerProduct,
+    batchPrintAll:       dictionary.table.barcodeBatchPrintAll,
+    batchTotalLabels:    dictionary.table.barcodeBatchTotalLabels,
+  };
   const filterPanelRef = useRef<HTMLDivElement>(null);
+
+  // Restore the chosen view for the current session (set after mount to avoid SSR mismatch).
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("pos-product-view");
+      if (saved === "card" || saved === "table") setViewMode(saved);
+    } catch {
+      /* sessionStorage unavailable — keep default */
+    }
+  }, []);
+
+  function changeViewMode(mode: "card" | "table") {
+    setViewMode(mode);
+    try {
+      sessionStorage.setItem("pos-product-view", mode);
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     if (!isFilterPanelOpen) return;
@@ -374,6 +464,34 @@ export function StockLevelsSection({
             </div>
           ) : null}
           </div>
+
+          {/* View mode toggle (card / table) — product master-data list only */}
+          {!allowStockActions ? (
+          <div className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-white p-1">
+            <button
+              aria-label={dictionary.table.cardView}
+              title={dictionary.table.cardView}
+              className={`rounded-md px-2.5 py-2 transition ${
+                viewMode === "card" ? "bg-violet-600 text-white" : "text-violet-700 hover:bg-violet-50"
+              }`}
+              onClick={() => changeViewMode("card")}
+              type="button"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              aria-label={dictionary.table.tableView}
+              title={dictionary.table.tableView}
+              className={`rounded-md px-2.5 py-2 transition ${
+                viewMode === "table" ? "bg-violet-600 text-white" : "text-violet-700 hover:bg-violet-50"
+              }`}
+              onClick={() => changeViewMode("table")}
+              type="button"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-3">
@@ -426,6 +544,32 @@ export function StockLevelsSection({
         </div>
       ) : null}
 
+      {viewMode === "card" && !allowStockActions ? (
+        <ProductCardGrid
+          products={filteredProducts}
+          isPending={isPending}
+          emptyState={emptyState}
+          labels={{
+            sku: dictionary.table.sku,
+            category: dictionary.table.category,
+            brand: dictionary.filters.brandLabel,
+            stock: dictionary.table.stock,
+            stockReady: dictionary.table.stockReady,
+            lowStock: dictionary.filters.lowStockStatus,
+            outOfStock: dictionary.filters.outOfStockStatus,
+            statusActive: dictionary.table.statusActive,
+            statusInactive: dictionary.table.statusInactive,
+            viewAction: dictionary.table.viewAction,
+            barcodeAction: dictionary.table.barcodeAction,
+            editAction: dictionary.table.editAction,
+            deleteAction: dictionary.table.deleteAction,
+          }}
+          onView={(product) => setDetailProduct(product)}
+          onBarcode={(product) => setBarcodingProduct(product)}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ) : (
       <ProductsTable
         emptyState={emptyState}
         isPending={isPending}
@@ -435,6 +579,10 @@ export function StockLevelsSection({
         onDeleteMany={onDeleteMany}
         onEdit={onEdit}
         onAdjustStock={onAdjustStock}
+        onBarcode={(product) => setBarcodingProduct(product)}
+        onBulkBarcode={(prods) => setBarcodeBatchProducts(prods)}
+        onRowClick={(product) => setDetailProduct(product)}
+        showStockActions={allowStockActions}
         onExport={(selectedIds) => {
           const selectedProducts = filteredProducts.filter((p) =>
             selectedIds.includes(p.id),
@@ -480,6 +628,7 @@ export function StockLevelsSection({
         }}
         tableDictionary={dictionary.table}
       />
+      )}
 
       {isImportModalOpen ? (
         <ImportProductModal
@@ -488,6 +637,27 @@ export function StockLevelsSection({
           importFileRef={importFileRef}
         />
       ) : null}
+
+      <BarcodeModal
+        product={barcodingProduct}
+        onClose={() => setBarcodingProduct(null)}
+        labels={barcodeLabels}
+      />
+
+      <BarcodeBatchModal
+        products={barcodeBatchProducts}
+        onClose={() => setBarcodeBatchProducts(null)}
+        labels={barcodeLabels}
+      />
+
+      <ProductDetailView
+        product={detailProduct}
+        dictionary={dictionary}
+        onClose={() => setDetailProduct(null)}
+        onEdit={(product) => { setDetailProduct(null); onEdit(product); }}
+        onDelete={onDelete}
+        onBarcode={(product) => setBarcodingProduct(product)}
+      />
 
       {paginationTotalPages > 1 ? (
         <section className="my-4 flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3.5 shadow-sm">

@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Barcode, MoreHorizontal, Pencil, Printer, SlidersHorizontal, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Barcode, Check, Copy, Download, MapPin,
+  Pencil, Printer, Rows2, Rows3, Rows4, SlidersHorizontal, Trash2, X,
+} from "lucide-react";
+import { DEFAULT_LABEL_FLAGS } from "@/lib/barcode";
+import { printBarcodeBatch } from "@/lib/label";
 
-import type { ManagementDictionary } from "@/components/stock/types";
+import type { ManagementDictionary, StockManagerDictionary } from "@/components/stock/types";
 import type { Product } from "@/types/product";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { StockReceiveModal } from "@/components/stock/stock-receive-modal";
@@ -21,6 +26,14 @@ type ProductsTableProps = {
   onEdit: (product: Product) => void;
   onAdjustStock: (product: Product) => void;
   onExport: (selectedIds: string[]) => void;
+  /** Open the (single) Barcode Center for one product. */
+  onBarcode?: (product: Product) => void;
+  /** Open the Barcode Center in batch mode for many products. */
+  onBulkBarcode?: (products: Product[]) => void;
+  /** Open the Product Detail page (whole-row click). */
+  onRowClick?: (product: Product) => void;
+  /** When false, the per-row Adjust-stock action is hidden (product master list). */
+  showStockActions?: boolean;
   products: Product[];
   receiveDictionary: {
     receiveStockTitle: string;
@@ -42,674 +55,421 @@ type ProductsTableProps = {
     historyOperator?: string;
     historyLoadError?: string;
   };
-  tableDictionary: {
-    actions: string;
-    barcodeAction: string;
-    barcodePreviewTitle: string;
-    barcodePrintLabel: string;
-    category: string;
-    deleteAction: string;
-    editAction: string;
-    exportLabel: string;
-    importLabel: string;
-    invalidBarcodeLabel: string;
-    noBarcodeLabel: string;
-    barcode: string;
-    price: string;
-    costPrice: string;
-    sellingPrice: string;
-    productDetails: string;
-    sku: string;
-    stock: string;
-    status: string;
-    statusActive: string;
-    statusInactive: string;
-    receiveAction: string;
-    moreActions: string;
-  };
+  tableDictionary: StockManagerDictionary["table"];
 };
+
+// ── Density ───────────────────────────────────────────────────────────────────
+
+type Density = "comfortable" | "compact" | "warehouse";
+const DENSITY: Record<Density, { rowPad: string; img: string; nameText: string }> = {
+  comfortable: { rowPad: "py-4", img: "h-12 w-12", nameText: "text-sm md:text-[15px]" },
+  compact: { rowPad: "py-2.5", img: "h-10 w-10", nameText: "text-sm" },
+  warehouse: { rowPad: "py-1.5", img: "h-9 w-9", nameText: "text-[13px]" },
+};
+const DENSITY_ICON: Record<Density, typeof Rows2> = { comfortable: Rows2, compact: Rows3, warehouse: Rows4 };
+
+// ── Stock helpers ─────────────────────────────────────────────────────────────
+
+type Health = "ready" | "low" | "out" | "unknown";
+
+function getStockHealth(p: Product): Health {
+  const s = p.total_stock;
+  if (s == null) return "unknown";
+  if (s <= 0) return "out";
+  if (p.min_stock != null && p.min_stock > 0 && s <= p.min_stock) return "low";
+  return "ready";
+}
+
+function getStockPercent(p: Product): number {
+  const s = p.total_stock ?? 0;
+  if (s <= 0) return 0;
+  if (p.max_stock != null && p.max_stock > 0) return Math.max(4, Math.min(100, Math.round((s / p.max_stock) * 100)));
+  if (p.min_stock != null && p.min_stock > 0) return Math.max(4, Math.min(100, Math.round((s / (p.min_stock * 2)) * 100)));
+  return 100;
+}
+
+const HEALTH_BAR: Record<Exclude<Health, "unknown">, string> = {
+  ready: "bg-emerald-500", low: "bg-amber-500", out: "bg-rose-400",
+};
+
+function locationParts(s?: string | null): { primary: string; rest: string } | null {
+  const raw = s?.trim();
+  if (!raw) return null;
+  const parts = raw.split(/[·/>]/).map((x) => x.trim()).filter(Boolean);
+  if (!parts.length) return null;
+  return { primary: parts[parts.length - 1], rest: parts.slice(0, -1).join(" · ") };
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProductsTable({
   emptyState,
   isPending,
-  loadingLabel,
-  lowStockLabel,
-  outOfStockLabel,
-  managementDictionary,
   onDelete,
   onDeleteMany,
   onEdit,
   onAdjustStock,
   onExport,
+  onBarcode,
+  onBulkBarcode,
+  onRowClick,
+  showStockActions = true,
   products,
   receiveDictionary,
   tableDictionary,
 }: ProductsTableProps) {
+  const t = tableDictionary;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
+  const [density, setDensity] = useState<Density>("comfortable");
 
+  // Restore density preference
   useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpenMenuId(null);
-    }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
+    try {
+      const saved = localStorage.getItem("pos-table-density");
+      if (saved === "comfortable" || saved === "compact" || saved === "warehouse") setDensity(saved);
+    } catch { /* ignore */ }
   }, []);
+
+  function changeDensity(d: Density) {
+    setDensity(d);
+    try { localStorage.setItem("pos-table-density", d); } catch { /* ignore */ }
+  }
+
   function formatCurrency(value: number) {
     return new Intl.NumberFormat("th-TH", {
-      currency: "THB",
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 2,
-      style: "currency",
+      currency: "THB", maximumFractionDigits: 2, minimumFractionDigits: 2, style: "currency",
     }).format(value);
   }
 
-  const [previewSku, setPreviewSku] = useState<string | null>(null);
-  const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
-  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
-  const actionMenuRef = useRef<HTMLDivElement>(null);
-
-  function generateBarcodeSvg(sku: string): string {
-    const normalized = sku.trim().toUpperCase();
-    const code128Patterns = [
-      "212222","222122","222221","121223","121322","131222","122213","122312",
-      "132212","221213","221312","231212","112232","122132","122231","113222",
-      "123122","123221","223211","221132","221231","213212","223112","312131",
-      "311222","321122","321221","312212","322112","322211","212123","212321",
-      "232121","111323","131123","131321","112313","132113","132311","211313",
-      "231113","231311","112133","112331","132131","113123","113321","133121",
-      "313121","211331","231131","213113","213311","213131","311123","311321",
-      "331121","312113","312311","332111","314111","221411","431111","111224",
-      "111422","121124","121421","141122","141221","112214","112412","122114",
-      "122411","142112","142211","241211","221114","413111","241112","134111",
-      "111242","121142","121241","114212","124112","124211","411212","421112",
-      "421211","212141","214121","412121","111143","111341","131141","114113",
-      "114311","411113","411311","113141","114131","311141","411131","211412",
-      "211214","211232","2331112",
-    ];
-
-    const encodedValues = encodeCode128B(normalized);
-    if (!encodedValues) return "";
-
-    const moduleWidth = 2;
-    const quietZone = 20;
-    const barTop = 16;
-    const barHeight = 92;
-    let x = quietZone;
-    let bars = "";
-
-    for (const encodedValue of encodedValues) {
-      const pattern = code128Patterns[encodedValue];
-      if (!pattern) return "";
-
-      let isBar = true;
-      for (const unitChar of pattern) {
-        const unit = Number(unitChar);
-        const width = unit * moduleWidth;
-        if (isBar) {
-          bars += `<rect x="${x}" y="${barTop}" width="${width}" height="${barHeight}" fill="#0f172a" />`;
-        }
-        x += width;
-        isBar = !isBar;
-      }
-    }
-
-    const totalWidth = x + quietZone;
-    return `
-      <svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="146" viewBox="0 0 ${totalWidth} 146" role="img" aria-label="barcode">
-        <rect width="${totalWidth}" height="146" fill="white"/>
-        ${bars}
-        <text x="${totalWidth / 2}" y="132" text-anchor="middle" font-family="monospace" font-size="14" fill="#0f172a">${normalized}</text>
-      </svg>
-    `.trim();
-  }
-
-  const previewBarcodeSvg = useMemo(() => {
-    if (!previewSku) return "";
-    return generateBarcodeSvg(previewSku);
-  }, [previewSku]);
-
-  function getTotalStock(product: Product): number {
-    return product.total_stock ?? 0;
-  }
-
-  function isOutOfStock(product: Product) {
-    return getTotalStock(product) === 0;
-  }
-
-  function isLowStock(product: Product) {
-    const stock = getTotalStock(product);
-    if (stock <= 0) return false;
-    return product.min_stock != null && stock <= product.min_stock;
-  }
-
-  function printBarcode(svgContent: string, sku: string | null) {
-    if (!svgContent || !sku) return;
-
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-    const left = (screen.width - width) / 2;
-    const top = (screen.height - height) / 2;
-
-    const printWindow = window.open(
-      "",
-      "barcode-print",
-      `width=${width},height=${height},left=${left},top=${top}`,
-    );
-    if (!printWindow) return;
-
-    const encodedSvg = encodeURIComponent(svgContent);
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Print Barcode - ${sku}</title>
-        <style>
-          @page {
-            margin: 0;
-            size: auto;
-          }
-          * { box-sizing: border-box; margin: 0; padding: 0; }
-          body {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            background: white;
-          }
-          .barcode-wrapper {
-            display: inline-block;
-            padding: 8px;
-          }
-          .barcode-wrapper img {
-            display: block;
-            max-width: none;
-            height: auto;
-          }
-          @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="barcode-wrapper">
-          <img src="data:image/svg+xml;utf8,${encodedSvg}" alt="${sku}" />
-        </div>
-        <script>
-          window.onload = function() {
-            setTimeout(function() { window.print(); }, 300);
-          };
-        <\/script>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-  }
-
-  function encodeCode128B(value: string) {
-    if (!value) {
-      return null;
-    }
-
-    const encodedValues: number[] = [];
-    for (const character of value) {
-      const code = character.charCodeAt(0);
-      if (code < 32 || code > 126) {
-        return null;
-      }
-      encodedValues.push(code - 32);
-    }
-
-    let checksum = 104;
-    encodedValues.forEach((encodedValue, index) => {
-      checksum += encodedValue * (index + 1);
+  function copyBarcode(p: Product) {
+    const v = (p.barcode ?? p.sku ?? "").trim();
+    if (!v) return;
+    navigator.clipboard.writeText(v).then(() => {
+      setCopiedId(p.id);
+      setTimeout(() => setCopiedId((c) => (c === p.id ? null : c)), 1500);
     });
-
-    return [104, ...encodedValues, checksum % 103, 106];
   }
 
-  useEffect(() => {
-    if (!previewSku) {
-      return;
-    }
+  const pad = DENSITY[density].rowPad;
+  const imgSize = DENSITY[density].img;
+  const selectedProducts = products.filter((p) => selectedIds.has(p.id));
+  const allSelected = products.length > 0 && selectedIds.size === products.length;
 
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setPreviewSku(null);
-      }
-    }
+  function toggleAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(products.map((p) => p.id)));
+  }
+  function toggleOne(id: string) {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedIds(next);
+  }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [previewSku]);
+  function statusBadge(p: Product) {
+    if (!p.is_active) return { label: t.statusInactive, cls: "bg-slate-100 text-slate-500", dot: "bg-slate-400" };
+    const h = getStockHealth(p);
+    if (h === "out") return { label: t.statusOut, cls: "bg-rose-100 text-rose-700", dot: "bg-rose-500" };
+    if (h === "low") return { label: t.statusLow, cls: "bg-amber-100 text-amber-700", dot: "bg-amber-500" };
+    return { label: t.statusReady, cls: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" };
+  }
 
-  // Close action menu on click outside
-  useEffect(() => {
-    if (!isActionMenuOpen) return;
-
-    function handleClickOutside(event: MouseEvent) {
-      if (actionMenuRef.current && !actionMenuRef.current.contains(event.target as Node)) {
-        setIsActionMenuOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsActionMenuOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isActionMenuOpen]);
+  function bulkPrintBarcode() {
+    const withCode = selectedProducts.filter((p) => p.barcode || p.sku);
+    if (withCode.length === 0) return;
+    if (onBulkBarcode) { onBulkBarcode(withCode); return; }
+    printBarcodeBatch(
+      withCode.map((p) => ({
+        name: p.name, sku: p.sku ?? null, barcode: p.barcode ?? null, price: p.base_price,
+        location: p.storage_location ?? null,
+        category: p.product_type_name ?? p.product_type?.name ?? null, brand: p.brand_name ?? null,
+      })),
+      "medium",
+      DEFAULT_LABEL_FLAGS,
+    );
+  }
 
   return (
     <>
-      <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
-        {selectedIds.size > 0 ? (
-          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-3">
-            <span className="text-sm md:text-[15px] text-slate-700">
-              <strong className="font-semibold">{selectedIds.size}</strong> selected
-            </span>
-            <div className="relative" ref={actionMenuRef}>
-              <button
-                aria-label={tableDictionary.moreActions}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50 hover:text-slate-800"
-                onClick={() => setIsActionMenuOpen((prev) => !prev)}
-                type="button"
-              >
-                <MoreHorizontal className="h-5 w-5" />
-              </button>
-
-              {isActionMenuOpen ? (
-                <div
-                  className="absolute right-0 top-full z-30 mt-1 w-56 origin-top-right animate-fadeIn rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
-                  role="menu"
+      <section className="rounded-2xl bg-white shadow-sm">
+        {/* Density toolbar */}
+        <div className="flex items-center justify-end gap-2 border-b border-slate-100 px-4 py-2">
+          <span className="text-xs font-semibold text-slate-400">{t.densityLabel}</span>
+          <div className="inline-flex items-center gap-0.5 rounded-lg border border-slate-200 p-0.5">
+            {(["comfortable", "compact", "warehouse"] as Density[]).map((d) => {
+              const Icon = DENSITY_ICON[d];
+              const label = d === "comfortable" ? t.densityComfortable : d === "compact" ? t.densityCompact : t.densityWarehouse;
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  title={label}
+                  aria-label={label}
+                  aria-pressed={density === d}
+                  onClick={() => changeDensity(d)}
+                  className={`rounded-md px-2 py-1.5 transition ${density === d ? "bg-violet-600 text-white" : "text-violet-700 hover:bg-violet-50"}`}
                 >
-                  <button
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
-                    onClick={() => {
-                      const selectedProducts = products.filter((p) =>
-                        selectedIds.has(p.id) && (p.barcode || p.sku),
-                      );
-                      if (selectedProducts.length === 0) {
-                        setIsActionMenuOpen(false);
-                        return;
-                      }
-
-                      const barcodesHtml = selectedProducts
-                        .map((p) => {
-                          const code = (p.barcode ?? p.sku ?? "").trim();
-                          const svg = generateBarcodeSvg(code);
-                          if (!svg) {
-                            return `<div class="barcode-item"><div class="barcode-label">${p.name}</div><div class="barcode-fallback">${code}</div></div>`;
-                          }
-                          return `<div class="barcode-item"><div class="barcode-label">${p.name}</div><img src="data:image/svg+xml;utf8,${encodeURIComponent(svg)}" alt="${code}" /></div>`;
-                        })
-                        .join("");
-
-                      const printWindow = window.open("", "barcode-bulk-print", `width=${window.innerWidth},height=${window.innerHeight}`);
-                      if (!printWindow) { setIsActionMenuOpen(false); return; }
-                      printWindow.document.write(`<!DOCTYPE html>
-<html>
-<head><title>Print Barcodes</title>
-<style>
-  @page { margin: 8mm; size: auto; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: white; padding: 8px; }
-  .barcode-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-start; }
-  .barcode-item { text-align: center; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; display: inline-flex; flex-direction: column; align-items: center; }
-  .barcode-label { font-size: 11px; font-weight: 600; color: #1e293b; margin-bottom: 4px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .barcode-item img { display: block; max-width: none; height: auto; }
-  .barcode-fallback { font-family: monospace; font-size: 13px; color: #64748b; padding: 8px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-</style>
-</head>
-<body>
-  <div class="barcode-grid">${barcodesHtml}</div>
-  <script>window.onload=function(){setTimeout(function(){window.print()},300)};<\\/script>
-</body>
-</html>`);
-                      printWindow.document.close();
-                      setIsActionMenuOpen(false);
-                    }}
-                    role="menuitem"
-                    type="button"
-                  >
-                    <Barcode className="h-4 w-4 shrink-0 text-slate-500" />
-                    <span>{tableDictionary.barcodeAction}</span>
-                  </button>
-
-                  <button
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-violet-700 transition hover:bg-violet-50"
-                    onClick={() => {
-                      onExport(Array.from(selectedIds));
-                      setIsActionMenuOpen(false);
-                    }}
-                    role="menuitem"
-                    type="button"
-                  >
-                    <svg aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0-3-3m3 3 3-3m2 8H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" />
-                    </svg>
-                    <span>{tableDictionary.exportLabel}</span>
-                  </button>
-
-                  <div className="my-1 border-t border-slate-100" />
-
-                  <button
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-600 transition hover:bg-rose-50"
-                    onClick={() => {
-                      setIsActionMenuOpen(false);
-                      setConfirmDeleteIds(Array.from(selectedIds));
-                    }}
-                    role="menuitem"
-                    type="button"
-                  >
-                    <Trash2 className="h-4 w-4 shrink-0" />
-                    <span>{tableDictionary.deleteAction}</span>
-                  </button>
-
-                  <button
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
-                    onClick={() => {
-                      setIsReceiveModalOpen(true);
-                      setIsActionMenuOpen(false);
-                    }}
-                    role="menuitem"
-                    type="button"
-                  >
-                    <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 10l5 5 5-5M12 15V3" />
-                    </svg>
-                    <span>{tableDictionary.receiveAction}</span>
-                  </button>
-                </div>
-              ) : null}
-            </div>
+                  <Icon className="h-4 w-4" />
+                </button>
+              );
+            })}
           </div>
-        ) : null}
-        <table className="w-full table-fixed border-collapse text-left">
-        <thead>
-          <tr className="bg-slate-100 text-xs md:text-[13px] uppercase tracking-widest text-slate-500">
-            <th className="w-[5%] px-4 py-4.5 text-center">
-              <input
-                aria-label="Select all"
-                checked={products.length > 0 && selectedIds.size === products.length}
-                className="h-4 w-4 rounded border-slate-300 text-violet-700 focus:ring-violet-500"
-                onChange={() => {
-                  if (selectedIds.size === products.length) {
-                    setSelectedIds(new Set());
-                  } else {
-                    setSelectedIds(new Set(products.map((p) => p.id)));
-                  }
-                }}
-                type="checkbox"
-              />
-            </th>
-            <th className="w-[10%] px-6 py-4.5 text-center font-bold">รูป</th>
-            <th className="w-[22%] px-6 py-4.5 font-bold">{tableDictionary.productDetails}</th>
-            <th className="w-[11%] px-6 py-4.5 font-bold">{tableDictionary.barcode}</th>
-            <th className="w-[11%] px-6 py-4.5 font-bold">{tableDictionary.category}</th>
-            <th className="w-[8%] px-6 py-4.5 font-bold">{tableDictionary.costPrice}</th>
-            <th className="w-[8%] px-6 py-4.5 font-bold">{tableDictionary.sellingPrice}</th>
-            <th className="w-[10%] px-6 py-4.5 font-bold">{tableDictionary.stock}</th>
-            <th className="w-[9%] px-6 py-4.5 font-bold">{tableDictionary.status}</th>
-            <th className="w-[12%] px-6 py-4.5 text-right font-bold">{tableDictionary.actions}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {isPending && products.length === 0 ? (
-            [...Array(8)].map((_, i) => (
-              <tr key={i} className="border-b border-slate-100">
-                <td className="px-4 py-3"><Skeleton className="h-4 w-4 bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-10 w-10 rounded-xl bg-slate-200" /></td>
-                <td className="px-4 py-3">
-                  <Skeleton className="mb-1.5 h-4 w-36 bg-slate-200" />
-                  <Skeleton className="h-3 w-20 bg-slate-100" />
-                </td>
-                <td className="px-4 py-3"><Skeleton className="h-4 w-16 bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-4 w-14 bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-5 w-12 rounded-full bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-5 w-14 rounded-full bg-slate-100" /></td>
-                <td className="px-4 py-3 text-center"><Skeleton className="h-4 w-8 mx-auto bg-slate-100" /></td>
-                <td className="px-4 py-3"><Skeleton className="h-7 w-7 rounded-lg bg-slate-100" /></td>
-              </tr>
-            ))
-          ) : products.length === 0 ? (
-            <tr>
-              <td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={10}>
-                {emptyState}
-              </td>
-            </tr>
-          ) : null}
-          {products.map((product, index) => (
-            <tr
-              key={product.id}
-              className={`${index % 2 === 1 ? "bg-slate-50/50" : "bg-white"} group transition hover:bg-slate-50`}
-            >
-              <td className="px-4 py-4.5 text-center">
-                <input
-                  aria-label={`Select ${product.name}`}
-                  checked={selectedIds.has(product.id)}
-                  className="h-4 w-4 rounded border-slate-300 text-violet-700 focus:ring-violet-500"
-                  onChange={() => {
-                    const next = new Set(selectedIds);
-                    if (next.has(product.id)) {
-                      next.delete(product.id);
-                    } else {
-                      next.add(product.id);
-                    }
-                    setSelectedIds(next);
-                  }}
-                  type="checkbox"
-                />
-              </td>
-              <td className="px-6 py-4.5 text-center">
-                {product.image_url ? (
-                  <img
-                    alt={product.name}
-                    className="mx-auto h-14 w-14 rounded-lg border border-slate-200 bg-slate-100 object-cover shadow-inner"
-                    loading="lazy"
-                    src={product.image_url}
+        </div>
+
+        {/* Scroll container with sticky header */}
+        <div className="overflow-auto rounded-b-2xl" style={{ maxHeight: "68vh" }}>
+          <table className="w-full min-w-[980px] table-fixed border-collapse text-left">
+            <colgroup>
+              <col style={{ width: "4%" }} /><col style={{ width: "5%" }} /><col style={{ width: "16%" }} />
+              <col style={{ width: "11%" }} /><col style={{ width: "9%" }} /><col style={{ width: "6%" }} />
+              <col style={{ width: "6%" }} /><col style={{ width: "12%" }} /><col style={{ width: "10%" }} />
+              <col style={{ width: "8%" }} /><col style={{ width: "13%" }} />
+            </colgroup>
+            <thead className="sticky top-0 z-20">
+              <tr className="bg-slate-100 text-xs md:text-[13px] uppercase tracking-wider text-slate-500">
+                <th className="px-4 py-3.5 text-center">
+                  <input
+                    aria-label="Select all"
+                    checked={allSelected}
+                    className="h-4 w-4 rounded border-slate-300 text-violet-700 focus:ring-violet-500"
+                    onChange={toggleAll}
+                    type="checkbox"
                   />
-                ) : (
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-600 shadow-inner">
-                    {product.name.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-              </td>
-              <td className="px-6 py-4.5">
-                <div className="flex min-w-0 flex-col">
-                  <span
-                    className="overflow-hidden break-all text-sm md:text-[15px] font-bold text-slate-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]"
-                    title={product.name}
+                </th>
+                <th className="px-3 py-3.5 text-center font-bold" aria-label="image" />
+                <th className="px-4 py-3.5 font-bold">{t.productDetails}</th>
+                <th className="px-4 py-3.5 font-bold">{t.barcode}</th>
+                <th className="px-4 py-3.5 font-bold">{t.category}</th>
+                <th className="px-3 py-3.5 font-bold">{t.costPrice}</th>
+                <th className="px-3 py-3.5 font-bold">{t.sellingPrice}</th>
+                <th className="px-4 py-3.5 font-bold">{t.stock}</th>
+                <th className="px-4 py-3.5 font-bold">{t.location}</th>
+                <th className="px-4 py-3.5 font-bold">{t.status}</th>
+                <th className="px-2 py-3.5 text-right font-bold">{t.actions}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {isPending && products.length === 0 ? (
+                [...Array(8)].map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-4 bg-slate-100" /></td>
+                    <td className="px-3 py-3"><Skeleton className="mx-auto h-10 w-10 rounded-lg bg-slate-200" /></td>
+                    <td className="px-4 py-3"><Skeleton className="mb-1.5 h-4 w-36 bg-slate-200" /><Skeleton className="h-3 w-20 bg-slate-100" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20 bg-slate-100" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-14 bg-slate-100" /></td>
+                    <td className="px-3 py-3"><Skeleton className="h-4 w-12 bg-slate-100" /></td>
+                    <td className="px-3 py-3"><Skeleton className="h-4 w-12 bg-slate-100" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-full bg-slate-100" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-16 bg-slate-100" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded-full bg-slate-100" /></td>
+                    <td className="px-2 py-3"><Skeleton className="h-7 w-7 rounded-lg bg-slate-100" /></td>
+                  </tr>
+                ))
+              ) : products.length === 0 ? (
+                <tr><td className="px-6 py-12 text-center text-sm text-slate-500" colSpan={11}>{emptyState}</td></tr>
+              ) : null}
+
+              {products.map((product, index) => {
+                const health = getStockHealth(product);
+                const unit = product.product_unit_name ?? "";
+                const loc = locationParts(product.storage_location);
+                const status = statusBadge(product);
+                const code = product.barcode ?? product.sku ?? null;
+                return (
+                  <tr
+                    key={product.id}
+                    onClick={() => onRowClick?.(product)}
+                    className={`${index % 2 === 1 ? "bg-slate-50/50" : "bg-white"} group cursor-pointer transition hover:bg-violet-50/40 ${selectedIds.has(product.id) ? "bg-violet-50/60" : ""}`}
                   >
-                    {product.name}
-                  </span>
-                  {product.sku ? (
-                    <span className="mt-0.5 truncate text-xs md:text-sm text-slate-400" title={product.sku}>
-                      {product.sku}
-                    </span>
-                  ) : null}
-                </div>
-              </td>
-              <td className="px-4 py-4.5 text-sm md:text-[15px] text-slate-500">
-                <span className="block truncate font-mono" title={product.barcode ?? "-"}>
-                  {product.barcode ?? "-"}
-                </span>
-              </td>
-              <td className="px-6 py-4.5">
-                <span
-                  className="block truncate rounded px-2 py-1 text-xs font-bold uppercase text-violet-800"
-                  title={product.product_type_name ?? product.product_type?.name ?? "-"}
-                >
-                  {product.product_type_name ?? product.product_type?.name ?? "-"}
-                </span>
-              </td>
-              <td className="px-6 py-4.5 text-sm md:text-[15px] font-semibold text-slate-600">
-                {product.cost_price != null ? formatCurrency(Number(product.cost_price)) : "-"}
-              </td>
-              <td className="px-6 py-4.5 text-sm md:text-[15px] font-bold text-violet-700">
-                {formatCurrency(Number(product.base_price ?? 0))}
-              </td>
-              <td className="px-2 py-4.5">
-                <div className="flex flex-col">
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-sm md:text-[15px] font-semibold ${
-                      isOutOfStock(product)
-                        ? "text-rose-700"
-                        : isLowStock(product)
-                          ? "text-amber-700"
-                          : "text-slate-900"
-                    }`}
-                  >
-                    {isOutOfStock(product) ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
-                        <svg aria-hidden="true" className="h-3.5 w-3.5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                        </svg>
-                        {outOfStockLabel}
-                      </span>
-                    ) : (
-                      <>
-                        {isLowStock(product) ? (
-                          <AlertTriangle
-                            aria-label={lowStockLabel}
-                            className="h-4 w-4 text-amber-500"
-                          />
-                        ) : null}
-                        <span>
-                          {product.max_stock != null
-                            ? `${getTotalStock(product)} / ${product.max_stock}`
-                            : getTotalStock(product)}
-                          {product.product_unit_name
-                            ? ` ${product.product_unit_name}`
-                            : ""}
+                    {/* Select — clicking here must not navigate */}
+                    <td className={`px-4 ${pad} text-center`} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        aria-label={`Select ${product.name}`}
+                        checked={selectedIds.has(product.id)}
+                        className="h-4 w-4 rounded border-slate-300 text-violet-700 focus:ring-violet-500"
+                        onChange={() => toggleOne(product.id)}
+                        type="checkbox"
+                      />
+                    </td>
+                    {/* Image */}
+                    <td className={`px-3 ${pad} text-center`}>
+                      {product.image_url ? (
+                        <img alt={product.name} className={`mx-auto ${imgSize} rounded-lg border border-slate-200 bg-slate-100 object-cover`} loading="lazy" src={product.image_url} />
+                      ) : (
+                        <div className={`mx-auto flex ${imgSize} items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500`}>
+                          {product.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
+                    </td>
+                    {/* Product: name + SKU badge */}
+                    <td className={`px-4 ${pad}`}>
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <span className={`overflow-hidden break-all ${DENSITY[density].nameText} font-bold leading-[1.5] text-slate-900 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]`} title={product.name}>
+                          {product.name}
                         </span>
-                      </>
-                    )}
-                  </span>
-                  {product.min_stock != null && product.min_stock > 0 || product.max_stock != null ? (
-                    <span
-                      className={`mt-0.5 text-xs ${
-                        isOutOfStock(product)
-                          ? "text-rose-400"
-                          : isLowStock(product)
-                            ? "text-amber-400"
-                            : "text-slate-400"
-                      }`}
-                    >  {product.min_stock != null && product.min_stock > 0
-                        ? `Min ${product.min_stock}`
-                        : ""}{" "}
-                      {product.min_stock != null && product.min_stock > 0 && product.max_stock != null ? "/ " : ""}
-                      {product.max_stock != null ? `Max ${product.max_stock}` : ""}
-                    </span>
-                  ) : null}
-                </div>
-              </td>
-              <td className="px-6 py-4.5">
-                {product.is_active ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    {tableDictionary.statusActive}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
-                    {tableDictionary.statusInactive}
-                  </span>
-                )}
-              </td>
-              <td className="px-6 py-4.5 text-right">
-                <div className="relative flex items-center justify-end" ref={openMenuId === product.id ? menuRef : null}>
-                  <button
-                    type="button"
-                    onClick={() => setOpenMenuId(openMenuId === product.id ? null : product.id)}
-                    className="rounded-lg p-2 text-slate-500 transition hover:bg-violet-50 hover:text-violet-700"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                  {openMenuId === product.id && (
-                    <div className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-xl border border-violet-100 bg-white shadow-lg">
-                      <button type="button" onClick={() => { onEdit(product); setOpenMenuId(null); }}
-                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-violet-50">
-                        <Pencil className="h-3.5 w-3.5 text-violet-500" /> {tableDictionary.editAction}
-                      </button>
-                      <button type="button" onClick={() => { onAdjustStock(product); setOpenMenuId(null); }}
-                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-violet-50">
-                        <SlidersHorizontal className="h-3.5 w-3.5 text-violet-500" /> ปรับสตอก
-                      </button>
-                      <button type="button"
-                        disabled={!product.barcode && !product.sku}
-                        onClick={() => { setPreviewSku(product.barcode ?? product.sku ?? null); setOpenMenuId(null); }}
-                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-violet-50 disabled:opacity-40 disabled:cursor-not-allowed">
-                        <Barcode className="h-3.5 w-3.5 text-violet-500" /> {tableDictionary.barcodeAction}
-                      </button>
-                      <div className="my-1 border-t border-violet-50" />
-                      <button type="button" onClick={() => { setConfirmDeleteIds([product.id]); setOpenMenuId(null); }}
-                        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50">
-                        <Trash2 className="h-3.5 w-3.5" /> {tableDictionary.deleteAction}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        </table>
+                        {product.sku ? (
+                          <span className="inline-flex w-fit max-w-full items-center truncate rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-500" title={product.sku}>
+                            {product.sku}
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
+                    {/* Barcode + copy */}
+                    <td className={`px-4 ${pad}`}>
+                      {code ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="min-w-0 truncate font-mono text-[13px] text-slate-600" title={code}>{code}</span>
+                          <button
+                            type="button"
+                            title={copiedId === product.id ? t.copied : t.copy}
+                            aria-label={t.copy}
+                            onClick={(e) => { e.stopPropagation(); copyBarcode(product); }}
+                            className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+                          >
+                            {copiedId === product.id ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">{t.noLocation}</span>
+                      )}
+                    </td>
+                    {/* Category */}
+                    <td className={`px-4 ${pad}`}>
+                      {product.product_type_name ?? product.product_type?.name ? (
+                        <span className="inline-block max-w-full truncate rounded-md bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700" title={product.product_type_name ?? product.product_type?.name ?? ""}>
+                          {product.product_type_name ?? product.product_type?.name}
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">{t.noLocation}</span>
+                      )}
+                    </td>
+                    {/* Cost price */}
+                    <td className={`px-3 ${pad} text-sm font-semibold text-slate-600`}>
+                      {product.cost_price != null ? formatCurrency(Number(product.cost_price)) : "-"}
+                    </td>
+                    {/* Selling price */}
+                    <td className={`px-3 ${pad} text-sm font-bold text-violet-700`}>
+                      {formatCurrency(Number(product.base_price ?? 0))}
+                    </td>
+                    {/* Stock: qty + bar + % */}
+                    <td className={`px-4 ${pad}`}>
+                      {product.total_stock != null ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className={`text-sm font-bold ${health === "out" ? "text-rose-700" : health === "low" ? "text-amber-700" : "text-slate-900"}`}>
+                              {product.max_stock != null ? `${product.total_stock} / ${product.max_stock}` : `${product.total_stock}${unit ? ` ${unit}` : ""}`}
+                            </span>
+                            {product.max_stock != null ? (
+                              <span className="text-[11px] font-semibold text-slate-400">{getStockPercent(product)}%</span>
+                            ) : null}
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                            <div className={`h-full rounded-full transition-all ${health === "unknown" ? "bg-slate-300" : HEALTH_BAR[health]}`} style={{ width: `${getStockPercent(product)}%` }} />
+                          </div>
+                          {product.min_stock != null && product.min_stock > 0 ? (
+                            <span className="text-[10px] text-slate-400">Min {product.min_stock}</span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">{t.noLocation}</span>
+                      )}
+                    </td>
+                    {/* Location (dedicated) */}
+                    <td className={`px-4 ${pad}`}>
+                      {loc ? (
+                        <div className="flex min-w-0 items-start gap-1.5">
+                          <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" aria-hidden="true" />
+                          <span className="flex min-w-0 flex-col">
+                            <span className="truncate font-mono text-xs font-bold text-slate-700" title={product.storage_location ?? ""}>{loc.primary}</span>
+                            {loc.rest ? <span className="truncate text-[11px] text-slate-400" title={loc.rest}>{loc.rest}</span> : null}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-300">{t.noLocation}</span>
+                      )}
+                    </td>
+                    {/* Status */}
+                    <td className={`px-4 ${pad}`}>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${status.cls}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+                        {status.label}
+                      </span>
+                    </td>
+                    {/* Actions — visible icon buttons; never trigger row navigation */}
+                    <td className={`px-2 ${pad}`} onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          title={t.barcodeAction}
+                          aria-label={t.barcodeAction}
+                          disabled={!code}
+                          onClick={() => onBarcode?.(product)}
+                          className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-violet-50 hover:text-violet-700 disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+                        >
+                          <Barcode className="h-[18px] w-[18px]" />
+                        </button>
+                        {showStockActions ? (
+                          <button
+                            type="button"
+                            title={t.receiveAction}
+                            aria-label={t.receiveAction}
+                            onClick={() => onAdjustStock(product)}
+                            className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+                          >
+                            <SlidersHorizontal className="h-[18px] w-[18px]" />
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          title={t.editAction}
+                          aria-label={t.editAction}
+                          onClick={() => onEdit(product)}
+                          className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+                        >
+                          <Pencil className="h-[18px] w-[18px]" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </section>
 
-      {previewSku ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl smooth-fade-up">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-base font-semibold text-slate-900">
-                {tableDictionary.barcodePreviewTitle}
-              </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100"
-                  onClick={() => printBarcode(previewBarcodeSvg, previewSku)}
-                  type="button"
-                >
-                  <Printer className="h-4 w-4" />
-                  {tableDictionary.barcodePrintLabel}
-                </button>
-                <button
-                  aria-label={tableDictionary.barcodePreviewTitle}
-                  className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-slate-50"
-                  onClick={() => setPreviewSku(null)}
-                  type="button"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
-              {previewBarcodeSvg ? (
-                <img
-                  alt={`${tableDictionary.barcodeAction} ${previewSku}`}
-                  className="mx-auto h-auto max-w-full"
-                  id="barcode-preview-img"
-                  src={`data:image/svg+xml;utf8,${encodeURIComponent(previewBarcodeSvg)}`}
-                />
-              ) : (
-                <p className="text-center text-sm text-slate-500">
-                  {previewSku?.trim()
-                    ? tableDictionary.invalidBarcodeLabel
-                    : tableDictionary.noBarcodeLabel}
-                </p>
-              )}
-            </div>
+      {/* Sticky floating bulk action bar */}
+      {selectedIds.size > 0 ? (
+        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 smooth-fade-up">
+          <div className="flex items-center gap-2 rounded-2xl border border-violet-200 bg-white px-3 py-2.5 shadow-2xl">
+            <span className="px-2 text-sm font-semibold text-slate-700">
+              <strong className="text-violet-700">{selectedIds.size}</strong> {t.selectedSuffix}
+            </span>
+            <span className="h-6 w-px bg-slate-200" />
+            <button type="button" onClick={bulkPrintBarcode}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-700">
+              <Printer className="h-4 w-4" /> {t.printBarcodeAction}
+            </button>
+            <button type="button" onClick={() => onExport(Array.from(selectedIds))}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">
+              <Download className="h-4 w-4" /> {t.exportLabel}
+            </button>
+            {showStockActions ? (
+              <button type="button" onClick={() => setIsReceiveModalOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">
+                {t.receiveAction}
+              </button>
+            ) : null}
+            <button type="button" onClick={() => setConfirmDeleteIds(Array.from(selectedIds))}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
+              <Trash2 className="h-4 w-4" /> {t.deleteAction}
+            </button>
+            <button type="button" aria-label={t.clearSelection} title={t.clearSelection}
+              onClick={() => setSelectedIds(new Set())}
+              className="ml-1 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
       ) : null}
@@ -718,40 +478,32 @@ export function ProductsTable({
         <StockReceiveModal
           dictionary={receiveDictionary}
           onClose={() => setIsReceiveModalOpen(false)}
-          onComplete={() => {
-            setIsReceiveModalOpen(false);
-            setSelectedIds(new Set());
-          }}
+          onComplete={() => { setIsReceiveModalOpen(false); setSelectedIds(new Set()); }}
           products={products}
           selectedIds={selectedIds}
         />
       ) : null}
 
       <ConfirmDialog
-        cancelLabel="Cancel"
-        confirmLabel={tableDictionary.deleteAction}
+        cancelLabel={t.cancel}
+        confirmLabel={t.deleteAction}
         danger
-        icon={
-          <Trash2 className="h-5 w-5 text-rose-600" />
-        }
+        icon={<Trash2 className="h-5 w-5 text-rose-600" />}
         isOpen={confirmDeleteIds !== null}
         onCancel={() => setConfirmDeleteIds(null)}
         onConfirm={() => {
           if (confirmDeleteIds) {
-            if (confirmDeleteIds.length === 1) {
-              onDelete(confirmDeleteIds[0]);
-            } else {
-              onDeleteMany(confirmDeleteIds);
-            }
+            if (confirmDeleteIds.length === 1) onDelete(confirmDeleteIds[0]);
+            else { onDeleteMany(confirmDeleteIds); setSelectedIds(new Set()); }
             setConfirmDeleteIds(null);
           }
         }}
-        title={confirmDeleteIds?.length === 1 ? "Delete product" : `Delete ${confirmDeleteIds?.length ?? 0} products`}
+        title={confirmDeleteIds?.length === 1 ? t.deleteConfirmTitle : t.deleteConfirmTitleMany.replace("{n}", String(confirmDeleteIds?.length ?? 0))}
       >
         <p className="text-sm text-slate-600">
           {confirmDeleteIds?.length === 1
-            ? "Are you sure you want to delete this product? This action cannot be undone."
-            : `Are you sure you want to delete ${confirmDeleteIds?.length ?? 0} products? This action cannot be undone.`}
+            ? t.deleteConfirmBody
+            : t.deleteConfirmBodyMany.replace("{n}", String(confirmDeleteIds?.length ?? 0))}
         </p>
       </ConfirmDialog>
     </>

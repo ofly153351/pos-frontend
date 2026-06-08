@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Boxes,
   ChevronDown,
@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Layers3,
   MapPin,
+  Package,
   PackagePlus,
   ReceiptText,
   ScrollText,
@@ -38,6 +39,9 @@ type UserWorkspaceSidebarProps = {
     documentPending: string;
     documents: string;
     inventory: string;
+    products: string;
+    productList: string;
+    masterData: string;
     purchasing: string;
     purchaseOrders: string;
     receiveGoods: string;
@@ -62,6 +66,109 @@ type UserWorkspaceSidebarProps = {
   };
 };
 
+type SidebarGroupItem = { href: string; key: string; label: string; icon: ReactNode };
+
+function CollapsibleNavGroup({
+  collapsed,
+  baseHref,
+  icon,
+  label,
+  active,
+  expanded,
+  onToggle,
+  items,
+  activeKey,
+}: {
+  collapsed: boolean;
+  baseHref: string;
+  icon: ReactNode;
+  label: string;
+  active: boolean;
+  expanded: boolean;
+  onToggle: () => void;
+  items: SidebarGroupItem[];
+  activeKey: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <div
+        className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
+          active
+            ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
+            : "text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
+        } ${collapsed ? "justify-center px-2" : ""}`}
+      >
+        <Link
+          className={`flex min-w-0 flex-1 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
+          href={baseHref}
+        >
+          <span
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+              active ? "bg-white/15 text-white" : "bg-violet-900/60 text-violet-300"
+            }`}
+          >
+            {icon}
+          </span>
+          {!collapsed ? <span className="truncate">{label}</span> : null}
+        </Link>
+        {!collapsed ? (
+          <button
+            aria-expanded={expanded}
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+              active
+                ? "text-white hover:bg-white/10"
+                : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
+            }`}
+            onClick={onToggle}
+            type="button"
+          >
+            <ChevronDown
+              aria-hidden="true"
+              className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+            />
+          </button>
+        ) : null}
+      </div>
+
+      {!collapsed ? (
+        <div
+          className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
+            expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="min-h-0">
+            <div className="space-y-1 pt-1 pl-6">
+              {items.map((item) => {
+                const isActive = activeKey === item.key;
+                return (
+                  <Link
+                    key={item.key}
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      isActive
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
+                    }`}
+                    href={item.href}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        isActive ? "bg-violet-700 text-violet-200" : "bg-violet-900/60 text-violet-400"
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function UserWorkspaceSidebar({
   collapsed,
   locale,
@@ -79,6 +186,7 @@ export function UserWorkspaceSidebar({
   const stockWarehousesHref = `/${locale}/stock/warehouses`;
   const warehouseOverviewHref = `/${locale}/warehouse/overview`;
   const warehouseReceiveHref = `/${locale}/warehouse/receive`;
+  const inventoryLevelsHref = `/${locale}/inventory`;
   const documentsBaseHref = `/${locale}/documents`;
   const documentsPendingHref = `/${locale}/documents/pending`;
   const purchasesBaseHref = `/${locale}/purchases`;
@@ -88,22 +196,29 @@ export function UserWorkspaceSidebar({
   const receiptPaymentHref = `/${locale}/settings/receipt-payment`;
   const activityLogsHref = `/${locale}/settings/activity-logs`;
   const isSettingsRoute = pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`);
-  const isInventoryRoute =
+  const isProductsRoute =
     pathname === stockBaseHref ||
-    pathname.startsWith(`${stockBaseHref}/`) ||
-    pathname === warehouseOverviewHref ||
-    pathname.startsWith(`/${locale}/warehouse/`);
+    pathname === stockCategoriesHref ||
+    pathname.startsWith(`${stockCategoriesHref}/`);
+  const isStockRoute =
+    pathname === inventoryLevelsHref ||
+    pathname.startsWith(`${inventoryLevelsHref}/`) ||
+    pathname.startsWith(`/${locale}/warehouse/`) ||
+    pathname === stockWarehousesHref ||
+    pathname.startsWith(`${stockWarehousesHref}/`);
   const isDocumentsRoute =
     pathname === documentsBaseHref ||
     pathname.startsWith(`${documentsBaseHref}/`);
   const isPurchasingRoute =
     pathname === purchasesBaseHref ||
     pathname.startsWith(`${purchasesBaseHref}/`);
-  const [manualInventoryExpanded, setManualInventoryExpanded] = useState(false);
+  const [manualProductsExpanded, setManualProductsExpanded] = useState(false);
+  const [manualStockExpanded, setManualStockExpanded] = useState(false);
   const [manualDocumentsExpanded, setManualDocumentsExpanded] = useState(false);
   const [manualPurchasingExpanded, setManualPurchasingExpanded] = useState(false);
   const [manualSettingsExpanded, setManualSettingsExpanded] = useState(false);
-  const inventoryExpanded = !collapsed && (manualInventoryExpanded || isInventoryRoute);
+  const productsExpanded = !collapsed && (manualProductsExpanded || isProductsRoute);
+  const stockExpanded = !collapsed && (manualStockExpanded || isStockRoute);
   const documentsExpanded = !collapsed && (manualDocumentsExpanded || isDocumentsRoute);
   const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
   const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
@@ -172,63 +287,48 @@ export function UserWorkspaceSidebar({
   ];
   const [topNavItems, trailingNavItems] = [navItems.slice(0, 2), navItems.slice(2)];
 
-  const inventoryItems = useMemo(
+  const productsItems: SidebarGroupItem[] = useMemo(
     () => [
-      {
-        href: warehouseOverviewHref,
-        key: "warehouse-overview",
-        label: labels.warehouseOverview,
-      },
-      {
-        href: warehouseReceiveHref,
-        key: "receive-goods",
-        label: labels.receiveGoods,
-      },
-      {
-        href: stockBaseHref,
-        key: "stock-levels",
-        label: labels.stockLevels,
-      },
-      {
-        href: stockCategoriesHref,
-        key: "categories",
-        label: labels.stockCategories,
-      },
-      {
-        href: stockWarehousesHref,
-        key: "warehouses",
-        label: labels.stockWarehouses,
-      },
+      { href: stockBaseHref, key: "product-list", label: labels.productList, icon: <Layers3 className="h-3.5 w-3.5" /> },
+      { href: stockCategoriesHref, key: "master-data", label: labels.masterData, icon: <Tags className="h-3.5 w-3.5" /> },
+    ],
+    [labels.masterData, labels.productList, stockBaseHref, stockCategoriesHref],
+  );
+
+  const stockItems: SidebarGroupItem[] = useMemo(
+    () => [
+      { href: inventoryLevelsHref, key: "stock-levels", label: labels.stockLevels, icon: <Layers3 className="h-3.5 w-3.5" /> },
+      { href: warehouseReceiveHref, key: "receive-goods", label: labels.receiveGoods, icon: <PackagePlus className="h-3.5 w-3.5" /> },
+      { href: warehouseOverviewHref, key: "warehouse-overview", label: labels.warehouseOverview, icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
+      { href: stockWarehousesHref, key: "warehouses", label: labels.stockWarehouses, icon: <Warehouse className="h-3.5 w-3.5" /> },
     ],
     [
+      inventoryLevelsHref,
       labels.receiveGoods,
-      labels.stockCategories,
       labels.stockLevels,
       labels.stockWarehouses,
       labels.warehouseOverview,
-      stockBaseHref,
-      stockCategoriesHref,
       stockWarehousesHref,
       warehouseOverviewHref,
       warehouseReceiveHref,
     ],
   );
 
-  const activeInventoryKey = !isInventoryRoute
+  const activeProductsKey = !isProductsRoute
     ? ""
-    : pathname === warehouseOverviewHref
-      ? "warehouse-overview"
-      : pathname === warehouseReceiveHref || pathname.startsWith(`${warehouseReceiveHref}/`)
-        ? "receive-goods"
-      : pathname === stockCategoriesHref
-        ? "categories"
-        : pathname === stockWarehousesHref
+    : pathname === stockCategoriesHref || pathname.startsWith(`${stockCategoriesHref}/`)
+      ? "master-data"
+      : "product-list";
+
+  const activeStockKey = !isStockRoute
+    ? ""
+    : pathname === warehouseReceiveHref || pathname.startsWith(`${warehouseReceiveHref}/`)
+      ? "receive-goods"
+      : pathname === warehouseOverviewHref || pathname.startsWith(`${warehouseOverviewHref}/`)
+        ? "warehouse-overview"
+        : pathname === stockWarehousesHref || pathname.startsWith(`${stockWarehousesHref}/`)
           ? "warehouses"
           : "stock-levels";
-
-  const inventoryItemClass = isInventoryRoute
-    ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
-    : "text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg";
   const activeDocumentsKey = !isDocumentsRoute
     ? ""
     : pathname === documentsPendingHref
@@ -316,101 +416,31 @@ export function UserWorkspaceSidebar({
           );
         })}
 
-        <div className="space-y-1">
-          <div
-            className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
-              inventoryItemClass
-            } ${collapsed ? "justify-center px-2" : ""}`}
-          >
-            <Link
-              className={`flex min-w-0 flex-1 items-center gap-3 ${collapsed ? "justify-center" : ""}`}
-              href={warehouseOverviewHref}
-            >
-              <span
-                className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
-                  isInventoryRoute
-                    ? "bg-white/15 text-white"
-                    : "bg-violet-900/60 text-violet-300"
-                }`}
-              >
-                <Boxes className="h-4 w-4" />
-              </span>
-              {!collapsed ? (
-                <span className="truncate">{labels.inventory}</span>
-              ) : null}
-            </Link>
-            {!collapsed ? (
-              <button
-                aria-expanded={inventoryExpanded}
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                  isInventoryRoute
-                    ? "text-white hover:bg-white/10"
-                    : "text-violet-400 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
-                }`}
-                onClick={() => setManualInventoryExpanded((current) => !current)}
-                type="button"
-              >
-                <ChevronDown
-                  aria-hidden="true"
-                  className={`h-4 w-4 transition-transform duration-200 ${inventoryExpanded ? "rotate-180" : ""}`}
-                />
-              </button>
-            ) : null}
-          </div>
+        {/* Products group (master data) */}
+        <CollapsibleNavGroup
+          collapsed={collapsed}
+          baseHref={stockBaseHref}
+          icon={<Package className="h-4 w-4" />}
+          label={labels.products}
+          active={isProductsRoute}
+          expanded={productsExpanded}
+          onToggle={() => setManualProductsExpanded((current) => !current)}
+          items={productsItems}
+          activeKey={activeProductsKey}
+        />
 
-          {!collapsed ? (
-            <div
-              className={`grid overflow-hidden transition-[grid-template-rows,opacity] duration-200 ease-out ${
-                inventoryExpanded
-                  ? "grid-rows-[1fr] opacity-100"
-                  : "grid-rows-[0fr] opacity-0"
-              }`}
-            >
-              <div className="min-h-0">
-                <div className="space-y-1 pt-1 pl-6">
-                  {inventoryItems.map((item) => {
-                    const isActive = activeInventoryKey === item.key;
-                    const itemIcon =
-                      item.key === "warehouse-overview" ? (
-                        <LayoutDashboard className="h-3.5 w-3.5" />
-                      ) : item.key === "receive-goods" ? (
-                        <PackagePlus className="h-3.5 w-3.5" />
-                      ) : item.key === "categories" ? (
-                        <Tags className="h-3.5 w-3.5" />
-                      ) : item.key === "warehouses" ? (
-                        <Warehouse className="h-3.5 w-3.5" />
-                      ) : (
-                        <Layers3 className="h-3.5 w-3.5" />
-                      );
-
-                    return (
-                      <Link
-                        key={item.key}
-                        className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
-                          isActive
-                            ? "bg-violet-800/80 font-semibold text-violet-200"
-                            : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
-                        }`}
-                        href={item.href}
-                      >
-                        <span
-                          className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
-                            isActive
-                              ? "bg-violet-700 text-violet-200"
-                              : "bg-violet-900/60 text-violet-400"
-                          }`}
-                        >
-                          {itemIcon}
-                        </span>
-                        <span>{item.label}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
+        {/* Stock / Inventory group (quantities) */}
+        <CollapsibleNavGroup
+          collapsed={collapsed}
+          baseHref={inventoryLevelsHref}
+          icon={<Boxes className="h-4 w-4" />}
+          label={labels.inventory}
+          active={isStockRoute}
+          expanded={stockExpanded}
+          onToggle={() => setManualStockExpanded((current) => !current)}
+          items={stockItems}
+          activeKey={activeStockKey}
+        />
 
         {/* Purchasing section */}
         <div className="space-y-1">

@@ -7,6 +7,7 @@ import type {
   ManagementDictionary,
   ProductFormLabels,
 } from "@/components/stock/types";
+import { StorageAssignmentCard } from "@/components/stock/storage-assignment-card";
 import type {
   ProductBrand,
   ProductInput,
@@ -307,7 +308,7 @@ function POSPreviewCard({
               {categoryName}
             </span>
           ) : null}
-          <p className="line-clamp-2 font-semibold text-slate-900">
+          <p className="line-clamp-2 font-semibold leading-relaxed text-slate-900">
             {formState.name || <span className="text-slate-300">—</span>}
           </p>
           {formState.sku ? (
@@ -498,14 +499,6 @@ export function ProductFormDrawer({
                     }
                     value={formState.barcode ?? ""}
                   />
-                  <ProductTextInput
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.storageLocationLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, storage_location: value }))
-                    }
-                    value={formState.storage_location}
-                  />
                 </div>
               </div>
             </ProductSection>
@@ -572,6 +565,28 @@ export function ProductFormDrawer({
                   value={formState.description ?? ""}
                 />
               </ProductField>
+            </ProductSection>
+
+            <ProductSection title={formLabels.storageAssignmentSection}>
+              <StorageAssignmentCard
+                value={formState.storage_location ?? ""}
+                onChange={(value) =>
+                  onFormStateChange((current) => ({ ...current, storage_location: value }))
+                }
+                labels={{
+                  hint: formLabels.storageAssignmentHint,
+                  warehouseLabel: formLabels.warehouseLabel,
+                  zoneLabel: formLabels.zoneLabel,
+                  locationLabel: formLabels.storageLocationLabel,
+                  optionalLabel: formLabels.optionalLabel,
+                  placeholder: formLabels.storagePlaceholder,
+                  selectWarehouseFirst: formLabels.storageSelectWarehouseFirst,
+                  noWarehouses: formLabels.storageNoWarehouses,
+                  noLocations: formLabels.storageNoLocations,
+                  currentLabel: formLabels.storageCurrentLabel,
+                  clearLabel: formLabels.storageClearLabel,
+                }}
+              />
             </ProductSection>
 
             {/* Footer actions */}

@@ -101,6 +101,7 @@ const DEFAULT_CATEGORIES_DICT: CategoriesDictionary = {
 export function StockManager({
   dictionary,
   initialSection = "stock-levels",
+  allowStockActions = false,
 }: StockManagerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -410,6 +411,7 @@ function resetProductForm() {
       {!isCategoriesView ? (
         <StockLevelsSection
           dictionary={dictionary}
+          allowStockActions={allowStockActions}
           emptyState={dictionary.emptyState}
           error={error || (productsQueryError instanceof Error ? productsQueryError.message : "")}
           filteredProducts={filteredProducts}

@@ -298,7 +298,7 @@ function SupplierCard({
         <InitialsAvatar name={supplier.name} logoUrl={supplier.logo_url} size="md" />
         <div className="min-w-0 flex-1">
           <div className="mb-0.5 flex items-start justify-between gap-2">
-            <p className={`line-clamp-1 text-sm font-bold leading-tight ${isSelected ? "text-violet-900" : "text-slate-800"}`}>
+            <p className={`line-clamp-1 text-sm font-bold leading-[1.6] ${isSelected ? "text-violet-900" : "text-slate-800"}`}>
               {supplier.name}
             </p>
             <StatusBadge isActive={supplier.is_active} ui={ui} />
@@ -427,7 +427,7 @@ function SupplierDetail({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="truncate text-xl font-bold text-white leading-tight">{supplier.name}</h2>
+                <h2 className="truncate text-xl font-bold text-white leading-normal">{supplier.name}</h2>
                 <p className="mt-0.5 font-mono text-sm text-violet-200">
                   #{supplier.id.substring(0, 8).toUpperCase()}
                 </p>
