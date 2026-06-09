@@ -87,6 +87,12 @@ export type StockManagerDictionary = {
     barcodeHint: string;
     specialPriceLabel: string;
     specialPriceHint: string;
+    initialStockLabel: string;
+    initialStockHint: string;
+    supplierLabel: string;
+    supplierHint: string;
+    supplierPlaceholder: string;
+    supplierEmptyLabel: string;
     titleCreate: string;
     titleEdit: string;
     unitPair: string;
@@ -225,6 +231,7 @@ export type StockManagerDictionary = {
     copied: string;
     location: string;
     noLocation: string;
+    locationUnassigned: string;
     viewDetails: string;
     duplicate: string;
     archive: string;
@@ -413,5 +420,7 @@ export const initialProductFormState: ProductInput = {
   sku: "",
   barcode: "",
   special_price: "",
+  initial_stock: "",
+  supplier_id: "",
   unit_id: "",
 };

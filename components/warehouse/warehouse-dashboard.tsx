@@ -1,693 +1,1164 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  ArrowDownToLine,
   ArrowLeftRight,
   ArrowUpFromLine,
-  Bell,
+  Boxes,
+  ClipboardCheck,
+  Clock3,
   DollarSign,
-  Loader2,
-  Package,
+  PackageCheck,
   PackageOpen,
+  PackageSearch,
+  PackageX,
   RefreshCw,
-  TrendingDown,
-  TrendingUp,
-  Warehouse,
+  ShieldAlert,
+  TriangleAlert,
 } from "lucide-react";
 import {
-  Bar,
   CartesianGrid,
-  Cell,
   ComposedChart,
   Legend,
   Line,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
+  Bar,
 } from "recharts";
 
+import { type Locale } from "@/lib/locale-config";
+import { getCurrentStoreId } from "@/lib/store-storage";
 import { getWarehouseDashboard } from "@/services/warehouse-dashboard";
 import type {
   LowStockAlert,
-  MovementChartPoint,
   RecentActivity,
-  TopSeller,
   WarehouseDashboardData,
-  WarehouseDistribution,
-  WarehouseKPI,
   WarehousePeriod,
 } from "@/types/warehouse-dashboard";
 
-// ── Palette for warehouse donut chart ────────────────────────────────────────
+type CountStatus = "draft" | "counting" | "review" | "completed" | "cancelled";
 
-const WAREHOUSE_COLORS = ["#7C3AED", "#3B82F6", "#10B981", "#F59E0B", "#EC4899", "#6366F1", "#14B8A6"];
+type WarehouseDashboardDictionary = {
+  title: string;
+  subtitle: string;
+  refresh: string;
+  actionCenter: {
+    title: string;
+    subtitle: string;
+    open: string;
+    items: {
+      lowStock: string;
+      outOfStock: string;
+      pendingTransfer: string;
+      pendingCount: string;
+      pendingApproval: string;
+    };
+    helpers: {
+      lowStock: string;
+      outOfStock: string;
+      pendingTransfer: string;
+      pendingCount: string;
+      pendingApproval: string;
+    };
+  };
+  kpi: {
+    inventoryValue: string;
+    availableStock: string;
+    reservedStock: string;
+    damagedStock: string;
+    inTransitStock: string;
+    helpers: {
+      inventoryValue: string;
+      availableStock: string;
+      reservedStock: string;
+      damagedStock: string;
+      inTransitStock: string;
+    };
+  };
+  movement: {
+    title: string;
+    periods: {
+      sevenDays: string;
+      thirtyDays: string;
+      threeMonths: string;
+    };
+    legends: {
+      receive: string;
+      issue: string;
+      transfer: string;
+      total: string;
+    };
+    empty: string;
+  };
+  alerts: {
+    title: string;
+    subtitle: string;
+    critical: string;
+    warning: string;
+    info: string;
+    viewAll: string;
+    noAlerts: string;
+    items: {
+      lowStock: string;
+      pendingTransfer: string;
+      pendingCount: string;
+      pendingApproval: string;
+    };
+    stockLevel: string;
+  };
+  variance: {
+    title: string;
+    viewCount: string;
+    headers: {
+      product: string;
+      systemQty: string;
+      countQty: string;
+      variance: string;
+    };
+    noData: string;
+  };
+  statusDistribution: {
+    title: string;
+    subtitle: string;
+    labels: {
+      available: string;
+      reserved: string;
+      damaged: string;
+      inTransit: string;
+      counting: string;
+    };
+    helpers: {
+      available: string;
+      reserved: string;
+      damaged: string;
+      inTransit: string;
+      counting: string;
+    };
+  };
+  recentActivity: {
+    title: string;
+    subtitle: string;
+    noData: string;
+    reference: string;
+    types: {
+      receive: string;
+      transfer: string;
+      adjustment: string;
+      count: string;
+      approval: string;
+      sale: string;
+      issue: string;
+      return: string;
+    };
+    messages: {
+      receive: string;
+      transfer: string;
+      adjustment: string;
+      count: string;
+      approval: string;
+      sale: string;
+      issue: string;
+      return: string;
+    };
+  };
+  summary: {
+    inventoryValue: string;
+    availableStock: string;
+    reservedStock: string;
+    damagedStock: string;
+    inTransitStock: string;
+    activeAlerts: string;
+  };
+  units: {
+    items: string;
+  };
+};
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+type LocalCountItem = {
+  productId: string;
+  name: string;
+  systemQty: number;
+  counted: number | null;
+  skipped: boolean;
+  varianceReason?: string;
+};
 
-function fmt(value: number) {
-  return `฿${value.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
+type LocalCountSession = {
+  id: string;
+  name: string;
+  status: CountStatus;
+  createdAt: string;
+  completedAt?: string | null;
+  items: LocalCountItem[];
+};
 
-function fmtFull(value: number) {
-  return `฿${value.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function shortDate(iso: string) {
-  const thMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-  const d = new Date(iso);
-  return `${d.getDate()} ${thMonths[d.getMonth()]}`;
-}
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function KpiCard({
-  icon,
-  iconBg,
-  label,
-  value,
-  sub,
-  badge,
-  trend,
-}: {
-  icon: React.ReactNode;
-  iconBg: string;
+type ActionCenterItem = {
+  key: string;
   label: string;
-  value: string;
-  sub?: string;
-  badge?: { text: string; color: string };
-  trend?: { value: number; label: string };
-}) {
-  return (
-    <div className="flex flex-col gap-5 rounded-2xl border border-violet-100 bg-white p-6 shadow-sm md:p-7">
-      <div className="flex items-start justify-between">
-        <span className={`inline-flex h-14 w-14 items-center justify-center rounded-xl ${iconBg}`}>
-          {icon}
-        </span>
-        {badge ? (
-          <span className={`rounded-full px-3 py-1 text-base font-semibold ${badge.color}`}>
-            {badge.text}
-          </span>
-        ) : null}
-        {trend ? (
-          <span
-            className={`flex items-center gap-1.5 text-base font-semibold ${
-              trend.value >= 0 ? "text-emerald-600" : "text-rose-600"
-            }`}
-          >
-            {trend.value >= 0 ? (
-              <TrendingUp className="h-5 w-5" />
-            ) : (
-              <TrendingDown className="h-5 w-5" />
-            )}
-            {trend.value >= 0 ? "+" : ""}
-            {trend.value.toFixed(1)}%
-          </span>
-        ) : null}
-      </div>
-      <div>
-        <p className="text-4xl font-black leading-tight tracking-tight text-slate-800">{value}</p>
-        <p className="mt-1 text-lg font-semibold leading-relaxed text-slate-600">{label}</p>
-        {sub ? <p className="mt-1.5 text-base leading-relaxed text-slate-500">{sub}</p> : null}
-        {trend ? <p className="mt-1.5 text-base leading-relaxed text-slate-500">{trend.label}</p> : null}
-      </div>
-    </div>
-  );
+  value: number;
+  helper: string;
+  href: string;
+  tone: "critical" | "warning" | "info";
+  icon: ReactNode;
+};
+
+type VarianceRow = {
+  key: string;
+  product: string;
+  systemQty: number;
+  countQty: number;
+  variance: number;
+  sessionName: string;
+  absVariance: number;
+};
+
+type StatusRow = {
+  key: string;
+  label: string;
+  value: number;
+  helper: string;
+  tone: string;
+  bar: string;
+};
+
+type TimelineRow = {
+  id: string;
+  kind: "IN" | "OUT" | "SALE" | "TRANSFER" | "ADJUST" | "RETURN" | "COUNT" | "APPROVAL";
+  title: string;
+  detail: string;
+  reference: string;
+  createdAt: string;
+  tone: string;
+  icon: ReactNode;
+};
+
+type WarehouseDashboardProps = {
+  dictionary: WarehouseDashboardDictionary;
+  locale: Locale;
+};
+
+function toLocaleTag(locale: Locale) {
+  return locale === "th" ? "th-TH" : "en-US";
 }
 
-function SectionCard({
-  title,
-  action,
-  children,
-}: {
-  title: React.ReactNode;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col rounded-2xl border border-violet-100 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-violet-50 px-6 py-5 md:px-7 md:py-6">
-        <div className="text-xl font-semibold leading-relaxed text-slate-800">{title}</div>
-        {action ? (
-          <span className="cursor-pointer text-base font-semibold text-violet-600 hover:text-violet-800">
-            {action}
-          </span>
-        ) : null}
-      </div>
-      <div className="flex-1 p-6 md:p-7">{children}</div>
-    </div>
-  );
+function formatCurrency(value: number | null | undefined, locale: Locale) {
+  return new Intl.NumberFormat(toLocaleTag(locale), {
+    style: "currency",
+    currency: "THB",
+    maximumFractionDigits: 0,
+  }).format(Number(value ?? 0));
 }
 
-function ActivityIcon({ type }: { type: string }) {
-  const map: Record<string, { bg: string; icon: React.ReactNode }> = {
-    IN: { bg: "bg-emerald-100", icon: <ArrowDownToLine className="h-5 w-5 text-emerald-600" /> },
-    TRANSFER: { bg: "bg-amber-100", icon: <ArrowLeftRight className="h-5 w-5 text-amber-600" /> },
-    OUT: { bg: "bg-rose-100", icon: <ArrowUpFromLine className="h-5 w-5 text-rose-600" /> },
-    SALE: { bg: "bg-rose-100", icon: <ArrowUpFromLine className="h-5 w-5 text-rose-600" /> },
-    ADJUST: { bg: "bg-blue-100", icon: <RefreshCw className="h-5 w-5 text-blue-600" /> },
-    RETURN: { bg: "bg-emerald-100", icon: <ArrowDownToLine className="h-5 w-5 text-emerald-600" /> },
+function formatNumber(value: number | null | undefined, locale: Locale) {
+  return new Intl.NumberFormat(toLocaleTag(locale)).format(Number(value ?? 0));
+}
+
+function formatShortDate(value: string, locale: Locale) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(toLocaleTag(locale), { day: "numeric", month: "short" }).format(date);
+}
+
+function formatDateTime(value: string, locale: Locale) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(toLocaleTag(locale), {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function variance(item: LocalCountItem) {
+  return item.counted == null ? 0 : item.counted - item.systemQty;
+}
+
+function normalizeSessions(raw: unknown): LocalCountSession[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((session): LocalCountSession | null => {
+      if (!session || typeof session !== "object") return null;
+      const s = session as Record<string, unknown>;
+      const items = Array.isArray(s.items)
+        ? s.items
+            .map((item): LocalCountItem | null => {
+              if (!item || typeof item !== "object") return null;
+              const it = item as Record<string, unknown>;
+              return {
+                productId: String(it.productId ?? ""),
+                name: String(it.name ?? ""),
+                systemQty: Number(it.systemQty ?? 0),
+                counted: typeof it.counted === "number" ? it.counted : null,
+                skipped: Boolean(it.skipped),
+                varianceReason: typeof it.varianceReason === "string" ? it.varianceReason : "",
+              };
+            })
+            .filter((item): item is LocalCountItem => Boolean(item))
+        : [];
+
+      return {
+        id: String(s.id ?? ""),
+        name: String(s.name ?? ""),
+        status: String(s.status ?? "draft") as CountStatus,
+        createdAt: String(s.createdAt ?? new Date().toISOString()),
+        completedAt: typeof s.completedAt === "string" ? s.completedAt : null,
+        items,
+      };
+    })
+    .filter((session): session is LocalCountSession => Boolean(session));
+}
+
+function loadCountSessionsFromStorage(): LocalCountSession[] {
+  if (typeof window === "undefined") return [];
+  const storeId = getCurrentStoreId();
+  if (!storeId) return [];
+
+  try {
+    const raw = window.localStorage.getItem(`pos-count-sessions-${storeId}`);
+    return normalizeSessions(raw ? JSON.parse(raw) : []);
+  } catch {
+    return [];
+  }
+}
+
+function toneClasses(tone: ActionCenterItem["tone"]) {
+  if (tone === "critical") {
+    return {
+      wrapper: "border-rose-200 bg-rose-50/80 text-rose-700 hover:border-rose-300 hover:bg-rose-100/80",
+      icon: "bg-rose-100 text-rose-600",
+      badge: "bg-rose-100 text-rose-700",
+    };
+  }
+  if (tone === "warning") {
+    return {
+      wrapper: "border-amber-200 bg-amber-50/80 text-amber-700 hover:border-amber-300 hover:bg-amber-100/80",
+      icon: "bg-amber-100 text-amber-600",
+      badge: "bg-amber-100 text-amber-700",
+    };
+  }
+  return {
+    wrapper: "border-violet-200 bg-violet-50/80 text-violet-700 hover:border-violet-300 hover:bg-violet-100/80",
+    icon: "bg-violet-100 text-violet-600",
+    badge: "bg-violet-100 text-violet-700",
   };
-  const { bg, icon } = map[type] ?? map.ADJUST;
-  return (
-    <span className={`inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${bg}`}>
-      {icon}
-    </span>
-  );
 }
 
-function ChartTooltip({ active, payload, label }: {
-  active?: boolean;
-  payload?: Array<{ name: string; value: number; color: string }>;
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
-  const labelMap: Record<string, string> = {
-    receive_value: "รับเข้า",
-    issue_value: "จ่ายออก",
-    transfer_value: "โอน",
-    total_value: "มูลค่ารวม",
-  };
+function SectionCard({ title, action, children }: { title: ReactNode; action?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-violet-100 bg-white p-5 shadow-lg text-base">
-      <p className="mb-2 text-base font-semibold text-slate-700">{label}</p>
-      {payload.map((entry) => (
-        <div key={entry.name} className="flex items-center justify-between gap-6">
-          <span className="flex items-center gap-2 text-base text-slate-500">
-            <span className="inline-block h-3 w-3 rounded-full" style={{ background: entry.color }} />
-            {labelMap[entry.name] ?? entry.name}
-          </span>
-          <span className="text-base font-semibold text-slate-800">{fmt(entry.value)}</span>
+    <section className="rounded-2xl border border-violet-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-violet-50 px-5 py-4 md:px-6">
+        <div>
+          <div className="text-lg font-semibold text-slate-800">{title}</div>
         </div>
-      ))}
-    </div>
+        {action ? <div className="shrink-0 text-sm font-semibold text-violet-600">{action}</div> : null}
+      </div>
+      <div className="p-5 md:p-6">{children}</div>
+    </section>
   );
-}
-
-// ── Skeleton ──────────────────────────────────────────────────────────────────
-
-function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded-lg bg-violet-100/60 ${className}`} />;
 }
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-7">
-      <div>
-        <Skeleton className="h-9 w-80" />
-        <Skeleton className="mt-3 h-6 w-[32rem]" />
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <div className="h-8 w-72 animate-pulse rounded-lg bg-violet-100" />
+        <div className="h-5 w-[32rem] animate-pulse rounded-lg bg-violet-100" />
       </div>
-      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-44 rounded-2xl" />
+      <div className="h-24 animate-pulse rounded-2xl bg-violet-100" />
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div key={index} className="h-32 animate-pulse rounded-2xl bg-violet-100" />
         ))}
       </div>
-      <div className="grid grid-cols-1 gap-7 lg:grid-cols-5">
-        <Skeleton className="h-96 lg:col-span-3" />
-        <Skeleton className="h-96 lg:col-span-2" />
-      </div>
-      <div className="grid grid-cols-1 gap-7 lg:grid-cols-12">
-        <Skeleton className="h-72 lg:col-span-5" />
-        <Skeleton className="h-72 lg:col-span-4" />
-        <Skeleton className="h-72 lg:col-span-3" />
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <div className="h-80 animate-pulse rounded-2xl bg-violet-100" />
+        <div className="h-80 animate-pulse rounded-2xl bg-violet-100" />
       </div>
     </div>
   );
 }
 
-// ── Section renderers ─────────────────────────────────────────────────────────
-
-function KpiSection({ kpi }: { kpi: WarehouseKPI }) {
-  return (
-    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
-      <KpiCard
-        icon={<DollarSign className="h-7 w-7 text-violet-600" />}
-        iconBg="bg-violet-100"
-        label="มูลค่าสินค้าคงเหลือ"
-        value={fmt(kpi.stock_value)}
-        trend={{ value: kpi.stock_value_change_pct, label: "เทียบ 30 วันก่อน" }}
-      />
-      <KpiCard
-        icon={<Package className="h-7 w-7 text-teal-600" />}
-        iconBg="bg-teal-100"
-        label="จำนวน SKU ทั้งหมด"
-        value={`${kpi.total_skus.toLocaleString()} รายการ`}
-        badge={
-          kpi.low_stock_count > 0
-            ? { text: `${kpi.low_stock_count} ใกล้หมด`, color: "bg-amber-100 text-amber-700" }
-            : undefined
-        }
-      />
-      <KpiCard
-        icon={<ArrowDownToLine className="h-7 w-7 text-emerald-600" />}
-        iconBg="bg-emerald-100"
-        label="รับเข้าวันนี้"
-        value={`${kpi.received_today_qty.toLocaleString()} รายการ`}
-        sub={`มูลค่า ${fmt(kpi.received_today_value)}`}
-      />
-      <KpiCard
-        icon={<ArrowUpFromLine className="h-7 w-7 text-rose-600" />}
-        iconBg="bg-rose-100"
-        label="จ่ายออกวันนี้"
-        value={`${kpi.issued_today_qty.toLocaleString()} รายการ`}
-        sub={`มูลค่า ${fmt(kpi.issued_today_value)}`}
-      />
-      <KpiCard
-        icon={<ArrowLeftRight className="h-7 w-7 text-orange-600" />}
-        iconBg="bg-orange-100"
-        label="โอนย้ายวันนี้"
-        value={`${kpi.transferred_today_qty.toLocaleString()} รายการ`}
-        sub={`มูลค่า ${fmt(kpi.transferred_today_value)}`}
-      />
-    </div>
-  );
-}
-
-function MovementChartSection({
-  chart,
-  period,
-  onPeriodChange,
+function CompactActionCenter({
+  items,
+  title,
+  subtitle,
+  openLabel,
+  locale,
 }: {
-  chart: MovementChartPoint[];
-  period: WarehousePeriod;
-  onPeriodChange: (p: WarehousePeriod) => void;
+  items: ActionCenterItem[];
+  title: string;
+  subtitle: string;
+  openLabel: string;
+  locale: Locale;
 }) {
-  const data = chart.map((p) => ({ ...p, date: shortDate(p.date) }));
   return (
-    <SectionCard
-      title="การเคลื่อนไหวสินค้า"
-      action={
-        <div className="flex gap-1">
-          {(["7d", "30d", "3m"] as WarehousePeriod[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => onPeriodChange(p)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
-                period === p ? "bg-violet-600 text-white" : "text-violet-600 hover:bg-violet-50"
-              }`}
-              type="button"
-            >
-              {p === "7d" ? "7 วัน" : p === "30d" ? "30 วัน" : "3 เดือน"}
-            </button>
-          ))}
+    <section className="rounded-2xl border border-violet-100 bg-white px-4 py-4 shadow-sm md:px-5 md:py-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-slate-900">
+            <ShieldAlert className="h-4.5 w-4.5 text-violet-600" />
+            <h2 className="text-base font-semibold">{title}</h2>
+          </div>
+          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         </div>
-      }
-    >
-      {data.length === 0 ? (
-        <div className="flex h-60 items-center justify-center text-base text-slate-400">
-          ไม่มีข้อมูลการเคลื่อนไหวในช่วงนี้
-        </div>
-      ) : (
-        <ResponsiveContainer width="100%" height={280}>
-          <ComposedChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0eaff" />
-            <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-            <YAxis
-              yAxisId="left"
-              tick={{ fontSize: 11, fill: "#94a3b8" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v: number) => `฿${(v / 1000).toFixed(0)}k`}
-              width={52}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              tick={{ fontSize: 11, fill: "#94a3b8" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v: number) => `฿${(v / 1000).toFixed(0)}k`}
-              width={52}
-            />
-            <Tooltip content={<ChartTooltip />} />
-            <Legend
-              iconType="circle"
-              iconSize={8}
-              formatter={(value: string) => {
-                const map: Record<string, string> = {
-                  receive_value: "รับเข้า",
-                  issue_value: "จ่ายออก",
-                  transfer_value: "โอน",
-                  total_value: "มูลค่ารวม",
-                };
-                return <span className="text-xs text-slate-500">{map[value] ?? value}</span>;
-              }}
-            />
-            <Bar yAxisId="left" dataKey="receive_value" fill="#7C3AED" radius={[3, 3, 0, 0]} maxBarSize={18} />
-            <Bar yAxisId="left" dataKey="issue_value" fill="#F472B6" radius={[3, 3, 0, 0]} maxBarSize={18} />
-            <Bar yAxisId="left" dataKey="transfer_value" fill="#FB923C" radius={[3, 3, 0, 0]} maxBarSize={18} />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="total_value"
-              stroke="#7C3AED"
-              strokeWidth={2}
-              dot={{ r: 3, fill: "#7C3AED" }}
-              strokeDasharray="5 3"
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      )}
-    </SectionCard>
-  );
-}
-
-function LowStockSection({ alerts }: { alerts: LowStockAlert[] }) {
-  return (
-    <SectionCard
-      title={
-        <span className="flex items-center gap-2">
-          <Bell className="h-5 w-5 text-amber-500" />
-          แจ้งเตือน ({alerts.length})
-        </span>
-      }
-      action="ดูทั้งหมด ›"
-    >
-      {alerts.length === 0 ? (
-        <p className="text-base text-slate-400">ไม่มีสินค้าใกล้หมดสต็อก</p>
-      ) : (
-        <div className="space-y-3">
-          {alerts.map((item) => {
-            const isCritical = item.alert_level === "critical";
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          {items.map((item) => {
+            const tone = toneClasses(item.tone);
             return (
-              <div
-                key={item.product_id}
-                className="flex items-center gap-3 rounded-lg border border-violet-50 bg-violet-50/30 px-4 py-3"
+              <Link
+                key={item.key}
+                href={item.href}
+                className={`flex min-h-11 shrink-0 items-center gap-3 rounded-xl border px-3 py-2 transition ${tone.wrapper}`}
               >
-                <span
-                  className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ${
-                    isCritical ? "bg-rose-100" : "bg-amber-100"
-                  }`}
-                >
-                  <AlertTriangle className={`h-5 w-5 ${isCritical ? "text-rose-600" : "text-amber-600"}`} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold text-slate-800">{item.name}</p>
-                  <p className="text-sm text-slate-500">
-                    คงเหลือ {item.total_stock} / {item.min_stock} {item.unit}
-                  </p>
+                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${tone.icon}`}>{item.icon}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-800">{item.label}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${tone.badge}`}>{formatNumber(item.value, locale)}</span>
+                  </div>
+                  <div className="text-xs text-slate-500">{item.helper}</div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span
-                    className={`rounded-full px-3 py-0.5 text-sm font-bold ${
-                      isCritical ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
-                    }`}
-                  >
-                    {isCritical ? "น้อยมาก" : "ใกล้หมด"}
-                  </span>
-                  <button className="text-sm font-medium text-violet-600 hover:text-violet-800" type="button">
-                    เติมสต็อก
-                  </button>
-                </div>
-              </div>
+                <span className="ml-1 text-xs font-semibold text-violet-600">{openLabel}</span>
+              </Link>
             );
           })}
         </div>
-      )}
+      </div>
+    </section>
+  );
+}
+
+function KpiCard({ icon, label, value, helper, iconTone }: { icon: ReactNode; label: string; value: string; helper: string; iconTone: string }) {
+  return (
+    <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm md:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconTone}`}>{icon}</span>
+        <div className="text-right">
+          <div className="text-2xl font-black leading-tight tracking-tight text-slate-900 md:text-[1.75rem]">{value}</div>
+        </div>
+      </div>
+      <div className="mt-3">
+        <div className="text-sm font-semibold text-slate-800 md:text-base">{label}</div>
+        <div className="mt-1 text-xs leading-5 text-slate-500 md:text-sm">{helper}</div>
+      </div>
+    </div>
+  );
+}
+
+function AlertsSection({
+  alerts,
+  locale,
+  t,
+}: {
+  alerts: Array<{ id: string; severity: "critical" | "warning" | "info"; title: string; detail: string; href: string }>;
+  locale: Locale;
+  t: WarehouseDashboardDictionary["alerts"];
+}) {
+  const criticalCount = alerts.filter((alert) => alert.severity === "critical").length;
+  const warningCount = alerts.filter((alert) => alert.severity === "warning").length;
+  const infoCount = alerts.filter((alert) => alert.severity === "info").length;
+  const topAlerts = alerts.slice(0, 3);
+
+  const severityBadge = (severity: "critical" | "warning" | "info") => {
+    if (severity === "critical") return "bg-rose-100 text-rose-700";
+    if (severity === "warning") return "bg-amber-100 text-amber-700";
+    return "bg-violet-100 text-violet-700";
+  };
+
+  const severityLabel = (severity: "critical" | "warning" | "info") => {
+    if (severity === "critical") return t.critical;
+    if (severity === "warning") return t.warning;
+    return t.info;
+  };
+
+  return (
+    <SectionCard
+      title={t.title}
+      action={<Link href={`/${locale}/inventory`} className="text-sm font-semibold text-violet-600">{t.viewAll}</Link>}
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">{t.subtitle}</p>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: t.critical, value: criticalCount, tone: "bg-rose-50 text-rose-700" },
+            { label: t.warning, value: warningCount, tone: "bg-amber-50 text-amber-700" },
+            { label: t.info, value: infoCount, tone: "bg-violet-50 text-violet-700" },
+          ].map((item) => (
+            <div key={item.label} className={`rounded-xl px-3 py-2 ${item.tone}`}>
+              <div className="text-xs font-semibold uppercase tracking-wide">{item.label}</div>
+              <div className="mt-1 text-xl font-black">{formatNumber(item.value, locale)}</div>
+            </div>
+          ))}
+        </div>
+
+        {topAlerts.length ? (
+          <div className="space-y-2.5">
+            {topAlerts.map((alert) => (
+              <Link key={alert.id} href={alert.href} className="block rounded-xl border border-violet-100 px-3 py-3 transition hover:bg-violet-50">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-slate-800">{alert.title}</div>
+                    <div className="mt-1 text-xs leading-5 text-slate-500">{alert.detail}</div>
+                  </div>
+                  <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${severityBadge(alert.severity)}`}>
+                    {severityLabel(alert.severity)}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-5 text-sm text-slate-500">
+            {t.noAlerts}
+          </div>
+        )}
+      </div>
     </SectionCard>
   );
 }
 
-function TopSellersSection({ sellers }: { sellers: TopSeller[] }) {
+function VarianceSection({ rows, locale, t }: { rows: VarianceRow[]; locale: Locale; t: WarehouseDashboardDictionary["variance"] }) {
   return (
-    <SectionCard title="สินค้าขายดี (Top 5)" action="ดูรายงาน ›">
-      {sellers.length === 0 ? (
-        <p className="text-base text-slate-400">ไม่มีข้อมูลการขายในช่วงนี้</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-base">
-            <thead>
-              <tr className="border-b border-violet-50 text-sm font-semibold uppercase tracking-wide text-slate-400">
-                <th className="pb-3 text-left">#</th>
-                <th className="pb-3 text-left">สินค้า</th>
-                <th className="pb-3 text-right">วันนี้</th>
-                <th className="pb-3 text-right">7 วัน</th>
-                <th className="pb-3 text-right">มูลค่า</th>
-                <th className="pb-3 text-right">Trend</th>
+    <SectionCard title={t.title} action={<Link href={`/${locale}/inventory/counts`} className="text-sm font-semibold text-violet-600">{t.viewCount}</Link>}>
+      {rows.length ? (
+        <div className="overflow-hidden rounded-xl border border-violet-100">
+          <table className="min-w-full divide-y divide-violet-100 text-sm">
+            <thead className="bg-violet-50/70 text-slate-600">
+              <tr>
+                <th className="px-4 py-3 text-left font-semibold">{t.headers.product}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.headers.systemQty}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.headers.countQty}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.headers.variance}</th>
               </tr>
             </thead>
-            <tbody>
-              {sellers.map((row) => (
-                <tr key={row.product_id} className="border-b border-violet-50/60 last:border-0">
-                  <td className="py-3 pr-2 font-bold text-violet-400">{row.rank}</td>
-                  <td className="py-3 font-medium text-slate-800">{row.name}</td>
-                  <td className="py-3 text-right text-slate-600">
-                    {row.today_qty} {row.unit}
+            <tbody className="divide-y divide-violet-50 bg-white">
+              {rows.map((row) => (
+                <tr key={row.key}>
+                  <td className="px-4 py-3">
+                    <div className="font-semibold text-slate-800">{row.product}</div>
+                    <div className="text-xs text-slate-500">{row.sessionName}</div>
                   </td>
-                  <td className="py-3 text-right text-slate-500">
-                    {row.week_qty} {row.unit}
-                  </td>
-                  <td className="py-3 text-right font-semibold text-slate-700">
-                    {fmtFull(row.today_value)}
-                  </td>
-                  <td className="py-3 text-right">
-                    <span
-                      className={`flex items-center justify-end gap-0.5 text-sm font-bold ${
-                        row.trend_pct >= 0 ? "text-emerald-600" : "text-rose-600"
-                      }`}
-                    >
-                      {row.trend_pct >= 0 ? (
-                        <TrendingUp className="h-4 w-4" />
-                      ) : (
-                        <TrendingDown className="h-4 w-4" />
-                      )}
-                      {row.trend_pct >= 0 ? "+" : ""}
-                      {row.trend_pct.toFixed(1)}%
-                    </span>
+                  <td className="px-4 py-3 text-right text-slate-600">{formatNumber(row.systemQty, locale)}</td>
+                  <td className="px-4 py-3 text-right text-slate-600">{formatNumber(row.countQty, locale)}</td>
+                  <td className={`px-4 py-3 text-right font-bold ${row.variance < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                    {row.variance > 0 ? "+" : ""}
+                    {formatNumber(row.variance, locale)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
-    </SectionCard>
-  );
-}
-
-function WarehouseDonutSection({ distribution }: { distribution: WarehouseDistribution[] }) {
-  const total = distribution.reduce((s, w) => s + w.total_value, 0);
-  return (
-    <SectionCard
-      title={
-        <span className="flex items-center gap-2">
-          <Warehouse className="h-5 w-5 text-violet-500" />
-          การกระจายสินค้าตามคลัง
-        </span>
-      }
-      action="ดูทั้งหมด ›"
-    >
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative">
-          <PieChart width={180} height={180}>
-            <Pie
-              data={distribution.length > 0 ? distribution : [{ name: "ว่าง", total_value: 1 }]}
-              cx={85}
-              cy={85}
-              innerRadius={54}
-              outerRadius={80}
-              paddingAngle={2}
-              dataKey="total_value"
-              strokeWidth={0}
-            >
-              {distribution.map((_, i) => (
-                <Cell key={i} fill={distribution[i].total_value > 0 ? WAREHOUSE_COLORS[i % WAREHOUSE_COLORS.length] : "#e5e7eb"} />
-              ))}
-              {distribution.length === 0 && <Cell fill="#e5e7eb" />}
-            </Pie>
-          </PieChart>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-xl font-black text-slate-800">{distribution.length}</p>
-            <p className="text-xs text-slate-500">คลัง</p>
-          </div>
-        </div>
-
-        <div className="w-full space-y-2">
-          {distribution.map((wh, i) => (
-            <div key={wh.warehouse_id}>
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-1.5 text-slate-600">
-                  <span
-                    className="inline-block h-3 w-3 rounded-full"
-                    style={{ background: wh.total_value > 0 ? WAREHOUSE_COLORS[i % WAREHOUSE_COLORS.length] : "#d1d5db" }}
-                  />
-                  {wh.name}
-                </span>
-                <span className="font-semibold text-slate-700">
-                  {wh.total_value > 0 ? fmt(wh.total_value) : "—"}
-                </span>
-              </div>
-              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-violet-100/50">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${total > 0 ? (wh.total_value / total) * 100 : 0}%`,
-                    background: wh.total_value > 0 ? WAREHOUSE_COLORS[i % WAREHOUSE_COLORS.length] : "transparent",
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-function ActivitySection({ activity }: { activity: RecentActivity[] }) {
-  return (
-    <SectionCard title="กิจกรรมล่าสุด" action="ดูทั้งหมด ›">
-      {activity.length === 0 ? (
-        <p className="text-base text-slate-400">ยังไม่มีกิจกรรม</p>
       ) : (
-        <div className="space-y-3">
-          {activity.slice(0, 8).map((item) => (
-            <div key={item.id} className="flex items-start gap-3">
-              <ActivityIcon type={item.type} />
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium leading-snug text-slate-700">{item.description}</p>
-                {item.reference_id ? (
-                  <p className="mt-0.5 font-mono text-xs text-slate-400">{item.reference_id}</p>
-                ) : null}
-              </div>
-              <span className="shrink-0 text-xs text-slate-400">{item.time}</span>
-            </div>
-          ))}
+        <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-5 text-sm text-slate-500">
+          {t.noData}
         </div>
       )}
     </SectionCard>
   );
 }
 
-function SummaryBar({ kpi }: { kpi: WarehouseKPI }) {
+function StatusDistributionSection({ rows, locale, t }: { rows: StatusRow[]; locale: Locale; t: WarehouseDashboardDictionary["statusDistribution"] }) {
+  const maxValue = Math.max(...rows.map((row) => row.value), 1);
+
   return (
-    <div className="rounded-xl border border-violet-100 bg-violet-50/40 px-6 py-5">
-      <div className="flex flex-wrap items-center gap-6 text-base">
-        <div className="flex items-center gap-2">
-          <PackageOpen className="h-5 w-5 text-violet-500" />
-          <span className="text-slate-500">มูลค่ารวมทุกคลัง:</span>
-          <span className="font-bold text-slate-800">{fmt(kpi.stock_value)}</span>
+    <SectionCard title={t.title}>
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">{t.subtitle}</p>
+        <div className="space-y-3">
+          {rows.map((row) => {
+            const width = `${Math.max((row.value / maxValue) * 100, row.value > 0 ? 12 : 0)}%`;
+            return (
+              <div key={row.key} className="rounded-xl border border-violet-100 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-slate-800">{row.label}</div>
+                    <div className="mt-1 text-xs leading-5 text-slate-500">{row.helper}</div>
+                  </div>
+                  <div className="text-lg font-black text-slate-900">{formatNumber(row.value, locale)}</div>
+                </div>
+                <div className="mt-3 h-2 rounded-full bg-slate-100">
+                  <div className={`h-2 rounded-full ${row.bar}`} style={{ width }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
-        <div className="h-5 w-px bg-violet-200" />
-        <div className="flex items-center gap-2">
-          <span className="text-slate-500">รับเข้าวันนี้:</span>
-          <span className="font-bold text-emerald-700">{fmt(kpi.received_today_value)}</span>
-        </div>
-        <div className="h-5 w-px bg-violet-200" />
-        <div className="flex items-center gap-2">
-          <span className="text-slate-500">จ่ายออกวันนี้:</span>
-          <span className="font-bold text-rose-700">{fmt(kpi.issued_today_value)}</span>
-        </div>
-        {kpi.low_stock_count > 0 ? (
-          <>
-            <div className="h-5 w-px bg-violet-200" />
-            <div className="flex items-center gap-2">
-              <span className="text-slate-500">แจ้งเตือนที่ต้องดูแล:</span>
-              <span className="font-bold text-amber-700">{kpi.low_stock_count} รายการ</span>
-            </div>
-          </>
-        ) : null}
       </div>
-    </div>
+    </SectionCard>
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+function RecentActivitySection({ rows, locale, t }: { rows: TimelineRow[]; locale: Locale; t: WarehouseDashboardDictionary["recentActivity"] }) {
+  return (
+    <SectionCard title={t.title}>
+      <div className="space-y-4">
+        <p className="text-sm text-slate-500">{t.subtitle}</p>
+        {rows.length ? (
+          <div className="space-y-4">
+            {rows.map((row, index) => (
+              <div key={row.id} className="relative flex gap-3">
+                {index !== rows.length - 1 ? <div className="absolute left-[18px] top-10 h-[calc(100%-12px)] w-px bg-violet-100" /> : null}
+                <div className={`relative z-10 mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${row.tone}`}>
+                  {row.icon}
+                </div>
+                <div className="min-w-0 flex-1 rounded-xl border border-violet-100 px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-slate-800">{row.title}</div>
+                      <div className="mt-1 text-xs leading-5 text-slate-500">{row.detail}</div>
+                      <div className="mt-1 text-xs text-slate-400">{t.reference}: {row.reference || "-"}</div>
+                    </div>
+                    <div className="shrink-0 text-xs font-medium text-slate-400">{formatDateTime(row.createdAt, locale)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-5 text-sm text-slate-500">
+            {t.noData}
+          </div>
+        )}
+      </div>
+    </SectionCard>
+  );
+}
 
-export function WarehouseDashboard() {
+function SummaryFooter({
+  items,
+  locale,
+}: {
+  items: Array<{ label: string; value: string | number }>;
+  locale: Locale;
+}) {
+  return (
+    <section className="rounded-2xl border border-violet-100 bg-white px-4 py-4 shadow-sm md:px-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
+        {items.map((item) => (
+          <div key={item.label} className="rounded-xl bg-violet-50/70 px-4 py-3">
+            <div className="text-xs font-semibold uppercase tracking-wide text-violet-500">{item.label}</div>
+            <div className="mt-1 text-lg font-black text-slate-900">
+              {typeof item.value === "number" ? formatNumber(item.value, locale) : item.value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function buildAlertRows(
+  lowStockAlerts: LowStockAlert[],
+  pendingCounts: number,
+  pendingApprovals: number,
+  pendingTransfers: number,
+  locale: Locale,
+  t: WarehouseDashboardDictionary["alerts"],
+) {
+  const rows: Array<{ id: string; severity: "critical" | "warning" | "info"; title: string; detail: string; href: string }> = lowStockAlerts.map((alert) => ({
+    id: alert.product_id,
+    severity: alert.alert_level === "critical" ? "critical" : "warning",
+    title: alert.name,
+    detail: t.stockLevel
+      .replace("{current}", formatNumber(alert.total_stock, locale))
+      .replace("{min}", formatNumber(alert.min_stock, locale))
+      .replace("{unit}", locale === "th" ? (alert.unit || "") : ""),
+    href: `/${locale}/inventory`,
+  }));
+
+  if (pendingTransfers > 0) {
+    rows.push({
+      id: "pending-transfer",
+      severity: "info",
+      title: t.items.pendingTransfer,
+      detail: formatNumber(pendingTransfers, locale),
+      href: `/${locale}/warehouse/receive`,
+    });
+  }
+
+  if (pendingCounts > 0) {
+    rows.push({
+      id: "pending-count",
+      severity: "info",
+      title: t.items.pendingCount,
+      detail: formatNumber(pendingCounts, locale),
+      href: `/${locale}/inventory/counts`,
+    });
+  }
+
+  if (pendingApprovals > 0) {
+    rows.push({
+      id: "pending-approval",
+      severity: "info",
+      title: t.items.pendingApproval,
+      detail: formatNumber(pendingApprovals, locale),
+      href: `/${locale}/inventory/counts`,
+    });
+  }
+
+  return rows;
+}
+
+function buildTimelineRows(
+  activity: RecentActivity[],
+  countSessions: LocalCountSession[],
+  locale: Locale,
+  t: WarehouseDashboardDictionary["recentActivity"],
+) {
+  const allowed = new Set(["IN", "OUT", "SALE", "TRANSFER", "ADJUST", "RETURN"]);
+
+  const rows: TimelineRow[] = activity
+    .filter((item) => allowed.has(item.type))
+    .map((item) => {
+      const absQty = Math.abs(Number(item.quantity_change ?? 0));
+      const qtyText = locale === "th" ? `${formatNumber(absQty, locale)} ${item.unit || ""}`.trim() : formatNumber(absQty, locale);
+      let title = t.types.adjustment;
+      let detail = t.messages.adjustment.replace("{product}", item.product_name || "-").replace("{qty}", qtyText).replace("{location}", item.location_name || "-");
+      let tone = "bg-violet-100 text-violet-600";
+      let icon: ReactNode = <Boxes className="h-4 w-4" />;
+
+      switch (item.type) {
+        case "IN":
+          title = t.types.receive;
+          detail = t.messages.receive.replace("{product}", item.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (item.location_name || "-") : "location");
+          tone = "bg-emerald-100 text-emerald-600";
+          icon = <ArrowUpFromLine className="h-4 w-4" />;
+          break;
+        case "OUT":
+          title = t.types.issue;
+          detail = t.messages.issue.replace("{product}", item.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (item.location_name || "-") : "location");
+          tone = "bg-amber-100 text-amber-600";
+          icon = <PackageOpen className="h-4 w-4" />;
+          break;
+        case "SALE":
+          title = t.types.sale;
+          detail = t.messages.sale.replace("{product}", item.product_name || "-").replace("{qty}", qtyText);
+          tone = "bg-sky-100 text-sky-600";
+          icon = <PackageCheck className="h-4 w-4" />;
+          break;
+        case "TRANSFER":
+          title = t.types.transfer;
+          detail = t.messages.transfer
+            .replace("{product}", item.product_name || "-")
+            .replace("{qty}", qtyText)
+            .replace("{destination}", locale === "th" ? (item.destination_location_name || item.location_name || "-") : "destination");
+          tone = "bg-fuchsia-100 text-fuchsia-600";
+          icon = <ArrowLeftRight className="h-4 w-4" />;
+          break;
+        case "ADJUST":
+          title = t.types.adjustment;
+          detail = t.messages.adjustment.replace("{product}", item.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (item.location_name || "-") : "location");
+          tone = "bg-violet-100 text-violet-600";
+          icon = <Boxes className="h-4 w-4" />;
+          break;
+        case "RETURN":
+          title = t.types.return;
+          detail = t.messages.return.replace("{product}", item.product_name || "-").replace("{qty}", qtyText);
+          tone = "bg-cyan-100 text-cyan-600";
+          icon = <ArrowUpFromLine className="h-4 w-4" />;
+          break;
+      }
+
+      return {
+        id: item.id,
+        kind: item.type as TimelineRow["kind"],
+        title,
+        detail,
+        reference: item.reference_id,
+        createdAt: item.created_at,
+        tone,
+        icon,
+      };
+    });
+
+  const countRows: TimelineRow[] = countSessions.flatMap((session) => {
+    const output: TimelineRow[] = [];
+
+    if (session.status === "review") {
+      output.push({
+        id: `${session.id}-approval`,
+        kind: "APPROVAL",
+        title: t.types.approval,
+        detail: t.messages.approval.replace("{session}", session.name || session.id),
+        reference: session.id,
+        createdAt: session.createdAt,
+        tone: "bg-amber-100 text-amber-600",
+        icon: <ClipboardCheck className="h-4 w-4" />,
+      });
+    }
+
+    if (session.status === "counting" || session.status === "completed") {
+      output.push({
+        id: `${session.id}-count`,
+        kind: "COUNT",
+        title: t.types.count,
+        detail: t.messages.count.replace("{session}", session.name || session.id),
+        reference: session.id,
+        createdAt: session.completedAt || session.createdAt,
+        tone: "bg-violet-100 text-violet-600",
+        icon: <ClipboardCheck className="h-4 w-4" />,
+      });
+    }
+
+    return output;
+  });
+
+  return [...rows, ...countRows]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 6);
+}
+
+export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardProps) {
+  const t = dictionary;
   const [period, setPeriod] = useState<WarehousePeriod>("7d");
+  const [countSessions] = useState<LocalCountSession[]>(loadCountSessionsFromStorage);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["warehouse-dashboard", period],
     queryFn: async () => {
-      const res = await getWarehouseDashboard(period);
-      return res.data as WarehouseDashboardData;
+      const response = await getWarehouseDashboard(period);
+      return response.data as WarehouseDashboardData;
     },
-    staleTime: 60_000, // 60 s — matches backend KPI TTL
+    staleTime: 60_000,
     refetchInterval: 60_000,
   });
 
-  return (
-    <div className="space-y-7">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-800">แดชบอร์ดคลังสินค้า</h1>
-          <p className="mt-1.5 text-base text-slate-500">
-            ภาพรวมการเคลื่อนไหวสินค้า สต็อกคงเหลือ และการแจ้งเตือน
-          </p>
+  const derived = useMemo(() => {
+    const pendingCountSessions = countSessions.filter((session) => session.status === "draft" || session.status === "counting" || session.status === "review");
+    const pendingApprovalSessions = countSessions.filter((session) => session.status === "review");
+    const countingItems = countSessions
+      .filter((session) => session.status === "counting")
+      .reduce((sum, session) => sum + session.items.length, 0);
+    const damagedQty = countSessions.reduce((sum, session) => {
+      return (
+        sum +
+        session.items.reduce((itemSum, item) => {
+          if ((item.varianceReason || "").toLowerCase().includes("damage")) {
+            return itemSum + Math.abs(variance(item));
+          }
+          return itemSum;
+        }, 0)
+      );
+    }, 0);
+
+    const varianceRows = countSessions
+      .flatMap((session) =>
+        session.items
+          .filter((item) => !item.skipped && item.counted != null && item.counted !== item.systemQty)
+          .map((item) => ({
+            key: `${session.id}-${item.productId}`,
+            product: item.name || item.productId,
+            systemQty: item.systemQty,
+            countQty: item.counted ?? 0,
+            variance: variance(item),
+            sessionName: session.name || session.id,
+            absVariance: Math.abs(variance(item)),
+          })),
+      )
+      .sort((a, b) => b.absVariance - a.absVariance)
+      .slice(0, 5);
+
+    return {
+      pendingCountSessions: pendingCountSessions.length,
+      pendingApprovalSessions: pendingApprovalSessions.length,
+      countingItems,
+      damagedQty,
+      varianceRows,
+    };
+  }, [countSessions]);
+
+  const reservedStock = 0;
+  const availableStock = Number(data?.kpi.available_stock_qty ?? 0);
+  const inventoryValue = Number(data?.kpi.stock_value ?? 0);
+  const outOfStockCount = Number(data?.kpi.out_of_stock_count ?? 0);
+  const lowStockCount = Number(data?.kpi.low_stock_count ?? 0);
+  const inTransitStock = Number(data?.kpi.in_transit_stock_qty ?? 0);
+  const pendingTransfers = Number(data?.kpi.pending_transfer_requests ?? 0);
+  const movementIsEmpty = !data?.movement_chart?.some((point) => (point.issue_value ?? 0) || (point.receive_value ?? 0) || (point.transfer_value ?? 0) || (point.total_value ?? 0));
+
+  const actionItems: ActionCenterItem[] = [
+    {
+      key: "low-stock",
+      label: t.actionCenter.items.lowStock,
+      value: Math.max(lowStockCount - outOfStockCount, 0),
+      helper: t.actionCenter.helpers.lowStock,
+      href: `/${locale}/inventory?stock_status=low_stock`,
+      tone: lowStockCount > outOfStockCount ? "warning" : "info",
+      icon: <PackageSearch className="h-4 w-4" />,
+    },
+    {
+      key: "out-of-stock",
+      label: t.actionCenter.items.outOfStock,
+      value: outOfStockCount,
+      helper: t.actionCenter.helpers.outOfStock,
+      href: `/${locale}/inventory?stock_status=out_of_stock`,
+      tone: outOfStockCount > 0 ? "critical" : "info",
+      icon: <PackageX className="h-4 w-4" />,
+    },
+    {
+      key: "pending-transfer",
+      label: t.actionCenter.items.pendingTransfer,
+      value: pendingTransfers,
+      helper: t.actionCenter.helpers.pendingTransfer,
+      href: `/${locale}/warehouse/receive`,
+      tone: pendingTransfers > 0 ? "info" : "info",
+      icon: <ArrowLeftRight className="h-4 w-4" />,
+    },
+    {
+      key: "pending-count",
+      label: t.actionCenter.items.pendingCount,
+      value: derived.pendingCountSessions,
+      helper: t.actionCenter.helpers.pendingCount,
+      href: `/${locale}/inventory/counts`,
+      tone: derived.pendingCountSessions > 0 ? "warning" : "info",
+      icon: <ClipboardCheck className="h-4 w-4" />,
+    },
+    {
+      key: "pending-approval",
+      label: t.actionCenter.items.pendingApproval,
+      value: derived.pendingApprovalSessions,
+      helper: t.actionCenter.helpers.pendingApproval,
+      href: `/${locale}/inventory/counts`,
+      tone: derived.pendingApprovalSessions > 0 ? "critical" : "info",
+      icon: <AlertTriangle className="h-4 w-4" />,
+    },
+  ];
+
+  const movementData = useMemo(
+    () =>
+      (data?.movement_chart ?? []).map((point) => ({
+        dateLabel: formatShortDate(point.date, locale),
+        receiveValue: point.receive_value,
+        issueValue: point.issue_value,
+        transferValue: point.transfer_value,
+        totalValue: point.total_value,
+      })),
+    [data?.movement_chart, locale],
+  );
+
+  const alertRows = useMemo(
+    () => buildAlertRows(data?.low_stock_alerts ?? [], derived.pendingCountSessions, derived.pendingApprovalSessions, pendingTransfers, locale, t.alerts),
+    [data?.low_stock_alerts, derived.pendingApprovalSessions, derived.pendingCountSessions, locale, pendingTransfers, t.alerts],
+  );
+
+  const statusRows: StatusRow[] = [
+    {
+      key: "available",
+      label: t.statusDistribution.labels.available,
+      value: availableStock,
+      helper: t.statusDistribution.helpers.available,
+      tone: "text-emerald-700",
+      bar: "bg-emerald-500",
+    },
+    {
+      key: "reserved",
+      label: t.statusDistribution.labels.reserved,
+      value: reservedStock,
+      helper: t.statusDistribution.helpers.reserved,
+      tone: "text-amber-700",
+      bar: "bg-amber-500",
+    },
+    {
+      key: "damaged",
+      label: t.statusDistribution.labels.damaged,
+      value: derived.damagedQty,
+      helper: t.statusDistribution.helpers.damaged,
+      tone: "text-rose-700",
+      bar: "bg-rose-500",
+    },
+    {
+      key: "in-transit",
+      label: t.statusDistribution.labels.inTransit,
+      value: inTransitStock,
+      helper: t.statusDistribution.helpers.inTransit,
+      tone: "text-sky-700",
+      bar: "bg-sky-500",
+    },
+    {
+      key: "counting",
+      label: t.statusDistribution.labels.counting,
+      value: derived.countingItems,
+      helper: t.statusDistribution.helpers.counting,
+      tone: "text-violet-700",
+      bar: "bg-violet-500",
+    },
+  ];
+
+  const timelineRows = useMemo(
+    () => buildTimelineRows(data?.recent_activity ?? [], countSessions, locale, t.recentActivity),
+    [countSessions, data?.recent_activity, locale, t.recentActivity],
+  );
+
+  const summaryItems = [
+    { label: t.summary.inventoryValue, value: formatCurrency(inventoryValue, locale) },
+    { label: t.summary.availableStock, value: availableStock },
+    { label: t.summary.reservedStock, value: reservedStock },
+    { label: t.summary.damagedStock, value: derived.damagedQty },
+    { label: t.summary.inTransitStock, value: inTransitStock },
+    { label: t.summary.activeAlerts, value: actionItems.reduce((sum, item) => sum + item.value, 0) },
+  ];
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (isError || !data) {
+    return (
+      <div className="rounded-2xl border border-rose-100 bg-rose-50 p-6 text-rose-700 shadow-sm">
+        <div className="flex items-center gap-3 text-lg font-semibold">
+          <TriangleAlert className="h-5 w-5" />
+          <span>{t.title}</span>
         </div>
-        {!isLoading && (
-          <button
-            onClick={() => refetch()}
-            className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-4 py-2.5 text-sm font-medium text-violet-600 hover:bg-violet-50"
-            type="button"
-          >
-            <RefreshCw className="h-4 w-4" />
-            รีเฟรช
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700"
+        >
+          <RefreshCw className="h-4 w-4" />
+          {t.refresh}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5 pb-6">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-slate-900">{t.title}</h1>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500 md:text-base">{t.subtitle}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50"
+        >
+          <RefreshCw className="h-4 w-4" />
+          {t.refresh}
+        </button>
       </div>
 
-      {isLoading && <DashboardSkeleton />}
+      <CompactActionCenter
+        items={actionItems}
+        title={t.actionCenter.title}
+        subtitle={t.actionCenter.subtitle}
+        openLabel={t.actionCenter.open}
+        locale={locale}
+      />
 
-      {isError && (
-        <div className="flex flex-col items-center gap-4 rounded-xl border border-rose-100 bg-rose-50 py-16 text-center">
-          <p className="text-lg font-semibold text-rose-700">ไม่สามารถโหลดข้อมูลได้</p>
-          <button
-            onClick={() => refetch()}
-            className="rounded-lg bg-rose-600 px-5 py-2.5 text-base font-medium text-white hover:bg-rose-700"
-            type="button"
-          >
-            ลองใหม่
-          </button>
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <KpiCard
+          icon={<DollarSign className="h-5 w-5 text-violet-600" />}
+          iconTone="bg-violet-100"
+          label={t.kpi.inventoryValue}
+          value={formatCurrency(inventoryValue, locale)}
+          helper={t.kpi.helpers.inventoryValue}
+        />
+        <KpiCard
+          icon={<PackageCheck className="h-5 w-5 text-emerald-600" />}
+          iconTone="bg-emerald-100"
+          label={t.kpi.availableStock}
+          value={formatNumber(availableStock, locale)}
+          helper={t.kpi.helpers.availableStock}
+        />
+        <KpiCard
+          icon={<Clock3 className="h-5 w-5 text-amber-600" />}
+          iconTone="bg-amber-100"
+          label={t.kpi.reservedStock}
+          value={formatNumber(reservedStock, locale)}
+          helper={t.kpi.helpers.reservedStock}
+        />
+        <KpiCard
+          icon={<AlertTriangle className="h-5 w-5 text-rose-600" />}
+          iconTone="bg-rose-100"
+          label={t.kpi.damagedStock}
+          value={formatNumber(derived.damagedQty, locale)}
+          helper={t.kpi.helpers.damagedStock}
+        />
+        <KpiCard
+          icon={<ArrowLeftRight className="h-5 w-5 text-sky-600" />}
+          iconTone="bg-sky-100"
+          label={t.kpi.inTransitStock}
+          value={formatNumber(inTransitStock, locale)}
+          helper={t.kpi.helpers.inTransitStock}
+        />
+      </div>
 
-      {data && (
-        <>
-          <KpiSection kpi={data.kpi} />
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
-            <div className="lg:col-span-3">
-              <MovementChartSection
-                chart={data.movement_chart}
-                period={period}
-                onPeriodChange={setPeriod}
-              />
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+        <SectionCard
+          title={t.movement.title}
+          action={
+            <div className="flex items-center gap-2">
+              {[
+                { value: "7d" as WarehousePeriod, label: t.movement.periods.sevenDays },
+                { value: "30d" as WarehousePeriod, label: t.movement.periods.thirtyDays },
+                { value: "3m" as WarehousePeriod, label: t.movement.periods.threeMonths },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setPeriod(option.value)}
+                  className={`min-h-10 rounded-xl px-3 py-2 text-xs font-semibold transition md:text-sm ${
+                    period === option.value ? "bg-violet-600 text-white shadow-sm" : "bg-violet-50 text-violet-700 hover:bg-violet-100"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
-            <div className="lg:col-span-2">
-              <LowStockSection alerts={data.low_stock_alerts} />
-            </div>
+          }
+        >
+          <div className="h-[260px] md:h-[280px]">
+            {movementIsEmpty ? (
+              <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 text-center text-sm text-slate-500">
+                {t.movement.empty}
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={movementData} margin={{ top: 12, right: 8, bottom: 0, left: -16 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ede9fe" />
+                  <XAxis dataKey="dateLabel" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} width={52} />
+                  <Tooltip
+                    formatter={(value, name) => [formatCurrency(Number(value ?? 0), locale), String(name ?? "")]}
+                    labelStyle={{ color: "#334155", fontWeight: 600 }}
+                    contentStyle={{ borderRadius: 16, borderColor: "#ddd6fe" }}
+                  />
+                  <Legend />
+                  <Bar dataKey="receiveValue" name={t.movement.legends.receive} fill="#22c55e" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="issueValue" name={t.movement.legends.issue} fill="#f59e0b" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="transferValue" name={t.movement.legends.transfer} fill="#8b5cf6" radius={[6, 6, 0, 0]} />
+                  <Line type="monotone" dataKey="totalValue" name={t.movement.legends.total} stroke="#2563eb" strokeWidth={3} dot={{ r: 3 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            )}
           </div>
+        </SectionCard>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-5">
-              <TopSellersSection sellers={data.top_sellers} />
-            </div>
-            <div className="lg:col-span-4">
-              <WarehouseDonutSection distribution={data.warehouse_distribution} />
-            </div>
-            <div className="lg:col-span-3">
-              <ActivitySection activity={data.recent_activity} />
-            </div>
-          </div>
+        <AlertsSection alerts={alertRows} locale={locale} t={t.alerts} />
+      </div>
 
-          <SummaryBar kpi={data.kpi} />
-        </>
-      )}
-
-      {isLoading && (
-        <div className="flex items-center justify-center gap-2 text-base text-slate-400">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          กำลังโหลด...
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+        <div className="xl:col-span-5">
+          <VarianceSection rows={derived.varianceRows} locale={locale} t={t.variance} />
         </div>
-      )}
+        <div className="xl:col-span-3">
+          <StatusDistributionSection rows={statusRows} locale={locale} t={t.statusDistribution} />
+        </div>
+        <div className="xl:col-span-4">
+          <RecentActivitySection rows={timelineRows} locale={locale} t={t.recentActivity} />
+        </div>
+      </div>
+
+      <SummaryFooter items={summaryItems} locale={locale} />
     </div>
   );
 }

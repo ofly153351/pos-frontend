@@ -81,6 +81,7 @@ export type ProductInput = {
   cost_price?: string;
   description?: string;
   image?: File | null;
+  initial_stock?: string;
   is_active?: boolean;
   min_stock?: string;
   name: string;
@@ -92,6 +93,7 @@ export type ProductInput = {
   special_price?: string;
   special_price_end_at?: string;
   special_price_start_at?: string;
+  supplier_id?: string;
   unit_id?: string;
 };
 

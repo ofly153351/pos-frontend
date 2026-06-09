@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +23,8 @@ import {
   listProducts,
   updateProduct,
 } from "@/services/products";
+import { adjustStock } from "@/services/stock-movements";
+import { addSupplierProduct, listSuppliers, type Supplier } from "@/services/suppliers";
 import { ApiError } from "@/services/api";
 import { friendlyMessage } from "@/lib/form-errors";
 import { toast } from "@/components/ui/toast";
@@ -205,6 +207,12 @@ export function StockManager({
     barcodeHint: dictionary.form.barcodeHint || dictionary.form.barcodeLabel,
     barcodeLabel: dictionary.form.barcodeLabel || "Barcode",
     specialPriceHint: dictionary.form.specialPriceHint || dictionary.form.specialPriceLabel,
+    initialStockLabel: dictionary.form.initialStockLabel || dictionary.form.quantityLabel || "Initial stock",
+    initialStockHint: dictionary.form.initialStockHint || dictionary.form.quantityHint || dictionary.form.quantityLabel || "Initial stock",
+    supplierLabel: dictionary.form.supplierLabel || "Supplier",
+    supplierHint: dictionary.form.supplierHint || dictionary.form.supplierLabel || "Supplier",
+    supplierPlaceholder: dictionary.form.supplierPlaceholder || "— Select —",
+    supplierEmptyLabel: dictionary.form.supplierEmptyLabel || "No suppliers available",
     unitTypeHint: dictionary.form.unitTypeHint || dictionary.form.unitTypeLabel,
   };
 
@@ -221,6 +229,23 @@ export function StockManager({
     queryFn: async () => { const r = await listProductTypes(); return r.data ?? []; },
     queryKey: ["stock", "product-types"],
   });
+
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
+    enabled: hasMounted,
+    queryFn: async () => { const r = await listSuppliers(); return r.data ?? []; },
+    queryKey: ["stock", "suppliers"],
+  });
+
+  const sortedSupplierOptions = useMemo(
+    () =>
+      [...suppliers]
+        .sort((a, b) => {
+          if (a.is_active !== b.is_active) return a.is_active ? -1 : 1;
+          return a.name.localeCompare(b.name, "th");
+        })
+        .map((supplier) => ({ id: supplier.id, name: supplier.name })),
+    [suppliers],
+  );
 
   const { data: productUnits = [] } = useQuery<ProductUnit[]>({
     enabled: hasMounted,
@@ -295,7 +320,7 @@ function resetProductForm() {
 
   function openCreateModal() {
     setEditingProductId(null);
-    setFormState({ ...initialProductFormState, brand_id: productBrands[0]?.id ?? "", unit_id: productUnits[0]?.id ?? "" });
+    setFormState({ ...initialProductFormState, brand_id: productBrands[0]?.id ?? "", initial_stock: "", supplier_id: "", unit_id: productUnits[0]?.id ?? "" });
     setIsProductModalOpen(true);
   }
 
@@ -330,8 +355,28 @@ function resetProductForm() {
     setError("");
     startTransition(async () => {
       try {
-        if (editingProductId) await updateProduct(editingProductId, formState);
-        else await createProduct(formState);
+        if (editingProductId) {
+          await updateProduct(editingProductId, formState);
+        } else {
+          const created = await createProduct(formState);
+          if (formState.supplier_id) {
+            await addSupplierProduct(formState.supplier_id, {
+              product_id: created.data.id,
+              supplier_price: Number(formState.cost_price || 0),
+              supplier_sku: formState.sku?.trim() || "",
+            });
+          }
+          const initialStock = Number(formState.initial_stock || 0);
+          if (!Number.isNaN(initialStock) && initialStock > 0) {
+            await adjustStock({
+              productId: created.data.id,
+              physicalQty: initialStock,
+              note: formState.storage_location?.trim()
+                ? `Initial stock on create • ${formState.storage_location.trim()}`
+                : "Initial stock on create",
+            });
+          }
+        }
         closeProductModal();
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
       } catch (nextError) {
@@ -389,6 +434,7 @@ function resetProductForm() {
           productBrands={productBrands}
           productTypes={productTypes}
           quickActionLabel={dictionary.quickAction.label}
+          supplierOptions={sortedSupplierOptions}
           unitOptions={productUnits}
         />
       </div>

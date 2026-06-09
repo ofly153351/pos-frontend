@@ -28,6 +28,7 @@ export function StockAdjustDrawer({ product, dict, onClose, onSuccess }: Props) 
 
   useEffect(() => {
     if (!product) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setType("receive"); setQty(0); setReason(""); setReference(""); setStep("edit");
     const id = window.setTimeout(() => qtyRef.current?.focus(), 60);
     return () => window.clearTimeout(id);
@@ -67,7 +68,7 @@ export function StockAdjustDrawer({ product, dict, onClose, onSuccess }: Props) 
         if (type === "receive") {
           await addStock({ items: [{ product_id: product.id, quantity: qty, note }] });
         } else {
-          await adjustStock(product.id, newStock, note);
+          await adjustStock({ productId: product.id, physicalQty: newStock, note });
         }
         toast.success(dict.success);
         onSuccess();

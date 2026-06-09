@@ -59,12 +59,28 @@ export function addStock(input: AddStockInput) {
   );
 }
 
-export function adjustStock(productId: string, physicalQty: number, note?: string) {
+export type AdjustStockInput = {
+  productId: string;
+  physicalQty: number;
+  note?: string;
+  referenceId?: string;
+  movementType?: string;
+  locationId?: string;
+};
+
+export function adjustStock(input: AdjustStockInput) {
   const currentStoreId = ensureStoreId();
   return authorizedApiRequest(
     `/api/stores/${currentStoreId}/stock/adjust`,
     {
-      body: { product_id: productId, physical_quantity: physicalQty, note: note?.trim() || undefined },
+      body: {
+        product_id: input.productId,
+        physical_quantity: input.physicalQty,
+        note: input.note?.trim() || undefined,
+        reference_id: input.referenceId?.trim() || undefined,
+        movement_type: input.movementType?.trim() || undefined,
+        location_id: input.locationId?.trim() || undefined,
+      },
       headers: { "Content-Type": "application/json" },
       method: "POST",
     },

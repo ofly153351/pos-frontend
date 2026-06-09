@@ -31,6 +31,7 @@ type UserWorkspaceLayoutProps = {
     products: string;
     productList: string;
     masterData: string;
+    promotions: string;
     logout: string;
     purchasing: string;
     purchaseOrders: string;
@@ -55,6 +56,7 @@ type UserWorkspaceLayoutProps = {
     customers: string;
     dashboard: string;
     documents: string;
+    promotions?: string;
     sales: string;
     settings: string;
     stock: string;
@@ -102,6 +104,7 @@ export function UserWorkspaceLayout({
     products: shell.products,
     "product-list": shell.productList,
     "master-data": shell.masterData,
+    promotions: shell.promotions,
     stock: shell.inventory,
     "warehouse-overview": shell.warehouseOverview,
     "receive-goods": shell.receiveGoods,
@@ -121,6 +124,7 @@ export function UserWorkspaceLayout({
   };
 
   const title = useMemo(() => {
+    if (pathname.includes("/promotions")) return titles.promotions ?? shell.promotions;
     if (pathname.endsWith("/sales")) return titles.sales;
     if (pathname.includes("/customers")) return titles.customers;
     if (pathname.includes("/documents")) return titles.documents;
@@ -150,6 +154,7 @@ export function UserWorkspaceLayout({
           products: shell.products,
           productList: shell.productList,
           masterData: shell.masterData,
+          promotions: shell.promotions,
           purchasing: shell.purchasing,
           purchaseOrders: shell.purchaseOrders,
           register: shell.register,

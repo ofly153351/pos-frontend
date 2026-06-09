@@ -559,6 +559,7 @@ export function StockLevelsSection({
             outOfStock: dictionary.filters.outOfStockStatus,
             statusActive: dictionary.table.statusActive,
             statusInactive: dictionary.table.statusInactive,
+            locationUnassigned: dictionary.table.locationUnassigned,
             viewAction: dictionary.table.viewAction,
             barcodeAction: dictionary.table.barcodeAction,
             editAction: dictionary.table.editAction,

@@ -29,6 +29,7 @@ type ProductFormDrawerProps = {
   productBrands: ProductBrand[];
   productTypes: ProductType[];
   quickActionLabel: string;
+  supplierOptions: { id: string; name: string }[];
   unitOptions: ProductUnit[];
 };
 
@@ -211,6 +212,58 @@ function ProductSelectField({
   );
 }
 
+function ProductNativeSelectField({
+  badgeText,
+  badgeTone,
+  disabled = false,
+  emptyLabel,
+  label,
+  onChange,
+  options,
+  placeholder,
+  value,
+}: {
+  badgeText?: string;
+  badgeTone?: "optional" | "required";
+  disabled?: boolean;
+  emptyLabel: string;
+  label: string;
+  onChange: (value: string) => void;
+  options: { id: string; name: string }[];
+  placeholder: string;
+  value: string;
+}) {
+  return (
+    <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
+      <div className="relative">
+        <select
+          className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-slate-800 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.value)}
+          value={value}
+        >
+          <option value="">{disabled ? emptyLabel : placeholder}</option>
+          {options.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+    </ProductField>
+  );
+}
+
 function ProductFileField({
   badgeText,
   badgeTone,
@@ -355,6 +408,7 @@ export function ProductFormDrawer({
   productBrands,
   productTypes,
   quickActionLabel,
+  supplierOptions,
   unitOptions,
 }: ProductFormDrawerProps) {
   useEffect(() => {
@@ -474,6 +528,20 @@ export function ProductFormDrawer({
                     options={productBrands.map((b) => ({ id: b.id, name: b.name }))}
                     value={formState.brand_id ?? ""}
                   />
+                  {!isEditing ? (
+                    <ProductNativeSelectField
+                      badgeText={formLabels.optionalLabel}
+                      disabled={supplierOptions.length === 0}
+                      emptyLabel={formLabels.supplierEmptyLabel}
+                      label={formLabels.supplierLabel}
+                      onChange={(value) =>
+                        onFormStateChange((current) => ({ ...current, supplier_id: value }))
+                      }
+                      options={supplierOptions}
+                      placeholder={formLabels.supplierPlaceholder}
+                      value={formState.supplier_id ?? ""}
+                    />
+                  ) : null}
                 </div>
                 <div className="space-y-5">
                   <ProductFileField
@@ -539,6 +607,19 @@ export function ProductFormDrawer({
                   />
                 </div>
                 <div className="space-y-5">
+                  {!isEditing ? (
+                    <ProductTextInput
+                      badgeText={formLabels.optionalLabel}
+                      label={formLabels.initialStockLabel}
+                      min="0"
+                      onChange={(value) =>
+                        onFormStateChange((current) => ({ ...current, initial_stock: value }))
+                      }
+                      step="1"
+                      type="number"
+                      value={formState.initial_stock ?? ""}
+                    />
+                  ) : null}
                   <ProductTextInput
                     badgeText={formLabels.optionalLabel}
                     label={formLabels.minStockLabel}

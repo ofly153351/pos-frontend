@@ -20,6 +20,7 @@ export function StockAdjustModal({ product, onClose, onSuccess }: Props) {
 
   useEffect(() => {
     if (!product) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDelta(0);
     setNote("");
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -42,7 +43,7 @@ export function StockAdjustModal({ product, onClose, onSuccess }: Props) {
     if (delta === 0 || isInvalid || !product) return;
     startTransition(async () => {
       try {
-        await adjustStock(product.id, newStock, note);
+        await adjustStock({ productId: product.id, physicalQty: newStock, note });
         toast.success(`ปรับสตอก ${product.name} เป็น ${newStock} ชิ้น`);
         onSuccess();
         onClose();

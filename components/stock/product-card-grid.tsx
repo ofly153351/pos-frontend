@@ -12,8 +12,12 @@ import type { Product } from "@/types/product";
  * Uses the existing violet design system. Read-only stock display only;
  * stock adjustment is NOT available here (belongs to the Stock module).
  *
- * Layout hierarchy: active status → image → name → sku → tags →
- * stock status → progress bar → price → quantity → storage location → actions.
+ * Layout: fixed vertical zones so cards stay aligned regardless of content length.
+ *   Header (icon + name[2 lines] + sku[1 line] + active badge) → Tags → Stock
+ *   (badge + bar) → Price (price + qty) → Location → Actions (pinned bottom).
+ * Every zone has a locked height; long names clamp instead of pushing lower zones,
+ * and missing tags/location reserve their space instead of collapsing. Combined with
+ * the grid's `auto-rows-fr`, progress bars / prices / action icons line up per row.
  */
 
 export type ProductCardLabels = {
@@ -26,6 +30,7 @@ export type ProductCardLabels = {
   outOfStock: string;
   statusActive: string;
   statusInactive: string;
+  locationUnassigned: string;
   viewAction: string;
   barcodeAction: string;
   editAction: string;
@@ -95,8 +100,9 @@ export function ProductCardGrid({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Denser grid: up to 6 columns on very large screens.
+  // `auto-rows-fr` forces every row to equal height so cards stretch uniformly.
   const gridClass =
-    "grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
+    "grid auto-rows-fr grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6";
 
   if (isPending && products.length === 0) {
     return (
@@ -150,7 +156,7 @@ export function ProductCardGrid({
           return (
             <article
               key={product.id}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
+              className="group flex h-full flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
             >
               {/* Header: small icon left + name/sku right + active badge */}
               <div className="flex items-start gap-3 p-3 pb-2">
@@ -171,14 +177,22 @@ export function ProductCardGrid({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="line-clamp-2 text-sm font-bold leading-[1.6] text-slate-900" title={product.name}>
+                  {/* Name: always reserve exactly 2 lines (leading-1.6 = Thai-safe) so a long
+                      name clamps instead of pushing the stock/price/action zones downward. */}
+                  <h3
+                    className="line-clamp-2 min-h-[2.8rem] text-sm font-bold leading-[1.6] text-slate-900"
+                    title={product.name}
+                  >
                     {product.name}
                   </h3>
-                  {product.sku ? (
-                    <p className="mt-0.5 truncate font-mono text-[11px] text-slate-400" title={product.sku}>
-                      {product.sku}
-                    </p>
-                  ) : null}
+                  {/* SKU: fixed h-4 reserves one line even when the value is empty, so the
+                      header height stays constant whether or not a product has a SKU. */}
+                  <p
+                    className="mt-0.5 h-4 truncate font-mono text-[11px] leading-4 text-slate-400"
+                    title={product.sku ?? ""}
+                  >
+                    {product.sku || " "}
+                  </p>
                 </div>
                 <div className="shrink-0 pt-0.5">
                   {product.is_active ? (
@@ -195,62 +209,67 @@ export function ProductCardGrid({
                 </div>
               </div>
 
-              {/* Body */}
+              {/* Body — every zone below has a locked height so progress bars, price rows
+                  and action icons land at the same Y across every card in a row. */}
               <div className="flex flex-1 flex-col gap-2 px-3 pb-3">
-                {/* Category / brand tags */}
-                {categoryName || brandName ? (
-                  <div className="flex flex-wrap gap-1">
-                    {categoryName ? (
-                      <span className="rounded-md bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
-                        {categoryName}
-                      </span>
-                    ) : null}
-                    {brandName ? (
-                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
-                        {brandName}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {/* Stock status badge + progress bar */}
-                {stock != null ? (
-                  <div className="space-y-1.5">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
-                      {stockLabel}
+                {/* Tags Zone (fixed height — reserves space even when category/brand absent) */}
+                <div className="flex h-6 items-center gap-1 overflow-hidden">
+                  {categoryName ? (
+                    <span className="min-w-0 truncate rounded-md bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
+                      {categoryName}
                     </span>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
-                      <div
-                        className={`h-full rounded-full transition-all ${statusStyle.bar}`}
-                        style={{ width: `${getStockPercent(product)}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                  {brandName ? (
+                    <span className="min-w-0 truncate rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                      {brandName}
+                    </span>
+                  ) : null}
+                </div>
 
-                {/* Price + quantity */}
-                <div className="flex items-end justify-between gap-2 pt-0.5">
-                  <p className="text-lg font-bold leading-none text-violet-700">
+                {/* Stock Zone (fixed height — status badge + progress bar align across cards) */}
+                <div className="min-h-[2.25rem] space-y-1.5">
+                  {stock != null ? (
+                    <>
+                      <span
+                        className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${statusStyle.bg} ${statusStyle.text}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
+                        {stockLabel}
+                      </span>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
+                        <div
+                          className={`h-full rounded-full transition-all ${statusStyle.bar}`}
+                          style={{ width: `${getStockPercent(product)}%` }}
+                        />
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+
+                {/* Price Zone (fixed height — price + quantity aligned on one row) */}
+                <div className="flex h-7 items-end justify-between gap-2">
+                  <p className="truncate text-lg font-bold leading-none text-violet-700">
                     {formatCurrency(Number(product.base_price ?? 0))}
                   </p>
                   {stock != null ? (
-                    <p className="text-xs font-medium text-slate-500">
+                    <p className="shrink-0 text-xs font-medium leading-normal text-slate-500">
                       {labels.stock} {stock}
                       {unit ? ` ${unit}` : ""}
                     </p>
                   ) : null}
                 </div>
 
-                {/* Storage location (optional) */}
-                {location ? (
-                  <p className="flex items-center gap-1 truncate text-[11px] text-slate-400" title={location}>
-                    <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
-                    <span className="truncate">{location}</span>
-                  </p>
-                ) : null}
+                {/* Location Zone (fixed height — real location or dimmed "Unassigned" placeholder;
+                    leading-normal keeps the Thai placeholder from clipping its below-vowels) */}
+                <div className="flex min-h-[1.25rem] items-center gap-1 text-[11px] leading-normal">
+                  <MapPin className="h-3 w-3 shrink-0 text-slate-400" aria-hidden="true" />
+                  <span
+                    className={`truncate ${location ? "text-slate-400" : "text-slate-300"}`}
+                    title={location ?? labels.locationUnassigned}
+                  >
+                    {location ?? labels.locationUnassigned}
+                  </span>
+                </div>
 
                 {/* Actions */}
                 <div className="mt-auto flex items-center justify-end gap-1 border-t border-slate-100 pt-2">

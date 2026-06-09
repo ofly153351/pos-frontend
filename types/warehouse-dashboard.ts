@@ -4,7 +4,11 @@ export type WarehouseKPI = {
   stock_value: number;
   stock_value_change_pct: number;
   total_skus: number;
+  available_stock_qty: number;
   low_stock_count: number;
+  out_of_stock_count: number;
+  in_transit_stock_qty: number;
+  pending_transfer_requests: number;
   received_today_qty: number;
   received_today_value: number;
   issued_today_qty: number;
@@ -56,6 +60,11 @@ export type RecentActivity = {
   reference_id: string;
   time: string;
   created_at: string;
+  product_name: string;
+  unit: string;
+  quantity_change: number;
+  location_name: string;
+  destination_location_name: string;
 };
 
 export type WarehouseDashboardData = {

@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Layers3,
   MapPin,
+  Megaphone,
   Package,
   ClipboardCheck,
   PackagePlus,
@@ -43,6 +44,7 @@ type UserWorkspaceSidebarProps = {
     products: string;
     productList: string;
     masterData: string;
+    promotions: string;
     purchasing: string;
     purchaseOrders: string;
     receiveGoods: string;
@@ -279,6 +281,9 @@ export function UserWorkspaceSidebar({
   }, [shell.station]);
 
 
+  const promotionsHref = `/${locale}/promotions`;
+  const isPromotionsRoute = pathname === promotionsHref || pathname.startsWith(`${promotionsHref}/`);
+
   const navItems = [
     {
       href: `/${locale}/dashboard`,
@@ -286,6 +291,7 @@ export function UserWorkspaceSidebar({
       label: labels.dashboard,
     },
     { href: `/${locale}/sales`, key: "register", label: labels.register },
+    { href: promotionsHref, key: "promotions", label: labels.promotions },
     { href: `/${locale}/customers`, key: "customers", label: labels.customers },
   ];
   const [topNavItems, trailingNavItems] = [navItems.slice(0, 2), navItems.slice(2)];
@@ -357,6 +363,7 @@ export function UserWorkspaceSidebar({
     const iconByKey = {
       dashboard: <LayoutDashboard className={className} />,
       customers: <Users className={className} />,
+      promotions: <Megaphone className={className} />,
       register: <CircleDollarSign className={className} />,
       settings: <Settings2 className={className} />,
     } as const;
