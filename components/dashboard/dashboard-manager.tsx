@@ -5,20 +5,26 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
+  ArrowUpRight,
+  ArrowDownRight,
+  BarChart3,
+  ClipboardCheck,
+  FileText,
+  Gift,
+  Minus,
   Package,
   RefreshCw,
   ShoppingCart,
   SlidersHorizontal,
   Store,
   TrendingUp,
+  Users,
   Wallet,
 } from "lucide-react";
 import { Skeleton, SkeletonStatRow, SkeletonChart } from "@/components/ui/skeleton";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   Pie,
@@ -37,12 +43,27 @@ import type {
   StoreDashboard,
 } from "@/types/dashboard";
 
+// ── Dictionary type ─────────────────────────────────────────────────────────
+
 type DashboardDictionary = {
   actions: {
     newSaleDescription: string;
     newSaleTitle: string;
     stockDescription: string;
     stockTitle: string;
+  };
+  actionCenter: {
+    title: string;
+    lowStock: string;
+    outOfStock: string;
+    negativeStock: string;
+    pendingCounts: string;
+    pendingApprovals: string;
+    critical: string;
+    warning: string;
+    info: string;
+    viewItems: string;
+    noIssues: string;
   };
   cards: {
     lowStockHint: string;
@@ -53,6 +74,15 @@ type DashboardDictionary = {
     salesTodayLabel: string;
   };
   empty: string;
+  emptyStates: {
+    noSales: string;
+    noSalesAction: string;
+    noProducts: string;
+    noStock: string;
+    noStockAction: string;
+    noActivity: string;
+    noPayments: string;
+  };
   filters: {
     apply: string;
     fromLabel: string;
@@ -68,9 +98,107 @@ type DashboardDictionary = {
     toLabel: string;
     topLimitLabel: string;
   };
+  hero: {
+    storeOpen: string;
+    storeClosed: string;
+    totalSales: string;
+    totalOrders: string;
+    totalProfit: string;
+    storeStatus: string;
+    showingData: string;
+  };
+  inventoryAlerts: {
+    title: string;
+    lowStock: string;
+    outOfStock: string;
+    negativeStock: string;
+    pendingCounts: string;
+    viewAll: string;
+    noAlerts: string;
+  };
+  kpi: {
+    totalSales: string;
+    totalOrders: string;
+    totalProfit: string;
+    averageBill: string;
+    lowStockItems: string;
+    outOfStockItems: string;
+    customersServed: string;
+    topProduct: string;
+    vsPrevious: string;
+    noChange: string;
+    itemsUnit: string;
+    noSalesYet: string;
+  };
   loading: string;
+  paymentMethods: {
+    cash: string;
+    transfer: string;
+    qr: string;
+    credit: string;
+    card: string;
+  };
+  period90d: string;
+  quickActions: {
+    openPos: string;
+    openPosDesc: string;
+    receiveStock: string;
+    receiveStockDesc: string;
+    stockCount: string;
+    stockCountDesc: string;
+    createQuotation: string;
+    createQuotationDesc: string;
+    customers: string;
+    customersDesc: string;
+    promotions: string;
+    promotionsDesc: string;
+  };
   quickActionsTitle: string;
+  recentOrders: {
+    title: string;
+    invoice: string;
+    customer: string;
+    total: string;
+    payment: string;
+    time: string;
+    walkIn: string;
+    viewAll: string;
+    noOrders: string;
+    openPos: string;
+  };
+  bestSellers: {
+    title: string;
+    qtySold: string;
+    noBestSellers: string;
+    openPos: string;
+  };
+  stockAttention: {
+    title: string;
+    outOfStockSection: string;
+    lowStockSection: string;
+    remaining: string;
+    reorderPoint: string;
+    warehouse: string;
+    outOfStockBadge: string;
+    lowBadge: string;
+    viewAll: string;
+    noIssues: string;
+  };
+  recentSales: {
+    title: string;
+  };
   requestFailedLabel: string;
+  roleLabel: {
+    owner: string;
+    cashier: string;
+    warehouse: string;
+  };
+  salesTrend: {
+    title: string;
+    revenue: string;
+    profit: string;
+    orders: string;
+  };
   sections: {
     highStockProducts: string;
     lowStockProducts: string;
@@ -102,6 +230,14 @@ type DashboardDictionary = {
     stock: string;
   };
   title: string;
+  topProductsTable: {
+    title: string;
+    rank: string;
+    product: string;
+    qtySold: string;
+    revenue: string;
+    viewAll: string;
+  };
   validation: {
     customRangeRequired: string;
   };
@@ -112,9 +248,12 @@ type DashboardManagerProps = {
   locale: string;
 };
 
-type FilterPeriod = DashboardPeriod | "custom";
+type FilterPeriod = DashboardPeriod | "90d" | "custom";
+type UserRole = "owner" | "cashier" | "warehouse";
+type ChartMetric = "revenue" | "profit" | "orders";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
 function toLocaleTag(locale: string) {
   return locale === "th" ? "th-TH" : "en-US";
 }
@@ -128,15 +267,12 @@ function formatCurrency(value: number, locale: string) {
   }).format(value);
 }
 
-function formatDateTime(value: string, locale: string) {
+function formatTime(value: string, locale: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(toLocaleTag(locale), {
-    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    month: "short",
-    year: "numeric",
   }).format(date);
 }
 
@@ -149,607 +285,909 @@ function compactCurrency(value: number, locale: string) {
   }).format(value);
 }
 
-function compactRangeText(data: StoreDashboard | null, locale: string) {
-  if (!data?.range) return "-";
-  return `${formatDateTime(data.range.from, locale)} – ${formatDateTime(data.range.to, locale)}`;
+function trendPercent(current: number, previous: number): number | null {
+  if (previous === 0 && current === 0) return null;
+  if (previous === 0) return 100;
+  return ((current - previous) / previous) * 100;
 }
 
-function parseNumber(value: string, fallback: number) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
+function formatDateRange(locale: string, period: FilterPeriod, fromDate?: string, toDate?: string): string {
+  const tag = toLocaleTag(locale);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const fmt = (d: Date) => d.toLocaleDateString(tag, { day: "numeric", month: "short", year: "numeric" });
+
+  switch (period) {
+    case "today":
+      return fmt(today);
+    case "7d": {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 7);
+      return `${fmt(start)} – ${fmt(today)}`;
+    }
+    case "30d": {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 30);
+      return `${fmt(start)} – ${fmt(today)}`;
+    }
+    case "90d": {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 90);
+      return `${fmt(start)} – ${fmt(today)}`;
+    }
+    case "custom": {
+      if (fromDate && toDate) {
+        return `${fmt(new Date(fromDate))} – ${fmt(new Date(toDate))}`;
+      }
+      return "";
+    }
+    default:
+      return "";
+  }
+}
+
+function getPreviousPeriodDates(period: FilterPeriod): { from: string; to: string } | null {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  switch (period) {
+    case "today": {
+      const prev = new Date(today);
+      prev.setDate(prev.getDate() - 1);
+      return { from: prev.toISOString().slice(0, 10), to: prev.toISOString().slice(0, 10) };
+    }
+    case "7d": {
+      const end = new Date(today);
+      end.setDate(end.getDate() - 7);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 7);
+      return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
+    }
+    case "30d": {
+      const end = new Date(today);
+      end.setDate(end.getDate() - 30);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 30);
+      return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
+    }
+    case "90d": {
+      const end = new Date(today);
+      end.setDate(end.getDate() - 90);
+      const start = new Date(end);
+      start.setDate(start.getDate() - 90);
+      return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
+    }
+    default:
+      return null;
+  }
 }
 
 const CHART_COLORS = ["#7c3aed", "#10b981", "#f59e0b", "#d946ef", "#8b5cf6", "#ef4444"];
 
 const PAYMENT_BADGE: Record<string, string> = {
-  cash:     "bg-emerald-100 text-emerald-700",
-  card:     "bg-violet-100 text-violet-700",
+  cash: "bg-emerald-100 text-emerald-700",
+  card: "bg-violet-100 text-violet-700",
+  credit: "bg-violet-100 text-violet-700",
   transfer: "bg-amber-100 text-amber-700",
-  qr:       "bg-sky-100 text-sky-700",
+  qr: "bg-fuchsia-100 text-fuchsia-700",
 };
 
 function paymentBadgeClass(method: string) {
   return PAYMENT_BADGE[method.toLowerCase()] ?? "bg-slate-100 text-slate-600";
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-export function DashboardManager({ dictionary, locale }: DashboardManagerProps) {
-  const [period, setPeriod] = useState<FilterPeriod>("today");
-  const [fromDate, setFromDate]   = useState("");
-  const [toDate, setToDate]       = useState("");
-  const [topLimit, setTopLimit]   = useState(5);
-  const [recentLimit, setRecentLimit]       = useState(10);
-  const [lowStockLimit, setLowStockLimit]   = useState(10);
-  const [lowStockThreshold, setLowStockThreshold] = useState(10);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+/** Translate raw payment_method keys from API → localized label */
+function localizePaymentMethod(raw: string, dict: DashboardDictionary["paymentMethods"]): string {
+  const key = raw.toLowerCase().trim();
+  const map: Record<string, string> = {
+    cash: dict.cash,
+    transfer: dict.transfer,
+    qr: dict.qr,
+    "qr payment": dict.qr,
+    credit: dict.credit,
+    card: dict.card,
+  };
+  return map[key] ?? raw;
+}
 
-  const [data, setData]       = useState<StoreDashboard | null>(null);
+// ── Severity config for Action Center ───────────────────────────────────────
+
+const SEVERITY_CONFIG = {
+  critical: { dot: "bg-rose-500", text: "text-rose-700", bg: "bg-rose-50", border: "border-rose-200" },
+  warning: { dot: "bg-amber-500", text: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
+  info: { dot: "bg-violet-500", text: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" },
+} as const;
+
+// ── Visible sections per role ───────────────────────────────────────────────
+
+const ROLE_SECTIONS: Record<UserRole, Set<string>> = {
+  owner: new Set(["hero", "quickActions", "kpi", "actionCenter", "salesChart", "paymentChart", "bestSellers", "stockAttention", "recentSales"]),
+  cashier: new Set(["hero", "quickActions", "kpi", "salesChart", "paymentChart", "recentSales"]),
+  warehouse: new Set(["hero", "quickActions", "kpi", "actionCenter", "bestSellers", "stockAttention"]),
+};
+
+// ── Component ───────────────────────────────────────────────────────────────
+
+export function DashboardManager({ dictionary, locale }: DashboardManagerProps) {
+  const t = dictionary;
+
+  const [period, setPeriod] = useState<FilterPeriod>("today");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [chartMetric, setChartMetric] = useState<ChartMetric>("revenue");
+  const [role] = useState<UserRole>("owner");
+
+  const [data, setData] = useState<StoreDashboard | null>(null);
+  const [prevData, setPrevData] = useState<StoreDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError]     = useState("");
+  const [error, setError] = useState("");
+
+  const visible = ROLE_SECTIONS[role];
+
+  // ── Data fetching ───────────────────────────────────────────────────────
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
     setError("");
     try {
       const input: DashboardQueryInput = {
-        low_stock_limit: lowStockLimit,
-        low_stock_threshold: lowStockThreshold,
-        recent_limit: recentLimit,
-        top_limit: topLimit,
+        low_stock_limit: 20,
+        low_stock_threshold: 10,
+        recent_limit: 10,
+        top_limit: 10,
       };
+
       if (period === "custom") {
         if (!fromDate || !toDate) {
-          setError(dictionary.validation.customRangeRequired);
+          setError(t.validation.customRangeRequired);
           setIsLoading(false);
           return;
         }
         input.from = fromDate;
-        input.to   = toDate;
+        input.to = toDate;
+      } else if (period === "90d") {
+        const now = new Date();
+        const from90 = new Date(now);
+        from90.setDate(from90.getDate() - 90);
+        input.from = from90.toISOString().slice(0, 10);
+        input.to = now.toISOString().slice(0, 10);
       } else {
         input.period = period;
       }
+
       const response = await getDashboard(input);
+
       setData(response.data);
       setIsFilterOpen(false);
+
+      // Fetch previous period for trends
+      const prevDates = getPreviousPeriodDates(period);
+      if (prevDates) {
+        try {
+          const prevResponse = await getDashboard({
+            ...input,
+            period: undefined,
+            from: prevDates.from,
+            to: prevDates.to,
+          });
+          setPrevData(prevResponse.data);
+        } catch {
+          setPrevData(null);
+        }
+      } else {
+        setPrevData(null);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : dictionary.requestFailedLabel);
+      setError(e instanceof Error ? e.message : t.requestFailedLabel);
     } finally {
       setIsLoading(false);
     }
-  }, [dictionary.requestFailedLabel, dictionary.validation.customRangeRequired,
-      fromDate, lowStockLimit, lowStockThreshold, period, recentLimit, toDate, topLimit]);
+  }, [t.requestFailedLabel, t.validation.customRangeRequired, fromDate, period, toDate]);
 
   useEffect(() => { void loadDashboard(); }, [loadDashboard]);
 
+  // ── Computed values ─────────────────────────────────────────────────────
+
+  const dateRangeText = formatDateRange(locale, period, fromDate, toDate);
+
   const chartData = useMemo(() => {
-    return [...(data?.recent_sales ?? [])]
-      .sort((a, b) => new Date(a.sold_at).getTime() - new Date(b.sold_at).getTime())
-      .slice(-12)
-      .map((sale) => ({
-        name: new Date(sale.sold_at).toLocaleDateString(toLocaleTag(locale), { day: "numeric", month: "short" }),
-        amount: sale.total_amount ?? 0,
-        fullDate: sale.sold_at,
+    const sales = data?.recent_sales ?? [];
+    if (sales.length === 0) return [];
+
+    // Net profit ratio from summary (revenue − discount) / revenue
+    const totalRevenue = data?.summary.revenue ?? 0;
+    const totalDiscount = data?.summary.discount_amount ?? 0;
+    const profitRatio = totalRevenue > 0 ? (totalRevenue - totalDiscount) / totalRevenue : 1;
+
+    // Aggregate by date — sum revenue & count orders per day
+    const byDate = new Map<string, { revenue: number; orders: number; date: Date }>();
+
+    for (const sale of sales) {
+      const date = new Date(sale.sold_at);
+      const key = date.toISOString().slice(0, 10);
+      const existing = byDate.get(key);
+      const amount = sale.total_amount ?? 0;
+      if (existing) {
+        existing.revenue += amount;
+        existing.orders += 1;
+      } else {
+        byDate.set(key, { revenue: amount, orders: 1, date });
+      }
+    }
+
+    return [...byDate.values()]
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(-20)
+      .map((entry) => ({
+        name: entry.date.toLocaleDateString(toLocaleTag(locale), { day: "numeric", month: "short" }),
+        revenue: entry.revenue,
+        profit: entry.revenue * profitRatio,
+        orders: entry.orders,
       }));
-  }, [data?.recent_sales, locale]);
+  }, [data?.recent_sales, data?.summary.revenue, data?.summary.discount_amount, locale]);
 
   const paymentBreakdown = useMemo(() => {
     const total = (data?.payment_breakdown ?? []).reduce((s, i) => s + i.amount, 0);
     return (data?.payment_breakdown ?? []).map((item) => ({
       ...item,
+      localizedName: localizePaymentMethod(item.payment_method, t.paymentMethods),
       ratio: total > 0 ? (item.amount / total) * 100 : 0,
     }));
-  }, [data?.payment_breakdown]);
+  }, [data?.payment_breakdown, t.paymentMethods]);
 
-  const topProducts    = data?.top_products ?? [];
-  const lowStockList   = [...(data?.low_stock_products ?? [])].sort((a, b) => a.quantity - b.quantity).slice(0, 5);
-  const highStockList  = [...(data?.low_stock_products ?? [])].sort((a, b) => b.quantity - a.quantity).slice(0, 5);
+  const topProducts = data?.top_products ?? [];
+  const lowStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) > 0);
+  const outOfStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) === 0);
+  const negativeStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) < 0);
 
-  const kpiCards = [
-    {
-      icon: TrendingUp,
-      iconBg: "bg-violet-100",
-      iconColor: "text-violet-600",
-      label: dictionary.summary.revenue,
-      value: formatCurrency(data?.summary.revenue ?? 0, locale),
-    },
-    {
-      icon: ShoppingCart,
-      iconBg: "bg-emerald-100",
-      iconColor: "text-emerald-600",
-      label: dictionary.summary.salesCount,
-      value: (data?.summary.sales_count ?? 0).toLocaleString(toLocaleTag(locale)),
-    },
-    {
-      icon: Wallet,
-      iconBg: "bg-amber-100",
-      iconColor: "text-amber-600",
-      label: dictionary.summary.averageTicket,
-      value: formatCurrency(data?.summary.average_ticket ?? 0, locale),
-    },
-    {
-      icon: AlertTriangle,
-      iconBg: "bg-rose-100",
-      iconColor: "text-rose-600",
-      label: dictionary.sections.lowStockProducts,
-      value: (data?.low_stock_products.length ?? 0).toLocaleString(toLocaleTag(locale)),
-    },
-  ];
+  const revenue = data?.summary.revenue ?? 0;
+  const salesCount = data?.summary.sales_count ?? 0;
+  const netRevenue = revenue - (data?.summary.discount_amount ?? 0);
+  const averageBill = data?.summary.average_ticket ?? 0;
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  const prevRevenue = prevData?.summary.revenue ?? 0;
+  const prevSalesCount = prevData?.summary.sales_count ?? 0;
+  const prevNetRevenue = prevRevenue - (prevData?.summary.discount_amount ?? 0);
+  const prevAverageBill = prevData?.summary.average_ticket ?? 0;
+
+  const topProductName = topProducts.length > 0 ? topProducts[0].product_name : t.kpi.noSalesYet;
+
+  // Best sellers — max qty for progress bar scaling
+  const maxQtySold = topProducts.length > 0 ? topProducts[0].quantity_sold : 1;
+
+  // Low stock threshold used in query
+  const LOW_STOCK_THRESHOLD = 10;
+
+  // Total action center alert count
+  const totalAlerts = lowStockList.length + outOfStockList.length + negativeStockList.length;
+
+  // ── Render helpers ──────────────────────────────────────────────────────
+
+  function TrendBadge({ current, previous }: { current: number; previous: number }) {
+    const pct = trendPercent(current, previous);
+    if (pct === null || !prevData) return <span className="text-[10px] text-slate-400">{t.kpi.noChange}</span>;
+    const isUp = pct > 0;
+    const isDown = pct < 0;
+    const Icon = isUp ? ArrowUpRight : isDown ? ArrowDownRight : Minus;
+    const color = isUp ? "text-emerald-600" : isDown ? "text-rose-600" : "text-slate-500";
+    const bg = isUp ? "bg-emerald-50" : isDown ? "bg-rose-50" : "bg-slate-50";
+    return (
+      <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${color} ${bg}`}>
+        <Icon className="h-3 w-3" />
+        {Math.abs(pct).toFixed(1)}%
+      </span>
+    );
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
 
-      {/* ── Hero header ─────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-3xl bg-violet-700 p-6 text-white shadow-lg shadow-violet-200/60">
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5" />
-        <div className="pointer-events-none absolute -bottom-10 right-32 h-40 w-40 rounded-full bg-white/5" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-24 w-80 rounded-full bg-pink-500/10 blur-2xl" />
-
-        <div className="relative flex flex-wrap items-center justify-between gap-4">
-          {/* Title */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
-              <Store className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-black tracking-tight">{dictionary.title}</h1>
-              <p className="mt-0.5 text-xs text-violet-200">{compactRangeText(data, locale)}</p>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1 rounded-xl bg-white/10 p-1 backdrop-blur-sm">
-              {([
-                { label: dictionary.filters.periodToday, value: "today" },
-                { label: dictionary.filters.period7d,    value: "7d" },
-                { label: dictionary.filters.period30d,   value: "30d" },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.value}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                    period === opt.value ? "bg-white text-violet-700 shadow-sm" : "text-white/80 hover:text-white"
-                  }`}
-                  onClick={() => setPeriod(opt.value)}
-                  type="button"
-                >
-                  {opt.label}
-                </button>
-              ))}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 1. HERO — compact bar with dynamic date range                     */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {visible.has("hero") && (
+        <section className="rounded-2xl bg-violet-700 px-5 py-3.5 text-white shadow-md shadow-violet-200/50">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Left: title + date range */}
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+                <Store className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-base font-black tracking-tight">{t.title}</h1>
+                <p className="text-[11px] text-violet-200">
+                  {dateRangeText}
+                </p>
+              </div>
             </div>
 
-            <button
-              className={`rounded-xl p-2 transition ${isFilterOpen ? "bg-white text-violet-700" : "bg-white/10 text-white hover:bg-white/20"}`}
-              title={dictionary.filters.periodLabel}
-              onClick={() => setIsFilterOpen((c) => !c)}
-              type="button"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-            </button>
+            {/* Center: hero quick stats */}
+            <div className="flex items-center gap-4 text-sm">
+              <div className="text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-300">{t.hero.totalSales}</p>
+                <p className="text-lg font-black tabular-nums">{isLoading ? "—" : compactCurrency(revenue, locale)}</p>
+              </div>
+              <div className="h-8 w-px bg-white/20" />
+              <div className="text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-300">{t.hero.totalOrders}</p>
+                <p className="text-lg font-black tabular-nums">{isLoading ? "—" : salesCount}</p>
+              </div>
+              <div className="h-8 w-px bg-white/20" />
+              <div className="text-center">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-300">{t.hero.totalProfit}</p>
+                <p className="text-lg font-black tabular-nums">{isLoading ? "—" : compactCurrency(netRevenue, locale)}</p>
+              </div>
+              <div className="h-8 w-px bg-white/20" />
+              <div className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
+                <span className="text-xs font-semibold text-emerald-300">{t.hero.storeOpen}</span>
+              </div>
+            </div>
 
-            <button
-              className="flex items-center gap-1.5 rounded-xl bg-white/10 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-50"
-              disabled={isLoading}
-              onClick={() => void loadDashboard()}
-              type="button"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin" : ""}`} />
-              {dictionary.filters.refresh}
-            </button>
-          </div>
-        </div>
+            {/* Right: controls */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5 rounded-xl bg-white/10 p-1 backdrop-blur-sm">
+                {([
+                  { label: t.filters.periodToday, value: "today" as const },
+                  { label: t.filters.period7d, value: "7d" as const },
+                  { label: t.filters.period30d, value: "30d" as const },
+                  { label: t.period90d, value: "90d" as const },
+                ]).map((opt) => (
+                  <button
+                    key={opt.value}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${period === opt.value ? "bg-white text-violet-700 shadow-sm" : "text-white/70 hover:text-white"}`}
+                    onClick={() => setPeriod(opt.value)}
+                    type="button"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
 
-        {/* Advanced filter panel */}
-        {isFilterOpen && (
-          <div className="relative mt-4 grid gap-2 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-sm sm:grid-cols-2 lg:grid-cols-6">
-            <label className="flex flex-col gap-1 text-xs text-white/90">
-              <span>{dictionary.filters.periodLabel}</span>
-              <select
-                className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-2 text-xs text-white outline-none backdrop-blur-sm focus:border-white/50 focus:ring-2 focus:ring-white/20"
-                onChange={(e) => setPeriod(e.target.value as FilterPeriod)}
-                value={period}
+              <button
+                className={`rounded-xl p-2 transition ${isFilterOpen ? "bg-white text-violet-700" : "bg-white/10 text-white hover:bg-white/20"}`}
+                onClick={() => setIsFilterOpen((c) => !c)}
+                type="button"
               >
-                <option className="text-slate-900" value="today">{dictionary.filters.periodToday}</option>
-                <option className="text-slate-900" value="7d">{dictionary.filters.period7d}</option>
-                <option className="text-slate-900" value="30d">{dictionary.filters.period30d}</option>
-                <option className="text-slate-900" value="custom">{dictionary.filters.periodCustom}</option>
-              </select>
-            </label>
+                <SlidersHorizontal className="h-4 w-4" />
+              </button>
 
-            {period === "custom" && (
-              <>
-                <label className="flex flex-col gap-1 text-xs text-white/90">
-                  <span>{dictionary.filters.fromLabel}</span>
-                  <input
-                    className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-2 text-xs text-white outline-none backdrop-blur-sm focus:border-white/50 focus:ring-2 focus:ring-white/20"
-                    onChange={(e) => setFromDate(e.target.value)}
-                    type="date"
-                    value={fromDate}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-white/90">
-                  <span>{dictionary.filters.toLabel}</span>
-                  <input
-                    className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-2 text-xs text-white outline-none backdrop-blur-sm focus:border-white/50 focus:ring-2 focus:ring-white/20"
-                    onChange={(e) => setToDate(e.target.value)}
-                    type="date"
-                    value={toDate}
-                  />
-                </label>
-              </>
-            )}
+              <button
+                className="rounded-xl bg-white/10 p-2 text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-50"
+                disabled={isLoading}
+                onClick={() => void loadDashboard()}
+                type="button"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+          </div>
 
-            {[
-              { key: "topLimit",          label: dictionary.filters.topLimitLabel,      options: [5, 10, 15, 20],        setter: setTopLimit },
-              { key: "recentLimit",       label: dictionary.filters.recentLimitLabel,   options: [10, 20, 30, 40, 50],   setter: setRecentLimit },
-              { key: "lowStockLimit",     label: dictionary.filters.lowStockLimitLabel, options: [5, 10, 20, 30, 40, 50], setter: setLowStockLimit },
-            ].map(({ key, label, options, setter }) => (
-              <label key={key} className="flex flex-col gap-1 text-xs text-white/90">
-                <span>{label}</span>
-                <select
-                  className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-2 text-xs text-white outline-none backdrop-blur-sm focus:border-white/50 focus:ring-2 focus:ring-white/20"
-                  onChange={(e) => setter(parseNumber(e.target.value, 10))}
-                  defaultValue={10}
-                >
-                  {options.map((o) => <option key={o} className="text-slate-900" value={o}>{o}</option>)}
+          {/* Advanced filter panel */}
+          {isFilterOpen && (
+            <div className="mt-3 grid gap-2 rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm sm:grid-cols-3 lg:grid-cols-6">
+              <label className="flex flex-col gap-1 text-[11px] text-white/90">
+                <span>{t.filters.periodLabel}</span>
+                <select className="rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-xs text-white outline-none" onChange={(e) => setPeriod(e.target.value as FilterPeriod)} value={period}>
+                  <option className="text-slate-900" value="today">{t.filters.periodToday}</option>
+                  <option className="text-slate-900" value="7d">{t.filters.period7d}</option>
+                  <option className="text-slate-900" value="30d">{t.filters.period30d}</option>
+                  <option className="text-slate-900" value="90d">{t.period90d}</option>
+                  <option className="text-slate-900" value="custom">{t.filters.periodCustom}</option>
                 </select>
               </label>
-            ))}
-
-            <label className="flex flex-col gap-1 text-xs text-white/90">
-              <span>{dictionary.filters.lowStockThresholdLabel}</span>
-              <input
-                className="rounded-lg border border-white/20 bg-white/10 px-2.5 py-2 text-xs text-white outline-none backdrop-blur-sm focus:border-white/50 focus:ring-2 focus:ring-white/20"
-                min={1}
-                onChange={(e) => setLowStockThreshold(parseNumber(e.target.value, 10))}
-                type="number"
-                value={lowStockThreshold}
-              />
-            </label>
-
-            <button
-              className="self-end rounded-lg bg-white px-3 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-50 sm:col-span-2 lg:col-span-1"
-              onClick={() => void loadDashboard()}
-              type="button"
-            >
-              {dictionary.filters.apply}
-            </button>
-          </div>
-        )}
-      </section>
+              {period === "custom" && (
+                <>
+                  <label className="flex flex-col gap-1 text-[11px] text-white/90">
+                    <span>{t.filters.fromLabel}</span>
+                    <input className="rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-xs text-white outline-none" onChange={(e) => setFromDate(e.target.value)} type="date" value={fromDate} />
+                  </label>
+                  <label className="flex flex-col gap-1 text-[11px] text-white/90">
+                    <span>{t.filters.toLabel}</span>
+                    <input className="rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-xs text-white outline-none" onChange={(e) => setToDate(e.target.value)} type="date" value={toDate} />
+                  </label>
+                </>
+              )}
+              <button className="self-end rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-50" onClick={() => void loadDashboard()} type="button">{t.filters.apply}</button>
+            </div>
+          )}
+        </section>
+      )}
 
       {error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-700">{error}</div>
       )}
 
-      {/* ── Quick actions ────────────────────────────────────────────────────── */}
-      <section>
-        <p className="mb-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-400">{dictionary.quickActionsTitle}</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Link
-            href={`/${locale}/sales`}
-            className="group flex items-center gap-3 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600 shadow-sm">
-              <ShoppingCart className="h-5 w-5 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-slate-900">{dictionary.actions.newSaleTitle}</p>
-              <p className="truncate text-xs text-slate-500">{dictionary.actions.newSaleDescription}</p>
-            </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-violet-500" />
-          </Link>
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 2. QUICK ACTIONS — 6 cards                                        */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {visible.has("quickActions") && (
+        <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 xl:grid-cols-6">
+          {([
+            { href: `/${locale}/sales`, icon: ShoppingCart, label: t.quickActions.openPos, desc: t.quickActions.openPosDesc, iconBg: "bg-violet-600", hoverColor: "group-hover:text-violet-500" },
+            { href: `/${locale}/stock/receive`, icon: Package, label: t.quickActions.receiveStock, desc: t.quickActions.receiveStockDesc, iconBg: "bg-emerald-500", hoverColor: "group-hover:text-emerald-500" },
+            { href: `/${locale}/inventory/counts`, icon: ClipboardCheck, label: t.quickActions.stockCount, desc: t.quickActions.stockCountDesc, iconBg: "bg-amber-500", hoverColor: "group-hover:text-amber-500" },
+            { href: `/${locale}/customers`, icon: Users, label: t.quickActions.customers, desc: t.quickActions.customersDesc, iconBg: "bg-fuchsia-500", hoverColor: "group-hover:text-fuchsia-500" },
+            { href: `/${locale}/documents`, icon: FileText, label: t.quickActions.createQuotation, desc: t.quickActions.createQuotationDesc, iconBg: "bg-indigo-500", hoverColor: "group-hover:text-indigo-500" },
+            { href: `/${locale}/promotions`, icon: Gift, label: t.quickActions.promotions, desc: t.quickActions.promotionsDesc, iconBg: "bg-rose-500", hoverColor: "group-hover:text-rose-500" },
+          ]).map((action) => (
+            <Link key={action.href} href={action.href} className="group flex items-center gap-3 rounded-2xl border border-violet-100 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${action.iconBg} shadow-sm`}>
+                <action.icon className="h-4 w-4 text-white" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-slate-900">{action.label}</p>
+                <p className="hidden truncate text-[11px] text-slate-500 xl:block">{action.desc}</p>
+              </div>
+              <ArrowRight className={`hidden h-3.5 w-3.5 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 lg:block ${action.hoverColor}`} />
+            </Link>
+          ))}
+        </section>
+      )}
 
-          <Link
-            href={`/${locale}/stock`}
-            className="group flex items-center gap-3 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 shadow-sm">
-              <Package className="h-5 w-5 text-white" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-slate-900">{dictionary.actions.stockTitle}</p>
-              <p className="truncate text-xs text-slate-500">{dictionary.actions.stockDescription}</p>
-            </div>
-            <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-emerald-500" />
-          </Link>
-        </div>
-      </section>
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 3. KPI CARDS — dynamic labels + date range underneath             */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {visible.has("kpi") && (
+        <section className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+          {([
+            { label: t.kpi.totalSales, value: formatCurrency(revenue, locale), icon: TrendingUp, iconBg: "bg-violet-100", iconColor: "text-violet-600", current: revenue, previous: prevRevenue, span: "xl:col-span-2" },
+            { label: t.kpi.totalOrders, value: salesCount.toLocaleString(toLocaleTag(locale)), icon: ShoppingCart, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", current: salesCount, previous: prevSalesCount, span: "" },
+            { label: t.kpi.totalProfit, value: formatCurrency(netRevenue, locale), icon: Wallet, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", current: netRevenue, previous: prevNetRevenue, span: "" },
+            { label: t.kpi.averageBill, value: formatCurrency(averageBill, locale), icon: BarChart3, iconBg: "bg-amber-100", iconColor: "text-amber-600", current: averageBill, previous: prevAverageBill, span: "" },
+            { label: t.kpi.lowStockItems, value: `${lowStockList.length} ${t.kpi.itemsUnit}`, icon: AlertTriangle, iconBg: "bg-orange-100", iconColor: "text-orange-600", current: lowStockList.length, previous: 0, span: "" },
+            { label: t.kpi.outOfStockItems, value: `${outOfStockList.length} ${t.kpi.itemsUnit}`, icon: Package, iconBg: "bg-rose-100", iconColor: "text-rose-600", current: outOfStockList.length, previous: 0, span: "" },
+            { label: t.kpi.topProduct, value: topProductName, icon: TrendingUp, iconBg: "bg-fuchsia-100", iconColor: "text-fuchsia-600", current: 0, previous: 0, span: "" },
+          ]).map(({ label, value, icon: Icon, iconBg, iconColor, current, previous, span }) => (
+            <article key={label} className={`rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${span}`}>
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+                  {isLoading
+                    ? <Skeleton className="mt-2 h-7 w-24 bg-violet-50" />
+                    : <p className="mt-1 truncate text-xl font-black text-slate-900">{value}</p>
+                  }
+                  <div className="mt-1.5 flex items-center gap-2">
+                    {isLoading ? <Skeleton className="h-4 w-16 bg-slate-50" /> : (
+                      <>
+                        <TrendBadge current={current} previous={previous} />
+                        <span className="hidden text-[9px] text-slate-400 xl:inline">{t.kpi.vsPrevious}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+                  <Icon className={`h-5 w-5 ${iconColor}`} />
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
 
-      {/* ── KPI cards ────────────────────────────────────────────────────────── */}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {kpiCards.map(({ icon: Icon, iconBg, iconColor, label, value }) => (
-          <article
-            key={label}
-            className="flex items-center gap-4 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-          >
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
-              <Icon className={`h-5 w-5 ${iconColor}`} />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-slate-500">{label}</p>
-              {isLoading
-                ? <Skeleton className="mt-1 h-7 w-28 bg-violet-50" />
-                : <p className="mt-0.5 truncate text-xl font-black text-slate-900">{value}</p>}
-            </div>
-          </article>
-        ))}
-      </section>
-
-      {/* ── Revenue chart + Payment breakdown ────────────────────────────────── */}
-      <section className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
-        {/* Revenue area chart */}
-        <article className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">{dictionary.summary.revenue}</h2>
-              <p className="text-xs text-slate-400">{dictionary.sections.range}</p>
-            </div>
-            <span className="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700">
-              {compactCurrency(data?.summary.revenue ?? 0, locale)}
-            </span>
-          </div>
-
-          <div className="h-[280px] rounded-xl bg-gradient-to-b from-violet-50/60 to-transparent p-3">
-            {isLoading ? (
-              <SkeletonChart height="h-full" className="rounded-xl" />
-            ) : chartData.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-sm text-slate-400">{dictionary.empty}</div>
-            ) : (
-              <ResponsiveContainer height="100%" width="100%">
-                <AreaChart data={chartData} margin={{ bottom: 4, left: 0, right: 4, top: 4 }}>
-                  <defs>
-                    <linearGradient id="revenueGradient" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%"   stopColor="#7c3aed" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="4 4" stroke="#f1f5f9" vertical={false} />
-                  <XAxis axisLine={false} dataKey="name" fontSize={9} interval="preserveStartEnd" minTickGap={40} tick={{ fill: "#94a3b8", fontSize: 9 }} tickLine={false} />
-                  <YAxis axisLine={false} fontSize={9} tick={{ fill: "#94a3b8", fontSize: 9 }} tickFormatter={(v: number) => compactCurrency(v, locale)} tickLine={false} width={48} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0].payload;
-                      return (
-                        <div className="rounded-xl bg-slate-900 px-3 py-2 text-white shadow-lg">
-                          <p className="text-[10px] text-slate-400">{new Date(d.fullDate).toLocaleDateString(toLocaleTag(locale), { day: "numeric", hour: "2-digit", minute: "2-digit", month: "short" })}</p>
-                          <p className="text-sm font-bold">{formatCurrency(d.amount, locale)}</p>
-                        </div>
-                      );
-                    }}
-                    cursor={false}
-                  />
-                  <Area activeDot={{ fill: "#7c3aed", r: 5, stroke: "#fff", strokeWidth: 2 }} dataKey="amount" fill="url(#revenueGradient)" stroke="#7c3aed" strokeWidth={2.5} type="monotone" />
-                </AreaChart>
-              </ResponsiveContainer>
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 4. ACTION CENTER — ⚠ Requires Attention (HIGH PRIORITY)           */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {visible.has("actionCenter") && (
+        <section className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <h2 className="text-sm font-bold text-slate-900">{t.actionCenter.title}</h2>
+            {totalAlerts > 0 && (
+              <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">{totalAlerts}</span>
             )}
           </div>
-        </article>
-
-        {/* Payment breakdown donut */}
-        <article className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-base font-bold text-slate-900">{dictionary.sections.paymentBreakdown}</h2>
           {isLoading ? (
-            <div className="space-y-2">
-              {[70, 45, 30].map((w, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <Skeleton className="h-3 w-3 rounded-full bg-violet-100" />
-                  <Skeleton className={`h-3.5 bg-slate-200`} style={{ width: `${w}%` }} />
-                </div>
-              ))}
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 rounded-xl bg-slate-50" />)}
             </div>
-          ) : paymentBreakdown.length === 0 ? (
-            <p className="text-sm text-slate-400">{dictionary.empty}</p>
+          ) : totalAlerts === 0 ? (
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              {t.actionCenter.noIssues}
+            </div>
           ) : (
-            <div className="flex items-center gap-4">
-              <div className="shrink-0">
-                <ResponsiveContainer height={140} width={140}>
-                  <RechartsPieChart>
-                    <Pie cx="50%" cy="50%" data={paymentBreakdown} dataKey="amount" endAngle={-270} innerRadius={36} nameKey="payment_method" outerRadius={62} paddingAngle={3} startAngle={90} stroke="none">
-                      {paymentBreakdown.map((_item, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip
-                      content={({ active, payload }) => {
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {([
+                { label: t.actionCenter.outOfStock, count: outOfStockList.length, severity: "critical" as const, href: `/${locale}/inventory` },
+                { label: t.actionCenter.negativeStock, count: negativeStockList.length, severity: "critical" as const, href: `/${locale}/inventory` },
+                { label: t.actionCenter.lowStock, count: lowStockList.length, severity: "warning" as const, href: `/${locale}/inventory` },
+                { label: t.actionCenter.pendingCounts, count: 0, severity: "info" as const, href: `/${locale}/inventory/counts` },
+              ]).filter((a) => a.count > 0).map((alert) => {
+                const sv = SEVERITY_CONFIG[alert.severity];
+                return (
+                  <Link
+                    key={alert.label}
+                    href={alert.href}
+                    className={`group flex items-center justify-between rounded-xl border px-4 py-3 transition hover:shadow-md ${sv.bg} ${sv.border}`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className={`h-2.5 w-2.5 rounded-full ${sv.dot}`} />
+                      <div>
+                        <p className={`text-xs font-bold ${sv.text}`}>{alert.label}</p>
+                        <p className="text-[10px] text-slate-500">{t.actionCenter.viewItems}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-2xl font-black tabular-nums ${sv.text}`}>{alert.count}</span>
+                      <ArrowRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 5. SALES TREND + PAYMENT BREAKDOWN                                */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="grid gap-3 xl:grid-cols-[7fr_3fr]">
+        {/* Sales trend area chart with metric switching */}
+        {visible.has("salesChart") && (
+          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">{t.salesTrend.title}</h2>
+                <p className="text-[10px] text-slate-400">{dateRangeText}</p>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5">
+                {([
+                  { label: t.salesTrend.revenue, value: "revenue" as const },
+                  { label: t.salesTrend.profit, value: "profit" as const },
+                  { label: t.salesTrend.orders, value: "orders" as const },
+                ]).map((opt) => (
+                  <button
+                    key={opt.value}
+                    className={`rounded-md px-2.5 py-1 text-[10px] font-semibold transition ${chartMetric === opt.value ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                    onClick={() => setChartMetric(opt.value)}
+                    type="button"
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="h-[260px]">
+              {isLoading ? (
+                <SkeletonChart height="h-full" className="rounded-xl" />
+              ) : chartData.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2">
+                  <p className="text-sm text-slate-400">{t.emptyStates.noSales}</p>
+                  <Link href={`/${locale}/sales`} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-violet-700">
+                    {t.emptyStates.noSalesAction}
+                  </Link>
+                </div>
+              ) : (
+                <ResponsiveContainer height="100%" width="100%">
+                  <AreaChart data={chartData} margin={{ bottom: 4, left: 0, right: 4, top: 4 }}>
+                    <defs>
+                      <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#7c3aed" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="4 4" stroke="#f1f5f9" vertical={false} />
+                    <XAxis axisLine={false} dataKey="name" fontSize={9} tick={{ fill: "#94a3b8", fontSize: 9 }} tickLine={false} />
+                    <YAxis
+                      axisLine={false}
+                      fontSize={9}
+                      tick={{ fill: "#94a3b8", fontSize: 9 }}
+                      tickFormatter={chartMetric === "orders" ? (v: number) => String(v) : (v: number) => compactCurrency(v, locale)}
+                      tickLine={false}
+                      width={48}
+                    />
+                    <Tooltip content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0].payload;
+                      const val = d[chartMetric];
+                      return (
+                        <div className="rounded-xl bg-slate-900 px-3 py-2 text-white shadow-lg">
+                          <p className="text-[10px] text-slate-400">{d.name}</p>
+                          <p className="text-sm font-bold">{chartMetric === "orders" ? val : formatCurrency(val, locale)}</p>
+                        </div>
+                      );
+                    }} cursor={false} />
+                    <Area activeDot={{ fill: "#7c3aed", r: 5, stroke: "#fff", strokeWidth: 2 }} dataKey={chartMetric} fill="url(#chartGradient)" stroke="#7c3aed" strokeWidth={2.5} type="monotone" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </article>
+        )}
+
+        {/* Payment breakdown donut — LOCALIZED labels */}
+        {visible.has("paymentChart") && (
+          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+            <div className="mb-4">
+              <h2 className="text-sm font-bold text-slate-900">{t.sections.paymentBreakdown}</h2>
+              <p className="text-[10px] text-slate-400">{dateRangeText}</p>
+            </div>
+            {isLoading ? (
+              <div className="space-y-3">{[70, 45, 30].map((w, i) => (
+                <div key={i} className="flex items-center gap-3"><Skeleton className="h-3 w-3 rounded-full bg-violet-100" /><Skeleton className="h-3.5 bg-slate-200" style={{ width: `${w}%` }} /></div>
+              ))}</div>
+            ) : paymentBreakdown.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-8">
+                <p className="text-sm text-slate-400">{t.emptyStates.noPayments}</p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-4 lg:flex-row">
+                <div className="shrink-0">
+                  <ResponsiveContainer height={160} width={160}>
+                    <RechartsPieChart>
+                      <Pie cx="50%" cy="50%" data={paymentBreakdown} dataKey="amount" endAngle={-270} innerRadius={40} nameKey="localizedName" outerRadius={70} paddingAngle={3} startAngle={90} stroke="none">
+                        {paymentBreakdown.map((_item, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip content={({ active, payload }) => {
                         if (!active || !payload?.length) return null;
                         const d = payload[0].payload;
                         return (
                           <div className="rounded-xl bg-slate-900 px-3 py-2 text-white shadow-lg">
-                            <p className="text-xs font-semibold capitalize">{d.payment_method}</p>
+                            <p className="text-xs font-semibold">{d.localizedName}</p>
                             <p className="text-sm font-bold">{formatCurrency(d.amount, locale)}</p>
                             <p className="text-[10px] text-slate-400">{d.ratio.toFixed(1)}%</p>
                           </div>
                         );
-                      }}
-                      cursor={false}
-                    />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex-1 space-y-3">
-                {paymentBreakdown.map((item, i) => (
-                  <div key={item.payment_method}>
-                    <div className="mb-1 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
-                        <span className="text-xs font-semibold capitalize text-slate-700">{item.payment_method}</span>
+                      }} cursor={false} />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-2.5">
+                  {paymentBreakdown.map((item, i) => (
+                    <div key={item.payment_method}>
+                      <div className="mb-1 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                          <span className="text-xs font-semibold text-slate-700">{item.localizedName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-slate-800">{formatCurrency(item.amount, locale)}</span>
+                          <span className="text-[10px] font-semibold text-slate-400">{item.ratio.toFixed(0)}%</span>
+                        </div>
                       </div>
-                      <span className="text-xs font-bold text-slate-500">{item.ratio.toFixed(0)}%</span>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-violet-100/50">
+                        <div className="h-1.5 rounded-full transition-all duration-700" style={{ background: CHART_COLORS[i % CHART_COLORS.length], width: `${Math.max(item.ratio, 3)}%` }} />
+                      </div>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-violet-100/50">
-                      <div
-                        className="h-1.5 rounded-full transition-all duration-700"
-                        style={{ background: CHART_COLORS[i % CHART_COLORS.length], width: `${Math.max(item.ratio, 3)}%` }}
-                      />
+                  ))}
+                </div>
+              </div>
+            )}
+          </article>
+        )}
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 6. BEST SELLERS (65%) + STOCK ATTENTION (35%)                     */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <section className="grid gap-3 xl:grid-cols-[1.65fr_0.85fr]">
+        {/* ── Best Sellers — progress bar design ──────────────────────── */}
+        {visible.has("bestSellers") && (
+          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">{t.bestSellers.title}</h2>
+                <p className="text-[10px] text-slate-400">{dateRangeText}</p>
+              </div>
+              {topProducts.length > 0 && (
+                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                  Top {topProducts.length}
+                </span>
+              )}
+            </div>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="h-7 w-7 shrink-0 rounded-lg bg-violet-50" />
+                    <div className="flex-1 space-y-1.5">
+                      <Skeleton className="h-3.5 w-32 bg-slate-100" />
+                      <Skeleton className="h-2 w-full rounded-full bg-violet-50" />
                     </div>
+                    <Skeleton className="h-4 w-12 bg-slate-100" />
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </article>
-      </section>
-
-      {/* ── Top products + Stock alerts ───────────────────────────────────────── */}
-      <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        {/* Top products bar chart */}
-        <article className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-base font-bold text-slate-900">{dictionary.sections.topProducts}</h2>
-          {isLoading ? (
-            <SkeletonChart height="h-48" />
-          ) : topProducts.length === 0 ? (
-            <p className="text-sm text-slate-400">{dictionary.empty}</p>
-          ) : (
-            <div className="h-[280px]">
-              <ResponsiveContainer height="100%" width="100%">
-                <BarChart barCategoryGap={8} data={topProducts.slice(0, 8)} layout="vertical" margin={{ bottom: 4, left: 0, right: 8, top: 4 }}>
-                  <CartesianGrid horizontal={false} stroke="#f8fafc" />
-                  <XAxis axisLine={false} dataKey="amount" fontSize={9} tick={{ fill: "#94a3b8", fontSize: 9 }} tickFormatter={(v: number) => compactCurrency(v, locale)} tickLine={false} type="number" />
-                  <YAxis axisLine={false} dataKey="product_name" fontSize={10} tick={{ fill: "#1e293b", fontSize: 10 }} tickLine={false} type="category" width={100} />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const d = payload[0].payload;
-                      return (
-                        <div className="rounded-xl bg-slate-900 px-3 py-2 text-white shadow-lg">
-                          <p className="text-xs font-semibold">{d.product_name}</p>
-                          <p className="text-sm font-bold">{formatCurrency(d.amount, locale)}</p>
-                          <p className="text-[10px] text-slate-400">sold {d.quantity_sold}</p>
-                        </div>
-                      );
-                    }}
-                    cursor={false}
-                  />
-                  <Bar dataKey="amount" maxBarSize={14} radius={[0, 6, 6, 0]}>
-                    {topProducts.slice(0, 8).map((_e, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </article>
-
-        {/* Low & high stock */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-1 xl:gap-4">
-          {/* Low stock */}
-          <article className="rounded-[1.75rem] border border-rose-100 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100">
-                <AlertTriangle className="h-4 w-4 text-rose-600" />
+            ) : topProducts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-8">
+                <p className="text-sm text-slate-400">{t.bestSellers.noBestSellers}</p>
+                <Link href={`/${locale}/sales`} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-violet-700">
+                  {t.bestSellers.openPos}
+                </Link>
               </div>
-              <h3 className="text-sm font-bold text-rose-700">{dictionary.sections.lowStockProducts}</h3>
-            </div>
-            {isLoading ? (
-              <div className="space-y-1.5">{[1,2,3].map((i) => <SkeletonStatRow key={i} className="bg-rose-50/40" />)}</div>
-            ) : lowStockList.length === 0 ? (
-              <p className="text-sm text-slate-400">{dictionary.empty}</p>
             ) : (
-              <ul className="space-y-1.5">
-                {lowStockList.map((p) => (
-                  <li key={p.product_id} className="flex items-center justify-between rounded-xl bg-rose-50/60 px-3 py-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Package className="h-3.5 w-3.5 shrink-0 text-rose-400" />
-                      <span className="truncate text-xs font-medium text-slate-800">{p.name}</span>
-                    </div>
-                    <span className="ml-2 shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
-                      {p.total_stock ?? 0}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
-
-          {/* High stock */}
-          <article className="rounded-[1.75rem] border border-emerald-100 bg-white p-5 shadow-sm">
-            <div className="mb-3 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100">
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
-              </div>
-              <h3 className="text-sm font-bold text-emerald-700">{dictionary.sections.highStockProducts}</h3>
-            </div>
-            {isLoading ? (
-              <div className="space-y-1.5">{[1,2,3].map((i) => <SkeletonStatRow key={i} className="bg-emerald-50/40" />)}</div>
-            ) : highStockList.length === 0 ? (
-              <p className="text-sm text-slate-400">{dictionary.empty}</p>
-            ) : (
-              <ul className="space-y-1.5">
-                {highStockList.map((p) => (
-                  <li key={p.product_id} className="flex items-center justify-between rounded-xl bg-emerald-50/60 px-3 py-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <Package className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                      <span className="truncate text-xs font-medium text-slate-800">{p.name}</span>
-                    </div>
-                    <span className="ml-2 shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
-                      {p.total_stock ?? 0}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </article>
-        </div>
-      </section>
-
-      {/* ── Recent sales ─────────────────────────────────────────────────────── */}
-      <section className="rounded-[1.75rem] border border-violet-100 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900">{dictionary.sections.recentSales}</h2>
-          {(data?.recent_sales.length ?? 0) > 0 && (
-            <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-bold text-violet-700">
-              {data!.recent_sales.length}
-            </span>
-          )}
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b border-violet-50">
-                <th className="px-3 pb-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">{dictionary.table.saleNumber}</th>
-                <th className="px-3 pb-2.5 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">{dictionary.table.amount}</th>
-                <th className="px-3 pb-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">{dictionary.table.paymentMethod}</th>
-                <th className="px-3 pb-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">{dictionary.table.soldAt}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                [...Array(5)].map((_, i) => (
-                  <tr key={i} className="border-b border-violet-50/70">
-                    <td className="px-3 py-2.5"><Skeleton className="h-4 w-20 bg-violet-50" /></td>
-                    <td className="px-3 py-2.5 text-right"><Skeleton className="h-4 w-16 ml-auto bg-slate-100" /></td>
-                    <td className="px-3 py-2.5"><Skeleton className="h-5 w-16 rounded-full bg-slate-100" /></td>
-                    <td className="px-3 py-2.5"><Skeleton className="h-4 w-24 bg-slate-100" /></td>
-                  </tr>
-                ))
-              ) : (data?.recent_sales.length ?? 0) === 0 ? (
-                <tr>
-                  <td className="px-3 py-6 text-center text-sm text-slate-400" colSpan={4}>{dictionary.empty}</td>
-                </tr>
-              ) : (
-                data!.recent_sales.map((sale: DashboardRecentSale) => (
-                  <tr key={sale.id} className="group border-b border-violet-50/70 transition last:border-0 hover:bg-violet-50/40">
-                    <td className="px-3 py-3">
-                      <span className="font-mono text-sm font-bold text-slate-900">{sale.sale_number}</span>
-                    </td>
-                    <td className="px-3 py-3 text-right">
-                      <span className="text-sm font-semibold text-slate-800">{formatCurrency(sale.total_amount, locale)}</span>
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold capitalize ${paymentBadgeClass(sale.payment_method)}`}>
-                        {sale.payment_method}
+              <div className="space-y-2.5">
+                {topProducts.slice(0, 10).map((p, i) => {
+                  const pct = maxQtySold > 0 ? (p.quantity_sold / maxQtySold) * 100 : 0;
+                  return (
+                    <div key={p.product_id} className="flex items-center gap-3">
+                      {/* Rank badge */}
+                      <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-black ${i < 3 ? "bg-violet-100 text-violet-700" : "bg-slate-50 text-slate-400"}`}>
+                        {i + 1}
                       </span>
-                    </td>
-                    <td className="px-3 py-3 text-xs text-slate-500">{formatDateTime(sale.sold_at, locale)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                      {/* Name + progress bar */}
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1 truncate text-xs font-semibold text-slate-800" title={p.product_name}>
+                          {p.product_name}
+                        </p>
+                        <div className="h-2 overflow-hidden rounded-full bg-violet-100/50">
+                          <div
+                            className="h-2 rounded-full bg-violet-500 transition-all duration-700"
+                            style={{ width: `${Math.max(pct, 3)}%` }}
+                          />
+                        </div>
+                      </div>
+                      {/* Qty sold */}
+                      <div className="shrink-0 text-right">
+                        <span className="text-sm font-black tabular-nums text-slate-800">{p.quantity_sold}</span>
+                        <span className="ml-1 text-[10px] text-slate-400">{t.bestSellers.qtySold}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </article>
+        )}
+
+        {/* ── Stock Attention — unified out-of-stock + low stock ──────── */}
+        {visible.has("stockAttention") && (
+          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-900">{t.stockAttention.title}</h2>
+              <Link href={`/${locale}/inventory`} className="text-[11px] font-semibold text-violet-600 transition hover:text-violet-800">
+                {t.stockAttention.viewAll}
+              </Link>
+            </div>
+            {isLoading ? (
+              <div className="space-y-2">{[1, 2, 3, 4].map((i) => <SkeletonStatRow key={i} className="bg-slate-50/40" />)}</div>
+            ) : outOfStockList.length === 0 && lowStockList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-8">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+                  <Package className="h-5 w-5 text-emerald-600" />
+                </span>
+                <p className="text-xs text-slate-400">{t.stockAttention.noIssues}</p>
+              </div>
+            ) : (
+              <div className="max-h-[420px] space-y-4 overflow-auto">
+                {/* Out of Stock section */}
+                {outOfStockList.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-[11px] font-bold text-rose-600">
+                      {t.stockAttention.outOfStockSection} ({outOfStockList.length})
+                    </p>
+                    <div className="space-y-2">
+                      {outOfStockList.slice(0, 5).map((p) => (
+                        <div key={p.product_id} className="flex items-center gap-3 rounded-xl border border-rose-100 bg-rose-50/50 px-3 py-2.5">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-100">
+                            <Package className="h-4 w-4 text-rose-500" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-bold text-slate-800">{p.name}</p>
+                            <p className="text-[10px] text-slate-500">
+                              {t.stockAttention.remaining} 0 · {t.stockAttention.warehouse}
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-700">
+                            {t.stockAttention.outOfStockBadge}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Low Stock section */}
+                {lowStockList.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-[11px] font-bold text-amber-600">
+                      {t.stockAttention.lowStockSection} ({lowStockList.length})
+                    </p>
+                    <div className="space-y-2">
+                      {lowStockList.slice(0, 5).map((p) => {
+                        const qty = p.total_stock ?? p.quantity;
+                        return (
+                          <div key={p.product_id} className="flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100">
+                              <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-bold text-slate-800">{p.name}</p>
+                              <p className="text-[10px] text-slate-500">
+                                {t.stockAttention.remaining} {qty} / {t.stockAttention.reorderPoint} {LOW_STOCK_THRESHOLD} · {t.stockAttention.warehouse}
+                              </p>
+                            </div>
+                            <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                              {t.stockAttention.lowBadge}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </article>
+        )}
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 7. RECENT SALES — full width (100%)                               */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {visible.has("recentSales") && (
+        <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">{t.recentSales.title}</h2>
+              <p className="text-[10px] text-slate-400">{dateRangeText}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {(data?.recent_sales.length ?? 0) > 0 && (
+                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                  {data!.recent_sales.length}
+                </span>
+              )}
+              <Link href={`/${locale}/sales`} className="text-[11px] font-semibold text-violet-600 transition hover:text-violet-800">
+                {t.recentOrders.viewAll}
+              </Link>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-violet-50">
+                  <th className="px-2 pb-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">{t.recentOrders.invoice}</th>
+                  <th className="px-2 pb-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">{t.recentOrders.customer}</th>
+                  <th className="px-2 pb-2.5 text-right text-[10px] font-bold uppercase tracking-widest text-slate-400">{t.recentOrders.total}</th>
+                  <th className="px-2 pb-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">{t.recentOrders.payment}</th>
+                  <th className="px-2 pb-2.5 text-left text-[10px] font-bold uppercase tracking-widest text-slate-400">{t.recentOrders.time}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => (
+                    <tr key={i} className="border-b border-violet-50/70">
+                      <td className="px-2 py-2.5"><Skeleton className="h-4 w-20 bg-violet-50" /></td>
+                      <td className="px-2 py-2.5"><Skeleton className="h-4 w-16 bg-slate-100" /></td>
+                      <td className="px-2 py-2.5 text-right"><Skeleton className="ml-auto h-4 w-16 bg-slate-100" /></td>
+                      <td className="px-2 py-2.5"><Skeleton className="h-5 w-14 rounded-full bg-slate-100" /></td>
+                      <td className="px-2 py-2.5"><Skeleton className="h-4 w-12 bg-slate-100" /></td>
+                    </tr>
+                  ))
+                ) : (data?.recent_sales.length ?? 0) === 0 ? (
+                  <tr>
+                    <td className="px-2 py-8 text-center" colSpan={5}>
+                      <p className="text-sm text-slate-400">{t.recentOrders.noOrders}</p>
+                      <Link href={`/${locale}/sales`} className="mt-2 inline-block rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-violet-700">
+                        {t.recentOrders.openPos}
+                      </Link>
+                    </td>
+                  </tr>
+                ) : (
+                  data!.recent_sales.map((sale: DashboardRecentSale) => (
+                    <tr key={sale.id} className="border-b border-violet-50/70 transition last:border-0 hover:bg-violet-50/30">
+                      <td className="px-2 py-2.5"><span className="font-mono text-xs font-bold text-slate-900">{sale.sale_number}</span></td>
+                      <td className="px-2 py-2.5 text-xs text-slate-600">{sale.customer_name || t.recentOrders.walkIn}</td>
+                      <td className="px-2 py-2.5 text-right text-xs font-bold text-slate-800">{formatCurrency(sale.total_amount, locale)}</td>
+                      <td className="px-2 py-2.5">
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${paymentBadgeClass(sale.payment_method)}`}>
+                          {localizePaymentMethod(sale.payment_method, t.paymentMethods)}
+                        </span>
+                      </td>
+                      <td className="px-2 py-2.5 text-[11px] text-slate-500">{formatTime(sale.sold_at, locale)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -81,7 +81,7 @@
     "termsRequired": "Please accept the Terms of Service"
   },
   "dashboard": {
-    "title": "Store dashboard",
+    "title": "Store Dashboard",
     "subtitle": "Track sales, move to the cashier screen quickly, and keep an eye on stock signals from one overview.",
     "cards": {
       "salesTodayLabel": "Sales today",
@@ -91,7 +91,7 @@
       "lowStockLabel": "Low stock",
       "lowStockHint": "Items that should be reviewed by the back office."
     },
-    "quickActionsTitle": "Quick actions",
+    "quickActionsTitle": "Quick Actions",
     "actions": {
       "newSaleTitle": "Open cashier",
       "newSaleDescription": "Jump into the selling screen for walk-in customers and fast checkout.",
@@ -104,8 +104,8 @@
     "filters": {
       "periodLabel": "Period",
       "periodToday": "Today",
-      "period7d": "Last 7 days",
-      "period30d": "Last 30 days",
+      "period7d": "Last 7 Days",
+      "period30d": "Last 30 Days",
       "periodCustom": "Custom range",
       "fromLabel": "From",
       "toLabel": "To",
@@ -113,12 +113,12 @@
       "recentLimitLabel": "Recent sales",
       "lowStockLimitLabel": "Low stock list",
       "lowStockThresholdLabel": "Low stock threshold",
-      "apply": "Apply filters",
+      "apply": "Apply Filters",
       "refresh": "Refresh"
     },
     "sections": {
       "range": "Time range",
-      "paymentBreakdown": "Payment breakdown",
+      "paymentBreakdown": "Payment Breakdown",
       "topProducts": "Top products",
       "lowStockProducts": "Low stock products",
       "highStockProducts": "High stock products",
@@ -165,7 +165,145 @@
         "title": "Stock alert received",
         "description": "Whole milk and takeaway lids dropped below the reorder threshold."
       }
-    ]
+    ],
+    "hero": {
+      "storeOpen": "Open",
+      "storeClosed": "Closed",
+      "totalSales": "Total Sales",
+      "totalOrders": "Total Orders",
+      "totalProfit": "Net Profit",
+      "storeStatus": "Store Status",
+      "showingData": "Showing Data"
+    },
+    "quickActions": {
+      "openPos": "Open POS",
+      "openPosDesc": "Start selling to walk-in customers",
+      "receiveStock": "Receive Stock",
+      "receiveStockDesc": "Record incoming goods from suppliers",
+      "stockCount": "Stock Count",
+      "stockCountDesc": "Start warehouse stock counting",
+      "createQuotation": "Quotations",
+      "createQuotationDesc": "Draft a quotation for a customer",
+      "customers": "Customers",
+      "customersDesc": "View customer list and profiles",
+      "promotions": "Promotions",
+      "promotionsDesc": "Manage discounts and campaigns"
+    },
+    "kpi": {
+      "totalSales": "Total Sales",
+      "totalOrders": "Total Orders",
+      "totalProfit": "Net Profit",
+      "averageBill": "Average Bill",
+      "lowStockItems": "Low Stock",
+      "outOfStockItems": "Out of Stock",
+      "customersServed": "Customers Served",
+      "topProduct": "Top Product",
+      "vsPrevious": "vs previous period",
+      "noChange": "No change",
+      "itemsUnit": "items",
+      "noSalesYet": "No sales yet"
+    },
+    "actionCenter": {
+      "title": "Requires Attention",
+      "lowStock": "Low Stock Items",
+      "outOfStock": "Out of Stock",
+      "negativeStock": "Negative Stock",
+      "pendingCounts": "Pending Count Sessions",
+      "pendingApprovals": "Pending Approvals",
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Information",
+      "viewItems": "View Items",
+      "noIssues": "No issues detected — all systems healthy"
+    },
+    "stockAttention": {
+      "title": "Stock Attention",
+      "outOfStockSection": "Out of Stock",
+      "lowStockSection": "Low Stock",
+      "remaining": "Remaining",
+      "reorderPoint": "Min",
+      "warehouse": "Main Warehouse",
+      "outOfStockBadge": "Out",
+      "lowBadge": "Low",
+      "viewAll": "View All",
+      "noIssues": "All stock levels are healthy"
+    },
+    "bestSellers": {
+      "title": "Best Sellers",
+      "qtySold": "sold",
+      "noBestSellers": "No sales data in this period.",
+      "openPos": "Open POS"
+    },
+    "recentSales": {
+      "title": "Recent Sales"
+    },
+    "inventoryAlerts": {
+      "title": "Inventory Health",
+      "lowStock": "Low Stock",
+      "outOfStock": "Out of Stock",
+      "negativeStock": "Negative Stock",
+      "pendingCounts": "Pending Counts",
+      "viewAll": "View All",
+      "noAlerts": "All stock levels are healthy"
+    },
+    "recentOrders": {
+      "title": "Recent Orders",
+      "invoice": "Invoice",
+      "customer": "Customer",
+      "total": "Total",
+      "payment": "Payment",
+      "time": "Time",
+      "walkIn": "Walk-in",
+      "viewAll": "View All",
+      "noOrders": "No orders found in selected period.",
+      "openPos": "Open POS"
+    },
+    "recentActivity": {
+      "title": "Recent Activity",
+      "noActivity": "No recent activity found.",
+      "sale": "Sale",
+      "stockReceive": "Stock Receive",
+      "stockTransfer": "Stock Transfer",
+      "stockCount": "Stock Count",
+      "stockAdjustment": "Adjustment",
+      "customerCreated": "New Customer"
+    },
+    "salesTrend": {
+      "title": "Sales Trend",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "orders": "Orders"
+    },
+    "paymentMethods": {
+      "cash": "Cash",
+      "transfer": "Transfer",
+      "qr": "QR Payment",
+      "credit": "Credit",
+      "card": "Card"
+    },
+    "emptyStates": {
+      "noSales": "No sales found in this period.",
+      "noSalesAction": "Open POS",
+      "noProducts": "No product data available.",
+      "noStock": "No stock alerts.",
+      "noStockAction": "Create Count Session",
+      "noActivity": "No operational activity recorded.",
+      "noPayments": "No payments in this period."
+    },
+    "period90d": "90 Days",
+    "topProductsTable": {
+      "title": "Top Products",
+      "rank": "#",
+      "product": "Product",
+      "qtySold": "Qty Sold",
+      "revenue": "Revenue",
+      "viewAll": "View All"
+    },
+    "roleLabel": {
+      "owner": "Store Owner",
+      "cashier": "Cashier",
+      "warehouse": "Warehouse"
+    }
   },
   "workspace": {
     "navigation": {
@@ -714,7 +852,8 @@
       "completeSale": "Complete Sale",
       "searchPlaceholder": "Search Barcode or Name...",
       "receiptPayment": "Receipt & Payment",
-      "activityLogs": "Activity Logs"
+      "activityLogs": "Activity Logs",
+      "promotions": "Promotions"
     },
     "stats": {
       "totalProductsLabel": "Total Products",
@@ -828,6 +967,7 @@
       "copied": "Copied",
       "location": "Location",
       "noLocation": "—",
+      "locationUnassigned": "Unassigned",
       "viewDetails": "View details",
       "duplicate": "Duplicate",
       "archive": "Archive",
@@ -1014,7 +1154,13 @@
       "cancel": "Cancel",
       "posPreviewLabel": "POS Preview",
       "posStatusActive": "Active",
-      "posStatusInactive": "Inactive"
+      "posStatusInactive": "Inactive",
+      "supplierLabel": "Supplier",
+      "supplierHint": "Choose a supplier from the store supplier list to link with this product.",
+      "supplierPlaceholder": "— Select —",
+      "supplierEmptyLabel": "No suppliers available",
+      "initialStockLabel": "Initial stock",
+      "initialStockHint": "Opening quantity to create right after saving the product. Use whole numbers only."
     },
     "units": {
       "title": "Product units",
@@ -1861,16 +2007,158 @@
       "success": "Stock adjusted",
       "error": "Failed to adjust stock",
       "location": "Storage location (optional)"
+    },
+    "warehouseDashboard": {
+      "title": "Warehouse Dashboard",
+      "subtitle": "See what needs attention, how much stock value is on hand, and what changed recently without extra scrolling.",
+      "refresh": "Refresh data",
+      "actionCenter": {
+        "title": "Action Center",
+        "subtitle": "Tap an item to open pending warehouse work.",
+        "open": "Open",
+        "items": {
+          "lowStock": "Low Stock",
+          "outOfStock": "Out of Stock",
+          "pendingTransfer": "Pending Transfer",
+          "pendingCount": "Pending Count",
+          "pendingApproval": "Pending Approval"
+        },
+        "helpers": {
+          "lowStock": "Items near reorder point",
+          "outOfStock": "Items already unavailable",
+          "pendingTransfer": "Receive and allocate stock",
+          "pendingCount": "Count sessions still in progress",
+          "pendingApproval": "Variance waiting for review"
+        }
+      },
+      "kpi": {
+        "inventoryValue": "Inventory Value",
+        "availableStock": "Available Stock",
+        "reservedStock": "Reserved Stock",
+        "damagedStock": "Damaged Stock",
+        "inTransitStock": "In Transit Stock",
+        "helpers": {
+          "inventoryValue": "All active locations",
+          "availableStock": "Ready to sell",
+          "reservedStock": "Held for pending work",
+          "damagedStock": "Needs follow-up",
+          "inTransitStock": "Moving between locations"
+        }
+      },
+      "movement": {
+        "title": "Inventory Movement",
+        "periods": {
+          "sevenDays": "7 Days",
+          "thirtyDays": "30 Days",
+          "threeMonths": "3 Months"
+        },
+        "legends": {
+          "receive": "Receive",
+          "issue": "Issue",
+          "transfer": "Transfer",
+          "total": "Total Value"
+        },
+        "empty": "No inventory movement in this period."
+      },
+      "alerts": {
+        "title": "Alerts & Exceptions",
+        "subtitle": "Keep the top warehouse issues visible.",
+        "critical": "Critical",
+        "warning": "Warning",
+        "info": "Information",
+        "viewAll": "View all",
+        "noAlerts": "No active inventory alerts right now.",
+        "items": {
+          "lowStock": "Low stock item",
+          "pendingTransfer": "Pending transfer",
+          "pendingCount": "Pending count session",
+          "pendingApproval": "Pending inventory approval"
+        },
+        "stockLevel": "Stock {current} / Min {min} {unit}"
+      },
+      "variance": {
+        "title": "Top Variance Products",
+        "viewCount": "Open Stock Count",
+        "headers": {
+          "product": "Product",
+          "systemQty": "System Qty",
+          "countQty": "Count Qty",
+          "variance": "Variance"
+        },
+        "noData": "No variance found from recent count sessions."
+      },
+      "statusDistribution": {
+        "title": "Stock Status Distribution",
+        "subtitle": "Operational stock balance by status.",
+        "labels": {
+          "available": "Available",
+          "reserved": "Reserved",
+          "damaged": "Damaged",
+          "inTransit": "In Transit",
+          "counting": "Counting"
+        },
+        "helpers": {
+          "available": "Ready to sell or issue",
+          "reserved": "Held for pending work",
+          "damaged": "Items flagged during count review",
+          "inTransit": "Moving between locations",
+          "counting": "Items in active count sessions"
+        }
+      },
+      "recentActivity": {
+        "title": "Recent Activity",
+        "subtitle": "Receive, transfer, adjust, count, approve, and sale deduction only.",
+        "noData": "No recent inventory activity.",
+        "reference": "Reference",
+        "types": {
+          "receive": "Receive Stock",
+          "transfer": "Transfer Stock",
+          "adjustment": "Adjust Stock",
+          "count": "Stock Count",
+          "approval": "Approval",
+          "sale": "Sale Deduction",
+          "issue": "Issue Stock",
+          "return": "Return Stock"
+        },
+        "messages": {
+          "receive": "{product} received {qty} at {location}",
+          "transfer": "{product} transferred {qty} to {destination}",
+          "adjustment": "{product} adjusted {qty} at {location}",
+          "count": "Count session {session} updated",
+          "approval": "Count session {session} waiting approval",
+          "sale": "{product} deducted by sale {qty}",
+          "issue": "{product} issued {qty} from {location}",
+          "return": "{product} returned {qty}"
+        }
+      },
+      "summary": {
+        "inventoryValue": "Inventory Value",
+        "availableStock": "Available",
+        "reservedStock": "Reserved",
+        "damagedStock": "Damaged",
+        "inTransitStock": "In Transit",
+        "activeAlerts": "Active Alerts"
+      },
+      "units": {
+        "items": "items"
+      }
     }
   },
   "count": {
     "title": "Stock Count",
-    "subtitle": "Count physical stock and compare with system",
+    "subtitle": "Warehouse-friendly stock counting workflow with variance review and audit trail",
     "back": "Back",
     "newSession": "New count session",
     "noSessions": "No count sessions yet — create the first one",
     "sessionList": "Count sessions",
     "items": "items",
+    "wizard": {
+      "setup": "Setup",
+      "selectItems": "Items",
+      "counting": "Counting",
+      "review": "Review",
+      "stepOf": "Step {n}/4"
+    },
     "create": {
       "title": "Create count session",
       "name": "Session name",
@@ -1879,16 +2167,63 @@
       "allWarehouses": "All warehouses",
       "zone": "Zone (optional)",
       "zonePlaceholder": "e.g. A",
+      "allZones": "All zones",
       "category": "Category (optional)",
       "allCategories": "All categories",
+      "staff": "Assigned staff (optional)",
+      "staffPlaceholder": "e.g. John",
       "note": "Note",
-      "start": "Start counting",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "continueToItems": "Continue to select items",
+      "countType": "Count type",
+      "countTypeOptions": {
+        "full": "Full Warehouse Count",
+        "zone": "Zone Count",
+        "category": "Category Count",
+        "cycle": "Cycle Count"
+      },
+      "cycleRule": "Cycle rule",
+      "cycleRulePlaceholder": "e.g. Every Monday · Beverage category",
+      "blindCount": "Blind Count",
+      "blindCountHelp": "Hide system quantity during counting"
+    },
+    "preview": {
+      "title": "This count session will include",
+      "warehouse": "Warehouse",
+      "zone": "Zone",
+      "category": "Category",
+      "products": "Products",
+      "mode": "Count mode",
+      "modeFull": "Full warehouse",
+      "modePartial": "Selected items",
+      "estimateUnit": "items",
+      "type": "Count type",
+      "blindCount": "Blind Count",
+      "cycleRule": "Cycle rule",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "select": {
+      "title": "Select items to count",
+      "subtitle": "Pick the products to include in this count",
+      "searchPlaceholder": "Search product, SKU or barcode...",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "selectedItems": "Selected items",
+      "startCounting": "Start counting",
+      "unassigned": "Unassigned",
+      "noProducts": "No products match this filter",
+      "back": "Back",
+      "statusReady": "Ready",
+      "statusLow": "Low",
+      "statusOut": "Out",
+      "statusUnassigned": "Unassigned Location",
+      "allStockStatuses": "All Stock Statuses"
     },
     "status": {
       "draft": "Draft",
       "counting": "Counting",
-      "review": "Review",
+      "review": "Awaiting review",
       "completed": "Completed",
       "cancelled": "Cancelled"
     },
@@ -1900,24 +2235,66 @@
       "countedQty": "Counted",
       "variance": "Variance",
       "status": "Status",
-      "note": "Note"
+      "note": "Note",
+      "location": "Location",
+      "currentStock": "Current stock"
     },
     "variance": {
       "match": "Match",
-      "short": "Short",
-      "over": "Over",
-      "notCounted": "Not counted"
+      "short": "Shortage",
+      "over": "Excess",
+      "notCounted": "Not counted",
+      "skipped": "Skipped"
     },
     "summary": {
       "totalItems": "Total Items",
       "counted": "Counted",
       "matched": "Matched",
-      "short": "Short",
-      "over": "Over",
-      "totalVariance": "Total Variance"
+      "short": "Shortage",
+      "over": "Excess",
+      "notCounted": "Not Counted",
+      "totalVariance": "Total Variance",
+      "skipped": "Skipped",
+      "remaining": "Remaining",
+      "progress": "Progress"
     },
     "scanPlaceholder": "Scan or type barcode / SKU then Enter",
     "scanNotFound": "Product not found in this session",
+    "countFilter": {
+      "all": "All",
+      "notCounted": "Not Counted",
+      "counted": "Counted",
+      "variance": "Variance"
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "countMode": {
+      "table": "Table Mode",
+      "quick": "Quick Scan Mode"
+    },
+    "quickScan": {
+      "title": "Quick Scan Mode",
+      "hint": "Optimized for USB barcode scanners and Enter-key workflows with no mouse required",
+      "barcodeLabel": "Scan barcode",
+      "countedQtyLabel": "Counted quantity",
+      "save": "Save",
+      "productFound": "Product found",
+      "ready": "Scan a barcode to start counting",
+      "focusHint": "After save, focus returns to the barcode input automatically",
+      "notFound": "Product not found in this session",
+      "lastSaved": "Saved: {name}",
+      "barcodePlaceholder": "Scan barcode or enter SKU",
+      "notePlaceholder": "Add counting note",
+      "skip": "Skip Item",
+      "next": "Next Item",
+      "skipped": "Skipped {name}",
+      "recentActivity": "Recent Scans",
+      "liveSummary": "Live Summary"
+    },
     "action": {
       "saveDraft": "Save draft",
       "review": "Review variance",
@@ -1926,20 +2303,399 @@
       "applying": "Applying...",
       "cancel": "Cancel session",
       "export": "Export count sheet",
-      "back": "Back"
+      "back": "Back",
+      "skip": "Skip",
+      "resume": "Resume item",
+      "actions": "Actions"
     },
     "review": {
       "title": "Review variance",
-      "subtitle": "Showing only items with variance — confirm to set stock to the counted quantity",
+      "subtitle": "Review inventory impact, record a required reason, and apply corrections with audit visibility",
       "noVariance": "No variance — everything matches the system",
       "applyConfirm": "Apply correction to {n} items using counted quantity?",
       "applied": "Applied correction to {n} items",
       "applyNote": "Stock count session correction",
-      "applyError": "Some items failed to update"
+      "applyError": "Some items failed to update",
+      "correctionResult": "Correction result",
+      "applyCol": "Apply",
+      "varianceItems": "Variance items",
+      "totalShortage": "Total shortage",
+      "totalOverage": "Total overage",
+      "netVariance": "Net variance",
+      "willUpdate": "You are about to update stock for {n} products. This will create stock movement logs.",
+      "backToCounting": "Back to counting",
+      "reason": "Variance reason",
+      "reasonPlaceholder": "Select a reason",
+      "otherReasonPlaceholder": "Enter custom reason",
+      "requiredReason": "You must provide variance reasons for {n} more items before completing review",
+      "reasonOptions": {
+        "": "Select a reason",
+        "counting_error": "Counting Error",
+        "misplaced_product": "Misplaced Product",
+        "damaged_product": "Damaged Product",
+        "missing_product": "Missing Product",
+        "receiving_not_recorded": "Receiving Not Recorded",
+        "sale_not_recorded": "Sale Not Recorded",
+        "previous_adjustment_error": "Previous Adjustment Error",
+        "other": "Other"
+      },
+      "itemsIncreased": "Items Increased",
+      "itemsDecreased": "Items Decreased",
+      "qtyIncrease": "Qty Increase",
+      "qtyDecrease": "Qty Decrease",
+      "netChange": "Net Change",
+      "valueIncrease": "Inventory Value Increase",
+      "valueDecrease": "Inventory Value Decrease",
+      "netImpact": "Net Inventory Impact",
+      "inventoryImpact": "Inventory impact summary",
+      "sessionSummary": "Session Summary",
+      "sessionName": "Session Name",
+      "sessionDate": "Date",
+      "creator": "Creator",
+      "warehouse": "Warehouse",
+      "category": "Category",
+      "sessionStatus": "Status",
+      "results": "Results",
+      "varianceTable": "Variance Table",
+      "adjusted": "Adjusted",
+      "adjustedYes": "Yes",
+      "adjustedNo": "No",
+      "user": "User",
+      "timestamp": "Timestamp",
+      "auditTrail": "Audit Trail",
+      "noAuditTrail": "No audit entries yet",
+      "sessionDetailTitle": "Count session details",
+      "sessionDetailSubtitle": "Review results, variance adjustments, and the audit trail for this session",
+      "exportExcel": "Export Excel",
+      "exportPdf": "Export PDF",
+      "pdfOpenError": "Unable to open a print window for PDF export",
+      "reasonNotRequired": "Reason not required",
+      "costUnavailable": "Cost unavailable for {n} item(s)",
+      "completedBy": "Completed By",
+      "completedAt": "Completed At",
+      "printReport": "Print Count Report",
+      "showVarianceOnly": "Show Variance Only",
+      "showAllItems": "Show All Items",
+      "confirmApply": "Confirm Apply Correction",
+      "itemsToUpdate": "Items to Update",
+      "confirmationHelp": "This will create stock movement logs and cannot be silently undone.",
+      "approvalWarning": "High-variance items detected — review carefully before applying corrections",
+      "severityLabel": "Severity"
+    },
+    "list": {
+      "session": "Session",
+      "warehouse": "Warehouse",
+      "category": "Category",
+      "status": "Status",
+      "totalItems": "Items",
+      "varianceItems": "Variance",
+      "createdBy": "Created by",
+      "createdAt": "Created",
+      "actions": "Actions",
+      "continue": "Continue",
+      "review": "Review",
+      "viewResult": "View result",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "allWarehouses": "All warehouses",
+      "allCategories": "All categories",
+      "unknownUser": "—",
+      "type": "Type",
+      "progress": "Progress",
+      "lastActivity": "Last Activity",
+      "dashboard": {
+        "totalSessions": "Total Count Sessions",
+        "inProgress": "In Progress",
+        "awaitingReview": "Pending Review",
+        "completed": "Completed",
+        "draft": "Draft",
+        "counting": "Counting",
+        "review": "Pending Review",
+        "cancelled": "Cancelled"
+      },
+      "zone": "Zone",
+      "countedItems": "Counted Items",
+      "allStatuses": "All Statuses",
+      "searchPlaceholder": "Search session name",
+      "noFilteredSessions": "No sessions match the selected filters"
     },
     "empty": "No products to count in this session",
     "draftSaved": "Draft saved",
     "cancelConfirm": "Cancel this count session?",
-    "deleteSession": "Delete session"
+    "cancelSessionConfirm": "Cancel this count session? Counted items will be kept in cancelled status.",
+    "deleteSession": "Delete session",
+    "deleteConfirm": "Delete this count session permanently? This cannot be undone.",
+    "counting": {
+      "hidden": "Hidden"
+    }
+  },
+  "promotion": {
+    "title": "Promotions",
+    "subtitle": "Create and manage discount campaigns, set conditions, schedules, and track performance.",
+    "newCampaign": "New campaign",
+    "editCampaign": "Edit campaign",
+    "kpi": {
+      "active": "Active campaigns",
+      "scheduled": "Scheduled",
+      "expired": "Expired",
+      "totalUses": "Total uses",
+      "revenueGenerated": "Revenue from promos",
+      "discountGiven": "Discount given",
+      "usagesToday": "Uses today"
+    },
+    "list": {
+      "search": "Search campaigns...",
+      "filterType": "Promo type",
+      "filterStatus": "Status",
+      "allTypes": "All types",
+      "allStatuses": "All statuses",
+      "gridView": "Card view",
+      "tableView": "Table view",
+      "empty": "No campaigns yet — click 'New campaign' to get started",
+      "col": {
+        "name": "Campaign name",
+        "type": "Type",
+        "scope": "Scope",
+        "status": "Status",
+        "priority": "Priority",
+        "usage": "Usage",
+        "start": "Start",
+        "end": "End",
+        "actions": "Actions"
+      },
+      "action": {
+        "edit": "Edit",
+        "duplicate": "Duplicate",
+        "pause": "Pause",
+        "resume": "Resume",
+        "delete": "Delete",
+        "deleteConfirm": "Delete this campaign permanently? This cannot be undone.",
+        "activate": "Activate"
+      },
+      "noEnd": "No expiry",
+      "usageTimes": "uses",
+      "priorityLabel": "Priority"
+    },
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "scheduled": "Scheduled",
+      "expired": "Expired",
+      "paused": "Paused"
+    },
+    "type": {
+      "percentage": "% Discount",
+      "percentageDesc": "Percentage off the full price",
+      "fixed_amount": "Fixed ฿ off",
+      "fixedAmountDesc": "Fixed amount off the total",
+      "fixed_price": "Fixed price",
+      "fixedPriceDesc": "Set a special selling price",
+      "buy_x_get_y": "Buy X Get Y",
+      "buyXGetYDesc": "Buy a quantity and get free items",
+      "spend_x_discount": "Spend X get discount",
+      "spendXDiscountDesc": "Reach a spend threshold for a discount",
+      "spend_x_gift": "Spend X get gift",
+      "spendXGiftDesc": "Reach a spend threshold for a free gift",
+      "bundle": "Bundle price",
+      "bundleDesc": "Sell a group of products at a bundle price",
+      "member_price": "Member price",
+      "memberPriceDesc": "Special pricing for members",
+      "coupon": "Coupon code",
+      "couponDesc": "Apply a coupon code for a discount",
+      "happy_hour": "Happy Hour",
+      "happyHourDesc": "Time-based discount window",
+      "cylinder_exchange": "Cylinder Exchange",
+      "cylinderExchangeDesc": "Return old cylinder for a discount"
+    },
+    "wizard": {
+      "info": "Basic info",
+      "type": "Promo type",
+      "scope": "Scope",
+      "conditions": "Conditions",
+      "schedule": "Schedule",
+      "preview": "Review",
+      "stepOf": "of",
+      "back": "Back",
+      "next": "Next",
+      "create": "Create campaign",
+      "update": "Save changes",
+      "cancel": "Cancel",
+      "creating": "Creating..."
+    },
+    "info": {
+      "title": "Campaign details",
+      "subtitle": "Give your campaign a name your team will recognise at a glance.",
+      "name": "Campaign name",
+      "namePlaceholder": "e.g. Summer Sale 20%",
+      "nameRequired": "Campaign name is required",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe what this campaign does (optional)",
+      "icon": "Icon",
+      "color": "Theme colour"
+    },
+    "typeConfig": {
+      "title": "Promotion type & value",
+      "subtitle": "Choose the discount format and configure its parameters.",
+      "config": "Promotion settings",
+      "percentOff": "Discount (%)",
+      "amountOff": "Amount off (฿)",
+      "fixedPrice": "Special price (฿)",
+      "originalPrice": "Original price (฿)",
+      "buyQty": "Buy quantity",
+      "getQty": "Free quantity",
+      "freeProduct": "Free product",
+      "freeProductPlaceholder": "Name or SKU of the free product",
+      "minSpend": "Minimum spend (฿)",
+      "discountAmount": "Discount amount (฿)",
+      "giftDescription": "Gift description",
+      "giftDescPlaceholder": "e.g. Canvas tote bag",
+      "bundlePrice": "Bundle price (฿)",
+      "memberPrice": "Member price (฿)",
+      "memberLevels": "Member levels (1–5, empty = all)",
+      "couponCode": "Coupon code",
+      "couponCodePlaceholder": "e.g. SUMMER2026",
+      "couponCodeHelp": "Case-insensitive at checkout",
+      "requiredField": "Required",
+      "cylinderTypes": "Applicable cylinder sizes",
+      "cylinderType7kg": "7 KG",
+      "cylinderType15kg": "15 KG",
+      "cylinderType48kg": "48 KG",
+      "exchangeDiscount": "Exchange discount (฿)",
+      "exchangeDiscountHelp": "Discount amount when customer brings back an old cylinder"
+    },
+    "scopeStep": {
+      "title": "Product scope",
+      "subtitle": "Define which products this promotion applies to.",
+      "store": "Entire store",
+      "storeDesc": "Applies to every product in the store",
+      "category": "Category",
+      "categoryDesc": "Choose one or more product categories",
+      "brand": "Brand",
+      "brandDesc": "Choose one or more brands",
+      "products": "Specific products",
+      "productsDesc": "Enter product SKUs or names",
+      "tagPlaceholder": "Type and press Enter to add",
+      "tagHint": "Press Enter or , to add each item",
+      "noneSelected": "Nothing selected yet"
+    },
+    "conditionsStep": {
+      "title": "Usage conditions",
+      "subtitle": "Set conditions that must be true for the promotion to apply.",
+      "minAmount": "Minimum purchase amount (฿)",
+      "minAmountPlaceholder": "e.g. 500",
+      "minQty": "Minimum item quantity",
+      "minQtyPlaceholder": "e.g. 2",
+      "vipOnly": "VIP customers only (level 5)",
+      "vipOnlyHelp": "Customer must be at level 5",
+      "memberOnly": "Members only",
+      "memberOnlyHelp": "Customer must be a registered member",
+      "optional": "All fields are optional — leave blank for no condition",
+      "customerTypes": "Customer type",
+      "customerTypesHelp": "Empty = applies to all customer types (retail + wholesale)",
+      "customerTypeRetail": "Retail",
+      "customerTypeWholesale": "Wholesale"
+    },
+    "scheduleStep": {
+      "title": "Schedule & limits",
+      "subtitle": "Set dates, time windows, and usage limits.",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "noEndDate": "No expiry date",
+      "daysOfWeek": "Active days",
+      "allDays": "Every day",
+      "happyHour": "Happy Hour window",
+      "happyHourFrom": "From",
+      "happyHourTo": "To",
+      "priority": "Priority",
+      "priorityHelp": "Lower number = higher priority (1 = highest)",
+      "priorityHint": "1 = highest priority · Use lower numbers for more important campaigns · When multiple promotions match, the one with the lowest number applies first",
+      "stackable": "Stackable with other promotions",
+      "stackableHelp": "On = can be combined with other active promotions",
+      "limitType": "Usage limit",
+      "unlimited": "Unlimited",
+      "totalLimit": "Total uses limit",
+      "perCustomerLimit": "Per-customer limit",
+      "dailyLimit": "Daily limit",
+      "limitValue": "Number of uses",
+      "days": {
+        "sun": "Sun",
+        "mon": "Mon",
+        "tue": "Tue",
+        "wed": "Wed",
+        "thu": "Thu",
+        "fri": "Fri",
+        "sat": "Sat"
+      }
+    },
+    "previewStep": {
+      "title": "Review & confirm",
+      "subtitle": "Test the discount calculation before activating.",
+      "testSection": "Test calculation",
+      "testPrice": "Unit price (฿)",
+      "testQty": "Quantity",
+      "testCustomerLevel": "Customer level",
+      "testCustomerType": "Customer type",
+      "testCylinderSize": "Cylinder size",
+      "noLevel": "None",
+      "anyType": "Any type",
+      "anySize": "Any size",
+      "calculate": "Calculate",
+      "resultSection": "Result",
+      "originalTotal": "Original total",
+      "discount": "Discount",
+      "finalTotal": "Final total",
+      "promotionApplies": "✓ Promotion applies",
+      "promotionNotApplies": "✗ Promotion does not apply",
+      "reason": "Reason",
+      "summarySection": "Campaign summary",
+      "summaryType": "Type",
+      "summaryScope": "Scope",
+      "summarySchedule": "Schedule",
+      "summaryPriority": "Priority",
+      "discountValue": "Discount",
+      "conditionsSummary": "Conditions",
+      "scheduleSummary": "Schedule",
+      "limitsSummary": "Limit",
+      "always": "Always active",
+      "noConditions": "None"
+    },
+    "sections": {
+      "basicInfo": "Campaign details",
+      "promoType": "Promotion type",
+      "config": "Promotion settings",
+      "scope": "Product scope",
+      "conditions": "Conditions",
+      "schedule": "Schedule",
+      "limits": "Usage limits",
+      "livePreview": "Live preview",
+      "simulator": "Promotion simulator",
+      "conflicts": "Overlapping promotions",
+      "impact": "Promotion scope"
+    },
+    "impact": {
+      "title": "This promotion applies to",
+      "allStore": "All products in store",
+      "categories": "categories",
+      "brands": "brands",
+      "products": "products",
+      "none": "No scope defined yet"
+    },
+    "stackableNote": "This promotion can be combined with other active promotions.",
+    "exclusiveNote": "This promotion is exclusive — it will not stack with other promotions.",
+    "simulatorToggle": "Test Calculation",
+    "conflictTitle": "Overlapping promotions",
+    "conflictBody": "These campaigns share the same product scope — priority rules will determine which applies",
+    "statusLabel": "Status",
+    "activateLabel": "Active",
+    "draftLabel": "Draft",
+    "saveDraft": "Save as draft",
+    "noTypeHint": "Select a promotion type below to continue",
+    "created": "Campaign created",
+    "updated": "Campaign updated",
+    "deleted": "Campaign deleted",
+    "duplicated": "Campaign duplicated",
+    "paused": "Campaign paused",
+    "resumed": "Campaign resumed",
+    "activated": "Campaign activated"
   }
 }

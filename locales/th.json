@@ -165,7 +165,145 @@
         "title": "ได้รับแจ้งเตือนสต็อก",
         "description": "นมสดและฝาแก้วแบบกลับบ้านต่ำกว่าจุดสั่งซื้อแล้ว"
       }
-    ]
+    ],
+    "hero": {
+      "storeOpen": "เปิดให้บริการ",
+      "storeClosed": "ปิดร้าน",
+      "totalSales": "ยอดขายรวม",
+      "totalOrders": "ออเดอร์ทั้งหมด",
+      "totalProfit": "กำไรสุทธิ",
+      "storeStatus": "สถานะร้าน",
+      "showingData": "แสดงข้อมูล"
+    },
+    "quickActions": {
+      "openPos": "เปิดหน้าขาย",
+      "openPosDesc": "เริ่มขายสินค้าให้ลูกค้าหน้าร้าน",
+      "receiveStock": "รับสินค้าเข้า",
+      "receiveStockDesc": "บันทึกสินค้าที่เข้ามาจากซัพพลายเออร์",
+      "stockCount": "ตรวจนับสต็อก",
+      "stockCountDesc": "เริ่มรอบตรวจนับสินค้าในคลัง",
+      "createQuotation": "ใบเสนอราคา",
+      "createQuotationDesc": "ร่างใบเสนอราคาให้ลูกค้า",
+      "customers": "ลูกค้า",
+      "customersDesc": "ดูรายชื่อและข้อมูลลูกค้า",
+      "promotions": "โปรโมชั่น",
+      "promotionsDesc": "จัดการส่วนลดและแคมเปญ"
+    },
+    "kpi": {
+      "totalSales": "ยอดขายรวม",
+      "totalOrders": "ออเดอร์ทั้งหมด",
+      "totalProfit": "กำไรสุทธิ",
+      "averageBill": "เฉลี่ยต่อบิล",
+      "lowStockItems": "สต็อกต่ำ",
+      "outOfStockItems": "หมดสต็อก",
+      "customersServed": "ลูกค้าที่ให้บริการ",
+      "topProduct": "สินค้าขายดี",
+      "vsPrevious": "เทียบกับช่วงก่อนหน้า",
+      "noChange": "ไม่เปลี่ยนแปลง",
+      "itemsUnit": "รายการ",
+      "noSalesYet": "ยังไม่มียอดขาย"
+    },
+    "actionCenter": {
+      "title": "ต้องดำเนินการ",
+      "lowStock": "สินค้าสต็อกต่ำ",
+      "outOfStock": "สินค้าหมดสต็อก",
+      "negativeStock": "สต็อกติดลบ",
+      "pendingCounts": "รอบตรวจนับค้างอยู่",
+      "pendingApprovals": "รออนุมัติ",
+      "critical": "วิกฤต",
+      "warning": "เตือน",
+      "info": "แจ้งทราบ",
+      "viewItems": "ดูรายการ",
+      "noIssues": "ไม่มีปัญหา — ระบบทั้งหมดปกติ"
+    },
+    "stockAttention": {
+      "title": "สินค้าที่ต้องติดตาม",
+      "outOfStockSection": "หมดสต็อก",
+      "lowStockSection": "สต็อกต่ำ",
+      "remaining": "คงเหลือ",
+      "reorderPoint": "ขั้นต่ำ",
+      "warehouse": "คลังหลัก",
+      "outOfStockBadge": "หมด",
+      "lowBadge": "ต่ำ",
+      "viewAll": "ดูทั้งหมด",
+      "noIssues": "ระดับสต็อกทุกรายการปกติ"
+    },
+    "bestSellers": {
+      "title": "สินค้าขายดี",
+      "qtySold": "ขายได้",
+      "noBestSellers": "ไม่มีข้อมูลยอดขายในช่วงเวลานี้",
+      "openPos": "เปิดหน้าขาย"
+    },
+    "recentSales": {
+      "title": "ยอดขายล่าสุด"
+    },
+    "inventoryAlerts": {
+      "title": "สุขภาพสต็อก",
+      "lowStock": "สต็อกต่ำ",
+      "outOfStock": "หมดสต็อก",
+      "negativeStock": "สต็อกติดลบ",
+      "pendingCounts": "รอตรวจนับ",
+      "viewAll": "ดูทั้งหมด",
+      "noAlerts": "ระดับสต็อกทุกรายการปกติ"
+    },
+    "recentOrders": {
+      "title": "ออเดอร์ล่าสุด",
+      "invoice": "เลขที่บิล",
+      "customer": "ลูกค้า",
+      "total": "ยอดรวม",
+      "payment": "ชำระด้วย",
+      "time": "เวลา",
+      "walkIn": "ลูกค้าทั่วไป",
+      "viewAll": "ดูทั้งหมด",
+      "noOrders": "ไม่พบออเดอร์ในช่วงเวลาที่เลือก",
+      "openPos": "เปิดหน้าขาย"
+    },
+    "recentActivity": {
+      "title": "กิจกรรมล่าสุด",
+      "noActivity": "ไม่พบกิจกรรมล่าสุด",
+      "sale": "ขายสินค้า",
+      "stockReceive": "รับสินค้าเข้า",
+      "stockTransfer": "โอนสินค้า",
+      "stockCount": "ตรวจนับสต็อก",
+      "stockAdjustment": "ปรับปรุงสต็อก",
+      "customerCreated": "ลูกค้าใหม่"
+    },
+    "salesTrend": {
+      "title": "แนวโน้มยอดขาย",
+      "revenue": "รายได้",
+      "profit": "กำไร",
+      "orders": "ออเดอร์"
+    },
+    "paymentMethods": {
+      "cash": "เงินสด",
+      "transfer": "โอนเงิน",
+      "qr": "QR พร้อมเพย์",
+      "credit": "เครดิต",
+      "card": "บัตร"
+    },
+    "emptyStates": {
+      "noSales": "ไม่พบยอดขายในช่วงเวลานี้",
+      "noSalesAction": "เปิดหน้าขาย",
+      "noProducts": "ไม่มีข้อมูลสินค้า",
+      "noStock": "ไม่มีการแจ้งเตือนสต็อก",
+      "noStockAction": "สร้างรอบตรวจนับ",
+      "noActivity": "ไม่มีกิจกรรมที่บันทึกไว้",
+      "noPayments": "ไม่มีรายการชำระเงินในช่วงเวลานี้"
+    },
+    "period90d": "90 วัน",
+    "topProductsTable": {
+      "title": "สินค้าขายดี",
+      "rank": "#",
+      "product": "สินค้า",
+      "qtySold": "ขายได้",
+      "revenue": "รายได้",
+      "viewAll": "ดูทั้งหมด"
+    },
+    "roleLabel": {
+      "owner": "เจ้าของร้าน",
+      "cashier": "แคชเชียร์",
+      "warehouse": "คลังสินค้า"
+    }
   },
   "workspace": {
     "navigation": {
@@ -714,7 +852,8 @@
       "completeSale": "ปิดการขาย",
       "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า...",
       "receiptPayment": "ใบเสร็จและการชำระเงิน",
-      "activityLogs": "Activity Logs"
+      "activityLogs": "Activity Logs",
+      "promotions": "โปรโมชั่น"
     },
     "stats": {
       "totalProductsLabel": "จำนวนสินค้าทั้งหมด",
@@ -828,6 +967,7 @@
       "copied": "คัดลอกแล้ว",
       "location": "ตำแหน่งจัดเก็บ",
       "noLocation": "—",
+      "locationUnassigned": "ยังไม่ระบุตำแหน่ง",
       "viewDetails": "ดูรายละเอียด",
       "duplicate": "ทำสำเนา",
       "archive": "เก็บเข้าคลัง",
@@ -1014,7 +1154,13 @@
       "cancel": "ยกเลิก",
       "posPreviewLabel": "ตัวอย่าง POS",
       "posStatusActive": "เปิดใช้งาน",
-      "posStatusInactive": "ปิดใช้งาน"
+      "posStatusInactive": "ปิดใช้งาน",
+      "supplierLabel": "ผู้จัดจำหน่าย",
+      "supplierHint": "เลือกผู้จัดจำหน่ายจากรายชื่อซัพพลายเออร์ของร้านเพื่อผูกกับสินค้านี้",
+      "supplierPlaceholder": "— เลือก —",
+      "supplierEmptyLabel": "ยังไม่มีซัพพลายเออร์",
+      "initialStockLabel": "สต็อกเริ่มต้น",
+      "initialStockHint": "จำนวนตั้งต้นที่จะสร้างให้ทันทีหลังบันทึกสินค้า กรอกเป็นเลขจำนวนเต็มเท่านั้น"
     },
     "units": {
       "title": "หน่วยสินค้า",
@@ -1861,16 +2007,158 @@
       "success": "ปรับสต็อกสำเร็จ",
       "error": "ปรับสต็อกไม่สำเร็จ",
       "location": "ตำแหน่งจัดเก็บ (ถ้ามี)"
+    },
+    "warehouseDashboard": {
+      "title": "แดชบอร์ดคลังสินค้า",
+      "subtitle": "ดูว่างานไหนต้องจัดการก่อน มูลค่าสต็อกเหลือเท่าไร และมีความเคลื่อนไหวอะไรล่าสุดได้ทันทีโดยไม่ต้องเลื่อนหน้ามาก",
+      "refresh": "รีเฟรชข้อมูล",
+      "actionCenter": {
+        "title": "ศูนย์แจ้งเตือนงานคลัง",
+        "subtitle": "แตะรายการเพื่อเปิดงานค้างที่ต้องดำเนินการ",
+        "open": "เปิด",
+        "items": {
+          "lowStock": "สต็อกต่ำ",
+          "outOfStock": "สินค้าหมด",
+          "pendingTransfer": "รอโอนเข้า",
+          "pendingCount": "รอตรวจนับ",
+          "pendingApproval": "รออนุมัติ"
+        },
+        "helpers": {
+          "lowStock": "สินค้าใกล้จุดสั่งซื้อ",
+          "outOfStock": "สินค้าที่ไม่มีพร้อมขาย",
+          "pendingTransfer": "รอรับเข้าและจัดสรรเข้าคลัง",
+          "pendingCount": "รอบตรวจนับที่ยังไม่ปิดงาน",
+          "pendingApproval": "ผลต่างที่รอทบทวน"
+        }
+      },
+      "kpi": {
+        "inventoryValue": "มูลค่าสินค้าคงเหลือ",
+        "availableStock": "สต็อกพร้อมขาย",
+        "reservedStock": "สต็อกที่จองไว้",
+        "damagedStock": "สต็อกเสียหาย",
+        "inTransitStock": "สต็อกระหว่างทาง",
+        "helpers": {
+          "inventoryValue": "รวมทุกจุดจัดเก็บที่ใช้งาน",
+          "availableStock": "พร้อมขายหรือพร้อมจ่าย",
+          "reservedStock": "กันไว้สำหรับงานค้าง",
+          "damagedStock": "ต้องติดตามต่อ",
+          "inTransitStock": "กำลังย้ายระหว่างจุดจัดเก็บ"
+        }
+      },
+      "movement": {
+        "title": "ความเคลื่อนไหวสินค้า",
+        "periods": {
+          "sevenDays": "7 วัน",
+          "thirtyDays": "30 วัน",
+          "threeMonths": "3 เดือน"
+        },
+        "legends": {
+          "receive": "รับเข้า",
+          "issue": "จ่ายออก",
+          "transfer": "โอน",
+          "total": "มูลค่ารวม"
+        },
+        "empty": "ยังไม่มีความเคลื่อนไหวสินค้าในช่วงเวลานี้"
+      },
+      "alerts": {
+        "title": "แจ้งเตือนและข้อยกเว้น",
+        "subtitle": "ให้ทีมเห็นงานเสี่ยงของคลังไว้ด้านบนเสมอ",
+        "critical": "วิกฤต",
+        "warning": "เฝ้าระวัง",
+        "info": "ข้อมูล",
+        "viewAll": "ดูทั้งหมด",
+        "noAlerts": "ตอนนี้ยังไม่มีแจ้งเตือนสต็อกที่ต้องตามต่อ",
+        "items": {
+          "lowStock": "สินค้าใกล้หมด",
+          "pendingTransfer": "รายการรอโอนเข้า",
+          "pendingCount": "รอบตรวจนับค้าง",
+          "pendingApproval": "รายการรออนุมัติ"
+        },
+        "stockLevel": "คงเหลือ {current} / ขั้นต่ำ {min} {unit}"
+      },
+      "variance": {
+        "title": "สินค้าผลต่างสูงสุด",
+        "viewCount": "เปิดหน้าตรวจนับ",
+        "headers": {
+          "product": "สินค้า",
+          "systemQty": "จำนวนในระบบ",
+          "countQty": "จำนวนนับได้",
+          "variance": "ผลต่าง"
+        },
+        "noData": "ยังไม่พบผลต่างจากรอบตรวจนับล่าสุด"
+      },
+      "statusDistribution": {
+        "title": "สัดส่วนสถานะสต็อก",
+        "subtitle": "ดูสมดุลสต็อกตามสถานะการใช้งานจริง",
+        "labels": {
+          "available": "พร้อมขาย",
+          "reserved": "จองไว้",
+          "damaged": "เสียหาย",
+          "inTransit": "ระหว่างทาง",
+          "counting": "กำลังนับ"
+        },
+        "helpers": {
+          "available": "พร้อมขายหรือพร้อมจ่ายจากคลัง",
+          "reserved": "กันไว้สำหรับงานที่ยังไม่ปิด",
+          "damaged": "ดึงจากรายการที่ระบุว่าเสียหาย",
+          "inTransit": "กำลังย้ายระหว่างจุดจัดเก็บ",
+          "counting": "สินค้าในรอบตรวจนับที่กำลังดำเนินการ"
+        }
+      },
+      "recentActivity": {
+        "title": "กิจกรรมล่าสุด",
+        "subtitle": "แสดงเฉพาะรับเข้า โอน ปรับ ตรวจนับ อนุมัติ และตัดสต็อกจากการขาย",
+        "noData": "ยังไม่พบกิจกรรมสต็อกล่าสุด",
+        "reference": "อ้างอิง",
+        "types": {
+          "receive": "รับสินค้าเข้า",
+          "transfer": "โอนสินค้า",
+          "adjustment": "ปรับสต็อก",
+          "count": "ตรวจนับสต็อก",
+          "approval": "อนุมัติ",
+          "sale": "ตัดสต็อกจากการขาย",
+          "issue": "จ่ายสต็อกออก",
+          "return": "รับสินค้าคืน"
+        },
+        "messages": {
+          "receive": "{product} รับเข้า {qty} ที่ {location}",
+          "transfer": "{product} โอน {qty} ไป {destination}",
+          "adjustment": "{product} ปรับสต็อก {qty} ที่ {location}",
+          "count": "อัปเดตรอบตรวจนับ {session}",
+          "approval": "รอบตรวจนับ {session} รออนุมัติ",
+          "sale": "{product} ถูกตัดจากการขาย {qty}",
+          "issue": "{product} จ่ายออก {qty} จาก {location}",
+          "return": "{product} รับคืน {qty}"
+        }
+      },
+      "summary": {
+        "inventoryValue": "มูลค่าสต็อก",
+        "availableStock": "พร้อมขาย",
+        "reservedStock": "จองไว้",
+        "damagedStock": "เสียหาย",
+        "inTransitStock": "ระหว่างทาง",
+        "activeAlerts": "แจ้งเตือนค้าง"
+      },
+      "units": {
+        "items": "รายการ"
+      }
     }
   },
   "count": {
     "title": "ตรวจนับสต็อก",
-    "subtitle": "นับจำนวนจริงและเทียบกับระบบ",
+    "subtitle": "เวิร์กโฟลว์ตรวจนับสำหรับคลังและหน้าร้าน พร้อมติดตามผลต่างและร่องรอยตรวจสอบ",
     "back": "กลับ",
     "newSession": "สร้างรอบตรวจนับ",
     "noSessions": "ยังไม่มีรอบตรวจนับ — เริ่มสร้างรอบแรก",
     "sessionList": "รอบตรวจนับ",
     "items": "รายการ",
+    "wizard": {
+      "setup": "ตั้งค่า",
+      "selectItems": "เลือกรายการ",
+      "counting": "นับ",
+      "review": "ตรวจทาน",
+      "stepOf": "ขั้นที่ {n}/4"
+    },
     "create": {
       "title": "สร้างรอบตรวจนับใหม่",
       "name": "ชื่อรอบ",
@@ -1879,16 +2167,63 @@
       "allWarehouses": "ทุกคลัง",
       "zone": "โซน (ถ้ามี)",
       "zonePlaceholder": "เช่น A",
+      "allZones": "ทุกโซน",
       "category": "หมวดหมู่ (ถ้ามี)",
       "allCategories": "ทุกหมวดหมู่",
+      "staff": "ผู้รับผิดชอบ (ถ้ามี)",
+      "staffPlaceholder": "เช่น สมชาย",
       "note": "หมายเหตุ",
-      "start": "เริ่มตรวจนับ",
-      "cancel": "ยกเลิก"
+      "cancel": "ยกเลิก",
+      "continueToItems": "ถัดไป: เลือกรายการ",
+      "countType": "ประเภทการนับ",
+      "countTypeOptions": {
+        "full": "นับทั้งคลัง",
+        "zone": "นับตามโซน",
+        "category": "นับตามหมวดหมู่",
+        "cycle": "ตรวจนับตามรอบ"
+      },
+      "cycleRule": "รอบตรวจนับ",
+      "cycleRulePlaceholder": "เช่น ทุกวันจันทร์ · เครื่องดื่ม",
+      "blindCount": "นับแบบซ่อนจำนวนในระบบ",
+      "blindCountHelp": "ซ่อนจำนวนในระบบระหว่างการนับ"
+    },
+    "preview": {
+      "title": "รอบตรวจนับนี้จะรวม",
+      "warehouse": "คลัง",
+      "zone": "โซน",
+      "category": "หมวดหมู่",
+      "products": "สินค้า",
+      "mode": "โหมดนับ",
+      "modeFull": "นับทั้งคลัง",
+      "modePartial": "นับเฉพาะที่เลือก",
+      "estimateUnit": "รายการ",
+      "type": "ประเภทการนับ",
+      "blindCount": "โหมดนับแบบซ่อนจำนวน",
+      "cycleRule": "รอบตรวจนับ",
+      "enabled": "เปิดใช้งาน",
+      "disabled": "ปิด"
+    },
+    "select": {
+      "title": "เลือกรายการที่จะนับ",
+      "subtitle": "เลือกสินค้าที่จะนับในรอบนี้",
+      "searchPlaceholder": "ค้นหาสินค้า, SKU หรือบาร์โค้ด...",
+      "selectAll": "เลือกทั้งหมด",
+      "clear": "ล้างที่เลือก",
+      "selectedItems": "เลือกแล้ว",
+      "startCounting": "เริ่มนับ",
+      "unassigned": "ยังไม่ระบุตำแหน่ง",
+      "noProducts": "ไม่มีสินค้าตรงเงื่อนไข",
+      "back": "ย้อนกลับ",
+      "statusReady": "พร้อมขาย",
+      "statusLow": "ใกล้หมด",
+      "statusOut": "หมด",
+      "statusUnassigned": "ยังไม่กำหนดตำแหน่ง",
+      "allStockStatuses": "สถานะสต็อกทั้งหมด"
     },
     "status": {
       "draft": "ฉบับร่าง",
       "counting": "กำลังนับ",
-      "review": "ตรวจทาน",
+      "review": "รอตรวจทาน",
       "completed": "เสร็จสิ้น",
       "cancelled": "ยกเลิก"
     },
@@ -1900,13 +2235,16 @@
       "countedQty": "นับได้",
       "variance": "ส่วนต่าง",
       "status": "สถานะ",
-      "note": "หมายเหตุ"
+      "note": "หมายเหตุ",
+      "location": "ตำแหน่ง",
+      "currentStock": "สต็อกปัจจุบัน"
     },
     "variance": {
       "match": "ตรงกัน",
       "short": "ขาด",
       "over": "เกิน",
-      "notCounted": "ยังไม่นับ"
+      "notCounted": "ยังไม่นับ",
+      "skipped": "ข้าม"
     },
     "summary": {
       "totalItems": "รายการทั้งหมด",
@@ -1914,10 +2252,49 @@
       "matched": "ตรงกัน",
       "short": "ขาด",
       "over": "เกิน",
-      "totalVariance": "ผลต่างรวม"
+      "notCounted": "ยังไม่ได้นับ",
+      "totalVariance": "ผลต่างรวม",
+      "skipped": "ข้าม",
+      "remaining": "คงเหลือ",
+      "progress": "ความคืบหน้า"
     },
     "scanPlaceholder": "สแกนหรือพิมพ์บาร์โค้ด / SKU แล้ว Enter",
     "scanNotFound": "ไม่พบสินค้าในรอบนี้",
+    "countFilter": {
+      "all": "ทั้งหมด",
+      "notCounted": "ยังไม่นับ",
+      "counted": "นับแล้ว",
+      "variance": "มีผลต่าง"
+    },
+    "severity": {
+      "low": "ต่ำ",
+      "medium": "ปานกลาง",
+      "high": "สูง",
+      "critical": "วิกฤต"
+    },
+    "countMode": {
+      "table": "โหมดตาราง",
+      "quick": "โหมดสแกนด่วน"
+    },
+    "quickScan": {
+      "title": "โหมดสแกนด่วน",
+      "hint": "รองรับเครื่องยิงบาร์โค้ด USB และกด Enter ต่อเนื่องโดยไม่ต้องใช้เมาส์",
+      "barcodeLabel": "สแกนบาร์โค้ด",
+      "countedQtyLabel": "จำนวนที่นับได้",
+      "save": "บันทึก",
+      "productFound": "สินค้าที่พบ",
+      "ready": "สแกนบาร์โค้ดเพื่อเริ่มนับ",
+      "focusHint": "หลังบันทึก ระบบจะโฟกัสช่องสแกนอัตโนมัติ",
+      "notFound": "ไม่พบสินค้าในรอบนี้",
+      "lastSaved": "บันทึกแล้ว: {name}",
+      "barcodePlaceholder": "สแกนบาร์โค้ดหรือกรอก SKU",
+      "notePlaceholder": "เพิ่มหมายเหตุการนับ",
+      "skip": "ข้ามรายการ",
+      "next": "รายการถัดไป",
+      "skipped": "ข้าม {name} แล้ว",
+      "recentActivity": "สแกนล่าสุด",
+      "liveSummary": "สรุปการนับ"
+    },
     "action": {
       "saveDraft": "บันทึกร่าง",
       "review": "ตรวจทานผลต่าง",
@@ -1926,20 +2303,399 @@
       "applying": "กำลังปรับปรุง...",
       "cancel": "ยกเลิกรอบ",
       "export": "ส่งออกใบนับ",
-      "back": "กลับ"
+      "back": "กลับ",
+      "skip": "ข้าม",
+      "resume": "นับต่อรายการนี้",
+      "actions": "จัดการ"
     },
     "review": {
       "title": "ตรวจทานผลต่าง",
-      "subtitle": "แสดงเฉพาะรายการที่มีผลต่าง — ยืนยันเพื่อปรับสต็อกตามจำนวนที่นับได้",
+      "subtitle": "ทบทวนผลต่าง ระบุสาเหตุ และยืนยันการปรับสต็อกอย่างตรวจสอบย้อนกลับได้",
       "noVariance": "ไม่มีผลต่าง ทุกรายการตรงกับระบบ",
       "applyConfirm": "ปรับสต็อก {n} รายการตามจำนวนที่นับได้?",
       "applied": "ปรับปรุงสต็อกสำเร็จ {n} รายการ",
       "applyNote": "ปรับปรุงจากการตรวจนับ",
-      "applyError": "ปรับปรุงบางรายการไม่สำเร็จ"
+      "applyError": "ปรับปรุงบางรายการไม่สำเร็จ",
+      "correctionResult": "ผลการปรับ",
+      "applyCol": "ปรับ",
+      "varianceItems": "รายการผลต่าง",
+      "totalShortage": "ขาดรวม",
+      "totalOverage": "เกินรวม",
+      "netVariance": "ผลต่างสุทธิ",
+      "willUpdate": "กำลังจะปรับสต็อก {n} รายการ — การดำเนินการนี้จะสร้างบันทึกการเคลื่อนไหวสต็อก",
+      "backToCounting": "กลับไปนับ",
+      "reason": "สาเหตุผลต่าง",
+      "reasonPlaceholder": "เลือกสาเหตุ",
+      "otherReasonPlaceholder": "ระบุสาเหตุเพิ่มเติม",
+      "requiredReason": "ต้องระบุสาเหตุผลต่างให้ครบ {n} รายการก่อนยืนยัน",
+      "reasonOptions": {
+        "": "เลือกสาเหตุ",
+        "counting_error": "นับผิด",
+        "misplaced_product": "สินค้าอยู่ผิดที่",
+        "damaged_product": "สินค้าชำรุด",
+        "missing_product": "สินค้าสูญหาย",
+        "receiving_not_recorded": "รับเข้าไม่ถูกบันทึก",
+        "sale_not_recorded": "ขายออกไม่ถูกบันทึก",
+        "previous_adjustment_error": "ปรับสต็อกครั้งก่อนผิดพลาด",
+        "other": "อื่น ๆ"
+      },
+      "itemsIncreased": "รายการเพิ่มขึ้น",
+      "itemsDecreased": "รายการลดลง",
+      "qtyIncrease": "จำนวนเพิ่ม",
+      "qtyDecrease": "จำนวนลด",
+      "netChange": "ผลต่างสุทธิ",
+      "valueIncrease": "มูลค่าเพิ่ม",
+      "valueDecrease": "มูลค่าลด",
+      "netImpact": "ผลกระทบสุทธิ",
+      "inventoryImpact": "สรุปผลกระทบต่อสต็อก",
+      "sessionSummary": "สรุปรอบตรวจนับ",
+      "sessionName": "ชื่อรอบ",
+      "sessionDate": "วันที่",
+      "creator": "ผู้สร้าง",
+      "warehouse": "คลัง",
+      "category": "หมวดหมู่",
+      "sessionStatus": "สถานะ",
+      "results": "ผลลัพธ์",
+      "varianceTable": "ตารางผลต่าง",
+      "adjusted": "ปรับแล้ว",
+      "adjustedYes": "ใช่",
+      "adjustedNo": "ยังไม่ปรับ",
+      "user": "ผู้ใช้",
+      "timestamp": "เวลา",
+      "auditTrail": "ประวัติการปรับปรุง",
+      "noAuditTrail": "ยังไม่มีบันทึกการปรับปรุง",
+      "sessionDetailTitle": "รายละเอียดรอบตรวจนับ",
+      "sessionDetailSubtitle": "สรุปผลลัพธ์ การปรับสต็อก และร่องรอยการตรวจสอบ",
+      "exportExcel": "ส่งออก Excel",
+      "exportPdf": "ส่งออก PDF",
+      "pdfOpenError": "ไม่สามารถเปิดหน้าต่างสำหรับพิมพ์ PDF ได้",
+      "reasonNotRequired": "รายการนี้ไม่ต้องระบุเหตุผล",
+      "costUnavailable": "ไม่มีต้นทุนสำหรับ {n} รายการ",
+      "completedBy": "ผู้ปิดงาน",
+      "completedAt": "เวลาปิดงาน",
+      "printReport": "พิมพ์รายงานการตรวจนับ",
+      "showVarianceOnly": "แสดงเฉพาะส่วนต่าง",
+      "showAllItems": "แสดงทุกรายการ",
+      "confirmApply": "ยืนยันปรับสต็อก",
+      "itemsToUpdate": "จำนวนรายการที่จะปรับ",
+      "confirmationHelp": "ระบบจะสร้างบันทึกการเคลื่อนไหวสต็อก และไม่สามารถย้อนกลับแบบเงียบ ๆ ได้",
+      "approvalWarning": "พบรายการผลต่างสูง — กรุณาตรวจสอบอย่างละเอียดก่อนยืนยันการปรับปรุง",
+      "severityLabel": "ระดับ"
+    },
+    "list": {
+      "session": "ชื่อรอบ",
+      "warehouse": "คลัง",
+      "category": "หมวดหมู่",
+      "status": "สถานะ",
+      "totalItems": "รายการ",
+      "varianceItems": "ผลต่าง",
+      "createdBy": "ผู้สร้าง",
+      "createdAt": "สร้างเมื่อ",
+      "actions": "จัดการ",
+      "continue": "นับต่อ",
+      "review": "ตรวจทาน",
+      "viewResult": "ดูผล",
+      "cancel": "ยกเลิก",
+      "delete": "ลบ",
+      "allWarehouses": "ทุกคลัง",
+      "allCategories": "ทุกหมวดหมู่",
+      "unknownUser": "—",
+      "type": "ประเภท",
+      "progress": "ความคืบหน้า",
+      "lastActivity": "กิจกรรมล่าสุด",
+      "dashboard": {
+        "totalSessions": "รอบตรวจนับทั้งหมด",
+        "inProgress": "กำลังนับ",
+        "awaitingReview": "รอตรวจทาน",
+        "completed": "เสร็จสิ้น",
+        "draft": "แบบร่าง",
+        "counting": "กำลังนับ",
+        "review": "รอตรวจทาน",
+        "cancelled": "ยกเลิกแล้ว"
+      },
+      "zone": "โซน",
+      "countedItems": "นับแล้ว",
+      "allStatuses": "ทุกสถานะ",
+      "searchPlaceholder": "ค้นหาชื่อรอบตรวจนับ",
+      "noFilteredSessions": "ไม่พบรอบตรวจนับตามเงื่อนไขที่เลือก"
     },
     "empty": "ไม่มีสินค้าให้นับในรอบนี้",
     "draftSaved": "บันทึกร่างแล้ว",
     "cancelConfirm": "ยกเลิกรอบตรวจนับนี้?",
-    "deleteSession": "ลบรอบ"
+    "cancelSessionConfirm": "ยกเลิกรอบตรวจนับนี้? รายการที่นับไว้จะถูกเก็บไว้ในสถานะยกเลิก",
+    "deleteSession": "ลบรอบ",
+    "deleteConfirm": "ลบรอบตรวจนับนี้อย่างถาวร? การกระทำนี้ย้อนกลับไม่ได้",
+    "counting": {
+      "hidden": "ซ่อนอยู่"
+    }
+  },
+  "promotion": {
+    "title": "โปรโมชั่น",
+    "subtitle": "สร้างและจัดการแคมเปญส่วนลด กำหนดเงื่อนไข ช่วงเวลา และวิเคราะห์ผลลัพธ์",
+    "newCampaign": "สร้างแคมเปญ",
+    "editCampaign": "แก้ไขแคมเปญ",
+    "kpi": {
+      "active": "แคมเปญใช้งานอยู่",
+      "scheduled": "กำหนดการไว้",
+      "expired": "หมดอายุ",
+      "totalUses": "ใช้งานทั้งหมด",
+      "revenueGenerated": "ยอดขายจากโปรฯ",
+      "discountGiven": "ส่วนลดที่ให้ไป",
+      "usagesToday": "ใช้งานวันนี้"
+    },
+    "list": {
+      "search": "ค้นหาแคมเปญ...",
+      "filterType": "ประเภทโปรฯ",
+      "filterStatus": "สถานะ",
+      "allTypes": "ทุกประเภท",
+      "allStatuses": "ทุกสถานะ",
+      "gridView": "มุมมองการ์ด",
+      "tableView": "มุมมองตาราง",
+      "empty": "ยังไม่มีแคมเปญ — กด 'สร้างแคมเปญ' เพื่อเริ่มต้น",
+      "col": {
+        "name": "ชื่อแคมเปญ",
+        "type": "ประเภท",
+        "scope": "ขอบเขต",
+        "status": "สถานะ",
+        "priority": "ลำดับ",
+        "usage": "การใช้งาน",
+        "start": "เริ่มต้น",
+        "end": "สิ้นสุด",
+        "actions": "จัดการ"
+      },
+      "action": {
+        "edit": "แก้ไข",
+        "duplicate": "คัดลอก",
+        "pause": "หยุดชั่วคราว",
+        "resume": "เปิดใช้งาน",
+        "delete": "ลบ",
+        "deleteConfirm": "ลบแคมเปญนี้อย่างถาวร? การกระทำนี้ย้อนกลับไม่ได้",
+        "activate": "เปิดใช้งาน"
+      },
+      "noEnd": "ไม่มีวันหมดอายุ",
+      "usageTimes": "ครั้ง",
+      "priorityLabel": "ลำดับ"
+    },
+    "status": {
+      "draft": "ร่าง",
+      "active": "ใช้งาน",
+      "scheduled": "กำหนดการ",
+      "expired": "หมดอายุ",
+      "paused": "หยุดชั่วคราว"
+    },
+    "type": {
+      "percentage": "ส่วนลด %",
+      "percentageDesc": "ลด % จากราคาเต็ม",
+      "fixed_amount": "ลดคงที่ ฿",
+      "fixedAmountDesc": "ลดจำนวนเงินคงที่",
+      "fixed_price": "ราคาพิเศษ",
+      "fixedPriceDesc": "กำหนดราคาขายพิเศษ",
+      "buy_x_get_y": "ซื้อ X แถม Y",
+      "buyXGetYDesc": "ซื้อครบจำนวนรับของแถม",
+      "spend_x_discount": "ใช้จ่ายครบรับส่วนลด",
+      "spendXDiscountDesc": "ยอดซื้อถึงเกณฑ์รับส่วนลด",
+      "spend_x_gift": "ใช้จ่ายครบรับของขวัญ",
+      "spendXGiftDesc": "ยอดซื้อถึงเกณฑ์รับของขวัญ",
+      "bundle": "แพ็คเกจราคาพิเศษ",
+      "bundleDesc": "รวมสินค้าขายในราคาพิเศษ",
+      "member_price": "ราคาสมาชิก",
+      "memberPriceDesc": "ราคาพิเศษสำหรับสมาชิก",
+      "coupon": "คูปอง",
+      "couponDesc": "ใช้รหัสคูปองรับส่วนลด",
+      "happy_hour": "Happy Hour",
+      "happyHourDesc": "ส่วนลดช่วงเวลาพิเศษ",
+      "cylinder_exchange": "แลกถังแก๊ส",
+      "cylinderExchangeDesc": "คืนถังเก่าแลกรับส่วนลด"
+    },
+    "wizard": {
+      "info": "ข้อมูลทั่วไป",
+      "type": "ประเภทโปรฯ",
+      "scope": "ขอบเขต",
+      "conditions": "เงื่อนไข",
+      "schedule": "กำหนดการ",
+      "preview": "ตรวจสอบ",
+      "stepOf": "จาก",
+      "back": "ย้อนกลับ",
+      "next": "ถัดไป",
+      "create": "สร้างแคมเปญ",
+      "update": "บันทึกการเปลี่ยนแปลง",
+      "cancel": "ยกเลิก",
+      "creating": "กำลังสร้าง..."
+    },
+    "info": {
+      "title": "ข้อมูลแคมเปญ",
+      "subtitle": "ตั้งชื่อและรายละเอียดเพื่อให้ทีมจดจำได้ง่าย",
+      "name": "ชื่อแคมเปญ",
+      "namePlaceholder": "เช่น โปรซัมเมอร์ 20%",
+      "nameRequired": "กรุณากรอกชื่อแคมเปญ",
+      "description": "รายละเอียด",
+      "descriptionPlaceholder": "อธิบายรายละเอียดของแคมเปญ (ไม่บังคับ)",
+      "icon": "ไอคอน",
+      "color": "สีธีม"
+    },
+    "typeConfig": {
+      "title": "ประเภทและค่าโปรโมชั่น",
+      "subtitle": "เลือกรูปแบบส่วนลดและกำหนดค่าที่เกี่ยวข้อง",
+      "config": "ตั้งค่าโปรโมชั่น",
+      "percentOff": "ส่วนลด (%)",
+      "amountOff": "จำนวนเงินที่ลด (฿)",
+      "fixedPrice": "ราคาพิเศษ (฿)",
+      "originalPrice": "ราคาปกติ (฿)",
+      "buyQty": "ซื้อกี่ชิ้น",
+      "getQty": "แถมกี่ชิ้น",
+      "freeProduct": "สินค้าที่แถม",
+      "freeProductPlaceholder": "ชื่อหรือ SKU ของสินค้าที่แถม",
+      "minSpend": "ยอดซื้อขั้นต่ำ (฿)",
+      "discountAmount": "จำนวนส่วนลด (฿)",
+      "giftDescription": "ของขวัญที่ได้รับ",
+      "giftDescPlaceholder": "เช่น กระเป๋าผ้า 1 ใบ",
+      "bundlePrice": "ราคาแพ็คเกจ (฿)",
+      "memberPrice": "ราคาสมาชิก (฿)",
+      "memberLevels": "ระดับสมาชิก (1–5, ว่าง = ทุกระดับ)",
+      "couponCode": "รหัสคูปอง",
+      "couponCodePlaceholder": "เช่น SUMMER2026",
+      "couponCodeHelp": "ตัวพิมพ์ใหญ่/เล็กไม่มีผล",
+      "requiredField": "จำเป็น",
+      "cylinderTypes": "ขนาดถังที่ใช้ได้",
+      "cylinderType7kg": "7 กก.",
+      "cylinderType15kg": "15 กก.",
+      "cylinderType48kg": "48 กก.",
+      "exchangeDiscount": "ส่วนลดค่าแลกถัง (฿)",
+      "exchangeDiscountHelp": "จำนวนส่วนลดเมื่อลูกค้านำถังเก่ามาคืน"
+    },
+    "scopeStep": {
+      "title": "ขอบเขตสินค้า",
+      "subtitle": "กำหนดว่าโปรโมชั่นนี้ใช้กับสินค้าใด",
+      "store": "ทั้งร้าน",
+      "storeDesc": "ใช้ได้กับสินค้าทุกชิ้นในร้าน",
+      "category": "หมวดหมู่",
+      "categoryDesc": "เลือกหมวดหมู่ที่ต้องการ",
+      "brand": "แบรนด์",
+      "brandDesc": "เลือกแบรนด์ที่ต้องการ",
+      "products": "สินค้าเฉพาะ",
+      "productsDesc": "ระบุ SKU หรือชื่อสินค้า",
+      "tagPlaceholder": "พิมพ์แล้วกด Enter เพื่อเพิ่ม",
+      "tagHint": "กด Enter หรือ , เพื่อเพิ่มรายการ",
+      "noneSelected": "ยังไม่ได้เลือก"
+    },
+    "conditionsStep": {
+      "title": "เงื่อนไขการใช้",
+      "subtitle": "กำหนดเงื่อนไขที่ต้องเป็นจริงก่อนโปรโมชั่นจะมีผล",
+      "minAmount": "ยอดซื้อขั้นต่ำ (฿)",
+      "minAmountPlaceholder": "เช่น 500",
+      "minQty": "จำนวนชิ้นขั้นต่ำ",
+      "minQtyPlaceholder": "เช่น 2",
+      "vipOnly": "เฉพาะลูกค้า VIP (ระดับ 5)",
+      "vipOnlyHelp": "ลูกค้าต้องอยู่ในระดับ 5 เท่านั้น",
+      "memberOnly": "เฉพาะสมาชิก",
+      "memberOnlyHelp": "ลูกค้าต้องเป็นสมาชิกที่ลงทะเบียนแล้ว",
+      "optional": "ทุกช่องเป็นตัวเลือก — ว่างหมายถึงไม่มีเงื่อนไข",
+      "customerTypes": "ประเภทลูกค้า",
+      "customerTypesHelp": "ว่าง = ใช้ได้กับทุกประเภทลูกค้า (ปลีก + ส่ง)",
+      "customerTypeRetail": "ปลีก",
+      "customerTypeWholesale": "ส่ง"
+    },
+    "scheduleStep": {
+      "title": "กำหนดการและข้อจำกัด",
+      "subtitle": "ตั้งวันที่ เวลา และจำนวนการใช้งาน",
+      "startDate": "วันเริ่มต้น",
+      "endDate": "วันสิ้นสุด",
+      "noEndDate": "ไม่มีวันหมดอายุ",
+      "daysOfWeek": "วันที่ใช้ได้",
+      "allDays": "ทุกวัน",
+      "happyHour": "Happy Hour",
+      "happyHourFrom": "ตั้งแต่",
+      "happyHourTo": "ถึง",
+      "priority": "ลำดับความสำคัญ",
+      "priorityHelp": "ตัวเลขน้อยกว่า = ลำดับสูงกว่า (1 = สูงสุด)",
+      "priorityHint": "1 = ลำดับสูงสุด · ตัวเลขน้อยกว่า = ความสำคัญมากกว่า · เมื่อโปรโมชั่นหลายอันตรงกัน อันที่มีลำดับต่ำสุดจะถูกใช้ก่อน",
+      "stackable": "ใช้ร่วมกับโปรโมชั่นอื่นได้",
+      "stackableHelp": "เปิด = สามารถใช้พร้อมกันหลายโปรฯ ได้",
+      "limitType": "ข้อจำกัดการใช้",
+      "unlimited": "ไม่จำกัด",
+      "totalLimit": "จำกัดจำนวนรวม",
+      "perCustomerLimit": "จำกัดต่อลูกค้า",
+      "dailyLimit": "จำกัดต่อวัน",
+      "limitValue": "จำนวนครั้ง",
+      "days": {
+        "sun": "อา",
+        "mon": "จ",
+        "tue": "อ",
+        "wed": "พ",
+        "thu": "พฤ",
+        "fri": "ศ",
+        "sat": "ส"
+      }
+    },
+    "previewStep": {
+      "title": "ตรวจสอบและยืนยัน",
+      "subtitle": "ทดสอบการคำนวณส่วนลดก่อนเปิดใช้งาน",
+      "testSection": "ทดสอบการคำนวณ",
+      "testPrice": "ราคาต่อหน่วย (฿)",
+      "testQty": "จำนวน",
+      "testCustomerLevel": "ระดับลูกค้า",
+      "testCustomerType": "ประเภทลูกค้า",
+      "testCylinderSize": "ขนาดถัง",
+      "noLevel": "ไม่ระบุ",
+      "anyType": "ทุกประเภท",
+      "anySize": "ทุกขนาด",
+      "calculate": "คำนวณ",
+      "resultSection": "ผลการคำนวณ",
+      "originalTotal": "ราคารวมก่อนลด",
+      "discount": "ส่วนลด",
+      "finalTotal": "ราคาสุดท้าย",
+      "promotionApplies": "✓ โปรโมชั่นนี้มีผล",
+      "promotionNotApplies": "✗ โปรโมชั่นนี้ไม่มีผล",
+      "reason": "เหตุผล",
+      "summarySection": "สรุปแคมเปญ",
+      "summaryType": "ประเภท",
+      "summaryScope": "ขอบเขต",
+      "summarySchedule": "กำหนดการ",
+      "summaryPriority": "ลำดับ",
+      "discountValue": "ส่วนลด",
+      "conditionsSummary": "เงื่อนไข",
+      "scheduleSummary": "กำหนดการ",
+      "limitsSummary": "ข้อจำกัด",
+      "always": "ใช้ได้ตลอดเวลา",
+      "noConditions": "ไม่มี"
+    },
+    "sections": {
+      "basicInfo": "ข้อมูลแคมเปญ",
+      "promoType": "ประเภทโปรโมชั่น",
+      "config": "ตั้งค่าโปรโมชั่น",
+      "scope": "ขอบเขตสินค้า",
+      "conditions": "เงื่อนไขการใช้",
+      "schedule": "กำหนดการ",
+      "limits": "ข้อจำกัดการใช้",
+      "livePreview": "พรีวิวแบบเรียลไทม์",
+      "simulator": "จำลองการคำนวณ",
+      "conflicts": "พบโปรโมชั่นซ้อนทับ",
+      "impact": "ขอบเขตโปรโมชั่น"
+    },
+    "impact": {
+      "title": "โปรโมชั่นนี้ใช้กับ",
+      "allStore": "สินค้าทุกชิ้นในร้าน",
+      "categories": "หมวดหมู่",
+      "brands": "แบรนด์",
+      "products": "สินค้า",
+      "none": "ยังไม่ได้กำหนดขอบเขต"
+    },
+    "stackableNote": "โปรโมชั่นนี้สามารถใช้ร่วมกับโปรโมชั่นที่ใช้งานอยู่อื่นได้",
+    "exclusiveNote": "โปรโมชั่นนี้เป็นแบบเฉพาะ — ไม่สามารถรวมกับโปรโมชั่นอื่นได้",
+    "simulatorToggle": "ทดสอบการคำนวณ",
+    "conflictTitle": "โปรโมชั่นซ้อนทับกัน",
+    "conflictBody": "แคมเปญเหล่านี้มีขอบเขตสินค้าซ้อนทับกัน — ระบบจะใช้ลำดับความสำคัญตัดสิน",
+    "statusLabel": "สถานะ",
+    "activateLabel": "ใช้งาน",
+    "draftLabel": "ร่าง",
+    "saveDraft": "บันทึกเป็นร่าง",
+    "noTypeHint": "เลือกประเภทโปรโมชั่นด้านล่างก่อน",
+    "created": "สร้างแคมเปญสำเร็จ",
+    "updated": "อัปเดตแคมเปญสำเร็จ",
+    "deleted": "ลบแคมเปญแล้ว",
+    "duplicated": "คัดลอกแคมเปญแล้ว",
+    "paused": "หยุดแคมเปญชั่วคราวแล้ว",
+    "resumed": "เปิดใช้งานแคมเปญแล้ว",
+    "activated": "เปิดใช้งานแคมเปญแล้ว"
   }
 }
