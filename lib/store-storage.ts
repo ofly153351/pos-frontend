@@ -9,6 +9,8 @@ function clearStoreCookie() {
 }
 
 export function getCurrentStoreId() {
+  // Guard SSR / prerender — callers may run this during render (no window).
+  if (typeof window === "undefined") return null;
   return window.localStorage.getItem(currentStoreIdKey);
 }
 

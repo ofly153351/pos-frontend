@@ -97,6 +97,7 @@ export type SalesDictionary = {
   productViewGrid: string;
   productViewList: string;
   cardSettings: string;
+  openCustomerDisplay: string;
   cardSettingsModal: import("@/components/sales/card-settings-modal").CardSettingsDictionary;
   productOutOfStock: string;
   quantityLabel: string;

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CircleDollarSign,
   Menu,
+  Monitor,
   Search,
   X,
 } from "lucide-react";
@@ -124,6 +125,15 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            className="flex h-10 items-center gap-1.5 rounded-full border border-violet-200 bg-white px-3.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
+            onClick={() => window.open(`/${locale}/customer-display`, "pos-customer-display")}
+            title={dictionary.openCustomerDisplay}
+            type="button"
+          >
+            <Monitor className="h-3.5 w-3.5" />
+            {dictionary.openCustomerDisplay}
+          </button>
           <button
             className={`flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition ${vatOn ? "border-violet-500 bg-violet-600 text-white shadow-sm" : "border-violet-200 bg-white text-violet-400 hover:bg-violet-50"}`}
             onClick={() => salesRef.current?.toggleVat()}

@@ -342,7 +342,8 @@
       "save": "บันทึกการตั้งค่า",
       "saved": "บันทึกการตั้งค่าแล้ว",
       "resetDone": "คืนค่าเริ่มต้นแล้ว"
-    }
+    },
+    "openCustomerDisplay": "เปิดจอลูกค้า"
   },
   "customers": {
     "title": "ลูกค้า",
@@ -1941,5 +1942,26 @@
     "draftSaved": "บันทึกร่างแล้ว",
     "cancelConfirm": "ยกเลิกรอบตรวจนับนี้?",
     "deleteSession": "ลบรอบ"
+  },
+  "customerDisplay": {
+    "welcomeTitle": "ยินดีต้อนรับ",
+    "welcomeSub": "สแกนสินค้าเพื่อเริ่มรายการ",
+    "items": "รายการ",
+    "qty": "จำนวน",
+    "subtotal": "ยอดรวม",
+    "discount": "ส่วนลด",
+    "vat": "VAT 7%",
+    "total": "ยอดสุทธิ",
+    "customer": "ลูกค้า",
+    "payTitle": "กรุณาชำระเงิน",
+    "payScanQr": "สแกน QR เพื่อชำระด้วยพร้อมเพย์",
+    "payCash": "ชำระด้วยเงินสด",
+    "amountDue": "ยอดที่ต้องชำระ",
+    "successTitle": "ชำระเงินสำเร็จ",
+    "successThanks": "ขอบคุณที่ใช้บริการ",
+    "change": "เงินทอน",
+    "fullscreen": "เต็มจอ",
+    "pieces": "ชิ้น",
+    "openButton": "เปิดจอลูกค้า"
   }
 }
