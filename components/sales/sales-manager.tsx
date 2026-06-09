@@ -7,6 +7,8 @@ import type {
   ProductViewMode,
   SalesDictionary,
 } from "@/components/sales/types";
+import { publishDisplayState, WELCOME } from "@/lib/customer-display";
+import { fetchPromptPayQR } from "@/services/payment";
 import {
   listCustomerLevelDiscounts,
   listCustomers,
@@ -360,6 +362,67 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const paidAmountValue = parsePaidAmountAsCeilInt(paidAmount);
   const effectivePaidAmount = isInvoiceSettlement ? 0 : paidAmountValue;
   const changeAmount = effectivePaidAmount - settlementTotal;
+
+  // ── Customer display sync (screen 2) ──────────────────────────────────────
+  // welcome (empty) · payment (checkout open — QR when PromptPay) · selling (otherwise).
+  // Re-runs when the payment method or amount changes so the QR always matches.
+  useEffect(() => {
+    if (cart.length === 0) {
+      publishDisplayState(WELCOME);
+      return;
+    }
+
+    // Checkout open → payment screen. QR methods (promptpay/transfer/qr) → fetch a
+    // live QR for the current total so the customer can scan to pay.
+    if (isCheckoutSummaryOpen && !quotationMode) {
+      let active = true;
+      const total = roundCurrency(settlementTotal);
+      const isQrMethod = ["promptpay", "transfer", "qr"].includes(paymentMethod);
+      if (isQrMethod) {
+        publishDisplayState({ phase: "payment", total, method: paymentMethod }); // immediate (QR loading)
+        fetchPromptPayQR(total)
+          .then((res) => {
+            if (active && res.data?.qr) {
+              publishDisplayState({ phase: "payment", total, method: paymentMethod, qr: res.data.qr });
+            }
+          })
+          .catch(() => {/* keep no-QR payment screen */});
+      } else {
+        publishDisplayState({ phase: "payment", total, method: paymentMethod });
+      }
+      return () => { active = false; };
+    }
+
+    // Default: live cart on the customer screen.
+    publishDisplayState({
+      phase: "selling",
+      items: cart.map((item) => {
+        const line = getCartLine(item);
+        return {
+          name: item.product.name,
+          qty: item.quantity,
+          unitPrice: roundCurrency(line.lineSubtotal / Math.max(item.quantity, 1)),
+          lineTotal: roundCurrency(line.lineTotal),
+        };
+      }),
+      subtotal: roundCurrency(cartSummary.subtotal),
+      discount: roundCurrency(totalDiscountAmount),
+      vat: roundCurrency(vatAmount),
+      total: roundCurrency(settlementTotal),
+      customer: selectedCustomer?.full_name || undefined,
+    });
+  }, [
+    cart,
+    cartSummary,
+    totalDiscountAmount,
+    vatAmount,
+    settlementTotal,
+    selectedCustomer,
+    isCheckoutSummaryOpen,
+    quotationMode,
+    paymentMethod,
+  ]);
+
   const quickCashOptions = useMemo(() => {
     const baseOptions = [5, 10, 20, 50, 100, 500, 1000];
     const settlementQuickAmount = Math.ceil(Math.max(settlementTotal, 0));
@@ -929,6 +992,13 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           payment_method: paymentMethod,
           vat_included: false,
           vat_percent: applyVat ? 7 : 0,
+        });
+
+        // Customer display: payment success (before clearing the cart's totals).
+        publishDisplayState({
+          phase: "success",
+          total: settlementTotal,
+          change: changeAmount > 0 ? changeAmount : undefined,
         });
 
         clearCart();

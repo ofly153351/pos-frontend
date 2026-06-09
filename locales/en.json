@@ -480,7 +480,8 @@
       "save": "Save settings",
       "saved": "Settings saved",
       "resetDone": "Reset to defaults"
-    }
+    },
+    "openCustomerDisplay": "Customer display"
   },
   "customers": {
     "title": "Customer network",
@@ -2697,5 +2698,26 @@
     "paused": "Campaign paused",
     "resumed": "Campaign resumed",
     "activated": "Campaign activated"
+  },
+  "customerDisplay": {
+    "welcomeTitle": "Welcome",
+    "welcomeSub": "Scan an item to start",
+    "items": "Items",
+    "qty": "Qty",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "vat": "VAT 7%",
+    "total": "Total",
+    "customer": "Customer",
+    "payTitle": "Please pay",
+    "payScanQr": "Scan the QR to pay with PromptPay",
+    "payCash": "Pay by cash",
+    "amountDue": "Amount due",
+    "successTitle": "Payment successful",
+    "successThanks": "Thank you",
+    "change": "Change",
+    "fullscreen": "Fullscreen",
+    "pieces": "pcs",
+    "openButton": "Customer display"
   }
 }
