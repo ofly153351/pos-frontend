@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Award, ChevronDown, CreditCard, Crown, FileText, Pencil, Plus, Search, Star, Trash2, Users, X } from "lucide-react";
 
 import {
@@ -12,8 +13,10 @@ import {
   updateCustomer,
   upsertCustomerLevelDiscount,
 } from "@/services/customers";
+import { getStatementPDFUrl } from "@/services/documents";
 import { friendlyMessage } from "@/lib/form-errors";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
+import type { Locale } from "@/lib/locale-config";
 
 type CustomerNetworkDictionary = {
   activeLabel: string;
@@ -46,6 +49,7 @@ type CustomerNetworkDictionary = {
   kpiPoints: string;
   kpiSilver: string;
   kpiTotal: string;
+  kpiVip: string;
   levelGeneral: string;
   levelGold: string;
   levelLabel: string;
@@ -83,6 +87,7 @@ type CustomerNetworkDictionary = {
 
 type CustomerNetworkManagerProps = {
   dictionary: CustomerNetworkDictionary;
+  locale: Locale;
 };
 
 type CustomerFormState = {
@@ -117,6 +122,8 @@ const LEVEL_BADGE: Record<number, string> = {
   5: "bg-rose-100 text-rose-600",
 };
 
+const STANDARD_LEVELS = [1, 2, 3, 4, 5];
+
 const AVATAR_COLORS = [
   "bg-violet-100 text-violet-700",
   "bg-blue-100 text-blue-700",
@@ -125,7 +132,8 @@ const AVATAR_COLORS = [
   "bg-rose-100 text-rose-600",
 ];
 
-export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerProps) {
+export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkManagerProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [discounts, setDiscounts] = useState<CustomerLevelDiscount[]>([]);
@@ -137,9 +145,8 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
   const [discountSuccess, setDiscountSuccess] = useState("");
   const [formState, setFormState] = useState<CustomerFormState>(initialFormState);
   const [isPending, startTransition] = useTransition();
-  const [isDiscountPending, startDiscountTransition] = useTransition();
-  const [discountLevel, setDiscountLevel] = useState("1");
-  const [discountPercent, setDiscountPercent] = useState("0");
+  const [levelInputs, setLevelInputs] = useState<Record<number, string>>({});
+  const [savingLevel, setSavingLevel] = useState<number | null>(null);
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isDiscountDrawerOpen, setIsDiscountDrawerOpen] = useState(false);
@@ -168,8 +175,9 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
     const silver = customers.filter((c) => (c.level ?? 1) === 2).length;
     const gold = customers.filter((c) => (c.level ?? 1) === 3).length;
     const platinum = customers.filter((c) => (c.level ?? 1) === 4).length;
+    const vip = customers.filter((c) => (c.level ?? 1) === 5).length;
     const totalPoints = customers.reduce((sum, c) => sum + (c.points ?? 0), 0);
-    return { gold, platinum, silver, total, totalPoints };
+    return { gold, platinum, silver, total, totalPoints, vip };
   }, [customers]);
 
   // ─── Filtered list ────────────────────────────────────────────────────────
@@ -362,48 +370,6 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
     });
   }
 
-  function onSubmitDiscount(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setDiscountError("");
-    setDiscountSuccess("");
-
-    const level = Number(discountLevel);
-    const percent = Number(discountPercent);
-
-    if (!Number.isInteger(level) || level <= 0) {
-      setDiscountError(dictionary.levelRequired);
-      return;
-    }
-    if (!Number.isFinite(percent) || percent < 0 || percent > 100) {
-      setDiscountError(dictionary.discountPercentLabel);
-      return;
-    }
-
-    startDiscountTransition(async () => {
-      try {
-        await upsertCustomerLevelDiscount(level, percent);
-        await reloadData();
-        setDiscountSuccess(dictionary.successDiscountUpdated);
-        setIsDiscountDrawerOpen(false);
-      } catch (nextError) {
-        setDiscountError(friendlyMessage(nextError));
-      }
-    });
-  }
-
-  function onDeleteDiscount(level: number) {
-    setDiscountError("");
-    setDiscountSuccess("");
-    startDiscountTransition(async () => {
-      try {
-        await deleteCustomerLevelDiscount(level);
-        await reloadData();
-      } catch (nextError) {
-        setDiscountError(friendlyMessage(nextError));
-      }
-    });
-  }
-
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -440,7 +406,7 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
       ) : null}
 
       {/* ── KPI cards ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100">
             <Users className="h-5 w-5 text-violet-600" />
@@ -478,6 +444,16 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
           <div className="min-w-0">
             <p className="text-2xl font-bold text-slate-900">{kpi.platinum}</p>
             <p className="truncate text-xs text-slate-500">{dictionary.kpiPlatinum}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-100">
+            <Crown className="h-5 w-5 text-pink-600" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-2xl font-bold text-slate-900">{kpi.vip}</p>
+            <p className="truncate text-xs text-slate-500">{dictionary.kpiVip}</p>
           </div>
         </div>
 
@@ -584,6 +560,11 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
                         <div className="flex items-center gap-1">
                           <button
                             className="flex items-center gap-1 rounded-lg border border-violet-200 px-2.5 py-1.5 text-xs font-semibold text-violet-700 transition hover:bg-violet-50"
+                            onClick={() =>
+                              router.push(
+                                `/${locale}/credit-sales?customerId=${customer.id}&customerName=${encodeURIComponent(customer.full_name)}`,
+                              )
+                            }
                             title={dictionary.addPointsLabel}
                             type="button"
                           >
@@ -592,6 +573,10 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
                           </button>
                           <button
                             className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                            onClick={() => {
+                              const url = getStatementPDFUrl({ customer_id: customer.id });
+                              window.open(url, "_blank");
+                            }}
                             title={dictionary.invoiceLabel}
                             type="button"
                           >
@@ -709,9 +694,9 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
                     onChange={(event) => onFieldChange("level", event.target.value)}
                     value={formState.level}
                   >
-                    {customerLevelOptions.map((l) => (
+                    {STANDARD_LEVELS.map((l) => (
                       <option key={l} value={String(l)}>
-                        {getLevelName(l)} ({discountPercentByLevel.get(l) ?? 0}%)
+                        {getLevelName(l)}{discountPercentByLevel.get(l) ? ` (${discountPercentByLevel.get(l)}%)` : ""}
                       </option>
                     ))}
                   </select>
@@ -809,81 +794,111 @@ export function CustomerNetworkManager({ dictionary }: CustomerNetworkManagerPro
         onClick={closeDiscountDrawer}
       >
         <div
-          className={`ml-auto h-full w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl transition-transform duration-300 ${
+          className={`ml-auto h-full w-full max-w-md overflow-y-auto rounded-2xl bg-white shadow-2xl transition-transform duration-300 ${
             isDiscountDrawerOpen ? "translate-x-0" : "translate-x-full"
           }`}
           onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="text-lg font-semibold text-slate-900">{dictionary.discountRuleTitle}</h3>
+          {/* Drawer header */}
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">{dictionary.discountRuleTitle}</h3>
+              <p className="mt-0.5 text-xs text-slate-500">กำหนด % ส่วนลดให้แต่ละระดับสมาชิก</p>
+            </div>
             <button
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-violet-600 transition hover:bg-violet-50"
+              className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               onClick={closeDiscountDrawer}
               type="button"
             >
-              {dictionary.closeLabel}
+              <X className="h-5 w-5" />
             </button>
           </div>
 
-          <form className="mt-4 grid gap-4" onSubmit={onSubmitDiscount}>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.levelLabel}</span>
-              <input
-                className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
-                min="1"
-                onChange={(event) => setDiscountLevel(event.target.value)}
-                step="1"
-                type="number"
-                value={discountLevel}
-              />
-            </label>
-            <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">{dictionary.discountPercentLabel}</span>
-              <input
-                className="w-full rounded-lg border border-slate-200 px-4 py-3 outline-none transition focus:border-violet-500"
-                max="100"
-                min="0"
-                onChange={(event) => setDiscountPercent(event.target.value)}
-                step="0.01"
-                type="number"
-                value={discountPercent}
-              />
-            </label>
-            <button
-              className="rounded-lg bg-violet-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
-              disabled={isDiscountPending}
-              type="submit"
-            >
-              {isDiscountPending ? dictionary.savingDiscount : dictionary.saveDiscount}
-            </button>
-          </form>
+          {/* Feedback */}
+          {discountError ? (
+            <div className="mx-6 mt-4 rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-600">{discountError}</div>
+          ) : null}
+          {discountSuccess ? (
+            <div className="mx-6 mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{discountSuccess}</div>
+          ) : null}
 
-          {discountError ? <p className="mt-4 text-sm text-rose-600">{discountError}</p> : null}
-          {discountSuccess ? <p className="mt-4 text-sm text-emerald-700">{discountSuccess}</p> : null}
+          {/* Level rows */}
+          <div className="divide-y divide-slate-100 px-6 py-4 space-y-0">
+            {STANDARD_LEVELS.map((l) => {
+              const saved = discountPercentByLevel.get(l) ?? null;
+              const inputVal = levelInputs[l] ?? (saved !== null ? String(saved) : "");
+              const badgeClass = LEVEL_BADGE[l] ?? LEVEL_BADGE[1];
+              const isSavingThis = savingLevel === l;
 
-          <div className="mt-4 space-y-2">
-            {discounts.map((discount) => (
-              <div
-                className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3"
-                key={discount.level}
-              >
-                <p className="text-sm font-medium text-slate-700">
-                  {getLevelName(discount.level)}{" "}
-                  <span className="text-slate-400">
-                    ({dictionary.levelLabel} {discount.level})
+              async function handleSaveLevel() {
+                const pct = Number(inputVal);
+                if (!Number.isFinite(pct) || pct < 0 || pct > 100) return;
+                setSavingLevel(l);
+                setDiscountError("");
+                setDiscountSuccess("");
+                try {
+                  if (inputVal === "" || pct === 0) {
+                    await deleteCustomerLevelDiscount(l);
+                  } else {
+                    await upsertCustomerLevelDiscount(l, pct);
+                  }
+                  await reloadData();
+                  setLevelInputs((prev) => { const next = { ...prev }; delete next[l]; return next; });
+                  setDiscountSuccess(`${getLevelName(l)} — ${dictionary.successDiscountUpdated}`);
+                } catch (nextError) {
+                  setDiscountError(friendlyMessage(nextError));
+                } finally {
+                  setSavingLevel(null);
+                }
+              }
+
+              const isDirty = inputVal !== (saved !== null ? String(saved) : "");
+
+              return (
+                <div key={l} className="flex items-center gap-3 py-3.5">
+                  {/* Badge */}
+                  <span className={`w-20 shrink-0 rounded-full px-2.5 py-1 text-center text-xs font-semibold ${badgeClass}`}>
+                    {getLevelName(l)}
                   </span>
-                  : {discount.discount_percent}%
-                </p>
-                <button
-                  className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
-                  onClick={() => onDeleteDiscount(discount.level)}
-                  type="button"
-                >
-                  {dictionary.deleteLabel}
-                </button>
-              </div>
-            ))}
+
+                  {/* Input */}
+                  <div className="relative flex-1">
+                    <input
+                      className="w-full rounded-lg border border-slate-200 py-2 pl-3 pr-8 text-sm outline-none transition focus:border-violet-500"
+                      max="100"
+                      min="0"
+                      onChange={(event) =>
+                        setLevelInputs((prev) => ({ ...prev, [l]: event.target.value }))
+                      }
+                      placeholder="0"
+                      step="0.1"
+                      type="number"
+                      value={inputVal}
+                    />
+                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400">%</span>
+                  </div>
+
+                  {/* Save button */}
+                  <button
+                    className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                      isDirty
+                        ? "bg-violet-700 text-white hover:bg-violet-800"
+                        : "border border-slate-200 text-slate-400 cursor-default"
+                    }`}
+                    disabled={!isDirty || isSavingThis}
+                    onClick={handleSaveLevel}
+                    type="button"
+                  >
+                    {isSavingThis ? "..." : isDirty ? dictionary.saveDiscount.split(" ")[0] : "✓"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
+
+          <p className="px-6 pb-6 text-xs text-slate-400">
+            ตั้งค่า 0% หรือเว้นว่างเพื่อลบส่วนลดของระดับนั้น
+          </p>
         </div>
       </div>
     </div>

@@ -47,6 +47,7 @@ type UserWorkspaceLayoutProps = {
     stockCount: string;
     stockWarehouses: string;
     warehouseOverview: string;
+    creditSales: string;
     receiveGoods: string;
     station: string;
     suppliers: string;
@@ -167,6 +168,7 @@ export function UserWorkspaceLayout({
           stockLevels: shell.stockLevels,
           stockCount: shell.stockCount,
           warehouseOverview: shell.warehouseOverview,
+          creditSales: shell.creditSales,
           receiveGoods: shell.receiveGoods,
           suppliers: shell.suppliers,
           transactions: shell.transactions,

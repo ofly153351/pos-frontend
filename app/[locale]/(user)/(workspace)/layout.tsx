@@ -58,6 +58,7 @@ export default async function WorkspaceLayout({
         receiveGoods: dictionary.stock.shell.receiveGoods,
         station: dictionary.stock.shell.station,
         suppliers: dictionary.purchasing.suppliers,
+        creditSales: dictionary.stock.shell.creditSales,
         transactions: dictionary.stock.shell.transactions,
       }}
       titles={{

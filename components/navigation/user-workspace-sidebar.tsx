@@ -8,6 +8,7 @@ import {
   ChevronDown,
   CircleDollarSign,
   Clock3,
+  CreditCard,
   FileText,
   LayoutDashboard,
   Layers3,
@@ -35,6 +36,7 @@ type UserWorkspaceSidebarProps = {
   collapsed: boolean;
   locale: Locale;
   labels: {
+    creditSales: string;
     customers: string;
     dashboard: string;
     documentBills: string;
@@ -219,12 +221,10 @@ export function UserWorkspaceSidebar({
     pathname.startsWith(`${purchasesBaseHref}/`);
   const [manualProductsExpanded, setManualProductsExpanded] = useState(false);
   const [manualStockExpanded, setManualStockExpanded] = useState(false);
-  const [manualDocumentsExpanded, setManualDocumentsExpanded] = useState(false);
   const [manualPurchasingExpanded, setManualPurchasingExpanded] = useState(false);
   const [manualSettingsExpanded, setManualSettingsExpanded] = useState(false);
   const productsExpanded = !collapsed && (manualProductsExpanded || isProductsRoute);
   const stockExpanded = !collapsed && (manualStockExpanded || isStockRoute);
-  const documentsExpanded = !collapsed && (manualDocumentsExpanded || isDocumentsRoute);
   const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
   const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
   const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === activityLogsHref ? "activity-logs" : "store-settings";
@@ -282,7 +282,6 @@ export function UserWorkspaceSidebar({
 
 
   const promotionsHref = `/${locale}/promotions`;
-  const isPromotionsRoute = pathname === promotionsHref || pathname.startsWith(`${promotionsHref}/`);
 
   const navItems = [
     {
@@ -293,6 +292,7 @@ export function UserWorkspaceSidebar({
     { href: `/${locale}/sales`, key: "register", label: labels.register },
     { href: promotionsHref, key: "promotions", label: labels.promotions },
     { href: `/${locale}/customers`, key: "customers", label: labels.customers },
+    { href: `/${locale}/credit-sales`, key: "credit-sales", label: labels.creditSales },
   ];
   const [topNavItems, trailingNavItems] = [navItems.slice(0, 2), navItems.slice(2)];
 
@@ -361,8 +361,9 @@ export function UserWorkspaceSidebar({
     const className = "h-4 w-4";
 
     const iconByKey = {
-      dashboard: <LayoutDashboard className={className} />,
+      "credit-sales": <CreditCard className={className} />,
       customers: <Users className={className} />,
+      dashboard: <LayoutDashboard className={className} />,
       promotions: <Megaphone className={className} />,
       register: <CircleDollarSign className={className} />,
       settings: <Settings2 className={className} />,
