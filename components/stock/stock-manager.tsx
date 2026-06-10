@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 
 import { CatalogSetupSection } from "@/components/stock/catalog-setup-section";
 import { ProductFormDrawer } from "@/components/stock/product-form-modal";
@@ -105,7 +104,6 @@ export function StockManager({
   initialSection = "stock-levels",
   allowStockActions = false,
 }: StockManagerProps) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [productPageSize, setProductPageSize] = useState(() => {
     if (typeof window !== "undefined") {
@@ -216,6 +214,7 @@ export function StockManager({
     unitTypeHint: dictionary.form.unitTypeHint || dictionary.form.unitTypeLabel,
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setHasMounted(true); }, []);
 
   const { data: productBrands = [] } = useQuery<ProductBrand[]>({
@@ -271,6 +270,7 @@ export function StockManager({
   useEffect(() => {
     if (!productsQuery.data) return;
     const nextTotalPages = Math.max(productsQuery.data.total_pages ?? 1, 1);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (productPage > nextTotalPages) setProductPage(nextTotalPages);
   }, [productsQuery.data, productPage]);
 
@@ -332,11 +332,14 @@ function resetProductForm() {
     setFormState({
       base_price: String(product.base_price ?? ""),
       brand_id: product.brand_id ?? "",
+      cost_price: product.cost_price != null ? String(product.cost_price) : "",
       is_active: product.is_active,
       name: product.name,
+      product_code: product.product_code ?? "",
+      description: product.description ?? "",
+      storage_location: product.storage_location ?? "",
       product_type_id: product.product_type_id ?? "",
       min_stock: product.min_stock != null ? String(product.min_stock) : "",
-
       sku: product.sku ?? "",
       barcode: product.barcode ?? "",
       special_price: product.special_price ? String(product.special_price) : "",
@@ -357,6 +360,14 @@ function resetProductForm() {
       try {
         if (editingProductId) {
           await updateProduct(editingProductId, formState);
+          // Allow linking a supplier during edit too (e.g. it wasn't set on create).
+          if (formState.supplier_id) {
+            await addSupplierProduct(formState.supplier_id, {
+              product_id: editingProductId,
+              supplier_price: Number(formState.cost_price || 0),
+              supplier_sku: formState.sku?.trim() || "",
+            });
+          }
         } else {
           const created = await createProduct(formState);
           if (formState.supplier_id) {
