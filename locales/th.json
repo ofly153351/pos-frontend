@@ -870,7 +870,7 @@
       "products": "สินค้า",
       "productList": "รายการสินค้า",
       "masterData": "หมวดหมู่",
-      "stockLevels": "ระดับสต็อก",
+      "stockLevels": "สต็อกสินค้า",
       "stockCount": "ตรวจนับสต็อก",
       "stockCategories": "หมวดหมู่",
       "stockWarehouses": "คลังสินค้า",
@@ -1988,43 +1988,62 @@
     }
   },
   "inventory": {
-    "title": "จัดการสต็อก",
+    "title": "สต็อกสินค้า",
     "subtitle": "จัดการจำนวนคงเหลือ การเคลื่อนไหว และการตรวจนับ",
     "search": "ค้นหาสินค้า, SKU, บาร์โค้ด...",
     "empty": "ไม่พบสินค้า",
     "loading": "กำลังโหลด...",
     "openCount": "ตรวจนับสต็อก",
     "kpi": {
-      "totalProducts": "สินค้าทั้งหมด",
-      "lowStock": "ใกล้หมด",
-      "outOfStock": "หมดสต็อก",
+      "totalSku": "จำนวน SKU",
+      "availableUnits": "หน่วยพร้อมขาย",
       "stockValue": "มูลค่าสต็อก",
-      "movementsToday": "เคลื่อนไหววันนี้"
+      "lowStock": "สินค้าใกล้หมด",
+      "outOfStock": "สินค้าหมดสต็อก"
     },
     "col": {
       "product": "สินค้า",
-      "currentStock": "คงเหลือ",
+      "category": "หมวดหมู่",
+      "available": "คงเหลือ",
       "minStock": "ขั้นต่ำ",
       "status": "สถานะ",
       "location": "ตำแหน่งจัดเก็บ",
-      "lastMovement": "เคลื่อนไหวล่าสุด",
+      "stockValue": "มูลค่าสต็อก",
       "actions": "การจัดการ"
     },
     "status": {
       "ready": "พร้อมขาย",
       "low": "ใกล้หมด",
       "out": "หมดสต็อก",
-      "over": "เกินสต็อก",
       "inactive": "ปิดใช้"
+    },
+    "filter": {
+      "all": "ทั้งหมด",
+      "ready": "พร้อมขาย",
+      "low": "ใกล้หมด",
+      "out": "หมดสต็อก"
     },
     "unassigned": "ยังไม่ระบุ",
     "noMovement": "ยังไม่มีการเคลื่อนไหว",
-    "min": "ขั้นต่ำ",
-    "selected": "รายการที่เลือก",
     "action": {
       "adjust": "ปรับสต็อก",
-      "history": "ประวัติ",
-      "viewProduct": "ดูสินค้า"
+      "history": "ดูประวัติการเคลื่อนไหว",
+      "viewProduct": "ดูรายละเอียดสินค้า",
+      "more": "ตัวเลือกเพิ่มเติม"
+    },
+    "activity": {
+      "title": "ความเคลื่อนไหวล่าสุด",
+      "subtitle": "ฟีดการเคลื่อนไหวสต็อกแบบเรียลไทม์",
+      "empty": "ยังไม่มีการเคลื่อนไหว",
+      "by": "โดย",
+      "types": {
+        "receive": "รับเข้า",
+        "sale": "ขาย",
+        "adjust": "ปรับปรุง",
+        "transfer": "โอนย้าย",
+        "countCorrection": "แก้ไขจากการนับ",
+        "return": "คืนสินค้า"
+      }
     },
     "adjust": {
       "title": "ปรับสต็อก",

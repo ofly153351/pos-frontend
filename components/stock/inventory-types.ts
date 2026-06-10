@@ -37,27 +37,41 @@ export type InventoryDictionary = {
   loading: string;
   openCount: string;
   kpi: {
-    totalProducts: string;
+    totalSku: string;
+    availableUnits: string;
+    stockValue: string;
     lowStock: string;
     outOfStock: string;
-    stockValue: string;
-    movementsToday: string;
   };
   col: {
     product: string;
-    currentStock: string;
+    category: string;
+    available: string;
     minStock: string;
     status: string;
     location: string;
-    lastMovement: string;
+    stockValue: string;
     actions: string;
   };
-  status: { ready: string; low: string; out: string; over: string; inactive: string };
+  status: { ready: string; low: string; out: string; inactive: string };
+  filter: { all: string; ready: string; low: string; out: string };
   unassigned: string;
   noMovement: string;
-  min: string;
-  selected: string;
-  action: { adjust: string; history: string; viewProduct: string };
+  action: { adjust: string; history: string; viewProduct: string; more: string };
+  activity: {
+    title: string;
+    subtitle: string;
+    empty: string;
+    by: string;
+    types: {
+      receive: string;
+      sale: string;
+      adjust: string;
+      transfer: string;
+      countCorrection: string;
+      return: string;
+    };
+  };
   adjust: InventoryAdjustDictionary;
 };
 

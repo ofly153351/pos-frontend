@@ -870,7 +870,7 @@
       "products": "Products",
       "productList": "Product List",
       "masterData": "Categories",
-      "stockLevels": "Stock Levels",
+      "stockLevels": "Product Stock",
       "stockCount": "Stock Count",
       "stockCategories": "Categories",
       "stockWarehouses": "Warehouses",
@@ -1988,43 +1988,62 @@
     }
   },
   "inventory": {
-    "title": "Inventory",
+    "title": "Product Stock",
     "subtitle": "Manage stock quantity, movements and counting",
     "search": "Search product, SKU, barcode...",
     "empty": "No products found",
     "loading": "Loading...",
     "openCount": "Stock Count",
     "kpi": {
-      "totalProducts": "Total Products",
-      "lowStock": "Low Stock",
-      "outOfStock": "Out of Stock",
-      "stockValue": "Stock Value",
-      "movementsToday": "Movements Today"
+      "totalSku": "Total SKU",
+      "availableUnits": "Available Units",
+      "stockValue": "Inventory Value",
+      "lowStock": "Low Stock Items",
+      "outOfStock": "Out of Stock Items"
     },
     "col": {
       "product": "Product",
-      "currentStock": "Current Stock",
-      "minStock": "Min Stock",
+      "category": "Category",
+      "available": "Available",
+      "minStock": "Minimum",
       "status": "Status",
       "location": "Location",
-      "lastMovement": "Last Movement",
+      "stockValue": "Stock Value",
       "actions": "Actions"
     },
     "status": {
       "ready": "Ready",
       "low": "Low Stock",
       "out": "Out of Stock",
-      "over": "Overstock",
       "inactive": "Inactive"
+    },
+    "filter": {
+      "all": "All",
+      "ready": "Ready",
+      "low": "Low Stock",
+      "out": "Out of Stock"
     },
     "unassigned": "Unassigned",
     "noMovement": "No movement yet",
-    "min": "Min",
-    "selected": "selected",
     "action": {
       "adjust": "Adjust Stock",
-      "history": "History",
-      "viewProduct": "View Product"
+      "history": "View Movement History",
+      "viewProduct": "View Product Detail",
+      "more": "More options"
+    },
+    "activity": {
+      "title": "Recent Inventory Activity",
+      "subtitle": "Live stock movement feed",
+      "empty": "No movement yet",
+      "by": "by",
+      "types": {
+        "receive": "Receive",
+        "sale": "Sale",
+        "adjust": "Adjustment",
+        "transfer": "Transfer",
+        "countCorrection": "Count Correction",
+        "return": "Return"
+      }
     },
     "adjust": {
       "title": "Adjust Stock",
