@@ -59,6 +59,18 @@ export default async function WorkspaceLayout({
         station: dictionary.stock.shell.station,
         suppliers: dictionary.purchasing.suppliers,
         creditSales: dictionary.stock.shell.creditSales,
+        notificationsLowStock: dictionary.stock.shell.notificationsLowStock,
+        notificationsLowStockDesc: dictionary.stock.shell.notificationsLowStockDesc,
+        notificationsNone: dictionary.stock.shell.notificationsNone,
+        notificationsNoneDesc: dictionary.stock.shell.notificationsNoneDesc,
+        notificationsOutOfStock: dictionary.stock.shell.notificationsOutOfStock,
+        notificationsOutOfStockDesc: dictionary.stock.shell.notificationsOutOfStockDesc,
+        notificationsPendingApprovals: dictionary.stock.shell.notificationsPendingApprovals,
+        notificationsPendingApprovalsDesc: dictionary.stock.shell.notificationsPendingApprovalsDesc,
+        notificationsPendingCounts: dictionary.stock.shell.notificationsPendingCounts,
+        notificationsPendingCountsDesc: dictionary.stock.shell.notificationsPendingCountsDesc,
+        notificationsTitle: dictionary.stock.shell.notificationsTitle,
+        notificationsViewAll: dictionary.stock.shell.notificationsViewAll,
         transactions: dictionary.stock.shell.transactions,
       }}
       titles={{

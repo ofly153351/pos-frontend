@@ -884,7 +884,19 @@
       "searchPlaceholder": "Search Barcode or Name...",
       "receiptPayment": "Receipt & Payment",
       "activityLogs": "Activity Logs",
-      "promotions": "Promotions"
+      "promotions": "Promotions",
+      "notificationsTitle": "Notifications",
+      "notificationsViewAll": "View all notifications",
+      "notificationsLowStock": "Low Stock",
+      "notificationsLowStockDesc": "items below minimum",
+      "notificationsOutOfStock": "Out of Stock",
+      "notificationsOutOfStockDesc": "items with zero stock",
+      "notificationsPendingCounts": "Pending Count Sessions",
+      "notificationsPendingCountsDesc": "sessions in progress",
+      "notificationsPendingApprovals": "Pending Approvals",
+      "notificationsPendingApprovalsDesc": "sessions awaiting review",
+      "notificationsNone": "All clear",
+      "notificationsNoneDesc": "No new notifications"
     },
     "stats": {
       "totalProductsLabel": "Total Products",

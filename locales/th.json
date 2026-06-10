@@ -884,7 +884,19 @@
       "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า...",
       "receiptPayment": "ใบเสร็จและการชำระเงิน",
       "activityLogs": "Activity Logs",
-      "promotions": "โปรโมชั่น"
+      "promotions": "โปรโมชั่น",
+      "notificationsTitle": "การแจ้งเตือน",
+      "notificationsViewAll": "ดูการแจ้งเตือนทั้งหมด",
+      "notificationsLowStock": "สินค้าใกล้หมด",
+      "notificationsLowStockDesc": "รายการต่ำกว่าสต็อกขั้นต่ำ",
+      "notificationsOutOfStock": "สินค้าหมดสต็อก",
+      "notificationsOutOfStockDesc": "รายการสต็อกเป็นศูนย์",
+      "notificationsPendingCounts": "รอนับสต็อก",
+      "notificationsPendingCountsDesc": "รอบที่ยังไม่เสร็จ",
+      "notificationsPendingApprovals": "รออนุมัติ",
+      "notificationsPendingApprovalsDesc": "รอบนับที่รอการตรวจสอบ",
+      "notificationsNone": "ทุกอย่างเรียบร้อย",
+      "notificationsNoneDesc": "ไม่มีการแจ้งเตือนใหม่"
     },
     "stats": {
       "totalProductsLabel": "จำนวนสินค้าทั้งหมด",

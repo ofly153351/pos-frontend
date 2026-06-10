@@ -48,6 +48,18 @@ type UserWorkspaceLayoutProps = {
     stockWarehouses: string;
     warehouseOverview: string;
     creditSales: string;
+    notificationsLowStock: string;
+    notificationsLowStockDesc: string;
+    notificationsNone: string;
+    notificationsNoneDesc: string;
+    notificationsOutOfStock: string;
+    notificationsOutOfStockDesc: string;
+    notificationsPendingApprovals: string;
+    notificationsPendingApprovalsDesc: string;
+    notificationsPendingCounts: string;
+    notificationsPendingCountsDesc: string;
+    notificationsTitle: string;
+    notificationsViewAll: string;
     receiveGoods: string;
     station: string;
     suppliers: string;
@@ -139,7 +151,7 @@ export function UserWorkspaceLayout({
     if (pathname.includes("/purchases")) return titles.purchaseOrders;
     if (pathname.includes("/settings")) return titles.settings;
     return titles.dashboard;
-  }, [pathname, titles]);
+  }, [pathname, titles, shell.promotions]);
 
   return (
     <div className="h-screen overflow-hidden bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
@@ -187,7 +199,23 @@ export function UserWorkspaceLayout({
           editProfileLabel={shell.editProfile}
           locale={locale}
           logoutLabel={shell.logout}
+          notificationLabels={{
+            lowStock: shell.notificationsLowStock,
+            lowStockDesc: shell.notificationsLowStockDesc,
+            none: shell.notificationsNone,
+            noneDesc: shell.notificationsNoneDesc,
+            outOfStock: shell.notificationsOutOfStock,
+            outOfStockDesc: shell.notificationsOutOfStockDesc,
+            pendingApprovals: shell.notificationsPendingApprovals,
+            pendingApprovalsDesc: shell.notificationsPendingApprovalsDesc,
+            pendingCounts: shell.notificationsPendingCounts,
+            pendingCountsDesc: shell.notificationsPendingCountsDesc,
+            title: shell.notificationsTitle,
+            viewAll: shell.notificationsViewAll,
+          }}
           onToggle={() => setCollapsed((current) => !current)}
+          settingsLabel={shell.settings}
+          sidebarCollapsed={collapsed}
           title={title}
         />
         <main className="flex-1 min-h-0 overflow-auto p-6 lg:p-8 pretty-scroll">{children}</main>
