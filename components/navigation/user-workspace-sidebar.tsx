@@ -394,7 +394,7 @@ export function UserWorkspaceSidebar({
         </p>
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <nav className="min-h-0 flex-1 overflow-y-auto space-y-1 pb-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-700/40">
         {topNavItems.map((item) => {
           const isActive = pathname === item.href;
           const isRegister = item.key === "register";
