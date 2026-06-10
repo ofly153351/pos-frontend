@@ -133,7 +133,7 @@ export function UserProfileMenu({
             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-violet-50"
             onClick={() => {
               setIsOpen(false);
-              router.push(`/${locale}/setup/store`);
+              router.push(`/${locale}/profile`);
             }}
             type="button"
           >

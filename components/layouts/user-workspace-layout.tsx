@@ -69,6 +69,7 @@ type UserWorkspaceLayoutProps = {
     customers: string;
     dashboard: string;
     documents: string;
+    profile?: string;
     promotions?: string;
     sales: string;
     settings: string;
@@ -138,6 +139,7 @@ export function UserWorkspaceLayout({
 
   const title = useMemo(() => {
     if (pathname.includes("/promotions")) return titles.promotions ?? shell.promotions;
+    if (pathname.includes("/profile")) return titles.profile ?? shell.editProfile;
     if (pathname.endsWith("/sales")) return titles.sales;
     if (pathname.includes("/customers")) return titles.customers;
     if (pathname.includes("/documents")) return titles.documents;
@@ -151,7 +153,7 @@ export function UserWorkspaceLayout({
     if (pathname.includes("/purchases")) return titles.purchaseOrders;
     if (pathname.includes("/settings")) return titles.settings;
     return titles.dashboard;
-  }, [pathname, titles, shell.promotions]);
+  }, [pathname, titles, shell.promotions, shell.editProfile]);
 
   return (
     <div className="h-screen overflow-hidden bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
