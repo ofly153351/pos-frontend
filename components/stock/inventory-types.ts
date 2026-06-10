@@ -45,24 +45,21 @@ export type InventoryDictionary = {
   };
   col: {
     product: string;
-    category: string;
     available: string;
     minStock: string;
     status: string;
-    location: string;
     stockValue: string;
     actions: string;
   };
   status: { ready: string; low: string; out: string; inactive: string };
   filter: { all: string; ready: string; low: string; out: string };
-  unassigned: string;
   noMovement: string;
   action: { adjust: string; history: string; viewProduct: string; more: string };
+  countMenu: { start: string; history: string };
   activity: {
     title: string;
     subtitle: string;
     empty: string;
-    by: string;
     types: {
       receive: string;
       sale: string;

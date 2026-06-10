@@ -8,12 +8,12 @@ import {
   Activity,
   ArrowLeftRight,
   Boxes,
+  ChevronDown,
   ClipboardCheck,
   Coins,
   Eye,
   History,
   Layers,
-  MapPin,
   MoreVertical,
   PackagePlus,
   PackageX,
@@ -38,7 +38,7 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", { currency: "THB", maximumFractionDigits: 0, style: "currency" }).format(value);
 }
 
-// ── Status system (4 states per ERP spec) ────────────────────────────────────
+// ── Status system (4 states) ──────────────────────────────────────────────────
 type Status = "ready" | "low" | "out" | "inactive";
 
 function getStatus(p: Product): Status {
@@ -65,13 +65,6 @@ function productValue(p: Product): number {
   return (p.cost_price ?? p.base_price ?? 0) * (p.total_stock ?? 0);
 }
 
-function parseStorage(s?: string | null) {
-  const raw = s?.trim();
-  if (!raw) return null;
-  const parts = raw.split(/[·>/]/).map((x) => x.trim()).filter(Boolean);
-  return { warehouse: parts[0] ?? null, zone: parts[1] ?? null, location: parts.slice(2).join(" · ") || null };
-}
-
 // ── Movement type → label / tone / icon ──────────────────────────────────────
 type MovementKind = "receive" | "sale" | "adjust" | "transfer" | "countCorrection" | "return";
 
@@ -82,8 +75,7 @@ function movementKind(type: string): MovementKind {
   if (k.includes("sale") || k.includes("sell")) return "sale";
   if (k.includes("transfer")) return "transfer";
   if (k.includes("return")) return "return";
-  // Backend "OUT" = manual non-sale stock issue → falls under the Adjustment bucket
-  // (spec enumerates 5 movement types; no separate "issue" kind).
+  // Backend "OUT" = manual non-sale stock issue → falls under the Adjustment bucket.
   return "adjust";
 }
 
@@ -104,6 +96,17 @@ const MOVEMENT_ICON: Record<MovementKind, typeof PackagePlus> = {
   countCorrection: ClipboardCheck,
   return: RotateCcw,
 };
+
+// Localize common backend movement notes to Thai (retail-staff readable).
+function localizeNote(note: string | undefined, locale: string): string {
+  const s = (note ?? "").trim();
+  if (!s || locale !== "th") return s;
+  const adj = s.match(/adjusted from\s+(\d+)\s+to\s+(\d+)/i);
+  if (adj) return `ปรับจาก ${adj[1]} เป็น ${adj[2]}`;
+  if (/^sale deduction$/i.test(s)) return ""; // type label already says "ขายสินค้า"
+  if (/^stock addition$/i.test(s) || /^received/i.test(s)) return "รับสินค้าเข้า";
+  return s;
+}
 
 export function InventoryManager({ dictionary, locale }: Props) {
   const t = dictionary;
@@ -135,8 +138,7 @@ export function InventoryManager({ dictionary, locale }: Props) {
       const st = getStatus(p);
       if (st === "low") low++;
       if (st === "out") out++;
-      // Disabled products aren't available for sale — exclude from units & value
-      // (consistent with low/out, which already skip inactive).
+      // Disabled products aren't available for sale — exclude from units & value.
       if (st === "inactive") continue;
       availableUnits += Math.max(0, p.total_stock ?? 0);
       value += productValue(p);
@@ -164,8 +166,7 @@ export function InventoryManager({ dictionary, locale }: Props) {
       return (
         p.name.toLowerCase().includes(kw) ||
         (p.sku ?? "").toLowerCase().includes(kw) ||
-        (p.barcode ?? "").toLowerCase().includes(kw) ||
-        (p.product_type_name ?? "").toLowerCase().includes(kw)
+        (p.barcode ?? "").toLowerCase().includes(kw)
       );
     });
   }, [products, search, tab]);
@@ -205,10 +206,7 @@ export function InventoryManager({ dictionary, locale }: Props) {
           <h2 className="text-lg font-bold text-slate-900">{t.title}</h2>
           <p className="text-sm text-slate-500">{t.subtitle}</p>
         </div>
-        <Link href={`/${locale}/inventory/counts`}
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700">
-          <ClipboardCheck className="h-4 w-4" /> {t.openCount}
-        </Link>
+        <CountMenu locale={locale} openLabel={t.openCount} startLabel={t.countMenu.start} historyLabel={t.countMenu.history} />
       </div>
 
       {/* KPI cards */}
@@ -247,25 +245,18 @@ export function InventoryManager({ dictionary, locale }: Props) {
       </div>
 
       {/* Main grid: table (left) + activity feed (right) */}
-      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1fr)_320px]">
         {/* Table */}
         <section className="min-w-0 rounded-2xl bg-white shadow-sm">
           <div className="overflow-auto rounded-2xl" style={{ maxHeight: "70vh" }}>
-            <table className="w-full min-w-[1080px] table-fixed border-collapse text-left">
-              <colgroup>
-                <col style={{ width: "22%" }} /><col style={{ width: "11%" }} /><col style={{ width: "10%" }} />
-                <col style={{ width: "8%" }} /><col style={{ width: "11%" }} /><col style={{ width: "12%" }} />
-                <col style={{ width: "10%" }} /><col style={{ width: "16%" }} />
-              </colgroup>
+            <table className="w-full border-collapse text-left">
               <thead className="sticky top-0 z-20">
                 <tr className="bg-slate-100 text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3.5 font-bold">{t.col.product}</th>
-                  <th className="px-3 py-3.5 font-bold">{t.col.category}</th>
                   <th className="px-4 py-3.5 font-bold">{t.col.available}</th>
-                  <th className="px-3 py-3.5 font-bold">{t.col.minStock}</th>
+                  <th className="hidden px-3 py-3.5 font-bold sm:table-cell">{t.col.minStock}</th>
                   <th className="px-4 py-3.5 font-bold">{t.col.status}</th>
-                  <th className="px-4 py-3.5 font-bold">{t.col.location}</th>
-                  <th className="px-4 py-3.5 text-right font-bold">{t.col.stockValue}</th>
+                  <th className="hidden px-4 py-3.5 text-right font-bold md:table-cell">{t.col.stockValue}</th>
                   <th className="px-3 py-3.5 text-right font-bold">{t.col.actions}</th>
                 </tr>
               </thead>
@@ -274,23 +265,19 @@ export function InventoryManager({ dictionary, locale }: Props) {
                   [...Array(8)].map((_, i) => (
                     <tr key={i}>
                       <td className="px-4 py-3"><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-lg bg-slate-200" /><div className="flex-1 space-y-1.5"><Skeleton className="h-4 w-32 bg-slate-200" /><Skeleton className="h-3 w-20 bg-slate-100" /></div></div></td>
-                      <td className="px-3 py-3"><Skeleton className="h-5 w-16 rounded-md bg-slate-100" /></td>
-                      <td className="px-4 py-3"><Skeleton className="h-4 w-full bg-slate-100" /></td>
-                      <td className="px-3 py-3"><Skeleton className="h-4 w-8 bg-slate-100" /></td>
+                      <td className="px-4 py-3"><Skeleton className="h-4 w-20 bg-slate-100" /></td>
+                      <td className="hidden px-3 py-3 sm:table-cell"><Skeleton className="h-4 w-8 bg-slate-100" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded-full bg-slate-100" /></td>
-                      <td className="px-4 py-3"><Skeleton className="h-4 w-16 bg-slate-100" /></td>
-                      <td className="px-4 py-3"><Skeleton className="ml-auto h-4 w-16 bg-slate-100" /></td>
-                      <td className="px-3 py-3"><Skeleton className="ml-auto h-9 w-28 bg-slate-100" /></td>
+                      <td className="hidden px-4 py-3 md:table-cell"><Skeleton className="ml-auto h-4 w-16 bg-slate-100" /></td>
+                      <td className="px-3 py-3"><Skeleton className="ml-auto h-8 w-20 bg-slate-100" /></td>
                     </tr>
                   ))
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="px-6 py-12 text-center text-sm text-slate-500">{t.empty}</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">{t.empty}</td></tr>
                 ) : filtered.map((p, i) => {
                   const st = getStatus(p);
                   const unit = p.product_unit_name ?? "";
-                  const loc = parseStorage(p.storage_location);
                   const sb = statusBadge(st);
-                  const category = p.product_type_name ?? p.product_type?.name ?? null;
                   return (
                     <tr key={p.id} className={`${i % 2 ? "bg-slate-50/50" : "bg-white"} transition hover:bg-violet-50/40`}>
                       {/* Product */}
@@ -307,37 +294,19 @@ export function InventoryManager({ dictionary, locale }: Props) {
                           </div>
                         </div>
                       </td>
-                      {/* Category */}
-                      <td className="px-3 py-3">
-                        {category ? (
-                          <span className="inline-block max-w-full truncate rounded-md bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700" title={category}>{category}</span>
-                        ) : <span className="text-xs text-slate-300">{t.unassigned}</span>}
-                      </td>
-                      {/* Available qty + bar */}
+                      {/* Stock + subtle bar */}
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
                           <span className={`text-sm font-bold ${st === "out" ? "text-rose-700" : st === "low" ? "text-amber-700" : "text-slate-900"}`}>{p.total_stock ?? 0}{unit ? ` ${unit}` : ""}</span>
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${STATUS_BAR[st]}`} style={{ width: `${getStockPercent(p)}%` }} /></div>
+                          <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${STATUS_BAR[st]} opacity-70`} style={{ width: `${getStockPercent(p)}%` }} /></div>
                         </div>
                       </td>
-                      {/* Minimum */}
-                      <td className="px-3 py-3 text-sm font-medium text-slate-500">{p.min_stock != null ? p.min_stock : "—"}</td>
+                      {/* Min stock */}
+                      <td className="hidden px-3 py-3 text-sm font-medium text-slate-500 sm:table-cell">{p.min_stock != null ? p.min_stock : "—"}</td>
                       {/* Status */}
                       <td className="px-4 py-3"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${sb.cls}`}><span className={`h-1.5 w-1.5 rounded-full ${sb.dot}`} />{sb.label}</span></td>
-                      {/* Location */}
-                      <td className="px-4 py-3">
-                        {loc ? (
-                          <div className="flex items-start gap-1.5">
-                            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" />
-                            <span className="flex min-w-0 flex-col">
-                              <span className="truncate font-mono text-xs font-bold text-slate-700">{loc.location ?? loc.zone ?? loc.warehouse}</span>
-                              <span className="truncate text-[11px] text-slate-400">{[loc.warehouse, loc.zone].filter(Boolean).join(" · ")}</span>
-                            </span>
-                          </div>
-                        ) : <span className="text-xs text-slate-300">{t.unassigned}</span>}
-                      </td>
                       {/* Stock value */}
-                      <td className="px-4 py-3 text-right text-sm font-bold tabular-nums text-slate-800">{formatCurrency(productValue(p))}</td>
+                      <td className="hidden px-4 py-3 text-right text-sm font-bold tabular-nums text-slate-800 md:table-cell">{formatCurrency(productValue(p))}</td>
                       {/* Actions */}
                       <td className="px-3 py-3">
                         <RowActions
@@ -355,7 +324,7 @@ export function InventoryManager({ dictionary, locale }: Props) {
           </div>
         </section>
 
-        {/* Recent Inventory Activity feed */}
+        {/* Recent Activity feed */}
         <aside className="min-w-0 rounded-2xl border border-violet-100 bg-white shadow-sm">
           <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 text-violet-600"><Activity className="h-4 w-4" /></span>
@@ -383,10 +352,9 @@ export function InventoryManager({ dictionary, locale }: Props) {
                           <span className="truncate text-sm font-semibold text-slate-800" title={mv.product_name}>{mv.product_name || "—"}</span>
                           <span className={`shrink-0 text-sm font-bold tabular-nums ${positive ? "text-emerald-600" : "text-rose-600"}`}>{positive ? "+" : ""}{mv.quantity_change}</span>
                         </div>
-                        <div className="mt-0.5 flex items-center gap-1.5">
-                          <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${MOVEMENT_TONE[kind]}`}>{t.activity.types[kind]}</span>
-                          {mv.created_by_name ? <span className="truncate text-[11px] text-slate-400">{t.activity.by} {mv.created_by_name}</span> : null}
-                        </div>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">
+                          {t.activity.types[kind]}{mv.created_by_name ? ` · ${mv.created_by_name}` : ""}
+                        </p>
                         <p className="mt-0.5 text-[11px] text-slate-400">{dtf.format(new Date(mv.created_at))}</p>
                       </div>
                     </li>
@@ -408,12 +376,55 @@ export function InventoryManager({ dictionary, locale }: Props) {
         }}
       />
 
-      <HistoryModal product={historyProduct} dtf={dtf} dict={t} onClose={() => setHistoryProduct(null)} />
+      <HistoryModal product={historyProduct} dtf={dtf} dict={t} locale={locale} onClose={() => setHistoryProduct(null)} />
     </div>
   );
 }
 
-// ── Actions: primary [Adjust Stock] + dropdown (fixed-positioned to escape table overflow) ──
+// ── Stock-count split button (Start Count / Count History) ────────────────────
+
+function CountMenu({ locale, openLabel, startLabel, historyLabel }: { locale: string; openLabel: string; startLabel: string; historyLabel: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}
+        className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700">
+        <ClipboardCheck className="h-4 w-4" /> {openLabel}
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open ? (
+        <div role="menu" className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-52 overflow-hidden rounded-xl border border-violet-100 bg-white p-1 shadow-2xl">
+          <Link href={`/${locale}/inventory/counts?new=1`} role="menuitem" onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-violet-50">
+            <ClipboardCheck className="h-4 w-4 text-violet-500" /> {startLabel}
+          </Link>
+          <Link href={`/${locale}/inventory/counts`} role="menuitem" onClick={() => setOpen(false)}
+            className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-violet-50">
+            <History className="h-4 w-4 text-violet-500" /> {historyLabel}
+          </Link>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ── Row actions: light [Adjust] + ... dropdown (View History / View Details) ──
 
 function RowActions({
   labels, onAdjust, onHistory, onViewProduct,
@@ -462,17 +473,17 @@ function RowActions({
   return (
     <div className="flex items-center justify-end gap-1.5">
       <button type="button" onClick={onAdjust}
-        className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-violet-600 px-3 text-xs font-semibold text-white transition hover:bg-violet-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
-        <SlidersHorizontal className="h-4 w-4" /> {labels.adjust}
+        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+        <SlidersHorizontal className="h-3.5 w-3.5" /> {labels.adjust}
       </button>
       <button ref={btnRef} type="button" onClick={toggle} title={labels.more} aria-label={labels.more} aria-expanded={open}
-        className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+        className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
         <MoreVertical className="h-4 w-4" />
       </button>
 
       {open && pos ? (
         <div ref={menuRef} role="menu" style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 60 }}
-          className="w-52 overflow-hidden rounded-xl border border-violet-100 bg-white p-1 shadow-2xl">
+          className="w-44 overflow-hidden rounded-xl border border-violet-100 bg-white p-1 shadow-2xl">
           <button type="button" role="menuitem" onClick={() => { setOpen(false); onHistory(); }}
             className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition hover:bg-violet-50">
             <History className="h-4 w-4 text-violet-500" /> {labels.history}
@@ -487,9 +498,9 @@ function RowActions({
   );
 }
 
-// ── Inline movement-history modal ─────────────────────────────────────────────
+// ── Movement-history modal — Thai-localized, list format ──────────────────────
 
-function HistoryModal({ product, dtf, dict, onClose }: { product: Product | null; dtf: Intl.DateTimeFormat; dict: InventoryDictionary; onClose: () => void }) {
+function HistoryModal({ product, dtf, dict, locale, onClose }: { product: Product | null; dtf: Intl.DateTimeFormat; dict: InventoryDictionary; locale: string; onClose: () => void }) {
   const q = useQuery({
     enabled: Boolean(product),
     queryKey: ["inventory", "history", product?.id],
@@ -500,30 +511,32 @@ function HistoryModal({ product, dtf, dict, onClose }: { product: Product | null
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 backdrop-blur-sm p-4"
       role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="my-8 w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
+      <div className="my-8 w-full max-w-md rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-violet-100 px-5 py-4">
-          <div className="flex items-center gap-2"><History className="h-5 w-5 text-violet-600" /><h3 className="text-base font-bold text-slate-900">{dict.action.history}</h3>
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">{product.name}</span></div>
-          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"><X className="h-4 w-4" /></button>
+          <div className="flex min-w-0 items-center gap-2"><History className="h-5 w-5 shrink-0 text-violet-600" /><h3 className="text-base font-bold text-slate-900">{dict.action.history}</h3>
+            <span className="truncate rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">{product.name}</span></div>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"><X className="h-4 w-4" /></button>
         </div>
         <div className="max-h-[60vh] overflow-y-auto p-5">
-          {q.isPending ? <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg bg-slate-100" />)}</div>
+          {q.isPending ? <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full rounded-lg bg-slate-100" />)}</div>
             : items.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">{dict.noMovement}</p>
-              : <table className="w-full text-left text-sm">
-                <tbody className="divide-y divide-slate-50">
-                  {items.map((m) => {
-                    const kind = movementKind(m.type);
-                    return (
-                      <tr key={m.id}>
-                        <td className="py-2.5 pr-2"><span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${MOVEMENT_TONE[kind]}`}>{dict.activity.types[kind]}</span></td>
-                        <td className={`py-2.5 pr-2 text-right font-bold tabular-nums ${m.quantity_change >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{m.quantity_change >= 0 ? "+" : ""}{m.quantity_change}</td>
-                        <td className="py-2.5 pr-2 text-slate-500">{dtf.format(new Date(m.created_at))}</td>
-                        <td className="py-2.5 text-slate-500">{m.note || "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>}
+              : <ul className="space-y-3">
+                {items.map((m) => {
+                  const kind = movementKind(m.type);
+                  const note = localizeNote(m.note, locale);
+                  const positive = m.quantity_change >= 0;
+                  return (
+                    <li key={m.id} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-semibold text-slate-800">{dict.activity.types[kind]}</span>
+                        <span className={`text-sm font-bold tabular-nums ${positive ? "text-emerald-600" : "text-rose-600"}`}>{positive ? "+" : ""}{m.quantity_change}</span>
+                      </div>
+                      <span className="text-xs text-slate-400">{dtf.format(new Date(m.created_at))}</span>
+                      {note ? <span className="text-xs text-slate-500">{note}</span> : null}
+                    </li>
+                  );
+                })}
+              </ul>}
         </div>
       </div>
     </div>

@@ -112,7 +112,7 @@ type CountSession = {
   auditTrail: CountAuditEntry[];
 };
 
-type Props = { dictionary: CountDictionary; locale: string };
+type Props = { dictionary: CountDictionary; locale: string; autoStart?: boolean };
 type View = "list" | "wizard";
 
 const REASON_OPTIONS: VarianceReason[] = [
@@ -260,11 +260,13 @@ function normalizeSession(s: Partial<CountSession> & { id: string; name: string;
   };
 }
 
-export function StockCountManager({ dictionary, locale }: Props) {
+export function StockCountManager({ dictionary, locale, autoStart = false }: Props) {
   const t = dictionary;
   const [sessions, setSessions] = useState<CountSession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [view, setView] = useState<View>("list");
+  // ?new=1 (from inventory "Start Count") opens the new-session wizard directly;
+  // all wizard form fields already default to the same empty values openNewWizard() sets.
+  const [view, setView] = useState<View>(autoStart ? "wizard" : "list");
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [confirmApply, setConfirmApply] = useState(false);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
