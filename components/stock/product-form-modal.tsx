@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 
 import type {
   ManagementDictionary,
@@ -40,6 +41,9 @@ type ProductFieldProps = {
   label: string;
 };
 
+const inputClass =
+  "w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100";
+
 function ProductSection({
   children,
   title,
@@ -48,11 +52,57 @@ function ProductSection({
   title: string;
 }) {
   return (
-    <section className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 md:p-6">
-      <div className="mb-4">
-        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
-      </div>
+    <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 md:p-5">
+      <h3 className="mb-3 text-base font-semibold text-slate-900">{title}</h3>
       {children}
+    </section>
+  );
+}
+
+function CollapsibleSection({
+  children,
+  defaultOpen = false,
+  hint,
+  optionalText,
+  summary,
+  title,
+}: {
+  children: ReactNode;
+  defaultOpen?: boolean;
+  hint?: string;
+  optionalText?: string;
+  summary?: ReactNode;
+  title: string;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+      <button
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition hover:bg-slate-100/60 md:px-5"
+        onClick={() => setOpen((value) => !value)}
+        type="button"
+      >
+        <div className="min-w-0">
+          <h3 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+            <span>{title}</span>
+            {optionalText ? (
+              <span className="text-xs font-normal text-slate-400">({optionalText})</span>
+            ) : null}
+          </h3>
+          {summary ? (
+            <div className="mt-0.5 truncate text-xs text-slate-500">{summary}</div>
+          ) : hint && !open ? (
+            <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{hint}</p>
+          ) : null}
+        </div>
+        <ChevronDown
+          aria-hidden="true"
+          className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open ? <div className="px-4 pb-4 md:px-5 md:pb-5">{children}</div> : null}
     </section>
   );
 }
@@ -108,7 +158,7 @@ function ProductTextInput({
   return (
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
       <input
-        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+        className={inputClass}
         min={min}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder ?? label}
@@ -148,6 +198,7 @@ function ProductSelectField({
   }, [opts, search]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sync the visible text to the selected value when value/options change
     setSearch(opts.find((o) => o.id === value)?.name ?? "");
   }, [value, opts]);
 
@@ -173,7 +224,7 @@ function ProductSelectField({
           <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <input
-          className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+          className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 pr-10 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
           onChange={(e) => {
             setSearch(e.target.value);
             onChange("");
@@ -237,7 +288,7 @@ function ProductNativeSelectField({
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
       <div className="relative">
         <select
-          className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-slate-800 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-2.5 pr-10 text-slate-800 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
           disabled={disabled}
           onChange={(event) => onChange(event.target.value)}
           value={value}
@@ -278,7 +329,7 @@ function ProductFileField({
   return (
     <ProductField badgeText={badgeText} badgeTone={badgeTone} label={label}>
       <input
-        className="w-full rounded-lg border border-dashed border-slate-300 bg-white px-4 py-3 outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3 file:text-sm file:font-medium file:text-violet-700 focus:border-violet-500"
+        className="w-full rounded-lg border border-dashed border-slate-300 bg-white px-4 py-2.5 text-sm outline-none transition file:mr-4 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3 file:text-sm file:font-medium file:text-violet-700 focus:border-violet-500"
         onChange={(event) => onChange(event.target.files?.[0] ?? null)}
         type="file"
       />
@@ -288,27 +339,26 @@ function ProductFileField({
 
 function POSPreviewCard({
   formState,
-  posPreviewLabel,
+  productTypes,
   posStatusActive,
   posStatusInactive,
-  productTypes,
   unitOptions,
 }: {
   formState: ProductInput;
-  posPreviewLabel: string;
+  productTypes: ProductType[];
   posStatusActive: string;
   posStatusInactive: string;
-  productTypes: ProductType[];
   unitOptions: ProductUnit[];
 }) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const imageUrl = useMemo(
+    () => (formState.image ? URL.createObjectURL(formState.image) : null),
+    [formState.image],
+  );
 
   useEffect(() => {
-    if (!formState.image) { setImageUrl(null); return; }
-    const url = URL.createObjectURL(formState.image);
-    setImageUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [formState.image]);
+    if (!imageUrl) return;
+    return () => URL.revokeObjectURL(imageUrl);
+  }, [imageUrl]);
 
   const categoryName = productTypes.find((t) => t.id === formState.product_type_id)?.name;
   const unitName = unitOptions.find((u) => u.id === formState.unit_id)?.name;
@@ -326,13 +376,11 @@ function POSPreviewCard({
   }, [formState.special_price]);
 
   return (
-    <div className="sticky top-6">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-        {posPreviewLabel}
-      </p>
+    <div className="space-y-3">
       <div className="overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
         <div className="relative aspect-square bg-gradient-to-br from-violet-50 to-slate-100">
           {imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img alt="" className="h-full w-full object-cover" src={imageUrl} />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
@@ -387,7 +435,7 @@ function POSPreviewCard({
         </div>
       </div>
       {formState.barcode || formState.sku ? (
-        <div className="mt-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
           <p className="font-mono text-xs text-slate-500">{formState.barcode ?? formState.sku}</p>
         </div>
       ) : null}
@@ -425,15 +473,26 @@ export function ProductFormDrawer({
   const posPreviewLabel = formLabels.posPreviewLabel ?? "POS Preview";
   const posStatusActive = formLabels.posStatusActive ?? "Active";
   const posStatusInactive = formLabels.posStatusInactive ?? "Inactive";
+  const isActive = Boolean(formState.is_active);
+
+  const previewCard = (
+    <POSPreviewCard
+      formState={formState}
+      posStatusActive={posStatusActive}
+      posStatusInactive={posStatusInactive}
+      productTypes={productTypes}
+      unitOptions={unitOptions}
+    />
+  );
 
   return (
     <div className="w-full">
-      {/* Page header */}
-      <div className="mb-6 rounded-2xl bg-violet-700 px-6 py-6 text-white">
-        <div className="flex items-center gap-4">
+      {/* Page header — compact */}
+      <div className="mb-4 rounded-2xl bg-violet-700 px-5 py-4 text-white">
+        <div className="flex items-center gap-3">
           <button
             aria-label={closeLabel}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
             onClick={onClose}
             type="button"
           >
@@ -451,18 +510,21 @@ export function ProductFormDrawer({
             </svg>
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-white/70">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">
               {quickActionLabel}
             </p>
-            <h1 className="mt-0.5 text-2xl font-semibold">
+            <h1 className="text-xl font-semibold">
               {isEditing ? formLabels.titleEdit : formLabels.titleCreate}
             </h1>
           </div>
           <div className="flex shrink-0 items-center gap-3">
+            <span className="hidden text-xs font-medium uppercase tracking-wide text-white/60 sm:block">
+              {isActive ? posStatusActive : posStatusInactive}
+            </span>
             <button
-              aria-checked={Boolean(formState.is_active)}
+              aria-checked={isActive}
               className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-white/50 ${
-                Boolean(formState.is_active) ? "bg-white/90" : "bg-white/20"
+                isActive ? "bg-white/90" : "bg-white/20"
               }`}
               onClick={() =>
                 onFormStateChange((current) => ({ ...current, is_active: !current.is_active }))
@@ -472,25 +534,29 @@ export function ProductFormDrawer({
             >
               <span
                 className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                  Boolean(formState.is_active) ? "translate-x-5" : "translate-x-0"
+                  isActive ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>
-            <span className="hidden text-xs font-medium uppercase tracking-wide text-white/60 sm:block">
-              {Boolean(formState.is_active) ? posStatusActive : posStatusInactive}
-            </span>
           </div>
         </div>
       </div>
 
-      {/* Main content */}
       <form onSubmit={onSubmit}>
-        <div className="xl:grid xl:grid-cols-[1fr_288px] xl:gap-8">
+        {/* Mobile / tablet preview — collapsible summary (hidden on desktop where the sticky panel shows) */}
+        <div className="mb-4 lg:hidden">
+          <CollapsibleSection summary={formState.name || "—"} title={posPreviewLabel}>
+            {previewCard}
+          </CollapsibleSection>
+        </div>
+
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6 xl:gap-8">
           {/* Form fields */}
-          <div className="space-y-6">
+          <div className="space-y-4">
+            {/* Section 1 — Basic info */}
             <ProductSection title={formLabels.detailsSection}>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="space-y-5">
+              <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
+                <div className="space-y-4">
                   <ProductTextInput
                     badgeText={formLabels.requiredLabel}
                     badgeTone="required"
@@ -528,22 +594,8 @@ export function ProductFormDrawer({
                     options={productBrands.map((b) => ({ id: b.id, name: b.name }))}
                     value={formState.brand_id ?? ""}
                   />
-                  {!isEditing ? (
-                    <ProductNativeSelectField
-                      badgeText={formLabels.optionalLabel}
-                      disabled={supplierOptions.length === 0}
-                      emptyLabel={formLabels.supplierEmptyLabel}
-                      label={formLabels.supplierLabel}
-                      onChange={(value) =>
-                        onFormStateChange((current) => ({ ...current, supplier_id: value }))
-                      }
-                      options={supplierOptions}
-                      placeholder={formLabels.supplierPlaceholder}
-                      value={formState.supplier_id ?? ""}
-                    />
-                  ) : null}
                 </div>
-                <div className="space-y-5">
+                <div className="space-y-4">
                   <ProductFileField
                     badgeText={formLabels.optionalLabel}
                     label={formLabels.imageLabel}
@@ -567,13 +619,28 @@ export function ProductFormDrawer({
                     }
                     value={formState.barcode ?? ""}
                   />
+                  {!isEditing ? (
+                    <ProductNativeSelectField
+                      badgeText={formLabels.optionalLabel}
+                      disabled={supplierOptions.length === 0}
+                      emptyLabel={formLabels.supplierEmptyLabel}
+                      label={formLabels.supplierLabel}
+                      onChange={(value) =>
+                        onFormStateChange((current) => ({ ...current, supplier_id: value }))
+                      }
+                      options={supplierOptions}
+                      placeholder={formLabels.supplierPlaceholder}
+                      value={formState.supplier_id ?? ""}
+                    />
+                  ) : null}
                 </div>
               </div>
             </ProductSection>
 
+            {/* Section 2 — Price & stock */}
             <ProductSection title={formLabels.pricingSection}>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="space-y-5">
+              <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
+                <div className="space-y-4">
                   <ProductTextInput
                     badgeText={formLabels.requiredLabel}
                     badgeTone="required"
@@ -606,7 +673,7 @@ export function ProductFormDrawer({
                     value={formState.special_price}
                   />
                 </div>
-                <div className="space-y-5">
+                <div className="space-y-4">
                   {!isEditing ? (
                     <ProductTextInput
                       badgeText={formLabels.optionalLabel}
@@ -635,20 +702,28 @@ export function ProductFormDrawer({
               </div>
             </ProductSection>
 
-            <ProductSection title={formLabels.setupSection}>
-              <ProductField badgeText={formLabels.optionalLabel} label={formLabels.descriptionLabel}>
-                <textarea
-                  className="min-h-[80px] w-full resize-y rounded-lg border border-slate-200 bg-white px-4 py-3 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
-                  onChange={(event) =>
-                    onFormStateChange((current) => ({ ...current, description: event.target.value }))
-                  }
-                  placeholder={formLabels.descriptionLabel}
-                  value={formState.description ?? ""}
-                />
-              </ProductField>
-            </ProductSection>
+            {/* Section 3 — Description (optional, collapsed) */}
+            <CollapsibleSection
+              hint={formLabels.descriptionHint}
+              optionalText={formLabels.optionalLabel}
+              title={formLabels.descriptionLabel}
+            >
+              <textarea
+                className="min-h-[80px] w-full resize-y rounded-lg border border-slate-200 bg-white px-4 py-2.5 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                onChange={(event) =>
+                  onFormStateChange((current) => ({ ...current, description: event.target.value }))
+                }
+                placeholder={formLabels.descriptionLabel}
+                value={formState.description ?? ""}
+              />
+            </CollapsibleSection>
 
-            <ProductSection title={formLabels.storageAssignmentSection}>
+            {/* Section 4 — Default stock location (optional, collapsed) */}
+            <CollapsibleSection
+              hint={formLabels.storageAssignmentHint}
+              optionalText={formLabels.optionalLabel}
+              title={formLabels.storageAssignmentSection}
+            >
               <StorageAssignmentCard
                 value={formState.storage_location ?? ""}
                 onChange={(value) =>
@@ -668,53 +743,51 @@ export function ProductFormDrawer({
                   clearLabel: formLabels.storageClearLabel,
                 }}
               />
-            </ProductSection>
+            </CollapsibleSection>
+          </div>
 
-            {/* Footer actions */}
-            <div className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4">
-              <button
-                className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-                onClick={onClose}
-                type="button"
-              >
-                {closeLabel}
-              </button>
-              <button
-                className="inline-flex items-center gap-2 rounded-lg bg-violet-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
-                disabled={isPending}
-                type="submit"
-              >
-                {isPending ? (
-                  <>
-                    <svg
-                      aria-hidden="true"
-                      className="h-4 w-4 animate-spin text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
-                    </svg>
-                    <span>{formLabels.saving}</span>
-                  </>
-                ) : (
-                  isEditing ? formLabels.save : formLabels.createProduct
-                )}
-              </button>
+          {/* POS Preview — sticky right column, desktop only */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-24">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                {posPreviewLabel}
+              </p>
+              {previewCard}
             </div>
-          </div>
+          </aside>
+        </div>
 
-          {/* POS Preview — right column, xl+ only */}
-          <div className="mt-6 hidden xl:mt-0 xl:block">
-            <POSPreviewCard
-              formState={formState}
-              posPreviewLabel={posPreviewLabel}
-              posStatusActive={posStatusActive}
-              posStatusInactive={posStatusInactive}
-              productTypes={productTypes}
-              unitOptions={unitOptions}
-            />
-          </div>
+        {/* Sticky bottom action bar — always visible while editing */}
+        <div className="sticky bottom-0 z-20 mt-4 flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-5 py-3.5 shadow-[0_-6px_20px_-8px_rgba(15,23,42,0.18)] backdrop-blur">
+          <button
+            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+            onClick={onClose}
+            type="button"
+          >
+            {closeLabel}
+          </button>
+          <button
+            className="inline-flex items-center gap-2 rounded-lg bg-violet-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:bg-violet-400"
+            disabled={isPending}
+            type="submit"
+          >
+            {isPending ? (
+              <>
+                <svg
+                  aria-hidden="true"
+                  className="h-4 w-4 animate-spin text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
+                </svg>
+                <span>{formLabels.saving}</span>
+              </>
+            ) : (
+              isEditing ? formLabels.save : formLabels.createProduct
+            )}
+          </button>
         </div>
       </form>
     </div>
