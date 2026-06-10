@@ -146,7 +146,7 @@ export function UserWorkspaceTopbar({
           </button>
         </div>
 
-        <NotificationDropdown labels={notificationLabels} />
+        <NotificationDropdown labels={notificationLabels} locale={locale} />
 
         <UserProfileMenu
           editProfileLabel={editProfileLabel}

@@ -6,12 +6,14 @@ import { isSupportedLocale, type Locale } from "@/lib/locale-config";
 
 type InventoryPageProps = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ status?: string }>;
 };
 
 // Inventory module — stock quantity management (levels, adjustment, movements).
 // Product master-data lives at /stock and cannot adjust stock.
-export default async function InventoryPage({ params }: InventoryPageProps) {
+export default async function InventoryPage({ params, searchParams }: InventoryPageProps) {
   const { locale } = await params;
+  const { status } = await searchParams;
 
   if (!isSupportedLocale(locale)) {
     notFound();
@@ -19,5 +21,5 @@ export default async function InventoryPage({ params }: InventoryPageProps) {
 
   const dictionary = await getDictionary(locale as Locale);
 
-  return <InventoryManager dictionary={dictionary.inventory} locale={locale} />;
+  return <InventoryManager dictionary={dictionary.inventory} locale={locale} initialStatus={status} />;
 }

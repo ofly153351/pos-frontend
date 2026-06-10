@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   Bell,
   CheckCircle2,
+  ChevronRight,
   ClipboardCheck,
   PackageX,
   ShieldCheck,
@@ -28,7 +30,7 @@ export type NotificationLabels = {
   viewAll: string;
 };
 
-type Props = { labels: NotificationLabels };
+type Props = { labels: NotificationLabels; locale: string };
 
 function readCountSessions(): Array<{ id: string; status: string }> {
   try {
@@ -44,7 +46,7 @@ function readCountSessions(): Array<{ id: string; status: string }> {
   }
 }
 
-export function NotificationDropdown({ labels }: Props) {
+export function NotificationDropdown({ labels, locale }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [lowStock, setLowStock] = useState(0);
@@ -110,6 +112,7 @@ export function NotificationDropdown({ labels }: Props) {
       description: `${lowStock} ${labels.lowStockDesc}`,
       count: lowStock,
       cls: "bg-amber-100 text-amber-600",
+      href: `/${locale}/inventory?status=low-stock`,
     },
     {
       id: "out-of-stock",
@@ -118,6 +121,7 @@ export function NotificationDropdown({ labels }: Props) {
       description: `${outOfStock} ${labels.outOfStockDesc}`,
       count: outOfStock,
       cls: "bg-rose-100 text-rose-600",
+      href: `/${locale}/inventory?status=out-of-stock`,
     },
     {
       id: "pending-counts",
@@ -126,6 +130,7 @@ export function NotificationDropdown({ labels }: Props) {
       description: `${pendingCounts} ${labels.pendingCountsDesc}`,
       count: pendingCounts,
       cls: "bg-blue-100 text-blue-600",
+      href: `/${locale}/inventory/counts?status=pending`,
     },
     {
       id: "pending-approvals",
@@ -134,6 +139,7 @@ export function NotificationDropdown({ labels }: Props) {
       description: `${pendingApprovals} ${labels.pendingApprovalsDesc}`,
       count: pendingApprovals,
       cls: "bg-violet-100 text-violet-600",
+      href: `/${locale}/inventory/counts?status=review`,
     },
   ].filter((n) => n.count > 0);
 
@@ -179,9 +185,11 @@ export function NotificationDropdown({ labels }: Props) {
             </div>
           ) : (
             notifications.map((n) => (
-              <div
+              <Link
                 key={n.id}
-                className="flex items-start gap-3 px-4 py-3 transition hover:bg-slate-50"
+                href={n.href}
+                onClick={() => setIsOpen(false)}
+                className="flex cursor-pointer items-start gap-3 px-4 py-3 transition hover:bg-slate-50"
               >
                 <div
                   className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${n.cls}`}
@@ -196,22 +204,23 @@ export function NotificationDropdown({ labels }: Props) {
                     >
                       {n.count}
                     </span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
                   </div>
                   <p className="mt-0.5 text-xs text-slate-500">{n.description}</p>
                 </div>
-              </div>
+              </Link>
             ))
           )}
         </div>
 
         <div className="border-t border-slate-100 px-4 py-2.5">
-          <button
-            className="w-full rounded-xl py-1.5 text-center text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
+          <Link
+            href={`/${locale}/inventory`}
             onClick={() => setIsOpen(false)}
-            type="button"
+            className="block w-full rounded-xl py-1.5 text-center text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
           >
             {labels.viewAll}
-          </button>
+          </Link>
         </div>
       </div>
     </div>

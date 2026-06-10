@@ -909,7 +909,11 @@
       "errBankAccountNumber": "Invalid account number (10-12 digits)",
       "errBankAccountName": "Please enter account name",
       "errCreditTerm": "Please select a credit term",
-      "errCustomDays": "Please enter days (1-365)"
+      "errCustomDays": "Please enter days (1-365)",
+      "taxId": "Tax ID",
+      "taxIdPlaceholder": "13-digit tax ID number",
+      "errTaxId": "Tax ID must be exactly 13 digits",
+      "sectionAdditional": "Additional Information"
     },
     "filterAll": "All",
     "searchOrders": "Search order no. or supplier...",
@@ -2546,6 +2550,7 @@
       "zone": "Zone",
       "countedItems": "Counted Items",
       "allStatuses": "All Statuses",
+      "pending": "Pending",
       "searchPlaceholder": "Search session name",
       "noFilteredSessions": "No sessions match the selected filters"
     },

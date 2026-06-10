@@ -310,6 +310,7 @@ export type CountDictionary = {
     allWarehouses: string;
     allCategories: string;
     allStatuses: string;
+    pending: string;
     searchPlaceholder: string;
     noFilteredSessions: string;
     unknownUser: string;

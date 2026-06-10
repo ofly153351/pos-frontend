@@ -112,8 +112,17 @@ type CountSession = {
   auditTrail: CountAuditEntry[];
 };
 
-type Props = { dictionary: CountDictionary; locale: string; autoStart?: boolean };
+type Props = { dictionary: CountDictionary; locale: string; autoStart?: boolean; initialStatus?: string };
 type View = "list" | "wizard";
+// "pending" is a meta-filter spanning draft + counting (unfinished sessions),
+// used by the notification deep-link ?status=pending.
+type ListStatusFilter = CountStatus | "all" | "pending";
+
+function mapInitialListStatus(status?: string): ListStatusFilter {
+  if (status === "pending") return "pending";
+  if (status === "review") return "review";
+  return "all";
+}
 
 const REASON_OPTIONS: VarianceReason[] = [
   "counting_error",
@@ -260,7 +269,7 @@ function normalizeSession(s: Partial<CountSession> & { id: string; name: string;
   };
 }
 
-export function StockCountManager({ dictionary, locale, autoStart = false }: Props) {
+export function StockCountManager({ dictionary, locale, autoStart = false, initialStatus }: Props) {
   const t = dictionary;
   const [sessions, setSessions] = useState<CountSession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -293,7 +302,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false }: Pro
   const [selectStockFilter, setSelectStockFilter] = useState<StockFilter>("all");
 
   const [listSearch, setListSearch] = useState("");
-  const [listStatus, setListStatus] = useState<CountStatus | "all">("all");
+  const [listStatus, setListStatus] = useState<ListStatusFilter>(mapInitialListStatus(initialStatus));
   const [listWarehouse, setListWarehouse] = useState("all");
   const [listDateFrom, setListDateFrom] = useState("");
   const [listDateTo, setListDateTo] = useState("");
@@ -324,6 +333,18 @@ export function StockCountManager({ dictionary, locale, autoStart = false }: Pro
       // ignore
     }
   }, [storageKey]);
+
+  // Sync the list filter when the ?status= deep-link changes (notification click
+  // while already on the count page). Adjusted during render via the prev-prop
+  // pattern (no effect → no cascading re-render / flaky set-state-in-effect lint).
+  const [prevInitialStatus, setPrevInitialStatus] = useState(initialStatus);
+  if (initialStatus !== prevInitialStatus) {
+    setPrevInitialStatus(initialStatus);
+    setListStatus(mapInitialListStatus(initialStatus));
+    // A count deep-link (?status=pending|review) should reveal the filtered list
+    // even if the user was mid-wizard on the same route (session stays persisted).
+    if (initialStatus === "pending" || initialStatus === "review") setView("list");
+  }
 
   function persist(next: CountSession[]) {
     setSessions(next);
@@ -439,7 +460,11 @@ export function StockCountManager({ dictionary, locale, autoStart = false }: Pro
   const filteredSessions = useMemo(() => {
     const q = listSearch.trim().toLowerCase();
     return sessions.filter((session) => {
-      if (listStatus !== "all" && session.status !== listStatus) return false;
+      if (listStatus === "pending") {
+        if (session.status !== "draft" && session.status !== "counting") return false;
+      } else if (listStatus !== "all" && session.status !== listStatus) {
+        return false;
+      }
       if (listWarehouse !== "all" && (session.warehouseName || "") !== listWarehouse) return false;
       if (listDateFrom) {
         const from = new Date(`${listDateFrom}T00:00:00`).getTime();
@@ -1056,8 +1081,9 @@ export function StockCountManager({ dictionary, locale, autoStart = false }: Pro
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-400" />
               <input value={listSearch} onChange={(e) => setListSearch(e.target.value)} placeholder={t.list.searchPlaceholder} className="h-11 w-full rounded-xl border border-violet-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
             </div>
-            <select value={listStatus} onChange={(e) => setListStatus(e.target.value as CountStatus | "all")} className={inputCls}>
+            <select value={listStatus} onChange={(e) => setListStatus(e.target.value as ListStatusFilter)} className={inputCls}>
               <option value="all">{t.list.allStatuses}</option>
+              <option value="pending">{t.list.pending}</option>
               <option value="draft">{t.status.draft}</option>
               <option value="counting">{t.status.counting}</option>
               <option value="review">{t.status.review}</option>

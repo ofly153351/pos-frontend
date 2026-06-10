@@ -32,7 +32,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { InventoryDictionary } from "@/components/stock/inventory-types";
 import type { Product } from "@/types/product";
 
-type Props = { dictionary: InventoryDictionary; locale: string };
+type Props = { dictionary: InventoryDictionary; locale: string; initialStatus?: string };
+
+// Map a ?status= query param (from notification deep-links) to a filter tab.
+function statusToTab(status?: string): "all" | "ready" | "low" | "out" {
+  if (status === "low-stock") return "low";
+  if (status === "out-of-stock") return "out";
+  return "all";
+}
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", { currency: "THB", maximumFractionDigits: 0, style: "currency" }).format(value);
@@ -108,16 +115,25 @@ function localizeNote(note: string | undefined, locale: string): string {
   return s;
 }
 
-export function InventoryManager({ dictionary, locale }: Props) {
+export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
   const t = dictionary;
   const router = useRouter();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"all" | "ready" | "low" | "out">("all");
+  const [tab, setTab] = useState<"all" | "ready" | "low" | "out">(statusToTab(initialStatus));
   const [adjusting, setAdjusting] = useState<Product | null>(null);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
 
   const dtf = useMemo(() => new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }), [locale]);
+
+  // Sync the active tab when the ?status= deep-link changes — covers navigating
+  // to /inventory?status=… while already mounted (same route). Adjusted during
+  // render via the prev-prop pattern (no effect → no cascading re-render / lint).
+  const [prevStatus, setPrevStatus] = useState(initialStatus);
+  if (initialStatus !== prevStatus) {
+    setPrevStatus(initialStatus);
+    setTab(statusToTab(initialStatus));
+  }
 
   const productsQuery = useQuery({
     queryKey: ["inventory", "products"],

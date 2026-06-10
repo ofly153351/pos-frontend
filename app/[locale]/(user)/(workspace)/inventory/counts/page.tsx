@@ -6,13 +6,13 @@ import { isSupportedLocale, type Locale } from "@/lib/locale-config";
 
 type CountsPageProps = {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ new?: string }>;
+  searchParams: Promise<{ new?: string; status?: string }>;
 };
 
 // Stock Counting — physical count sessions, variance vs system, apply corrections.
 export default async function StockCountsPage({ params, searchParams }: CountsPageProps) {
   const { locale } = await params;
-  const { new: startNew } = await searchParams;
+  const { new: startNew, status } = await searchParams;
 
   if (!isSupportedLocale(locale)) {
     notFound();
@@ -20,5 +20,5 @@ export default async function StockCountsPage({ params, searchParams }: CountsPa
 
   const dictionary = await getDictionary(locale as Locale);
 
-  return <StockCountManager dictionary={dictionary.count} locale={locale} autoStart={startNew === "1"} />;
+  return <StockCountManager dictionary={dictionary.count} locale={locale} autoStart={startNew === "1"} initialStatus={status} />;
 }
