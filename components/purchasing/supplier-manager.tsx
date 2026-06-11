@@ -170,6 +170,10 @@ type SupplierManagerProps = {
       errBankAccountName: string;
       errCreditTerm: string;
       errCustomDays: string;
+      taxId: string;
+      taxIdPlaceholder: string;
+      errTaxId: string;
+      sectionAdditional: string;
     };
   };
 };
@@ -629,7 +633,7 @@ const THAI_BANKS = [
   "ธนาคารยูโอบี (UOB)", "ธนาคารแลนด์ แอนด์ เฮ้าส์ (LH)", "ธนาคารอาคารสงเคราะห์ (GHB)",
 ];
 
-const CREDIT_PRESETS = [0, 7, 15, 30, 45, 60, 90];
+const CREDIT_PRESETS = [0, 7, 15, 30, 45];
 
 function EditSupplierModal({
   supplier,
@@ -739,58 +743,41 @@ function EditSupplierModal({
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
-            {/* Logo */}
-            <div>
-              <p className={sectionTitle}>{m.sectionLogo}</p>
-              <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-violet-200 bg-violet-50">
-                  {logoPreview
-                    ? <img src={logoPreview} alt="logo" className="h-full w-full object-cover" />
-                    : <Building2 className="h-8 w-8 text-violet-300" />}
-                </div>
-                <div className="space-y-2">
-                  <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleLogoChange} />
-                  <button type="button" onClick={() => fileRef.current?.click()}
-                    className="rounded-lg border border-violet-200 bg-white px-4 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50">
-                    {m.logoUploadText}
-                  </button>
-                  {logoPreview && (
-                    <button type="button" onClick={handleRemoveLogo}
-                      className="ml-2 rounded-lg border border-red-100 bg-white px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50">
-                      {m.logoRemove}
-                    </button>
-                  )}
-                  <p className="text-xs text-slate-400">{m.logoUploadHint}</p>
-                </div>
-              </div>
-            </div>
-
             {/* Contact */}
             <div>
               <p className={sectionTitle}>{m.sectionContact}</p>
               <div className="space-y-3">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">{m.companyName} <span className="text-red-500">*</span></label>
-                  <input className={inp} value={form.name} onChange={(e) => set("name", e.target.value)} />
-                </div>
+                {/* Row 1: Company Name + Contact Person */}
                 <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.companyName} <span className="text-red-500">*</span></label>
+                    <input className={inp} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={m.companyNamePlaceholder} />
+                  </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.contactPerson}</label>
                     <input className={inp} value={form.contact_person} onChange={(e) => set("contact_person", e.target.value)} placeholder={m.contactNamePlaceholder} />
                   </div>
+                </div>
+                {/* Row 2: Phone + LINE ID */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.supplierPhone}</label>
-                    <input className={inp} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder={m.phonePlaceholder} />
+                    <input className={inp} value={form.phone} onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder={m.phonePlaceholder} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.lineId}</label>
+                    <input className={inp} value={form.line_id} onChange={(e) => set("line_id", e.target.value)} placeholder={m.lineIdPlaceholder} />
                   </div>
                 </div>
+                {/* Row 3: Email + Tax ID */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-600">{m.email}</label>
                     <input className={inp} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder={m.emailPlaceholder} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.lineId}</label>
-                    <input className={inp} value={form.line_id} onChange={(e) => set("line_id", e.target.value)} placeholder={m.lineIdPlaceholder} />
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.taxId}</label>
+                    <input className={inp} inputMode="numeric" maxLength={13} value={form.tax_id} onChange={(e) => set("tax_id", e.target.value.replace(/\D/g, "").slice(0, 13))} placeholder={m.taxIdPlaceholder} />
                   </div>
                 </div>
               </div>
@@ -800,7 +787,6 @@ function EditSupplierModal({
             <div>
               <p className={sectionTitle}>{m.sectionFinancial}</p>
               <div className="space-y-3">
-                {/* Payment method toggle */}
                 <div>
                   <label className="mb-2 block text-xs font-semibold text-slate-600">{m.paymentMethodLabel}</label>
                   <div className="flex gap-2">
@@ -851,32 +837,56 @@ function EditSupplierModal({
                       </button>
                     ))}
                     <button type="button" onClick={() => set("credit_days", "")}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${form.credit_days === "" ? "border-slate-400 bg-slate-100 text-slate-700" : !CREDIT_PRESETS.includes(Number(form.credit_days)) ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${form.credit_days === "" ? "border-slate-400 bg-slate-100 text-slate-700" : !CREDIT_PRESETS.includes(form.credit_days as number) ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
                       {m.creditCustom}
                     </button>
                   </div>
-                  {!CREDIT_PRESETS.includes(Number(form.credit_days)) && (
+                  {!CREDIT_PRESETS.includes(Number(form.credit_days)) && form.credit_days !== "" && (
                     <input type="number" min={0} max={365} className={inp + " mt-2"} value={form.credit_days} onChange={(e) => set("credit_days", e.target.value === "" ? "" : Number(e.target.value))} placeholder={m.creditCustomPlaceholder} />
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Address & Notes */}
+            {/* Address */}
             <div>
               <p className={sectionTitle}>{dict.address}</p>
-              <div className="space-y-3">
+              <textarea className={inp + " resize-none"} rows={4} value={form.address} onChange={(e) => set("address", e.target.value)} placeholder={m.addressPlaceholder} />
+            </div>
+
+            {/* Additional Information: Logo + Notes */}
+            <div>
+              <p className={sectionTitle}>{m.sectionAdditional}</p>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Logo */}
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.address}</label>
-                  <textarea className={inp + " resize-none"} rows={2} value={form.address} onChange={(e) => set("address", e.target.value)} placeholder={m.addressPlaceholder} />
+                  <label className="mb-2 block text-xs font-semibold text-slate-600">{m.sectionLogo} <span className="font-normal text-slate-400">{m.logoOptional}</span></label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-violet-200 bg-violet-50">
+                      {logoPreview
+                        ? <img src={logoPreview} alt="logo" className="h-full w-full object-cover" />
+                        : <Building2 className="h-7 w-7 text-violet-300" />}
+                    </div>
+                    <div className="space-y-1.5">
+                      <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleLogoChange} />
+                      <button type="button" onClick={() => fileRef.current?.click()}
+                        className="block rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50">
+                        {m.logoUploadText}
+                      </button>
+                      {logoPreview && (
+                        <button type="button" onClick={handleRemoveLogo}
+                          className="block rounded-lg border border-red-100 bg-white px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50">
+                          {m.logoRemove}
+                        </button>
+                      )}
+                      <p className="text-xs text-slate-400">{m.logoUploadHint}</p>
+                    </div>
+                  </div>
                 </div>
+                {/* Notes */}
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.taxId}</label>
-                  <input className={inp} value={form.tax_id} onChange={(e) => set("tax_id", e.target.value)} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.note}</label>
-                  <textarea className={inp + " resize-none"} rows={2} value={form.note} onChange={(e) => set("note", e.target.value)} placeholder={m.notesPlaceholder} />
+                  <label className="mb-2 block text-xs font-semibold text-slate-600">{dict.note}</label>
+                  <textarea className={inp + " resize-none"} rows={4} value={form.note} onChange={(e) => set("note", e.target.value)} placeholder={m.notesPlaceholder} />
                 </div>
               </div>
             </div>

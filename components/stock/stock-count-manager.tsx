@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 import * as XLSX from "xlsx";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -1051,14 +1050,9 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     return (
       <div className="w-full xl:px-2 2xl:px-4">
         <div className="my-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link href={`/${locale}/inventory`} className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-violet-200 bg-white text-violet-700 transition hover:bg-violet-50">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">{t.title}</h2>
-              <p className="text-sm text-slate-500">{t.subtitle}</p>
-            </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">{t.title}</h2>
+            <p className="text-sm text-slate-500">{t.subtitle}</p>
           </div>
           <button type="button" onClick={openNewWizard} className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700">
             <Plus className="h-4 w-4" />

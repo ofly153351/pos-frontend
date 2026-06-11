@@ -107,6 +107,32 @@ function CollapsibleSection({
   );
 }
 
+// Always-visible labelled subsection INSIDE the main card (divider + header, no collapse).
+function FormSubsection({
+  children,
+  hint,
+  optionalText,
+  title,
+}: {
+  children: ReactNode;
+  hint?: string;
+  optionalText?: string;
+  title: string;
+}) {
+  return (
+    <div className="border-t border-slate-200 pt-4">
+      <div className="mb-2 flex items-center gap-2">
+        <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
+        {optionalText ? (
+          <span className="text-xs font-normal text-slate-400">({optionalText})</span>
+        ) : null}
+      </div>
+      {hint ? <p className="-mt-1 mb-3 text-xs text-slate-500">{hint}</p> : null}
+      {children}
+    </div>
+  );
+}
+
 function ProductField({
   badgeText,
   badgeTone = "optional",
@@ -337,6 +363,51 @@ function ProductFileField({
   );
 }
 
+// Compact status toggle field (grid cell) — synced to the same is_active as the header toggle.
+function ProductStatusField({
+  activeText,
+  inactiveText,
+  label,
+  onToggle,
+  value,
+}: {
+  activeText: string;
+  inactiveText: string;
+  label: string;
+  onToggle: () => void;
+  value: boolean;
+}) {
+  return (
+    <div className="block">
+      <span className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700">{label}</span>
+      <button
+        aria-checked={value}
+        className={`flex w-full items-center justify-between rounded-lg border px-4 py-2.5 transition ${
+          value ? "border-emerald-200 bg-emerald-50" : "border-slate-200 bg-white"
+        }`}
+        onClick={onToggle}
+        role="switch"
+        type="button"
+      >
+        <span className={`text-sm font-medium ${value ? "text-emerald-700" : "text-slate-500"}`}>
+          {value ? activeText : inactiveText}
+        </span>
+        <span
+          className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${
+            value ? "bg-emerald-500" : "bg-slate-300"
+          }`}
+        >
+          <span
+            className={`absolute left-0.5 top-0.5 inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              value ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </span>
+      </button>
+    </div>
+  );
+}
+
 function POSPreviewCard({
   formState,
   productTypes,
@@ -474,6 +545,9 @@ export function ProductFormDrawer({
   const posStatusActive = formLabels.posStatusActive ?? "Active";
   const posStatusInactive = formLabels.posStatusInactive ?? "Inactive";
   const isActive = Boolean(formState.is_active);
+  const optionalText = formLabels.optionalLabel;
+  const toggleActive = () =>
+    onFormStateChange((current) => ({ ...current, is_active: !current.is_active }));
 
   const previewCard = (
     <POSPreviewCard
@@ -526,9 +600,7 @@ export function ProductFormDrawer({
               className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-white/50 ${
                 isActive ? "bg-white/90" : "bg-white/20"
               }`}
-              onClick={() =>
-                onFormStateChange((current) => ({ ...current, is_active: !current.is_active }))
-              }
+              onClick={toggleActive}
               role="switch"
               type="button"
             >
@@ -551,11 +623,11 @@ export function ProductFormDrawer({
         </div>
 
         <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-6 xl:gap-8">
-          {/* Form fields */}
+          {/* One compact merged card: product info + price & stock + optional collapsibles */}
           <div className="space-y-4">
-            {/* Section 1 — Basic info */}
             <ProductSection title={formLabels.detailsSection}>
               <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
+                {/* Left column */}
                 <div className="space-y-4">
                   <ProductTextInput
                     badgeText={formLabels.requiredLabel}
@@ -594,53 +666,6 @@ export function ProductFormDrawer({
                     options={productBrands.map((b) => ({ id: b.id, name: b.name }))}
                     value={formState.brand_id ?? ""}
                   />
-                </div>
-                <div className="space-y-4">
-                  <ProductFileField
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.imageLabel}
-                    onChange={(file) =>
-                      onFormStateChange((current) => ({ ...current, image: file }))
-                    }
-                  />
-                  <ProductTextInput
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.skuLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, sku: value }))
-                    }
-                    value={formState.sku}
-                  />
-                  <ProductTextInput
-                    badgeText={formLabels.optionalLabel}
-                    label={formLabels.barcodeLabel}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, barcode: value }))
-                    }
-                    value={formState.barcode ?? ""}
-                  />
-                  {!isEditing ? (
-                    <ProductNativeSelectField
-                      badgeText={formLabels.optionalLabel}
-                      disabled={supplierOptions.length === 0}
-                      emptyLabel={formLabels.supplierEmptyLabel}
-                      label={formLabels.supplierLabel}
-                      onChange={(value) =>
-                        onFormStateChange((current) => ({ ...current, supplier_id: value }))
-                      }
-                      options={supplierOptions}
-                      placeholder={formLabels.supplierPlaceholder}
-                      value={formState.supplier_id ?? ""}
-                    />
-                  ) : null}
-                </div>
-              </div>
-            </ProductSection>
-
-            {/* Section 2 — Price & stock */}
-            <ProductSection title={formLabels.pricingSection}>
-              <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
-                <div className="space-y-4">
                   <ProductTextInput
                     badgeText={formLabels.requiredLabel}
                     badgeTone="required"
@@ -673,7 +698,44 @@ export function ProductFormDrawer({
                     value={formState.special_price}
                   />
                 </div>
+
+                {/* Right column */}
                 <div className="space-y-4">
+                  <ProductFileField
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.imageLabel}
+                    onChange={(file) =>
+                      onFormStateChange((current) => ({ ...current, image: file }))
+                    }
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.skuLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({ ...current, sku: value }))
+                    }
+                    value={formState.sku}
+                  />
+                  <ProductTextInput
+                    badgeText={formLabels.optionalLabel}
+                    label={formLabels.barcodeLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({ ...current, barcode: value }))
+                    }
+                    value={formState.barcode ?? ""}
+                  />
+                  <ProductNativeSelectField
+                    badgeText={formLabels.optionalLabel}
+                    disabled={supplierOptions.length === 0}
+                    emptyLabel={formLabels.supplierEmptyLabel}
+                    label={formLabels.supplierLabel}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({ ...current, supplier_id: value }))
+                    }
+                    options={supplierOptions}
+                    placeholder={formLabels.supplierPlaceholder}
+                    value={formState.supplier_id ?? ""}
+                  />
                   {!isEditing ? (
                     <ProductTextInput
                       badgeText={formLabels.optionalLabel}
@@ -698,52 +760,52 @@ export function ProductFormDrawer({
                     type="number"
                     value={formState.min_stock ?? "0"}
                   />
+                  <ProductStatusField
+                    activeText={posStatusActive}
+                    inactiveText={posStatusInactive}
+                    label={formLabels.activeLabel}
+                    onToggle={toggleActive}
+                    value={isActive}
+                  />
                 </div>
               </div>
+
+              {/* Optional sections — always visible, organized inside the same card */}
+              <div className="mt-4 space-y-4">
+                <FormSubsection optionalText={optionalText} title={formLabels.storageAssignmentSection}>
+                  <StorageAssignmentCard
+                    value={formState.storage_location ?? ""}
+                    onChange={(value) =>
+                      onFormStateChange((current) => ({ ...current, storage_location: value }))
+                    }
+                    labels={{
+                      hint: formLabels.storageAssignmentHint,
+                      warehouseLabel: formLabels.warehouseLabel,
+                      zoneLabel: formLabels.zoneLabel,
+                      locationLabel: formLabels.storageLocationLabel,
+                      optionalLabel: formLabels.optionalLabel,
+                      placeholder: formLabels.storagePlaceholder,
+                      selectWarehouseFirst: formLabels.storageSelectWarehouseFirst,
+                      noWarehouses: formLabels.storageNoWarehouses,
+                      noLocations: formLabels.storageNoLocations,
+                      currentLabel: formLabels.storageCurrentLabel,
+                      clearLabel: formLabels.storageClearLabel,
+                    }}
+                  />
+                </FormSubsection>
+
+                <FormSubsection optionalText={optionalText} title={formLabels.descriptionLabel}>
+                  <textarea
+                    className="min-h-[80px] w-full resize-y rounded-lg border border-slate-200 bg-white px-4 py-2.5 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                    onChange={(event) =>
+                      onFormStateChange((current) => ({ ...current, description: event.target.value }))
+                    }
+                    placeholder={formLabels.descriptionLabel}
+                    value={formState.description ?? ""}
+                  />
+                </FormSubsection>
+              </div>
             </ProductSection>
-
-            {/* Section 3 — Description (optional, collapsed) */}
-            <CollapsibleSection
-              hint={formLabels.descriptionHint}
-              optionalText={formLabels.optionalLabel}
-              title={formLabels.descriptionLabel}
-            >
-              <textarea
-                className="min-h-[80px] w-full resize-y rounded-lg border border-slate-200 bg-white px-4 py-2.5 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
-                onChange={(event) =>
-                  onFormStateChange((current) => ({ ...current, description: event.target.value }))
-                }
-                placeholder={formLabels.descriptionLabel}
-                value={formState.description ?? ""}
-              />
-            </CollapsibleSection>
-
-            {/* Section 4 — Default stock location (optional, collapsed) */}
-            <CollapsibleSection
-              hint={formLabels.storageAssignmentHint}
-              optionalText={formLabels.optionalLabel}
-              title={formLabels.storageAssignmentSection}
-            >
-              <StorageAssignmentCard
-                value={formState.storage_location ?? ""}
-                onChange={(value) =>
-                  onFormStateChange((current) => ({ ...current, storage_location: value }))
-                }
-                labels={{
-                  hint: formLabels.storageAssignmentHint,
-                  warehouseLabel: formLabels.warehouseLabel,
-                  zoneLabel: formLabels.zoneLabel,
-                  locationLabel: formLabels.storageLocationLabel,
-                  optionalLabel: formLabels.optionalLabel,
-                  placeholder: formLabels.storagePlaceholder,
-                  selectWarehouseFirst: formLabels.storageSelectWarehouseFirst,
-                  noWarehouses: formLabels.storageNoWarehouses,
-                  noLocations: formLabels.storageNoLocations,
-                  currentLabel: formLabels.storageCurrentLabel,
-                  clearLabel: formLabels.storageClearLabel,
-                }}
-              />
-            </CollapsibleSection>
           </div>
 
           {/* POS Preview — sticky right column, desktop only */}

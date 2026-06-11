@@ -36,12 +36,15 @@ import {
 } from "recharts";
 
 import { getDashboard } from "@/services/dashboard";
+import { getExpenseSummary } from "@/services/expenses";
+import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import type {
   DashboardPeriod,
   DashboardQueryInput,
   DashboardRecentSale,
   StoreDashboard,
 } from "@/types/dashboard";
+import type { ExpenseSummary } from "@/types/expense";
 
 // ── Dictionary type ─────────────────────────────────────────────────────────
 
@@ -186,6 +189,11 @@ type DashboardDictionary = {
   };
   recentSales: {
     title: string;
+  };
+  expenseCategories: {
+    title: string;
+    subtitle: string;
+    empty: string;
   };
   requestFailedLabel: string;
   roleLabel: {
@@ -400,7 +408,7 @@ const SEVERITY_CONFIG = {
 // ── Visible sections per role ───────────────────────────────────────────────
 
 const ROLE_SECTIONS: Record<UserRole, Set<string>> = {
-  owner: new Set(["hero", "quickActions", "kpi", "actionCenter", "salesChart", "paymentChart", "bestSellers", "stockAttention", "recentSales"]),
+  owner: new Set(["hero", "quickActions", "kpi", "actionCenter", "salesChart", "paymentChart", "expenseCategories", "bestSellers", "stockAttention", "recentSales"]),
   cashier: new Set(["hero", "quickActions", "kpi", "salesChart", "paymentChart", "recentSales"]),
   warehouse: new Set(["hero", "quickActions", "kpi", "actionCenter", "bestSellers", "stockAttention"]),
 };
@@ -421,6 +429,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
   const [prevData, setPrevData] = useState<StoreDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expenseSummary, setExpenseSummary] = useState<ExpenseSummary | null>(null);
 
   const visible = ROLE_SECTIONS[role];
 
@@ -486,9 +495,30 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
 
   useEffect(() => { void loadDashboard(); }, [loadDashboard]);
 
+  // Top expense categories (current month) — owner-only widget.
+  useEffect(() => {
+    if (!visible.has("expenseCategories")) return;
+    let active = true;
+    (async () => {
+      try {
+        const res = await getExpenseSummary();
+        if (active) setExpenseSummary(res.data);
+      } catch {
+        if (active) setExpenseSummary(null);
+      }
+    })();
+    return () => { active = false; };
+  }, [visible]);
+
   // ── Computed values ─────────────────────────────────────────────────────
 
   const dateRangeText = formatDateRange(locale, period, fromDate, toDate);
+
+  const expenseCategoryRows = useMemo<CategoryValueRow[]>(() => {
+    if (!expenseSummary) return [];
+    const denom = expenseSummary.monthly_total || 1;
+    return expenseSummary.by_category.slice(0, 5).map((c) => ({ name: c.name || "—", value: c.total, percent: (c.total / denom) * 100 }));
+  }, [expenseSummary]);
 
   const chartData = useMemo(() => {
     const sales = data?.recent_sales ?? [];
@@ -960,6 +990,28 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
           </article>
         )}
       </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* TOP EXPENSE CATEGORIES (this month) — owner only                  */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {visible.has("expenseCategories") && (
+        <section className="mb-4">
+          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600"><Wallet className="h-4 w-4" /></span>
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">{t.expenseCategories.title}</h2>
+                <p className="text-[10px] text-slate-400">{t.expenseCategories.subtitle}</p>
+              </div>
+            </div>
+            {isLoading && !expenseSummary ? (
+              <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-lg bg-slate-100" />)}</div>
+            ) : (
+              <CategoryValueBars rows={expenseCategoryRows} currency={(n) => formatCurrency(n, locale)} emptyLabel={t.expenseCategories.empty} />
+            )}
+          </article>
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 6. BEST SELLERS (65%) + STOCK ATTENTION (35%)                     */}
