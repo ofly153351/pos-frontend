@@ -168,6 +168,11 @@
     },
     "loading": "กำลังโหลดแดชบอร์ด...",
     "empty": "ไม่มีข้อมูลในช่วงเวลาที่เลือก",
+    "expenseCategories": {
+      "title": "หมวดรายจ่ายสูงสุด",
+      "subtitle": "เดือนนี้",
+      "empty": "ยังไม่มีรายจ่ายในเดือนนี้"
+    },
     "requestFailedLabel": "คำขอล้มเหลว",
     "filters": {
       "periodLabel": "ช่วงเวลา",
@@ -950,6 +955,12 @@
       "receiveGoods": "รับสินค้าเข้า",
       "transactions": "ธุรกรรม",
       "creditSales": "ขายเชื่อ / ยืม",
+      "reports": "รายงาน & การเงิน",
+      "reportsInventoryValue": "มูลค่าสต็อก & สินค้าค้าง",
+      "finance": "การเงิน",
+      "financeExpenses": "บันทึกรายจ่าย",
+      "financePnl": "กำไรขาดทุน (P&L)",
+      "reportsSummary": "รายงานสรุป",
       "settings": "ตั้งค่าร้านค้า",
       "storageLocations": "ตำแหน่งจัดเก็บ",
       "completeSale": "ปิดการขาย",
@@ -2853,6 +2864,342 @@
     "fullscreen": "เต็มจอ",
     "pieces": "ชิ้น",
     "openButton": "เปิดจอลูกค้า"
+  },
+  "reportsInventory": {
+    "title": "มูลค่าสต็อก & สินค้าค้าง",
+    "subtitle": "ภาพรวมต้นทุน มูลค่า และเงินจมในสต็อกสินค้า",
+    "loading": "กำลังโหลด...",
+    "activeOnlyNote": "* คำนวณจากสินค้าที่เปิดใช้งานเท่านั้น",
+    "missingCostNote": "* {count} รายการยังไม่ได้ตั้งราคาทุน (กำไรอาจคลาดเคลื่อน)",
+    "kpi": {
+      "totalCost": "ต้นทุนสต็อกรวม",
+      "retailValue": "มูลค่าขายรวม",
+      "expectedProfit": "กำไรคาดหวัง",
+      "totalSku": "จำนวน SKU",
+      "totalUnits": "จำนวนหน่วยรวม",
+      "unitsSuffix": "ชิ้น",
+      "skuSuffix": "รายการ",
+      "abnormalHint": "ค่านี้อาจผิดปกติ ควรตรวจสอบข้อมูลต้นทุน/ราคาขาย",
+      "riskTitle": "ความเสี่ยงด้านมูลค่า",
+      "riskHigh": "สูง",
+      "riskIssuesSuffix": "จุดที่ต้องแก้"
+    },
+    "dataQuality": {
+      "title": "ตรวจสอบคุณภาพข้อมูล",
+      "subtitle": "พบความผิดปกติที่ควรตรวจสอบก่อนเชื่อถือตัวเลข",
+      "allClear": "ข้อมูลสมบูรณ์ดี ไม่พบความผิดปกติ",
+      "missingCost": "ยังไม่ได้ตั้งราคาทุน",
+      "costExceedsPrice": "ราคาทุนสูงกว่าราคาขาย (ขาดทุน)",
+      "negativeProfit": "กำไรคาดหวังติดลบ",
+      "itemsSuffix": "รายการ"
+    },
+    "category": {
+      "title": "มูลค่าสต็อกตามหมวดหมู่",
+      "subtitle": "คิดตามราคาขาย",
+      "empty": "ยังไม่มีข้อมูลสต็อก",
+      "others": "อื่นๆ",
+      "uncategorized": "ไม่ระบุหมวดหมู่",
+      "concentrationHigh": "เสี่ยงสูง: {category} คิดเป็น {percent}% ของมูลค่าสต็อก — กระจุกตัวมากเกินไป ควรกระจายความเสี่ยง",
+      "concentrationMedium": "เฝ้าระวัง: {category} คิดเป็น {percent}% ของมูลค่าสต็อก — เริ่มกระจุกตัว"
+    },
+    "topSelling": {
+      "title": "สินค้าขายดี",
+      "subtitle": "30 วันล่าสุด",
+      "colRank": "อันดับ",
+      "colProduct": "สินค้า",
+      "colQtySold": "จำนวนที่ขาย",
+      "colRevenue": "ยอดขาย",
+      "colContribution": "สัดส่วน",
+      "empty": "ยังไม่มียอดขายใน 30 วันล่าสุด"
+    },
+    "deadStock": {
+      "title": "วิเคราะห์สินค้าค้างสต็อก",
+      "subtitle": "สินค้าที่ไม่มีการขายตามช่วงเวลาที่เลือก",
+      "filterLabel": "ไม่ขยับเกิน",
+      "filter30": "30 วัน",
+      "filter60": "60 วัน",
+      "filter90": "90 วัน",
+      "countLabel": "จำนวนสินค้าค้าง",
+      "capitalLabel": "เงินจมในสต็อก",
+      "capitalHint": "ต้นทุนที่จมอยู่กับสินค้าที่ไม่ขยับ",
+      "colProduct": "สินค้า",
+      "colCurrentStock": "คงเหลือ",
+      "colValue": "มูลค่าจม (ต้นทุน)",
+      "colLastSold": "ขายล่าสุด",
+      "colDaysSince": "ไม่ขยับ",
+      "colStockAge": "อายุสต็อก",
+      "colStatus": "สถานะ",
+      "colAction": "คำแนะนำ",
+      "neverSold": "ไม่เคยขาย",
+      "daysSuffix": "วัน",
+      "statusNormal": "ปกติ",
+      "statusWarning": "เฝ้าระวัง",
+      "statusCritical": "วิกฤต",
+      "actionReview": "ทบทวน",
+      "actionDiscount": "ลดราคา",
+      "actionClearance": "ระบายสต็อก",
+      "actionReturnSupplier": "คืนผู้ขาย",
+      "empty": "ไม่มีสินค้าค้างสต็อกในช่วงเวลานี้ 🎉",
+      "windowNote": "* วันที่ขายล่าสุดและอายุสต็อกอ้างอิงจากประวัติการเคลื่อนไหวสต็อกล่าสุด (อายุสต็อกนับจากการรับเข้าครั้งล่าสุด)"
+    }
+  },
+  "financeExpenses": {
+    "title": "บันทึกรายจ่าย",
+    "subtitle": "ค่าใช้จ่ายดำเนินงานของร้าน",
+    "loading": "กำลังโหลด...",
+    "addBtn": "เพิ่มรายจ่าย",
+    "kpi": {
+      "monthlyTotal": "รายจ่ายเดือนนี้",
+      "count": "จำนวนรายการ",
+      "countSuffix": "รายการ",
+      "topCategory": "หมวดที่ใช้จ่ายสูงสุด",
+      "average": "เฉลี่ยต่อรายการ",
+      "none": "—"
+    },
+    "byCategory": {
+      "title": "รายจ่ายตามหมวด",
+      "subtitle": "เดือนนี้",
+      "empty": "ยังไม่มีรายจ่ายในเดือนนี้"
+    },
+    "trend": {
+      "title": "แนวโน้มรายจ่าย 6 เดือน",
+      "subtitle": "ยอดรวมต่อเดือน",
+      "empty": "ยังไม่มีข้อมูลรายจ่าย"
+    },
+    "table": {
+      "title": "รายการรายจ่าย",
+      "colDate": "วันที่",
+      "colCategory": "หมวด",
+      "colDescription": "รายละเอียด",
+      "colAmount": "จำนวนเงิน",
+      "colMethod": "วิธีจ่าย",
+      "colRecorder": "ผู้บันทึก",
+      "colActions": "จัดการ",
+      "empty": "ยังไม่มีรายจ่ายในเดือนนี้",
+      "totalRow": "รวมทั้งสิ้น"
+    },
+    "method": {
+      "cash": "เงินสด",
+      "bank_transfer": "โอนเงินธนาคาร",
+      "promptpay": "พร้อมเพย์",
+      "credit_card": "บัตรเครดิต",
+      "debit_card": "บัตรเดบิต",
+      "cheque": "เช็ค"
+    },
+    "actions": {
+      "edit": "แก้ไข",
+      "delete": "ลบ",
+      "deleteConfirm": "ยืนยันการลบรายจ่ายนี้? การลบไม่สามารถย้อนกลับได้"
+    },
+    "form": {
+      "addTitle": "เพิ่มรายจ่าย",
+      "editTitle": "แก้ไขรายจ่าย",
+      "subtitle": "บันทึกค่าใช้จ่ายเพื่อใช้คำนวณกำไรสุทธิ",
+      "date": "วันที่",
+      "category": "หมวดรายจ่าย",
+      "categoryPlaceholder": "เลือกหมวด",
+      "createCategory": "สร้างหมวดใหม่",
+      "newCategoryPlaceholder": "ชื่อหมวดรายจ่ายใหม่",
+      "addCategory": "เพิ่ม",
+      "cancelCategory": "ยกเลิก",
+      "errCategoryName": "กรุณาระบุชื่อหมวด",
+      "description": "รายละเอียด",
+      "descriptionPlaceholder": "เช่น ค่าเช่าร้านเดือนนี้",
+      "amount": "จำนวนเงิน (บาท)",
+      "amountPlaceholder": "0.00",
+      "method": "วิธีจ่าย",
+      "note": "หมายเหตุ",
+      "notePlaceholder": "รายละเอียดเพิ่มเติม (ถ้ามี)",
+      "cancel": "ยกเลิก",
+      "save": "บันทึก",
+      "saving": "กำลังบันทึก...",
+      "errDate": "กรุณาเลือกวันที่",
+      "errCategory": "กรุณาเลือกหมวดรายจ่าย",
+      "errDescription": "กรุณากรอกรายละเอียด",
+      "errAmount": "จำนวนเงินต้องมากกว่า 0"
+    },
+    "toast": {
+      "created": "เพิ่มรายจ่ายแล้ว",
+      "updated": "แก้ไขรายจ่ายแล้ว",
+      "deleted": "ลบรายจ่ายแล้ว",
+      "error": "เกิดข้อผิดพลาด กรุณาลองใหม่"
+    },
+    "readOnlyNote": "ดูได้อย่างเดียว"
+  },
+  "financePnl": {
+    "title": "กำไรขาดทุน (P&L)",
+    "subtitle": "รายได้ ต้นทุน และกำไรสุทธิจากข้อมูลจริง",
+    "loading": "กำลังโหลด...",
+    "period": {
+      "label": "ช่วงเวลา",
+      "d7": "7 วัน",
+      "d30": "30 วัน",
+      "d90": "90 วัน",
+      "custom": "กำหนดเอง",
+      "from": "ตั้งแต่วันที่",
+      "to": "ถึงวันที่",
+      "apply": "ใช้งาน",
+      "rangeLabel": "{from} – {to}"
+    },
+    "kpi": {
+      "netRevenue": "รายได้สุทธิ",
+      "grossProfit": "กำไรขั้นต้น",
+      "operatingExpenses": "ค่าใช้จ่ายดำเนินงาน",
+      "netProfit": "กำไรสุทธิ",
+      "netMargin": "อัตรากำไรสุทธิ",
+      "salesCountSuffix": "บิล"
+    },
+    "statement": {
+      "title": "งบกำไรขาดทุน",
+      "subtitle": "สรุปผลประกอบการตามช่วงเวลา",
+      "revenue": "รายได้จากการขาย",
+      "discountInfo": "ส่วนลดที่ให้",
+      "vatInfo": "ภาษีมูลค่าเพิ่ม (รวมในยอด)",
+      "refunds": "หัก การคืนสินค้า",
+      "refundsNote": "ยังไม่รองรับ",
+      "netRevenue": "รายได้สุทธิ",
+      "cogs": "หัก ต้นทุนสินค้าที่ขาย",
+      "grossProfit": "กำไรขั้นต้น",
+      "grossMargin": "GM",
+      "operatingExpenses": "หัก ค่าใช้จ่ายดำเนินงาน",
+      "netProfit": "กำไรสุทธิ",
+      "netMargin": "NM",
+      "profitBadge": "มีกำไร",
+      "lossBadge": "ขาดทุน"
+    },
+    "ratios": {
+      "title": "อัตราส่วน",
+      "grossMargin": "อัตรากำไรขั้นต้น",
+      "netMargin": "อัตรากำไรสุทธิ",
+      "expenseRatio": "สัดส่วนค่าใช้จ่าย",
+      "costRatio": "สัดส่วนต้นทุน"
+    },
+    "lossBanner": {
+      "title": "ช่วงนี้ขาดทุน",
+      "desc": "รายได้สุทธิน้อยกว่าต้นทุนและค่าใช้จ่ายรวม ลองทบทวนราคาขายหรือค่าใช้จ่าย"
+    },
+    "dataQuality": {
+      "title": "ต้นทุนอาจคลาดเคลื่อน",
+      "missingCost": "มีรายการขาย {count} รายการที่สินค้าไม่มีราคาทุน ทำให้ต้นทุนต่ำกว่าจริงและกำไรสูงกว่าจริง",
+      "itemsSuffix": "รายการ"
+    },
+    "rcp": {
+      "title": "รายได้ vs ต้นทุน vs กำไร",
+      "subtitle": "เปรียบเทียบภาพรวมช่วงนี้",
+      "revenue": "รายได้สุทธิ",
+      "cost": "ต้นทุน + ค่าใช้จ่าย",
+      "profit": "กำไรสุทธิ",
+      "empty": "ยังไม่มีข้อมูลในช่วงนี้"
+    },
+    "expenseBreakdown": {
+      "title": "ค่าใช้จ่ายตามหมวด",
+      "subtitle": "สัดส่วนค่าใช้จ่ายดำเนินงาน",
+      "empty": "ยังไม่มีค่าใช้จ่ายในช่วงนี้",
+      "uncategorized": "ไม่ระบุหมวด"
+    },
+    "paymentBreakdown": {
+      "title": "รายได้ตามวิธีชำระเงิน",
+      "subtitle": "สัดส่วนยอดขายตามช่องทาง",
+      "empty": "ยังไม่มียอดขายในช่วงนี้"
+    },
+    "method": {
+      "cash": "เงินสด",
+      "transfer": "โอนเงิน",
+      "qr": "QR พร้อมเพย์",
+      "credit": "เครดิต",
+      "card": "บัตร",
+      "unknown": "อื่นๆ"
+    },
+    "empty": "ยังไม่มีข้อมูลในช่วงนี้"
+  },
+  "summaryReport": {
+    "title": "รายงานสรุปยอดขาย",
+    "subtitle": "ภาพรวมยอดขาย กำไร และสินค้าขายดี",
+    "loading": "กำลังโหลด...",
+    "period": {
+      "d7": "7 วัน",
+      "d30": "30 วัน",
+      "d90": "90 วัน",
+      "custom": "กำหนดเอง",
+      "from": "ตั้งแต่วันที่",
+      "to": "ถึงวันที่",
+      "apply": "ใช้งาน",
+      "rangeLabel": "{from} – {to}"
+    },
+    "exports": {
+      "print": "พิมพ์",
+      "csv": "ส่งออก CSV",
+      "csvFilename": "รายงานสรุปยอดขาย"
+    },
+    "kpi": {
+      "revenue": "ยอดขายรวม",
+      "orders": "จำนวนออเดอร์",
+      "avgOrderValue": "มูลค่าเฉลี่ยต่อบิล",
+      "productsSold": "สินค้าที่ขายได้",
+      "profit": "กำไรสุทธิ",
+      "customers": "ลูกค้า",
+      "ordersSuffix": "บิล",
+      "itemsSuffix": "ชิ้น",
+      "customersSuffix": "ราย",
+      "grossProfitHint": "กำไรขั้นต้น {value}"
+    },
+    "salesTrend": {
+      "title": "แนวโน้มยอดขาย",
+      "subtitle": "รายได้และกำไรรายวัน",
+      "revenue": "รายได้",
+      "profit": "กำไร",
+      "empty": "ยังไม่มียอดขายในช่วงนี้"
+    },
+    "salesByCategory": {
+      "title": "ยอดขายตามหมวด",
+      "subtitle": "สัดส่วนรายได้แต่ละหมวด",
+      "empty": "ยังไม่มียอดขายในช่วงนี้",
+      "others": "อื่นๆ",
+      "uncategorized": "ไม่ระบุหมวด"
+    },
+    "topRanked": {
+      "title": "สินค้าขายดี",
+      "subtitle": "5 อันดับขายดีที่สุด",
+      "soldSuffix": "ชิ้น",
+      "empty": "ยังไม่มียอดขายในช่วงนี้"
+    },
+    "paymentBreakdown": {
+      "title": "ช่องทางชำระเงิน",
+      "subtitle": "สัดส่วนยอดขายตามช่องทาง",
+      "empty": "ยังไม่มียอดขายในช่วงนี้"
+    },
+    "method": {
+      "cash": "เงินสด",
+      "transfer": "โอนเงิน",
+      "qr": "QR พร้อมเพย์",
+      "credit": "เครดิต",
+      "card": "บัตร",
+      "unknown": "อื่นๆ"
+    },
+    "salesByHour": {
+      "title": "ช่วงเวลาขายดี",
+      "subtitle": "ยอดขายตามชั่วโมง",
+      "empty": "ยังไม่มียอดขายในช่วงนี้"
+    },
+    "businessSnapshot": {
+      "title": "สรุปภาพรวมธุรกิจ",
+      "subtitle": "ตัวชี้วัดสำคัญของช่วงนี้",
+      "avgDailySales": "ยอดขายเฉลี่ยต่อวัน",
+      "avgDailyOrders": "ออเดอร์เฉลี่ยต่อวัน",
+      "revenueGrowth": "การเติบโตของรายได้",
+      "profitMargin": "อัตรากำไรสุทธิ",
+      "noBaseline": "ไม่มีข้อมูลเทียบ"
+    },
+    "topTable": {
+      "title": "สินค้าขายดี 10 อันดับ",
+      "subtitle": "เรียงตามจำนวนที่ขายได้",
+      "colRank": "อันดับ",
+      "colProduct": "สินค้า",
+      "colQty": "จำนวน",
+      "colRevenue": "ยอดขาย",
+      "colProfit": "กำไร",
+      "empty": "ยังไม่มียอดขายในช่วงนี้"
+    }
   },
   "creditSales": {
     "title": "ขายเชื่อ / ยืมสินค้า",

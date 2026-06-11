@@ -168,6 +168,11 @@
     },
     "loading": "Loading dashboard...",
     "empty": "No data in selected range",
+    "expenseCategories": {
+      "title": "Top Expense Categories",
+      "subtitle": "This month",
+      "empty": "No expenses recorded this month"
+    },
     "requestFailedLabel": "Request failed",
     "filters": {
       "periodLabel": "Period",
@@ -950,6 +955,12 @@
       "receiveGoods": "Receive ",
       "transactions": "Transactions",
       "creditSales": "Credit Sales",
+      "reports": "Reports & Finance",
+      "reportsInventoryValue": "Inventory Value & Dead Stock",
+      "finance": "Finance",
+      "financeExpenses": "Expense Records",
+      "financePnl": "Profit & Loss (P&L)",
+      "reportsSummary": "Summary Report",
       "settings": "Store Settings",
       "storageLocations": "Storage Locations",
       "completeSale": "Complete Sale",
@@ -2853,6 +2864,342 @@
     "fullscreen": "Fullscreen",
     "pieces": "pcs",
     "openButton": "Customer display"
+  },
+  "reportsInventory": {
+    "title": "Inventory Value & Dead Stock",
+    "subtitle": "Inventory cost, value, and capital tied up in stock",
+    "loading": "Loading...",
+    "activeOnlyNote": "* Calculated from active products only",
+    "missingCostNote": "* {count} item(s) have no cost price set (profit may be inaccurate)",
+    "kpi": {
+      "totalCost": "Total Inventory Cost",
+      "retailValue": "Total Retail Value",
+      "expectedProfit": "Expected Profit",
+      "totalSku": "Total SKU",
+      "totalUnits": "Total Units",
+      "unitsSuffix": "units",
+      "skuSuffix": "SKUs",
+      "abnormalHint": "This value may be abnormal — review cost/selling prices",
+      "riskTitle": "Valuation Risk",
+      "riskHigh": "High",
+      "riskIssuesSuffix": "issues to fix"
+    },
+    "dataQuality": {
+      "title": "Data Quality Check",
+      "subtitle": "Issues to review before trusting these figures",
+      "allClear": "Data looks healthy — no issues found",
+      "missingCost": "Missing cost price",
+      "costExceedsPrice": "Cost price exceeds selling price (loss)",
+      "negativeProfit": "Expected profit is negative",
+      "itemsSuffix": "items"
+    },
+    "category": {
+      "title": "Inventory Value by Category",
+      "subtitle": "At retail price",
+      "empty": "No stock data yet",
+      "others": "Others",
+      "uncategorized": "Uncategorized",
+      "concentrationHigh": "High risk: {category} is {percent}% of inventory value — over-concentrated, consider diversifying",
+      "concentrationMedium": "Watch: {category} is {percent}% of inventory value — getting concentrated"
+    },
+    "topSelling": {
+      "title": "Top Selling Products",
+      "subtitle": "Last 30 days",
+      "colRank": "Rank",
+      "colProduct": "Product",
+      "colQtySold": "Quantity Sold",
+      "colRevenue": "Revenue",
+      "colContribution": "Contribution",
+      "empty": "No sales in the last 30 days"
+    },
+    "deadStock": {
+      "title": "Dead Stock Analysis",
+      "subtitle": "Products with no sales in the selected period",
+      "filterLabel": "No sales over",
+      "filter30": "30 Days",
+      "filter60": "60 Days",
+      "filter90": "90 Days",
+      "countLabel": "Dead Stock Items",
+      "capitalLabel": "Capital Tied Up",
+      "capitalHint": "Cost locked in non-moving stock",
+      "colProduct": "Product",
+      "colCurrentStock": "Current Stock",
+      "colValue": "Tied-Up Value (cost)",
+      "colLastSold": "Last Sold",
+      "colDaysSince": "Days Idle",
+      "colStockAge": "Stock Age",
+      "colStatus": "Status",
+      "colAction": "Recommended Action",
+      "neverSold": "Never sold",
+      "daysSuffix": "days",
+      "statusNormal": "Normal",
+      "statusWarning": "Warning",
+      "statusCritical": "Critical",
+      "actionReview": "Review",
+      "actionDiscount": "Discount",
+      "actionClearance": "Clearance",
+      "actionReturnSupplier": "Return to Supplier",
+      "empty": "No dead stock in this period 🎉",
+      "windowNote": "* Last sold date and stock age are based on recent stock-movement history (age counts from the latest stock-in)"
+    }
+  },
+  "financeExpenses": {
+    "title": "Expense Records",
+    "subtitle": "Operational expenses for your store",
+    "loading": "Loading...",
+    "addBtn": "Add Expense",
+    "kpi": {
+      "monthlyTotal": "Monthly Expenses",
+      "count": "Expense Count",
+      "countSuffix": "items",
+      "topCategory": "Highest Category",
+      "average": "Average Expense",
+      "none": "—"
+    },
+    "byCategory": {
+      "title": "Expenses by Category",
+      "subtitle": "This month",
+      "empty": "No expenses this month"
+    },
+    "trend": {
+      "title": "6-Month Expense Trend",
+      "subtitle": "Total per month",
+      "empty": "No expense data yet"
+    },
+    "table": {
+      "title": "Expense List",
+      "colDate": "Date",
+      "colCategory": "Category",
+      "colDescription": "Description",
+      "colAmount": "Amount",
+      "colMethod": "Payment Method",
+      "colRecorder": "Recorded By",
+      "colActions": "Actions",
+      "empty": "No expenses this month",
+      "totalRow": "Total"
+    },
+    "method": {
+      "cash": "Cash",
+      "bank_transfer": "Bank Transfer",
+      "promptpay": "PromptPay",
+      "credit_card": "Credit Card",
+      "debit_card": "Debit Card",
+      "cheque": "Cheque"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this expense? This cannot be undone."
+    },
+    "form": {
+      "addTitle": "Add Expense",
+      "editTitle": "Edit Expense",
+      "subtitle": "Record an expense so net profit stays accurate",
+      "date": "Date",
+      "category": "Category",
+      "categoryPlaceholder": "Select a category",
+      "createCategory": "Create category",
+      "newCategoryPlaceholder": "New category name",
+      "addCategory": "Add",
+      "cancelCategory": "Cancel",
+      "errCategoryName": "Category name is required",
+      "description": "Description",
+      "descriptionPlaceholder": "e.g. Monthly shop rent",
+      "amount": "Amount (THB)",
+      "amountPlaceholder": "0.00",
+      "method": "Payment Method",
+      "note": "Note",
+      "notePlaceholder": "Additional details (optional)",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "errDate": "Please choose a date",
+      "errCategory": "Please choose a category",
+      "errDescription": "Please enter a description",
+      "errAmount": "Amount must be greater than 0"
+    },
+    "toast": {
+      "created": "Expense added",
+      "updated": "Expense updated",
+      "deleted": "Expense deleted",
+      "error": "Something went wrong, please try again"
+    },
+    "readOnlyNote": "View only"
+  },
+  "financePnl": {
+    "title": "Profit & Loss (P&L)",
+    "subtitle": "Revenue, cost and net profit from real data",
+    "loading": "Loading...",
+    "period": {
+      "label": "Period",
+      "d7": "7 Days",
+      "d30": "30 Days",
+      "d90": "90 Days",
+      "custom": "Custom",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Apply",
+      "rangeLabel": "{from} – {to}"
+    },
+    "kpi": {
+      "netRevenue": "Net Revenue",
+      "grossProfit": "Gross Profit",
+      "operatingExpenses": "Operating Expenses",
+      "netProfit": "Net Profit",
+      "netMargin": "Net Margin",
+      "salesCountSuffix": "sales"
+    },
+    "statement": {
+      "title": "Profit & Loss Statement",
+      "subtitle": "Performance summary for the period",
+      "revenue": "Sales Revenue",
+      "discountInfo": "Discounts given",
+      "vatInfo": "VAT (included in total)",
+      "refunds": "Less: Returns",
+      "refundsNote": "not tracked yet",
+      "netRevenue": "Net Revenue",
+      "cogs": "Less: Cost of Goods Sold",
+      "grossProfit": "Gross Profit",
+      "grossMargin": "GM",
+      "operatingExpenses": "Less: Operating Expenses",
+      "netProfit": "Net Profit",
+      "netMargin": "NM",
+      "profitBadge": "Profit",
+      "lossBadge": "Loss"
+    },
+    "ratios": {
+      "title": "Ratios",
+      "grossMargin": "Gross Margin",
+      "netMargin": "Net Margin",
+      "expenseRatio": "Expense Ratio",
+      "costRatio": "Cost Ratio"
+    },
+    "lossBanner": {
+      "title": "Operating at a loss",
+      "desc": "Net revenue is below combined cost and expenses. Review pricing or expenses."
+    },
+    "dataQuality": {
+      "title": "Cost may be understated",
+      "missingCost": "{count} sold line(s) have products with no cost price, which understates COGS and overstates profit.",
+      "itemsSuffix": "items"
+    },
+    "rcp": {
+      "title": "Revenue vs Cost vs Profit",
+      "subtitle": "Period comparison",
+      "revenue": "Net Revenue",
+      "cost": "Cost + Expenses",
+      "profit": "Net Profit",
+      "empty": "No data for this period"
+    },
+    "expenseBreakdown": {
+      "title": "Expenses by Category",
+      "subtitle": "Share of operating expenses",
+      "empty": "No expenses in this period",
+      "uncategorized": "Uncategorized"
+    },
+    "paymentBreakdown": {
+      "title": "Revenue by Payment Method",
+      "subtitle": "Sales share by channel",
+      "empty": "No sales in this period"
+    },
+    "method": {
+      "cash": "Cash",
+      "transfer": "Transfer",
+      "qr": "QR PromptPay",
+      "credit": "Credit",
+      "card": "Card",
+      "unknown": "Other"
+    },
+    "empty": "No data for this period"
+  },
+  "summaryReport": {
+    "title": "Sales Summary",
+    "subtitle": "Overview of sales, profit and best sellers",
+    "loading": "Loading...",
+    "period": {
+      "d7": "7 Days",
+      "d30": "30 Days",
+      "d90": "90 Days",
+      "custom": "Custom",
+      "from": "From date",
+      "to": "To date",
+      "apply": "Apply",
+      "rangeLabel": "{from} – {to}"
+    },
+    "exports": {
+      "print": "Print",
+      "csv": "Export CSV",
+      "csvFilename": "sales-summary"
+    },
+    "kpi": {
+      "revenue": "Total Revenue",
+      "orders": "Orders",
+      "avgOrderValue": "Average Order Value",
+      "productsSold": "Products Sold",
+      "profit": "Net Profit",
+      "customers": "Customers",
+      "ordersSuffix": "orders",
+      "itemsSuffix": "items",
+      "customersSuffix": "people",
+      "grossProfitHint": "Gross profit {value}"
+    },
+    "salesTrend": {
+      "title": "Sales Trend",
+      "subtitle": "Daily revenue and profit",
+      "revenue": "Revenue",
+      "profit": "Profit",
+      "empty": "No sales in this period"
+    },
+    "salesByCategory": {
+      "title": "Sales by Category",
+      "subtitle": "Revenue share per category",
+      "empty": "No sales in this period",
+      "others": "Others",
+      "uncategorized": "Uncategorized"
+    },
+    "topRanked": {
+      "title": "Top Selling Products",
+      "subtitle": "Top 5 best sellers",
+      "soldSuffix": "sold",
+      "empty": "No sales in this period"
+    },
+    "paymentBreakdown": {
+      "title": "Payment Methods",
+      "subtitle": "Sales share by channel",
+      "empty": "No sales in this period"
+    },
+    "method": {
+      "cash": "Cash",
+      "transfer": "Transfer",
+      "qr": "QR PromptPay",
+      "credit": "Credit",
+      "card": "Card",
+      "unknown": "Other"
+    },
+    "salesByHour": {
+      "title": "Sales by Hour",
+      "subtitle": "Revenue by hour of day",
+      "empty": "No sales in this period"
+    },
+    "businessSnapshot": {
+      "title": "Business Snapshot",
+      "subtitle": "Key metrics for this period",
+      "avgDailySales": "Average Daily Sales",
+      "avgDailyOrders": "Average Daily Orders",
+      "revenueGrowth": "Revenue Growth",
+      "profitMargin": "Profit Margin",
+      "noBaseline": "No prior data"
+    },
+    "topTable": {
+      "title": "Top 10 Products",
+      "subtitle": "Ranked by quantity sold",
+      "colRank": "Rank",
+      "colProduct": "Product",
+      "colQty": "Quantity",
+      "colRevenue": "Revenue",
+      "colProfit": "Profit",
+      "empty": "No sales in this period"
+    }
   },
   "creditSales": {
     "title": "Credit Sales / Loans",

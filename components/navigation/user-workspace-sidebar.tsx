@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  BarChart3,
   Boxes,
   ChevronDown,
   CircleDollarSign,
@@ -18,12 +19,14 @@ import {
   ClipboardCheck,
   PackagePlus,
   ReceiptText,
+  Scale,
   ScrollText,
   Settings2,
   ShoppingCart,
   Store,
   Tags,
   Users,
+  Wallet,
   Warehouse,
 } from "lucide-react";
 
@@ -49,6 +52,12 @@ type UserWorkspaceSidebarProps = {
     promotions: string;
     purchasing: string;
     purchaseOrders: string;
+    reports: string;
+    reportsInventoryValue: string;
+    reportsSummary: string;
+    finance: string;
+    financeExpenses: string;
+    financePnl: string;
     receiveGoods: string;
     register: string;
     settings: string;
@@ -198,6 +207,12 @@ export function UserWorkspaceSidebar({
   const documentsPendingHref = `/${locale}/documents/pending`;
   const purchasesBaseHref = `/${locale}/purchases`;
   const purchasesSuppliersHref = `/${locale}/purchases/suppliers`;
+  const reportsBaseHref = `/${locale}/reports`;
+  const reportsInventoryValueHref = `/${locale}/reports/inventory-value`;
+  const reportsSummaryHref = `/${locale}/reports/summary`;
+  const financeBaseHref = `/${locale}/finance`;
+  const financeExpensesHref = `/${locale}/finance/expenses`;
+  const financePnlHref = `/${locale}/finance/pnl`;
   const settingsBaseHref = `/${locale}/settings`;
   const storageLocationsHref = `/${locale}/settings/storage-locations`;
   const receiptPaymentHref = `/${locale}/settings/receipt-payment`;
@@ -219,13 +234,21 @@ export function UserWorkspaceSidebar({
   const isPurchasingRoute =
     pathname === purchasesBaseHref ||
     pathname.startsWith(`${purchasesBaseHref}/`);
+  // Reports & Finance live in ONE nav group — /reports/* and /finance/* both activate it.
+  const isReportsRoute =
+    pathname === reportsBaseHref ||
+    pathname.startsWith(`${reportsBaseHref}/`) ||
+    pathname === financeBaseHref ||
+    pathname.startsWith(`${financeBaseHref}/`);
   const [manualProductsExpanded, setManualProductsExpanded] = useState(false);
   const [manualStockExpanded, setManualStockExpanded] = useState(false);
   const [manualPurchasingExpanded, setManualPurchasingExpanded] = useState(false);
+  const [manualReportsExpanded, setManualReportsExpanded] = useState(false);
   const [manualSettingsExpanded, setManualSettingsExpanded] = useState(false);
   const productsExpanded = !collapsed && (manualProductsExpanded || isProductsRoute);
   const stockExpanded = !collapsed && (manualStockExpanded || isStockRoute);
   const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
+  const reportsExpanded = !collapsed && (manualReportsExpanded || isReportsRoute);
   const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
   const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === activityLogsHref ? "activity-logs" : "store-settings";
 
@@ -326,21 +349,45 @@ export function UserWorkspaceSidebar({
     ],
   );
 
+  const reportsItems: SidebarGroupItem[] = useMemo(
+    () => [
+      { href: reportsInventoryValueHref, key: "reports-inventory-value", label: labels.reportsInventoryValue, icon: <Boxes className="h-3.5 w-3.5" /> },
+      { href: financeExpensesHref, key: "finance-expenses", label: labels.financeExpenses, icon: <Wallet className="h-3.5 w-3.5" /> },
+      { href: financePnlHref, key: "finance-pnl", label: labels.financePnl, icon: <Scale className="h-3.5 w-3.5" /> },
+      { href: reportsSummaryHref, key: "reports-summary", label: labels.reportsSummary, icon: <BarChart3 className="h-3.5 w-3.5" /> },
+    ],
+    [reportsInventoryValueHref, labels.reportsInventoryValue, financeExpensesHref, labels.financeExpenses, financePnlHref, labels.financePnl, reportsSummaryHref, labels.reportsSummary],
+  );
+
   const activeProductsKey = !isProductsRoute
     ? ""
     : pathname === stockCategoriesHref || pathname.startsWith(`${stockCategoriesHref}/`)
       ? "master-data"
       : "product-list";
 
+  const activeReportsKey = !isReportsRoute
+    ? ""
+    : pathname === reportsSummaryHref || pathname.startsWith(`${reportsSummaryHref}/`)
+      ? "reports-summary"
+      : pathname === financePnlHref || pathname.startsWith(`${financePnlHref}/`)
+      ? "finance-pnl"
+      : pathname === financeExpensesHref || pathname.startsWith(`${financeExpensesHref}/`)
+        ? "finance-expenses"
+        : pathname === reportsInventoryValueHref || pathname.startsWith(`${reportsInventoryValueHref}/`)
+          ? "reports-inventory-value"
+          : "";
+
   const activeStockKey = !isStockRoute
     ? ""
-    : pathname === warehouseReceiveHref || pathname.startsWith(`${warehouseReceiveHref}/`)
-      ? "receive-goods"
-      : pathname === warehouseOverviewHref || pathname.startsWith(`${warehouseOverviewHref}/`)
-        ? "warehouse-overview"
-        : pathname === stockWarehousesHref || pathname.startsWith(`${stockWarehousesHref}/`)
-          ? "warehouses"
-          : "stock-levels";
+    : pathname === stockCountHref || pathname.startsWith(`${stockCountHref}/`)
+      ? "stock-count"
+      : pathname === warehouseReceiveHref || pathname.startsWith(`${warehouseReceiveHref}/`)
+        ? "receive-goods"
+        : pathname === warehouseOverviewHref || pathname.startsWith(`${warehouseOverviewHref}/`)
+          ? "warehouse-overview"
+          : pathname === stockWarehousesHref || pathname.startsWith(`${stockWarehousesHref}/`)
+            ? "warehouses"
+            : "stock-levels";
   const activeDocumentsKey = !isDocumentsRoute
     ? ""
     : pathname === documentsPendingHref
@@ -620,6 +667,19 @@ export function UserWorkspaceSidebar({
             </div>
           )}
         </div>
+
+        {/* Reports & Finance group (single group per spec) */}
+        <CollapsibleNavGroup
+          collapsed={collapsed}
+          baseHref={reportsInventoryValueHref}
+          icon={<BarChart3 className="h-4 w-4" />}
+          label={labels.reports}
+          active={isReportsRoute}
+          expanded={reportsExpanded}
+          onToggle={() => setManualReportsExpanded((current) => !current)}
+          items={reportsItems}
+          activeKey={activeReportsKey}
+        />
 
         {trailingNavItems.map((item) => {
           const isActive = pathname === item.href;

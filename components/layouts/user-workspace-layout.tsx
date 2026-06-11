@@ -35,6 +35,12 @@ type UserWorkspaceLayoutProps = {
     logout: string;
     purchasing: string;
     purchaseOrders: string;
+    reports: string;
+    reportsInventoryValue: string;
+    reportsSummary: string;
+    finance: string;
+    financeExpenses: string;
+    financePnl: string;
     register: string;
     searchPlaceholder: string;
     settings: string;
@@ -71,6 +77,10 @@ type UserWorkspaceLayoutProps = {
     documents: string;
     profile?: string;
     promotions?: string;
+    reports?: string;
+    reportsSummary?: string;
+    finance?: string;
+    financePnl?: string;
     sales: string;
     settings: string;
     stock: string;
@@ -140,6 +150,10 @@ export function UserWorkspaceLayout({
   const title = useMemo(() => {
     if (pathname.includes("/promotions")) return titles.promotions ?? shell.promotions;
     if (pathname.includes("/profile")) return titles.profile ?? shell.editProfile;
+    if (pathname.includes("/reports/summary")) return titles.reportsSummary ?? shell.reportsSummary;
+    if (pathname.includes("/reports")) return titles.reports ?? shell.reports;
+    if (pathname.includes("/finance/pnl")) return titles.financePnl ?? shell.financePnl;
+    if (pathname.includes("/finance")) return titles.finance ?? shell.finance;
     if (pathname.endsWith("/sales")) return titles.sales;
     if (pathname.includes("/customers")) return titles.customers;
     if (pathname.includes("/documents")) return titles.documents;
@@ -153,7 +167,7 @@ export function UserWorkspaceLayout({
     if (pathname.includes("/purchases")) return titles.purchaseOrders;
     if (pathname.includes("/settings")) return titles.settings;
     return titles.dashboard;
-  }, [pathname, titles, shell.promotions, shell.editProfile]);
+  }, [pathname, titles, shell.promotions, shell.editProfile, shell.reports, shell.reportsSummary, shell.finance, shell.financePnl]);
 
   return (
     <div className="h-screen overflow-hidden bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
@@ -172,6 +186,12 @@ export function UserWorkspaceLayout({
           promotions: shell.promotions,
           purchasing: shell.purchasing,
           purchaseOrders: shell.purchaseOrders,
+          reports: shell.reports,
+          reportsInventoryValue: shell.reportsInventoryValue,
+          reportsSummary: shell.reportsSummary,
+          finance: shell.finance,
+          financeExpenses: shell.financeExpenses,
+          financePnl: shell.financePnl,
           register: shell.register,
           settings: shell.settings,
           storageLocations: shell.storageLocations,
