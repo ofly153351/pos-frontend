@@ -26,6 +26,7 @@ import {
 
 import { getExecutiveSummary, type GetPnlParams, type PnlPeriod } from "@/services/finance";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import { CategoryDonutChart, type DonutDatum } from "@/components/reports/category-donut-chart";
@@ -45,21 +46,27 @@ const PERIOD_TABS: Array<{ key: PnlPeriod; labelKey: "d7" | "d30" | "d90" }> = [
 
 const DAY_MS = 86_400_000;
 const TOP_RANKED = 5;
+// Store timezone offset (Asia/Bangkok = UTC+7, no DST). Used to align the sales
+// trend's gap-fill with the backend's `AT TIME ZONE 'Asia/Bangkok'` day buckets.
+const BKK_OFFSET_MS = 7 * 60 * 60 * 1000;
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-// Enumerate every UTC day in [fromIso, toIso) — matches the backend's
-// `AT TIME ZONE 'UTC'` day buckets so zero-sale days show as gaps.
+// Enumerate every Asia/Bangkok calendar day in [fromIso, toIso) so zero-sale days
+// show as gaps and the day keys line up with the backend's Bangkok day buckets.
 function enumerateDays(fromIso: string, toIso: string): string[] {
   const start = new Date(fromIso);
   const end = new Date(toIso);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return [];
   const days: string[] = [];
-  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
+  // Shift the UTC instants into Bangkok local time, then walk calendar days.
+  const startBkk = new Date(start.getTime() + BKK_OFFSET_MS);
+  const endBkk = new Date(end.getTime() + BKK_OFFSET_MS);
+  const cursor = new Date(Date.UTC(startBkk.getUTCFullYear(), startBkk.getUTCMonth(), startBkk.getUTCDate()));
   let guard = 0;
-  while (cursor < end && guard < 400) {
+  while (cursor.getTime() < endBkk.getTime() && guard < 400) {
     days.push(`${cursor.getUTCFullYear()}-${pad(cursor.getUTCMonth() + 1)}-${pad(cursor.getUTCDate())}`);
     cursor.setUTCDate(cursor.getUTCDate() + 1);
     guard += 1;
@@ -249,6 +256,14 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
 
   const pillClass = (active: boolean) =>
     `px-3 py-1.5 text-xs font-semibold transition ${active ? "bg-white text-violet-700 shadow" : "text-violet-100 hover:bg-violet-500/60 hover:text-white"}`;
+
+  if (summaryQuery.isError) {
+    return (
+      <div className="w-full xl:px-2 2xl:px-4">
+        <QueryErrorState locale={locale} onRetry={() => summaryQuery.refetch()} className="my-6" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full xl:px-2 2xl:px-4">

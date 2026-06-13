@@ -32,7 +32,7 @@ import {
 } from "recharts";
 
 import { type Locale } from "@/lib/locale-config";
-import { getCurrentStoreId } from "@/lib/store-storage";
+import { listCountSessions } from "@/services/stock-count";
 import { getWarehouseDashboard } from "@/services/warehouse-dashboard";
 import type {
   LowStockAlert,
@@ -313,19 +313,6 @@ function normalizeSessions(raw: unknown): LocalCountSession[] {
       };
     })
     .filter((session): session is LocalCountSession => Boolean(session));
-}
-
-function loadCountSessionsFromStorage(): LocalCountSession[] {
-  if (typeof window === "undefined") return [];
-  const storeId = getCurrentStoreId();
-  if (!storeId) return [];
-
-  try {
-    const raw = window.localStorage.getItem(`pos-count-sessions-${storeId}`);
-    return normalizeSessions(raw ? JSON.parse(raw) : []);
-  } catch {
-    return [];
-  }
 }
 
 function toneClasses(tone: ActionCenterItem["tone"]) {
@@ -819,7 +806,14 @@ function buildTimelineRows(
 export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardProps) {
   const t = dictionary;
   const [period, setPeriod] = useState<WarehousePeriod>("7d");
-  const [countSessions] = useState<LocalCountSession[]>(loadCountSessionsFromStorage);
+  const countSessionsQuery = useQuery({
+    queryKey: ["count", "sessions"],
+    queryFn: async () => (await listCountSessions()).data,
+  });
+  const countSessions = useMemo<LocalCountSession[]>(
+    () => normalizeSessions(countSessionsQuery.data ?? []),
+    [countSessionsQuery.data],
+  );
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["warehouse-dashboard", period],

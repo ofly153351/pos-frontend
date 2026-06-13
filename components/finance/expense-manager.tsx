@@ -9,6 +9,7 @@ import { toast } from "@/components/ui/toast";
 import { ApiError } from "@/services/api";
 import { deleteExpense, getExpenseSummary, listExpenseCategories, listExpenses } from "@/services/expenses";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import { BarTrendChart, type BarTrendDatum } from "@/components/reports/bar-trend-chart";
@@ -140,6 +141,14 @@ export function ExpenseManager({ dictionary: t, locale }: Props) {
         { label: t.kpi.average, value: money(summary.average_amount), icon: Scale, iconBg: "bg-emerald-100", iconColor: "text-emerald-600" },
       ]
     : [];
+
+  if (summaryQuery.isError || categoriesQuery.isError || listQuery.isError) {
+    return (
+      <div className="w-full xl:px-2 2xl:px-4">
+        <QueryErrorState locale={locale} onRetry={refetchAll} className="my-6" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full xl:px-2 2xl:px-4">

@@ -95,3 +95,23 @@ export type ExecutiveSummary = {
   payment_breakdown: PnlPaymentMethod[];
   sales_by_hour: SummaryHourStat[];
 };
+
+// Inventory Value & Dead Stock report — DB aggregates (no client-side movement scan).
+export type InventorySnapshot = {
+  inventory_value: number; // SUM(cost_price * total_stock) over in-stock active products
+  in_stock: number;
+  low_stock: number;
+  out_of_stock: number;
+  missing_cost: number;
+};
+
+export type DeadStockStat = {
+  days: number; // idle threshold the count/value were computed for
+  count: number;
+  value: number; // tied capital at cost
+};
+
+export type InventoryReport = {
+  snapshot: InventorySnapshot;
+  dead_stock: DeadStockStat;
+};

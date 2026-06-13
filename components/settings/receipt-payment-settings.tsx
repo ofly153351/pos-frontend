@@ -59,11 +59,17 @@ function toChannels(raw: PaymentChannelSetting[]): PaymentChannel[] {
   }));
 }
 
+// TODO: The "printer" and "display" tabs (PrinterTab / DisplayTab components below) are
+// fully built but intentionally NOT listed here yet — the backend does not persist a real
+// printer config or customer-display device, so exposing them would let users save settings
+// that have no effect. Re-add them to this array once those features are wired end-to-end.
 function makeTabs(t: T) {
   return [
     { key: "receipt"   as TabKey, label: t.tabs.receipt,   icon: <ReceiptText className="h-4 w-4" /> },
     { key: "payment"   as TabKey, label: t.tabs.payment,   icon: <CreditCard  className="h-4 w-4" /> },
     { key: "promptpay" as TabKey, label: t.tabs.promptpay, icon: <QrCode      className="h-4 w-4" /> },
+    // { key: "printer"   as TabKey, label: t.tabs.printer,   icon: <Printer className="h-4 w-4" /> },
+    // { key: "display"   as TabKey, label: t.tabs.display,   icon: <Monitor className="h-4 w-4" /> },
   ];
 }
 
@@ -173,9 +179,17 @@ function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
           <Toggle checked={settings.show_logo} onChange={(v) => onChange({ show_logo: v })} />
         </div>
         <div className={`space-y-3 ${!settings.show_logo ? "pointer-events-none opacity-40" : ""}`}>
-          <button type="button" className="flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50">
-            <Upload className="h-4 w-4" /> {r.changeLogo}
-          </button>
+          {/* TODO: wire logo upload (file picker + upload service) then re-enable. */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled
+              className="flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Upload className="h-4 w-4" /> {r.changeLogo}
+            </button>
+            <span className="text-xs font-medium text-amber-600">{r.changeLogoComingSoon}</span>
+          </div>
           <div>
             <FieldLabel>{r.labelLogoPosition}</FieldLabel>
             <select className={selectCls} value={settings.logo_position} onChange={(e) => onChange({ logo_position: e.target.value as LogoPosition })}>
@@ -298,8 +312,14 @@ function PrinterTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
           </div>
         </div>
       </div>
-      <button type="button" className="w-full rounded-xl border border-violet-200 bg-white py-2.5 text-sm font-semibold text-violet-700 hover:bg-violet-50">
+      {/* TODO: wire test-print (call print/preview service) then re-enable. */}
+      <button
+        type="button"
+        disabled
+        className="w-full rounded-xl border border-violet-200 bg-white py-2.5 text-sm font-semibold text-violet-700 hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50"
+      >
         <Printer className="mr-2 inline h-4 w-4" />{p.testPrint}
+        <span className="ml-2 text-xs font-medium text-amber-600">{p.testPrintComingSoon}</span>
       </button>
     </div>
   );

@@ -1,6 +1,6 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest } from "@/services/api";
-import type { ExecutiveSummary, PnlReport } from "@/types/finance";
+import type { ExecutiveSummary, InventoryReport, PnlReport } from "@/types/finance";
 
 function ensureStoreId() {
   const storeId = getCurrentStoreId();
@@ -49,5 +49,14 @@ export function getExecutiveSummary(params: GetPnlParams = {}) {
   const query = qs.toString();
   return authorizedApiRequest<ExecutiveSummary>(
     `/api/stores/${storeId}/finance/summary${query ? `?${query}` : ""}`,
+  );
+}
+
+// Inventory Value & Dead Stock — backend aggregates (GetInventorySnapshot +
+// GetDeadStock). deadDays is the dead-stock idle threshold (30/60/90).
+export function getInventoryReport(deadDays: number) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<InventoryReport>(
+    `/api/stores/${storeId}/finance/inventory?dead_days=${deadDays}`,
   );
 }

@@ -27,6 +27,7 @@ import { listProducts } from "@/services/products";
 import { listMovements } from "@/services/stock-movements";
 import { StockAdjustDrawer } from "@/components/stock/stock-adjust-drawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import type { InventoryDictionary } from "@/components/stock/inventory-types";
 import type { Product } from "@/types/product";
 
@@ -211,6 +212,21 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
   ];
 
   const isPending = productsQuery.isPending;
+
+  if (productsQuery.isError || movementsQuery.isError) {
+    return (
+      <div className="w-full xl:px-2 2xl:px-4">
+        <QueryErrorState
+          locale={locale}
+          onRetry={() => {
+            productsQuery.refetch();
+            movementsQuery.refetch();
+          }}
+          className="my-6"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full xl:px-2 2xl:px-4">

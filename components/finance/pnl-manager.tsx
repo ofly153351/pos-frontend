@@ -18,6 +18,7 @@ import {
 
 import { getPnl, type GetPnlParams, type PnlPeriod } from "@/services/finance";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import { RevenueCostProfitBars, type RcpRow } from "@/components/finance/revenue-cost-profit-bars";
@@ -207,6 +208,14 @@ export function PnlManager({ dictionary: t, locale }: Props) {
     { label: t.ratios.expenseRatio, value: pct(calc.expenseRatio) },
     { label: t.ratios.costRatio, value: pct(calc.costRatio) },
   ];
+
+  if (pnlQuery.isError) {
+    return (
+      <div className="w-full xl:px-2 2xl:px-4">
+        <QueryErrorState locale={locale} onRetry={() => pnlQuery.refetch()} className="my-6" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full xl:px-2 2xl:px-4">
