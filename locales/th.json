@@ -242,9 +242,9 @@
     "hero": {
       "storeOpen": "เปิดให้บริการ",
       "storeClosed": "ปิดร้าน",
-      "totalSales": "ยอดขายรวม",
+      "totalSales": "รายได้รวมภาษี",
       "totalOrders": "ออเดอร์ทั้งหมด",
-      "totalProfit": "กำไรสุทธิ",
+      "totalProfit": "ยอดขายสุทธิ",
       "storeStatus": "สถานะร้าน",
       "showingData": "แสดงข้อมูล"
     },
@@ -263,9 +263,9 @@
       "promotionsDesc": "จัดการส่วนลดและแคมเปญ"
     },
     "kpi": {
-      "totalSales": "ยอดขายรวม",
+      "totalSales": "รายได้รวมภาษี",
       "totalOrders": "ออเดอร์ทั้งหมด",
-      "totalProfit": "กำไรสุทธิ",
+      "totalProfit": "ยอดขายสุทธิ",
       "averageBill": "เฉลี่ยต่อบิล",
       "lowStockItems": "สต็อกต่ำ",
       "outOfStockItems": "หมดสต็อก",
@@ -344,7 +344,7 @@
     "salesTrend": {
       "title": "แนวโน้มยอดขาย",
       "revenue": "รายได้",
-      "profit": "กำไร",
+      "profit": "ยอดขายสุทธิ",
       "orders": "ออเดอร์"
     },
     "paymentMethods": {
@@ -391,6 +391,7 @@
     "addButton": "เพิ่มลงออเดอร์",
     "actionsLabel": "การทำรายการ",
     "cartTitle": "ออเดอร์ปัจจุบัน",
+    "couponLabel": "รหัสคูปอง",
     "checkoutSectionTitle": "ชำระเงิน",
     "saleModeAriaLabel": "โหมดเอกสารหน้าชำระเงิน",
     "saleModeCashLabel": "ขายปกติ",
@@ -842,6 +843,9 @@
       "kpiAllTime": "ตลอดระยะเวลา",
       "kpiNoDue": "ไม่มียอดค้าง",
       "kpiNoLimit": "ไม่จำกัดวงเงิน",
+      "kpiOrders": "ใบสั่งซื้อ",
+      "kpiLastOrder": "สั่งซื้อล่าสุด",
+      "kpiNoOrders": "ยังไม่มีคำสั่งซื้อ",
       "sectionContact": "ข้อมูลติดต่อ",
       "sectionPayment": "การชำระเงิน",
       "sectionAddress": "ที่อยู่",
@@ -967,6 +971,7 @@
       "searchPlaceholder": "ค้นหา Barcode หรือชื่อสินค้า...",
       "receiptPayment": "ใบเสร็จและการชำระเงิน",
       "activityLogs": "Activity Logs",
+      "staff": "พนักงานและผู้ใช้",
       "promotions": "โปรโมชั่น",
       "notificationsTitle": "การแจ้งเตือน",
       "notificationsViewAll": "ดูการแจ้งเตือนทั้งหมด",
@@ -1887,6 +1892,66 @@
     "convertToInvoice": "แปลงเป็นใบแจ้งหนี้",
     "typeDeliveryOrder": "ใบส่งของ"
   },
+  "userManagement": {
+    "pageTitle": "พนักงานและผู้ใช้",
+    "pageSubtitle": "จัดการผู้ที่เข้าถึงร้านนี้และสิทธิ์การใช้งาน",
+    "addMember": "เพิ่มพนักงาน",
+    "refresh": "รีเฟรช",
+    "empty": "ยังไม่มีพนักงาน",
+    "forbidden": "เฉพาะเจ้าของและผู้จัดการเท่านั้นที่จัดการพนักงานได้",
+    "you": "คุณ",
+    "table": {
+      "name": "ชื่อ",
+      "email": "อีเมล",
+      "role": "บทบาท",
+      "status": "สถานะ",
+      "joined": "เข้าร่วมเมื่อ",
+      "actions": "จัดการ"
+    },
+    "roles": {
+      "owner": "เจ้าของ",
+      "manager": "ผู้จัดการ",
+      "cashier": "แคชเชียร์",
+      "warehouse": "คลังสินค้า"
+    },
+    "statusLabels": {
+      "active": "ใช้งาน",
+      "suspended": "ระงับ"
+    },
+    "rowActions": {
+      "suspend": "ระงับ",
+      "activate": "เปิดใช้งาน",
+      "remove": "นำออก"
+    },
+    "form": {
+      "title": "เพิ่มพนักงาน",
+      "subtitle": "หากอีเมลมีบัญชีอยู่แล้ว ระบบจะเชื่อมกับร้านนี้ มิฉะนั้นจะสร้างบัญชีใหม่",
+      "name": "ชื่อ-นามสกุล",
+      "email": "อีเมล",
+      "password": "รหัสผ่านชั่วคราว",
+      "passwordHint": "อย่างน้อย 8 ตัวอักษร ใช้เฉพาะตอนสร้างบัญชีใหม่",
+      "role": "บทบาทในร้าน",
+      "submit": "เพิ่มพนักงาน",
+      "cancel": "ยกเลิก"
+    },
+    "confirmRemove": "นำพนักงานคนนี้ออกจากร้านหรือไม่? บัญชียังอยู่ แต่จะเข้าถึงร้านนี้ไม่ได้",
+    "errors": {
+      "generic": "เกิดข้อผิดพลาด กรุณาลองใหม่",
+      "nameRequired": "กรุณากรอกชื่อสำหรับผู้ใช้ใหม่",
+      "emailRequired": "กรุณากรอกอีเมลให้ถูกต้อง",
+      "passwordTooShort": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+      "alreadyMember": "ผู้ใช้นี้เป็นสมาชิกของร้านอยู่แล้ว",
+      "lastOwner": "ไม่สามารถนำออก ลดบทบาท หรือระงับเจ้าของคนสุดท้ายที่ใช้งานอยู่ได้",
+      "ownerOnly": "เฉพาะเจ้าของเท่านั้นที่กำหนดหรือแก้ไขบทบาทเจ้าของได้",
+      "selfRemove": "ไม่สามารถนำสมาชิกภาพของตัวเองออกได้",
+      "selfSuspend": "ไม่สามารถระงับสมาชิกภาพของตัวเองได้"
+    },
+    "toast": {
+      "added": "เพิ่มพนักงานแล้ว",
+      "updated": "อัปเดตพนักงานแล้ว",
+      "removed": "นำพนักงานออกแล้ว"
+    }
+  },
   "activityLogs": {
     "title": "Activity Logs",
     "subtitle": "บันทึกกิจกรรมทุก module ในระบบ แยกตามร้านค้า",
@@ -2017,6 +2082,7 @@
       "labelTaxLabel": "ระบุภาษี",
       "sectionLogo": "การแสดงโลโก้",
       "changeLogo": "เปลี่ยนโลโก้",
+      "changeLogoComingSoon": "เปิดให้ใช้งานเร็ว ๆ นี้",
       "labelLogoPosition": "ตำแหน่งโลโก้",
       "logoCenter": "ด้านบน (กึ่งกลาง)",
       "logoLeft": "ด้านบน (ซ้าย)",
@@ -2055,7 +2121,8 @@
       "namePlaceholder": "ระบุชื่อเครื่องพิมพ์...",
       "labelAutoPrint": "พิมพ์อัตโนมัติหลังชำระเงิน",
       "labelCopies": "จำนวนสำเนา",
-      "testPrint": "พิมพ์หน้าทดสอบ"
+      "testPrint": "พิมพ์หน้าทดสอบ",
+      "testPrintComingSoon": "เปิดให้ใช้งานเร็ว ๆ นี้"
     },
     "display": {
       "sectionDisplay": "การแสดงผล",
@@ -2940,7 +3007,7 @@
       "actionClearance": "ระบายสต็อก",
       "actionReturnSupplier": "คืนผู้ขาย",
       "empty": "ไม่มีสินค้าค้างสต็อกในช่วงเวลานี้ 🎉",
-      "windowNote": "* วันที่ขายล่าสุดและอายุสต็อกอ้างอิงจากประวัติการเคลื่อนไหวสต็อกล่าสุด (อายุสต็อกนับจากการรับเข้าครั้งล่าสุด)"
+      "windowNote": "* จำนวนสินค้าค้างสต็อกและมูลค่าที่จมคำนวณจากประวัติการขายทั้งหมดของร้าน (ฐานต้นทุน)"
     }
   },
   "financeExpenses": {
@@ -3052,9 +3119,9 @@
     "statement": {
       "title": "งบกำไรขาดทุน",
       "subtitle": "สรุปผลประกอบการตามช่วงเวลา",
-      "revenue": "รายได้จากการขาย",
+      "revenue": "รายได้รวมภาษี",
       "discountInfo": "ส่วนลดที่ให้",
-      "vatInfo": "ภาษีมูลค่าเพิ่ม (รวมในยอด)",
+      "vatInfo": "มูลค่าภาษีมูลค่าเพิ่ม",
       "refunds": "หัก การคืนสินค้า",
       "refundsNote": "ยังไม่รองรับ",
       "netRevenue": "รายได้สุทธิ",
@@ -3132,7 +3199,7 @@
       "csvFilename": "รายงานสรุปยอดขาย"
     },
     "kpi": {
-      "revenue": "ยอดขายรวม",
+      "revenue": "รายได้รวมภาษี",
       "orders": "จำนวนออเดอร์",
       "avgOrderValue": "มูลค่าเฉลี่ยต่อบิล",
       "productsSold": "สินค้าที่ขายได้",
@@ -3241,6 +3308,18 @@
     "productsLabel": "รายการสินค้า",
     "addProductBtn": "+ เพิ่มสินค้า",
     "productNamePlaceholder": "ชื่อสินค้า...",
+    "searchPlaceholder": "ค้นหาด้วยชื่อ, SKU หรือบาร์โค้ด...",
+    "skuLabel": "SKU",
+    "stockLabel": "คงเหลือ",
+    "priceLabel": "ราคา",
+    "unitLabel": "หน่วย",
+    "noProductsFound": "ไม่พบสินค้า",
+    "createSubtitle": "เลือกลูกค้า ประเภทรายการ ค้นหาและเพิ่มสินค้า แล้วบันทึก (ระบบจะตัดสต็อกอัตโนมัติ)",
+    "creditDesc": "ค้างชำระเป็นเงิน",
+    "loanDesc": "รอรับคืนเป็นชิ้น",
+    "dueDateOptional": "เว้นว่างได้",
+    "noItemsYet": "ยังไม่มีรายการสินค้า",
+    "noItemsHint": "ค้นหาสินค้าด้านบนแล้วคลิกเพื่อเพิ่ม",
     "pricePlaceholder": "ราคา",
     "qtyPlaceholder": "จำนวน",
     "colName": "สินค้า",
@@ -3287,6 +3366,18 @@
     "loading": "กำลังโหลดข้อมูล...",
     "createdSuccess": "สร้างรายการสำเร็จ",
     "paymentSuccess": "บันทึกการชำระสำเร็จ",
-    "cancelSuccess": "ยกเลิกรายการสำเร็จ"
+    "cancelSuccess": "ยกเลิกรายการสำเร็จ",
+    "cancelFailed": "ยกเลิกรายการไม่สำเร็จ กรุณาลองใหม่",
+    "noCustomersFound": "ไม่พบลูกค้า",
+    "stockExceeded": "คงเหลือ {count} ชิ้น",
+    "summaryItemsLabel": "จำนวนรายการ",
+    "itemsUnit": "รายการ",
+    "colRemove": "ลบ",
+    "errInsufficientStock": "สินค้าไม่เพียงพอในสต็อก",
+    "errProductInactive": "มีสินค้าที่ไม่พร้อมขาย",
+    "errInvalidItem": "จำนวนสินค้าต้องมากกว่า 0",
+    "errProductNotFound": "ไม่พบสินค้าในระบบ",
+    "errOverpayment": "ยอดชำระเกินยอดคงค้าง",
+    "errSaveFailed": "ไม่สามารถบันทึกได้ กรุณาลองใหม่อีกครั้ง"
   }
 }

@@ -9,6 +9,7 @@ export interface EvalContext {
   customerLevel?: number;       // 1-5 member level
   customerType?: "retail" | "wholesale"; // customer classification
   cylinderType?: "7kg" | "15kg" | "48kg"; // for cylinder_exchange promos
+  couponCode?: string;          // entered code at checkout; undefined = preview (gate skipped)
   now?: Date;
 }
 
@@ -18,6 +19,46 @@ export interface EvalResult {
   discountTotal: number;
   finalTotal: number;
   steps: { label: string; value: string }[];
+}
+
+// ── Checkout classification & scope ──────────────────────────────────────────
+
+// Promotion types that discount a single cart line vs. the whole (scoped) bill.
+// cylinder_exchange is intentionally excluded from checkout application in this phase.
+export const LINE_LEVEL_TYPES: PromotionType[] = [
+  "percentage",
+  "fixed_amount",
+  "fixed_price",
+  "buy_x_get_y",
+  "member_price",
+  "happy_hour",
+];
+
+export const BILL_LEVEL_TYPES: PromotionType[] = [
+  "coupon",
+  "spend_x_discount",
+  "bundle",
+  "spend_x_gift",
+];
+
+// Scope gate — fail-closed: a category/brand/product-scoped promo only matches a
+// line whose identity is listed in scopeIds (case-insensitive). Store scope matches all.
+export function matchesScope(
+  c: Campaign,
+  item: { sku?: string | null; category?: string | null; brand?: string | null },
+): boolean {
+  if (c.scopeType === "store") return true;
+  const ids = c.scopeIds.map((s) => s.trim().toLowerCase()).filter(Boolean);
+  if (ids.length === 0) return false;
+  const value =
+    c.scopeType === "products"
+      ? item.sku
+      : c.scopeType === "category"
+        ? item.category
+        : c.scopeType === "brand"
+          ? item.brand
+          : undefined;
+  return !!value && ids.includes(value.trim().toLowerCase());
 }
 
 // ── Schedule helpers ─────────────────────────────────────────────────────────
@@ -160,6 +201,16 @@ export function evaluatePromotion(c: Campaign, ctx: EvalContext): EvalResult {
       finalTotal: subtotal,
       steps,
     };
+  }
+
+  // 3.5 — coupon code gate. Only enforced when a code context is supplied (checkout);
+  // the wizard simulator passes no couponCode, so previews still show the value.
+  if (c.type === "coupon" && ctx.couponCode !== undefined) {
+    const entered = ctx.couponCode.trim().toLowerCase();
+    const required = (c.couponCode ?? "").trim().toLowerCase();
+    if (!required || entered !== required) {
+      return { applies: false, reason: "coupon_mismatch", discountTotal: 0, finalTotal: subtotal, steps };
+    }
   }
 
   // 4 — calculate

@@ -1,27 +1,46 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
+  ArrowLeftRight,
   BookOpen,
+  Check,
   CreditCard,
+  FilePlus2,
   FileText,
   HandCoins,
+  Minus,
+  Pencil,
   Plus,
   Receipt,
+  ShoppingCart,
   TrendingUp,
   X,
 } from "lucide-react";
 
 import { listCustomers } from "@/services/customers";
+import { listProducts } from "@/services/products";
+import {
+  addCreditPayment,
+  cancelCreditSale,
+  createCreditSale,
+  getCreditStatementUrl,
+  listCreditSales,
+} from "@/services/credit-sales";
+import { ApiError } from "@/services/api";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import type { Customer } from "@/types/customer";
+import type { Product } from "@/types/product";
 import type {
   CreditSale,
   CreditSaleItem,
-  CreditSalePayment,
   CreditSaleStatus,
   CreditSaleType,
 } from "@/types/credit-sale";
+import { CustomerCombobox } from "@/components/credit-sales/customer-combobox";
+import { ProductCombobox, type ProductPick } from "@/components/credit-sales/product-combobox";
 
 // ─── Dictionary type ───────────────────────────────────────────────────────
 type CreditSalesDictionary = {
@@ -64,6 +83,18 @@ type CreditSalesDictionary = {
   productsLabel: string;
   addProductBtn: string;
   productNamePlaceholder: string;
+  searchPlaceholder: string;
+  skuLabel: string;
+  stockLabel: string;
+  priceLabel: string;
+  unitLabel: string;
+  noProductsFound: string;
+  createSubtitle: string;
+  creditDesc: string;
+  loanDesc: string;
+  dueDateOptional: string;
+  noItemsYet: string;
+  noItemsHint: string;
   pricePlaceholder: string;
   qtyPlaceholder: string;
   colName: string;
@@ -111,6 +142,18 @@ type CreditSalesDictionary = {
   createdSuccess: string;
   paymentSuccess: string;
   cancelSuccess: string;
+  cancelFailed: string;
+  noCustomersFound: string;
+  stockExceeded: string;
+  summaryItemsLabel: string;
+  itemsUnit: string;
+  colRemove: string;
+  errInsufficientStock: string;
+  errProductInactive: string;
+  errInvalidItem: string;
+  errProductNotFound: string;
+  errOverpayment: string;
+  errSaveFailed: string;
 };
 
 type CreditSalesManagerProps = {
@@ -121,8 +164,6 @@ type CreditSalesManagerProps = {
 };
 
 // ─── Constants ─────────────────────────────────────────────────────────────
-const STORAGE_KEY = "pos-credit-sales";
-
 const STATUS_CLASSES: Record<CreditSaleStatus, string> = {
   pending: "bg-amber-100 text-amber-700",
   partial: "bg-blue-100 text-blue-700",
@@ -133,32 +174,29 @@ const STATUS_CLASSES: Record<CreditSaleStatus, string> = {
 
 const TYPE_CLASSES: Record<CreditSaleType, string> = {
   credit: "bg-violet-100 text-violet-700",
-  loan: "bg-teal-100 text-teal-700",
+  loan: "bg-indigo-100 text-indigo-700",
 };
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
-function loadSales(): CreditSale[] {
-  try {
-    const raw = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    return raw ? (JSON.parse(raw) as CreditSale[]) : [];
-  } catch {
-    return [];
+
+// Translate a create/payment API error into a readable, localized message. A
+// backend 422 carries the specific reason in err.fields[].message; the generic
+// top-level "validation failed" is never surfaced to the user.
+function mapCreditError(err: unknown, d: CreditSalesDictionary): string {
+  let raw = "";
+  if (err instanceof ApiError) {
+    raw = (err.fields?.[0]?.message || err.message || "").toLowerCase();
+  } else if (err instanceof Error) {
+    raw = err.message.toLowerCase();
   }
-}
-
-function saveSales(sales: CreditSale[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sales));
-}
-
-function generateDocNo(sales: CreditSale[]): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  const prefix = `CR${y}${m}${d}`;
-  const todaySales = sales.filter((s) => s.document_number.startsWith(prefix));
-  const seq = String(todaySales.length + 1).padStart(4, "0");
-  return `${prefix}${seq}`;
+  if (raw.includes("insufficient")) return d.errInsufficientStock;
+  if (raw.includes("inactive")) return d.errProductInactive;
+  if (raw.includes("customer")) return d.noCustomerError;
+  if (raw.includes("positive quantity") || raw.includes("product_id")) return d.errInvalidItem;
+  if (raw.includes("not found")) return d.errProductNotFound;
+  if (raw.includes("exceeds") || raw.includes("overpay")) return d.errOverpayment;
+  if (raw.includes("amount must") || raw.includes("greater than zero")) return d.paymentAmountError;
+  return d.errSaveFailed;
 }
 
 function computeStatus(sale: CreditSale): CreditSaleStatus {
@@ -182,12 +220,29 @@ function fmtDate(iso: string): string {
 // ─── Component ────────────────────────────────────────────────────────────
 export function CreditSalesManager({
   dictionary,
+  locale,
   prefilledCustomerId,
 }: CreditSalesManagerProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [sales, setSales] = useState<CreditSale[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const queryClient = useQueryClient();
   const [success, setSuccess] = useState("");
+  const [actionError, setActionError] = useState("");
+
+  // Server is the source of truth — every terminal sees the same receivables.
+  const salesQuery = useQuery({ queryKey: ["credit-sales"], queryFn: async () => (await listCreditSales()).data });
+  const customersQuery = useQuery({ queryKey: ["credit", "customers"], queryFn: async () => (await listCustomers()).data });
+  const productsQuery = useQuery({ queryKey: ["credit", "products"], queryFn: async () => (await listProducts({ limit: 9999, page: 1 })).data });
+  const sales = useMemo<CreditSale[]>(() => salesQuery.data ?? [], [salesQuery.data]);
+  const customers = useMemo<Customer[]>(() => customersQuery.data ?? [], [customersQuery.data]);
+  const products = useMemo<Product[]>(() => productsQuery.data?.items ?? [], [productsQuery.data]);
+  const isLoading =
+    salesQuery.isPending || customersQuery.isPending || productsQuery.isPending;
+  const hasLoadError =
+    salesQuery.isError || customersQuery.isError || productsQuery.isError;
+  function retryLoad() {
+    void salesQuery.refetch();
+    void customersQuery.refetch();
+    void productsQuery.refetch();
+  }
 
   // ── Filters
   const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "loan">("all");
@@ -200,9 +255,6 @@ export function CreditSalesManager({
   const [createDueDate, setCreateDueDate] = useState("");
   const [createItems, setCreateItems] = useState<CreditSaleItem[]>([]);
   const [createNote, setCreateNote] = useState("");
-  const [newItemName, setNewItemName] = useState("");
-  const [newItemPrice, setNewItemPrice] = useState("");
-  const [newItemQty, setNewItemQty] = useState("1");
   const [createError, setCreateError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -216,25 +268,6 @@ export function CreditSalesManager({
   const [payNote, setPayNote] = useState("");
   const [payError, setPayError] = useState("");
   const [isPaySaving, setIsPaySaving] = useState(false);
-
-  // ─── Load data
-  useEffect(() => {
-    async function load() {
-      try {
-        const [loadedSales, customersResponse] = await Promise.all([
-          Promise.resolve(loadSales()),
-          listCustomers(),
-        ]);
-        setSales(loadedSales);
-        setCustomers(customersResponse.data ?? []);
-      } catch {
-        setSales(loadSales());
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    void load();
-  }, []);
 
   // ─── Pre-fill customer from URL params
   useEffect(() => {
@@ -295,74 +328,53 @@ export function CreditSalesManager({
     setCreateDueDate("");
     setCreateItems([]);
     setCreateNote("");
-    setNewItemName("");
-    setNewItemPrice("");
-    setNewItemQty("1");
     setCreateError("");
     setIsCreateOpen(true);
   }
 
-  // ─── Add item to create form
-  function addItem() {
-    const name = newItemName.trim();
-    const price = Number(newItemPrice);
-    const qty = Number(newItemQty);
-    if (!name || !Number.isFinite(price) || price < 0 || !Number.isFinite(qty) || qty < 1) return;
-    const item: CreditSaleItem = {
-      id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      product_name: name,
-      price,
-      quantity: qty,
-      total: price * qty,
-    };
-    setCreateItems((prev) => [...prev, item]);
-    setNewItemName("");
-    setNewItemPrice("");
-    setNewItemQty("1");
-  }
 
-  // ─── Save create
-  function handleCreate() {
+  // ─── Save create (POST → real stock-deducting sale + receivable, server-side)
+  async function handleCreate() {
     setCreateError("");
     if (!createCustomerId) { setCreateError(dictionary.noCustomerError); return; }
     if (createItems.length === 0) { setCreateError(dictionary.noItemsError); return; }
-    if (!createDueDate) { setCreateError(dictionary.dueDateRequired); return; }
-
-    const customer = customers.find((c) => c.id === createCustomerId);
-    if (!customer) { setCreateError(dictionary.noCustomerError); return; }
 
     setIsSaving(true);
-    const current = loadSales();
-    const totalAmount = createItems.reduce((sum, i) => sum + i.total, 0);
-    const newSale: CreditSale = {
-      id: `cs-${Date.now()}`,
-      document_number: generateDocNo(current),
-      type: createType,
-      customer_id: createCustomerId,
-      customer_name: customer.full_name,
-      customer_phone: customer.phone ?? undefined,
-      customer_member_code: customer.member_code ?? undefined,
-      items: createItems,
-      total_amount: totalAmount,
-      paid_amount: 0,
-      note: createNote.trim() || undefined,
-      due_date: createDueDate,
-      created_at: new Date().toISOString(),
-      created_by: "ผู้ใช้งาน",
-      status: "pending",
-      payments: [],
-    };
-    const updated = [newSale, ...current];
-    saveSales(updated);
-    setSales(updated);
-    setIsCreateOpen(false);
-    setSuccess(dictionary.createdSuccess);
-    setIsSaving(false);
-    setTimeout(() => setSuccess(""), 4000);
+    try {
+      await createCreditSale({
+        type: createType,
+        customer_id: createCustomerId,
+        due_date: createDueDate,
+        note: createNote.trim() || undefined,
+        down_payment: 0,
+        items: createItems.map((i) => ({ product_id: i.product_id ?? "", quantity: i.quantity })),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["credit-sales"] });
+      setIsCreateOpen(false);
+      setSuccess(dictionary.createdSuccess);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setCreateError(mapCreditError(err, dictionary));
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  // ─── Save payment
-  function handlePayment() {
+  // ─── Update a pending item's quantity (capped at available stock)
+  function updateCreateItemQty(id: string, nextQty: number) {
+    setCreateItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== id) return it;
+        const stock =
+          products.find((p) => p.id === it.product_id)?.total_stock ?? Number.MAX_SAFE_INTEGER;
+        const q = Math.min(Math.max(1, Math.floor(nextQty) || 1), Math.max(1, stock));
+        return { ...it, quantity: q, total: it.price * q };
+      }),
+    );
+  }
+
+  // ─── Save payment (POST → updates the receivable + payment-history timeline)
+  async function handlePayment() {
     if (!payingSale) return;
     setPayError("");
     const amount = Number(payAmount);
@@ -371,43 +383,40 @@ export function CreditSalesManager({
       return;
     }
     setIsPaySaving(true);
-    const payment: CreditSalePayment = {
-      id: `pay-${Date.now()}`,
-      amount,
-      method: payMethod,
-      note: payNote.trim() || undefined,
-      paid_at: new Date().toISOString(),
-    };
-    const current = loadSales();
-    const updated = current.map((s) => {
-      if (s.id !== payingSale.id) return s;
-      const newPaid = s.paid_amount + amount;
-      const newStatus = computeStatus({ ...s, paid_amount: newPaid });
-      return { ...s, paid_amount: newPaid, status: newStatus, payments: [...s.payments, payment] };
-    });
-    saveSales(updated);
-    setSales(updated);
-    setPayingSale(null);
-    setPayAmount("");
-    setPayNote("");
-    // Update viewSale if open
-    const updatedSale = updated.find((s) => s.id === payingSale.id);
-    if (viewSale && updatedSale) setViewSale(updatedSale);
-    setSuccess(dictionary.paymentSuccess);
-    setIsPaySaving(false);
-    setTimeout(() => setSuccess(""), 4000);
+    try {
+      const res = await addCreditPayment(payingSale.id, {
+        amount,
+        method: payMethod,
+        note: payNote.trim() || undefined,
+      });
+      await queryClient.invalidateQueries({ queryKey: ["credit-sales"] });
+      if (viewSale && viewSale.id === payingSale.id) setViewSale(res.data);
+      setPayingSale(null);
+      setPayAmount("");
+      setPayNote("");
+      setSuccess(dictionary.paymentSuccess);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setPayError(mapCreditError(err, dictionary));
+    } finally {
+      setIsPaySaving(false);
+    }
   }
 
-  // ─── Cancel sale
-  function handleCancelSale(saleId: string) {
+  // ─── Cancel sale (POST → restock + bad-debt expense, server-side)
+  async function handleCancelSale(saleId: string) {
     if (!window.confirm(dictionary.cancelConfirm)) return;
-    const current = loadSales();
-    const updated = current.map((s) => (s.id === saleId ? { ...s, status: "cancelled" as CreditSaleStatus } : s));
-    saveSales(updated);
-    setSales(updated);
-    if (viewSale?.id === saleId) setViewSale(null);
-    setSuccess(dictionary.cancelSuccess);
-    setTimeout(() => setSuccess(""), 4000);
+    setActionError("");
+    try {
+      await cancelCreditSale(saleId);
+      await queryClient.invalidateQueries({ queryKey: ["credit-sales"] });
+      if (viewSale?.id === saleId) setViewSale(null);
+      setSuccess(dictionary.cancelSuccess);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : dictionary.cancelFailed);
+      setTimeout(() => setActionError(""), 6000);
+    }
   }
 
   // ─── Open payment modal
@@ -425,6 +434,15 @@ export function CreditSalesManager({
     return (
       <div className="flex h-64 items-center justify-center">
         <p className="text-sm text-slate-500">{dictionary.loading}</p>
+      </div>
+    );
+  }
+
+  // ─── Error
+  if (hasLoadError) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <QueryErrorState locale={locale} onRetry={retryLoad} className="max-w-md" />
       </div>
     );
   }
@@ -476,8 +494,8 @@ export function CreditSalesManager({
           </div>
         </div>
         <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-100">
-            <BookOpen className="h-5 w-5 text-teal-600" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100">
+            <BookOpen className="h-5 w-5 text-indigo-600" />
           </div>
           <div className="min-w-0">
             <p className="text-2xl font-bold text-slate-900">{kpi.loanItems}</p>
@@ -611,7 +629,10 @@ export function CreditSalesManager({
                       <td className="px-4 py-3">
                         <button
                           className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                          onClick={() => setViewSale(sale)}
+                          onClick={() => {
+                            setActionError("");
+                            setViewSale(sale);
+                          }}
                           type="button"
                         >
                           {dictionary.viewBtn}
@@ -637,13 +658,18 @@ export function CreditSalesManager({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between bg-violet-700 px-6 py-5">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-violet-200" />
-                <h3 className="text-lg font-bold text-white">{dictionary.createTitle}</h3>
+            <div className="flex items-start justify-between gap-3 bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
+                  <FilePlus2 className="h-5 w-5" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{dictionary.createTitle}</h3>
+                  <p className="mt-0.5 text-xs text-violet-100">{dictionary.createSubtitle}</p>
+                </div>
               </div>
               <button
-                className="rounded-lg p-1 text-violet-200 transition hover:bg-violet-600"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
                 onClick={() => setIsCreateOpen(false)}
                 type="button"
               >
@@ -653,20 +679,43 @@ export function CreditSalesManager({
 
             {/* Body */}
             <div className="max-h-[75vh] overflow-y-auto px-6 py-5 space-y-4">
-              {/* Type tabs */}
-              <div className="flex rounded-xl border border-slate-200 p-1 gap-1">
-                {(["credit", "loan"] as const).map((t) => (
-                  <button
-                    key={t}
-                    className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
-                      createType === t ? "bg-violet-700 text-white" : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                    onClick={() => setCreateType(t)}
-                    type="button"
-                  >
-                    {t === "credit" ? dictionary.tabCredit : dictionary.tabLoan}
-                  </button>
-                ))}
+              {/* Type cards */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { key: "credit" as const, Icon: Pencil, title: dictionary.tabCredit, desc: dictionary.creditDesc },
+                  { key: "loan" as const, Icon: ArrowLeftRight, title: dictionary.tabLoan, desc: dictionary.loanDesc },
+                ].map((opt) => {
+                  const selected = createType === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setCreateType(opt.key)}
+                      className={`relative flex items-start gap-3 rounded-2xl border-2 p-4 text-left transition ${
+                        selected
+                          ? "border-violet-500 bg-violet-50"
+                          : "border-slate-200 hover:border-violet-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                          selected ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        <opt.Icon className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-900">{opt.title}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{opt.desc}</p>
+                      </div>
+                      {selected ? (
+                        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-white">
+                          <Check className="h-3 w-3" />
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
               </div>
 
               {createError ? (
@@ -679,22 +728,19 @@ export function CreditSalesManager({
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     {dictionary.customerLabel} <span className="text-rose-500">*</span>
                   </label>
-                  <select
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500"
-                    onChange={(e) => setCreateCustomerId(e.target.value)}
+                  <CustomerCombobox
+                    customers={customers}
                     value={createCustomerId}
-                  >
-                    <option value="">{dictionary.customerPlaceholder}</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.full_name}{c.phone ? ` · ${c.phone}` : ""}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setCreateCustomerId}
+                    labels={{
+                      placeholder: dictionary.customerPlaceholder,
+                      noResults: dictionary.noCustomersFound,
+                    }}
+                  />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    {dictionary.dueDateLabel} <span className="text-rose-500">*</span>
+                    {dictionary.dueDateLabel}
                   </label>
                   <input
                     className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500"
@@ -703,6 +749,7 @@ export function CreditSalesManager({
                     type="date"
                     value={createDueDate}
                   />
+                  <p className="mt-1 text-xs text-slate-400">{dictionary.dueDateOptional}</p>
                 </div>
               </div>
 
@@ -710,102 +757,149 @@ export function CreditSalesManager({
               <div>
                 <p className="mb-2 text-sm font-medium text-slate-700">{dictionary.productsLabel}</p>
                 {/* Add item row */}
-                <div className="flex gap-2 mb-3">
-                  <input
-                    className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-violet-500"
-                    onChange={(e) => setNewItemName(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addItem(); } }}
-                    placeholder={dictionary.productNamePlaceholder}
-                    value={newItemName}
+                <div className="mb-3">
+                  <ProductCombobox
+                    products={products}
+                    labels={{
+                      searchPlaceholder: dictionary.searchPlaceholder,
+                      skuLabel: dictionary.skuLabel,
+                      stockLabel: dictionary.stockLabel,
+                      priceLabel: dictionary.priceLabel,
+                      unitLabel: dictionary.unitLabel,
+                      noProductsFound: dictionary.noProductsFound,
+                      addBtn: dictionary.addProductBtn,
+                      stockExceeded: dictionary.stockExceeded,
+                    }}
+                    onAdd={(pick: ProductPick) =>
+                      setCreateItems((prev) => [
+                        ...prev,
+                        {
+                          id: `${pick.product_id}-${prev.length}`,
+                          product_id: pick.product_id,
+                          product_name: pick.product_name,
+                          unit: pick.unit,
+                          price: pick.price,
+                          quantity: pick.quantity,
+                          total: pick.total,
+                        },
+                      ])
+                    }
                   />
-                  <input
-                    className="w-24 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-violet-500"
-                    min="0"
-                    onChange={(e) => setNewItemPrice(e.target.value)}
-                    placeholder={dictionary.pricePlaceholder}
-                    step="0.01"
-                    type="number"
-                    value={newItemPrice}
-                  />
-                  <input
-                    className="w-20 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-violet-500"
-                    min="1"
-                    onChange={(e) => setNewItemQty(e.target.value)}
-                    placeholder={dictionary.qtyPlaceholder}
-                    step="1"
-                    type="number"
-                    value={newItemQty}
-                  />
-                  <button
-                    className="flex items-center gap-1 rounded-lg bg-violet-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-800"
-                    onClick={addItem}
-                    type="button"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
                 </div>
 
-                {/* Items list */}
-                {createItems.length > 0 ? (
-                  <div className="overflow-hidden rounded-xl border border-slate-100">
-                    <table className="min-w-full divide-y divide-slate-100 text-sm">
-                      <thead className="bg-slate-50">
-                        <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          <th className="px-3 py-2">{dictionary.colName}</th>
-                          <th className="px-3 py-2 text-right">{dictionary.colPrice}</th>
-                          <th className="px-3 py-2 text-right">{dictionary.colQty}</th>
-                          <th className="px-3 py-2 text-right">{dictionary.colTotal}</th>
-                          <th className="px-3 py-2" />
+                {/* Items list — always shown, with an empty state */}
+                <div className="overflow-hidden rounded-xl border border-slate-200">
+                  <table className="min-w-full divide-y divide-slate-100 text-sm">
+                    <thead className="bg-slate-50">
+                      <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        <th className="px-3 py-2.5">{dictionary.colName}</th>
+                        <th className="px-3 py-2.5 text-right">{dictionary.colPrice}</th>
+                        <th className="px-3 py-2.5 text-right">{dictionary.colQty}</th>
+                        <th className="px-3 py-2.5 text-right">{dictionary.colTotal}</th>
+                        <th className="px-3 py-2.5 text-center">{dictionary.colRemove}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {createItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-3 py-10 text-center">
+                            <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-500">
+                              <ShoppingCart className="h-6 w-6" />
+                            </span>
+                            <p className="text-sm font-semibold text-slate-600">{dictionary.noItemsYet}</p>
+                            <p className="mt-0.5 text-xs text-slate-400">{dictionary.noItemsHint}</p>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 bg-white">
-                        {createItems.map((item) => (
-                          <tr key={item.id}>
-                            <td className="px-3 py-2 text-slate-900">{item.product_name}</td>
-                            <td className="px-3 py-2 text-right text-slate-600">{fmtBaht(item.price)}</td>
-                            <td className="px-3 py-2 text-right text-slate-600">{item.quantity}</td>
-                            <td className="px-3 py-2 text-right font-medium text-slate-800">{fmtBaht(item.total)}</td>
-                            <td className="px-3 py-2 text-right">
-                              <button
-                                className="rounded p-1 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-                                onClick={() => setCreateItems((prev) => prev.filter((i) => i.id !== item.id))}
-                                type="button"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : null}
-              </div>
-
-              {/* Note */}
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">{dictionary.noteLabel}</label>
-                <textarea
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500"
-                  onChange={(e) => setCreateNote(e.target.value)}
-                  placeholder={dictionary.notePlaceholder}
-                  rows={2}
-                  value={createNote}
-                />
-              </div>
-
-              {/* Summary */}
-              {createItems.length > 0 ? (
-                <div className="flex items-center justify-between rounded-xl border border-violet-100 bg-violet-50 px-4 py-3">
-                  <span className="text-sm text-slate-600">
-                    {dictionary.summaryQtyLabel}:{" "}
-                    <strong>{createItems.reduce((n, i) => n + i.quantity, 0)}</strong> {dictionary.pieces}
-                  </span>
-                  <span className="text-sm font-bold text-violet-800">
-                    {dictionary.summaryAmountLabel}: {fmtBaht(createItems.reduce((n, i) => n + i.total, 0))}
-                  </span>
+                      ) : (
+                        createItems.map((item) => {
+                          const stock =
+                            products.find((p) => p.id === item.product_id)?.total_stock ??
+                            Number.MAX_SAFE_INTEGER;
+                          return (
+                            <tr key={item.id}>
+                              <td className="px-3 py-2 text-slate-900">
+                                <span className="block max-w-[180px] truncate" title={item.product_name}>{item.product_name}</span>
+                              </td>
+                              <td className="px-3 py-2 text-right text-slate-600">{fmtBaht(item.price)}</td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center justify-end gap-1">
+                                  <button
+                                    className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                                    disabled={item.quantity <= 1}
+                                    onClick={() => updateCreateItemQty(item.id, item.quantity - 1)}
+                                    type="button"
+                                    aria-label="decrease"
+                                  >
+                                    <Minus className="h-3.5 w-3.5" />
+                                  </button>
+                                  <input
+                                    className="h-7 w-12 rounded-md border border-slate-200 text-center text-sm outline-none focus:border-violet-500"
+                                    inputMode="numeric"
+                                    onChange={(e) => updateCreateItemQty(item.id, Number(e.target.value))}
+                                    value={item.quantity}
+                                  />
+                                  <button
+                                    className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 transition hover:bg-slate-50 disabled:opacity-40"
+                                    disabled={item.quantity >= stock}
+                                    onClick={() => updateCreateItemQty(item.id, item.quantity + 1)}
+                                    type="button"
+                                    aria-label="increase"
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-3 py-2 text-right font-medium text-slate-800">{fmtBaht(item.total)}</td>
+                              <td className="px-3 py-2 text-right">
+                                <button
+                                  className="rounded p-1 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                                  onClick={() => setCreateItems((prev) => prev.filter((i) => i.id !== item.id))}
+                                  type="button"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
-              ) : null}
+              </div>
+
+              {/* Note + totals */}
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex-1">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">{dictionary.noteLabel}</label>
+                  <input
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500"
+                    onChange={(e) => setCreateNote(e.target.value)}
+                    placeholder={dictionary.notePlaceholder}
+                    value={createNote}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-3">
+                  <div className="rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2.5 text-center sm:min-w-[6rem]">
+                    <p className="text-[11px] text-slate-500">{dictionary.summaryItemsLabel}</p>
+                    <p className="mt-0.5 text-base font-bold text-violet-700">
+                      {createItems.length} {dictionary.itemsUnit}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2.5 text-center sm:min-w-[6rem]">
+                    <p className="text-[11px] text-slate-500">{dictionary.summaryQtyLabel}</p>
+                    <p className="mt-0.5 text-base font-bold text-violet-700">
+                      {createItems.reduce((n, i) => n + i.quantity, 0)} {dictionary.pieces}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-violet-200 bg-violet-100/60 px-3 py-2.5 text-center sm:min-w-[6rem]">
+                    <p className="text-[11px] text-slate-500">{dictionary.summaryAmountLabel}</p>
+                    <p className="mt-0.5 text-base font-bold text-violet-800">
+                      {fmtBaht(createItems.reduce((n, i) => n + i.total, 0))}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* Footer */}
               <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
@@ -817,12 +911,12 @@ export function CreditSalesManager({
                   {dictionary.cancelBtn}
                 </button>
                 <button
-                  className="rounded-lg bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-lg bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:opacity-50"
                   disabled={isSaving}
                   onClick={handleCreate}
                   type="button"
                 >
-                  {isSaving ? dictionary.saving : dictionary.saveBtn}
+                  <Check className="h-4 w-4" /> {isSaving ? dictionary.saving : dictionary.saveBtn}
                 </button>
               </div>
             </div>
@@ -841,7 +935,7 @@ export function CreditSalesManager({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-start justify-between bg-emerald-700 px-6 py-4">
+            <div className="flex items-start justify-between bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-4">
               <div>
                 <p className="font-mono text-lg font-bold text-white">{viewSale.document_number}</p>
                 <div className="mt-1 flex items-center gap-2">
@@ -911,7 +1005,9 @@ export function CreditSalesManager({
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {viewSale.items.map((item) => (
                         <tr key={item.id}>
-                          <td className="px-3 py-2 text-slate-900">{item.product_name}</td>
+                          <td className="px-3 py-2 text-slate-900">
+                            <span className="block max-w-[180px] truncate" title={item.product_name}>{item.product_name}</span>
+                          </td>
                           <td className="px-3 py-2 text-right text-slate-600">{fmtBaht(item.price)}</td>
                           <td className="px-3 py-2 text-right text-slate-600">{item.quantity}</td>
                           <td className="px-3 py-2 text-right font-medium">{fmtBaht(item.total)}</td>
@@ -946,6 +1042,12 @@ export function CreditSalesManager({
               </div>
             </div>
 
+            {actionError ? (
+              <div className="border-t border-rose-100 bg-rose-50 px-6 py-3 text-sm font-medium text-rose-700">
+                {actionError}
+              </div>
+            ) : null}
+
             {/* Footer buttons */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-6 py-4">
               <div className="flex gap-2">
@@ -969,6 +1071,7 @@ export function CreditSalesManager({
               <div className="flex gap-2">
                 <button
                   className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  onClick={() => window.open(getCreditStatementUrl(viewSale.id), "_blank")}
                   type="button"
                 >
                   <span className="flex items-center gap-1.5">
@@ -978,7 +1081,7 @@ export function CreditSalesManager({
                 </button>
                 {computeStatus(viewSale) !== "cancelled" && computeStatus(viewSale) !== "completed" ? (
                   <button
-                    className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+                    className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-800"
                     onClick={() => {
                       openPayment(viewSale);
                     }}
@@ -1004,7 +1107,7 @@ export function CreditSalesManager({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between bg-emerald-600 px-6 py-4">
+            <div className="flex items-center justify-between bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-4">
               <div className="flex items-center gap-2">
                 <Receipt className="h-5 w-5 text-white" />
                 <h3 className="text-lg font-bold text-white">{dictionary.paymentTitle}</h3>
@@ -1085,7 +1188,7 @@ export function CreditSalesManager({
                   {dictionary.cancelBtn}
                 </button>
                 <button
-                  className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="rounded-lg bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:opacity-50"
                   disabled={isPaySaving}
                   onClick={handlePayment}
                   type="button"

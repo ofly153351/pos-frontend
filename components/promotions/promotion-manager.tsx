@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -30,9 +31,11 @@ import {
 } from "lucide-react";
 
 import { toast } from "@/components/ui/toast";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import type { Locale } from "@/lib/locale-config";
 import { evaluatePromotion } from "./promotion-engine";
+import { createPromotion, deletePromotion, listPromotions, updatePromotion } from "@/services/promotions";
 import type {
   Campaign,
   CampaignStatus,
@@ -46,7 +49,7 @@ import type {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const LS_KEY = "pos-promotions";
+// Promotions are persisted server-side (see services/promotions).
 
 const CAMPAIGN_ICONS = [
   "🎉","🔥","⚡","💰","🎁","🛍️","⭐","🏷️","🎯","💎","🚀","✨","🎪","🌟","🎶","🍀",
@@ -1276,8 +1279,10 @@ type PromotionManagerProps = {
   locale: Locale;
 };
 
-export function PromotionManager({ dictionary: dict }: PromotionManagerProps) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+export function PromotionManager({ dictionary: dict, locale }: PromotionManagerProps) {
+  const queryClient = useQueryClient();
+  const campaignsQuery = useQuery({ queryKey: ["promotions"], queryFn: async () => (await listPromotions()).data });
+  const campaigns = useMemo<Campaign[]>(() => campaignsQuery.data ?? [], [campaignsQuery.data]);
   const [view, setView] = useState<"list" | "editor">("list");
   const [listView, setListView] = useState<"grid" | "table">("table");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -1288,17 +1293,8 @@ export function PromotionManager({ dictionary: dict }: PromotionManagerProps) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  // Load localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      if (raw) setCampaigns(JSON.parse(raw) as Campaign[]);
-    } catch { /* ignore */ }
-  }, []);
-
-  function persist(items: Campaign[]) {
-    localStorage.setItem(LS_KEY, JSON.stringify(items));
-    setCampaigns(items);
+  function refetchCampaigns() {
+    return queryClient.invalidateQueries({ queryKey: ["promotions"] });
   }
 
   // KPI
@@ -1350,52 +1346,86 @@ export function PromotionManager({ dictionary: dict }: PromotionManagerProps) {
     setForm(defaultForm());
   }
 
-  function saveForm() {
+  async function saveForm() {
     if (!form.name?.trim() || !form.type || isPending) return;
     setIsPending(true);
     try {
-      const now = new Date().toISOString();
       if (editingId) {
-        const updated = campaigns.map((c) =>
-          c.id === editingId ? { ...c, ...form, id: editingId, updatedAt: now } as Campaign : c,
-        );
-        persist(updated);
+        const existing = campaigns.find((c) => c.id === editingId) ?? ({} as Campaign);
+        const updated = { ...existing, ...form, id: editingId, updatedAt: new Date().toISOString() } as Campaign;
+        await updatePromotion(editingId, updated);
         toast.success(dict.updated);
       } else {
-        persist([...campaigns, buildCampaign(form, campaigns.length)]);
+        await createPromotion(buildCampaign(form, campaigns.length));
         toast.success(dict.created);
       }
+      await refetchCampaigns();
       closeEditor();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : dict.updated);
     } finally {
       setIsPending(false);
     }
   }
 
-  function deleteCampaign(id: string) {
-    persist(campaigns.filter((c) => c.id !== id));
+  async function deleteCampaign(id: string) {
+    try {
+      await deletePromotion(id);
+      await refetchCampaigns();
+      toast.success(dict.deleted);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : dict.deleted);
+    }
     setDeleteId(null);
-    toast.success(dict.deleted);
   }
 
-  function duplicateCampaign(id: string) {
+  async function duplicateCampaign(id: string) {
     const c = campaigns.find((x) => x.id === id);
     if (!c) return;
     const now = new Date().toISOString();
-    persist([...campaigns, {
-      ...c, id: crypto.randomUUID(), name: `${c.name} (copy)`,
-      status: "draft", usageCount: 0, usageToday: 0,
-      revenueGenerated: 0, discountGiven: 0, createdAt: now, updatedAt: now,
-    }]);
-    toast.success(dict.duplicated);
+    try {
+      await createPromotion({
+        ...c, id: crypto.randomUUID(), name: `${c.name} (copy)`,
+        status: "draft", usageCount: 0, usageToday: 0,
+        revenueGenerated: 0, discountGiven: 0, createdAt: now, updatedAt: now,
+      });
+      await refetchCampaigns();
+      toast.success(dict.duplicated);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : dict.duplicated);
+    }
   }
 
-  function toggleActive(id: string) {
+  async function toggleActive(id: string) {
     const c = campaigns.find((x) => x.id === id);
     if (!c) return;
     const s = computeDisplayStatus(c);
     const next: CampaignStatus = s === "paused" || s === "draft" ? "active" : "paused";
-    persist(campaigns.map((x) => x.id === id ? { ...x, status: next, updatedAt: new Date().toISOString() } : x));
-    toast.success(next === "paused" ? dict.paused : dict.resumed);
+    try {
+      await updatePromotion(id, { ...c, status: next, updatedAt: new Date().toISOString() });
+      await refetchCampaigns();
+      toast.success(next === "paused" ? dict.paused : dict.resumed);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : dict.paused);
+    }
+  }
+
+  // ── Loading / error gates ───────────────────────────────────────────────────
+
+  if (campaignsQuery.isPending) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <p className="text-sm text-slate-500">{dict.title}</p>
+      </div>
+    );
+  }
+
+  if (campaignsQuery.isError) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <QueryErrorState locale={locale} onRetry={() => void refetchCampaigns()} className="max-w-md" />
+      </div>
+    );
   }
 
   // ── Editor view ────────────────────────────────────────────────────────────

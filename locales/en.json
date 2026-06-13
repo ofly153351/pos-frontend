@@ -242,9 +242,9 @@
     "hero": {
       "storeOpen": "Open",
       "storeClosed": "Closed",
-      "totalSales": "Total Sales",
+      "totalSales": "Revenue (VAT Incl.)",
       "totalOrders": "Total Orders",
-      "totalProfit": "Net Profit",
+      "totalProfit": "Net Sales",
       "storeStatus": "Store Status",
       "showingData": "Showing Data"
     },
@@ -263,9 +263,9 @@
       "promotionsDesc": "Manage discounts and campaigns"
     },
     "kpi": {
-      "totalSales": "Total Sales",
+      "totalSales": "Revenue (VAT Incl.)",
       "totalOrders": "Total Orders",
-      "totalProfit": "Net Profit",
+      "totalProfit": "Net Sales",
       "averageBill": "Average Bill",
       "lowStockItems": "Low Stock",
       "outOfStockItems": "Out of Stock",
@@ -344,7 +344,7 @@
     "salesTrend": {
       "title": "Sales Trend",
       "revenue": "Revenue",
-      "profit": "Profit",
+      "profit": "Net Sales",
       "orders": "Orders"
     },
     "paymentMethods": {
@@ -391,6 +391,7 @@
     "addButton": "Add to cart",
     "actionsLabel": "Actions",
     "cartTitle": "Current order",
+    "couponLabel": "Coupon code",
     "checkoutSectionTitle": "Checkout",
     "saleModeAriaLabel": "Checkout document mode",
     "saleModeCashLabel": "Normal sale",
@@ -842,6 +843,9 @@
       "kpiAllTime": "All Time",
       "kpiNoDue": "No outstanding",
       "kpiNoLimit": "No limit",
+      "kpiOrders": "Purchase Orders",
+      "kpiLastOrder": "Last Order",
+      "kpiNoOrders": "No orders yet",
       "sectionContact": "Contact Info",
       "sectionPayment": "Payment",
       "sectionAddress": "Address",
@@ -967,6 +971,7 @@
       "searchPlaceholder": "Search Barcode or Name...",
       "receiptPayment": "Receipt & Payment",
       "activityLogs": "Activity Logs",
+      "staff": "Staff & Users",
       "promotions": "Promotions",
       "notificationsTitle": "Notifications",
       "notificationsViewAll": "View all notifications",
@@ -1887,6 +1892,66 @@
     "convertToInvoice": "Convert to Invoice",
     "typeDeliveryOrder": "Delivery Order"
   },
+  "userManagement": {
+    "pageTitle": "Staff & Users",
+    "pageSubtitle": "Manage who can access this store and what they can do.",
+    "addMember": "Add member",
+    "refresh": "Refresh",
+    "empty": "No staff members yet.",
+    "forbidden": "Only owners and managers can manage staff.",
+    "you": "You",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "status": "Status",
+      "joined": "Joined",
+      "actions": "Actions"
+    },
+    "roles": {
+      "owner": "Owner",
+      "manager": "Manager",
+      "cashier": "Cashier",
+      "warehouse": "Warehouse"
+    },
+    "statusLabels": {
+      "active": "Active",
+      "suspended": "Suspended"
+    },
+    "rowActions": {
+      "suspend": "Suspend",
+      "activate": "Activate",
+      "remove": "Remove"
+    },
+    "form": {
+      "title": "Add staff member",
+      "subtitle": "If the email already has an account it is linked to this store; otherwise a new account is created.",
+      "name": "Full name",
+      "email": "Email",
+      "password": "Temporary password",
+      "passwordHint": "At least 8 characters. Used only when creating a brand-new account.",
+      "role": "Store role",
+      "submit": "Add member",
+      "cancel": "Cancel"
+    },
+    "confirmRemove": "Remove this member from the store? Their account stays, but they lose access here.",
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "nameRequired": "Name is required for a new user.",
+      "emailRequired": "A valid email is required.",
+      "passwordTooShort": "Password must be at least 8 characters.",
+      "alreadyMember": "This user is already a member of the store.",
+      "lastOwner": "You cannot remove, demote, or suspend the last active owner.",
+      "ownerOnly": "Only an owner can grant or modify the owner role.",
+      "selfRemove": "You cannot remove your own membership.",
+      "selfSuspend": "You cannot suspend your own membership."
+    },
+    "toast": {
+      "added": "Member added.",
+      "updated": "Member updated.",
+      "removed": "Member removed."
+    }
+  },
   "activityLogs": {
     "title": "Activity Logs",
     "subtitle": "Store activity log across all modules",
@@ -2017,6 +2082,7 @@
       "labelTaxLabel": "Tax label",
       "sectionLogo": "Logo Display",
       "changeLogo": "Change logo",
+      "changeLogoComingSoon": "Coming soon",
       "labelLogoPosition": "Logo position",
       "logoCenter": "Top center",
       "logoLeft": "Top left",
@@ -2055,7 +2121,8 @@
       "namePlaceholder": "Enter printer name...",
       "labelAutoPrint": "Auto-print after payment",
       "labelCopies": "Copies",
-      "testPrint": "Print test page"
+      "testPrint": "Print test page",
+      "testPrintComingSoon": "Coming soon"
     },
     "display": {
       "sectionDisplay": "Display settings",
@@ -2940,7 +3007,7 @@
       "actionClearance": "Clearance",
       "actionReturnSupplier": "Return to Supplier",
       "empty": "No dead stock in this period 🎉",
-      "windowNote": "* Last sold date and stock age are based on recent stock-movement history (age counts from the latest stock-in)"
+      "windowNote": "* Dead-stock count and tied capital are calculated from the store's full sales history (cost basis)"
     }
   },
   "financeExpenses": {
@@ -3052,9 +3119,9 @@
     "statement": {
       "title": "Profit & Loss Statement",
       "subtitle": "Performance summary for the period",
-      "revenue": "Sales Revenue",
+      "revenue": "Revenue (VAT Incl.)",
       "discountInfo": "Discounts given",
-      "vatInfo": "VAT (included in total)",
+      "vatInfo": "VAT Amount",
       "refunds": "Less: Returns",
       "refundsNote": "not tracked yet",
       "netRevenue": "Net Revenue",
@@ -3132,7 +3199,7 @@
       "csvFilename": "sales-summary"
     },
     "kpi": {
-      "revenue": "Total Revenue",
+      "revenue": "Revenue (VAT Incl.)",
       "orders": "Orders",
       "avgOrderValue": "Average Order Value",
       "productsSold": "Products Sold",
@@ -3241,6 +3308,18 @@
     "productsLabel": "Items",
     "addProductBtn": "+ Add Item",
     "productNamePlaceholder": "Item name...",
+    "searchPlaceholder": "Search by name, SKU, or barcode...",
+    "skuLabel": "SKU",
+    "stockLabel": "Stock",
+    "priceLabel": "Price",
+    "unitLabel": "Unit",
+    "noProductsFound": "No products found",
+    "createSubtitle": "Pick a customer and type, search and add items, then save (stock is deducted automatically)",
+    "creditDesc": "Outstanding balance",
+    "loanDesc": "Awaiting return",
+    "dueDateOptional": "Optional",
+    "noItemsYet": "No items yet",
+    "noItemsHint": "Search products above to add",
     "pricePlaceholder": "Price",
     "qtyPlaceholder": "Qty",
     "colName": "Item",
@@ -3287,6 +3366,18 @@
     "loading": "Loading...",
     "createdSuccess": "Transaction created successfully",
     "paymentSuccess": "Payment recorded successfully",
-    "cancelSuccess": "Transaction cancelled"
+    "cancelSuccess": "Transaction cancelled",
+    "cancelFailed": "Failed to cancel transaction. Please try again.",
+    "noCustomersFound": "No customers found",
+    "stockExceeded": "Only {count} in stock",
+    "summaryItemsLabel": "Items",
+    "itemsUnit": "items",
+    "colRemove": "Remove",
+    "errInsufficientStock": "Insufficient stock for one or more items",
+    "errProductInactive": "One or more products are unavailable",
+    "errInvalidItem": "Quantity must be greater than 0",
+    "errProductNotFound": "Product not found",
+    "errOverpayment": "Payment exceeds the outstanding balance",
+    "errSaveFailed": "Could not save, please try again"
   }
 }

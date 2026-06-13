@@ -25,23 +25,20 @@ import {
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { toast } from "@/components/ui/toast";
 import type { CountDictionary } from "@/components/stock/inventory-types";
-import { getCurrentStoreId } from "@/lib/store-storage";
 import { listProducts, listProductTypes } from "@/services/products";
-import { adjustStock } from "@/services/stock-movements";
 import { listWarehouses } from "@/services/warehouses";
+import { applyCountSession, deleteCountSession, listCountSessions, saveCountSession } from "@/services/stock-count";
+import type {
+  CountAuditEntry,
+  CountItem,
+  CountSession,
+  CountStatus,
+  CountType,
+  VarianceReason,
+} from "@/types/stock-count";
 
-type CountStatus = "draft" | "counting" | "review" | "completed" | "cancelled";
-type CountType = "full" | "zone" | "category" | "cycle";
-type VarianceReason =
-  | ""
-  | "counting_error"
-  | "misplaced_product"
-  | "damaged_product"
-  | "missing_product"
-  | "receiving_not_recorded"
-  | "sale_not_recorded"
-  | "previous_adjustment_error"
-  | "other";
+// Stock-count worksheet types (CountStatus/CountType/VarianceReason) live in
+// @/types/stock-count (imported above) and are shared with the service layer.
 type CountRowStatus = "match" | "short" | "over" | "notCounted" | "skipped";
 type CountMode = "table" | "quick";
 type ReviewDisplayMode = "variance" | "all";
@@ -57,59 +54,7 @@ type QuickScanEntry = {
   status: CountRowStatus;
 };
 
-type CountAuditEntry = {
-  id: string;
-  productId: string;
-  productName: string;
-  systemQty: number;
-  countedQty: number;
-  difference: number;
-  reason: string;
-  user: string;
-  timestamp: string;
-};
-
-type CountItem = {
-  productId: string;
-  name: string;
-  sku: string;
-  barcode: string;
-  systemQty: number;
-  minStock: number;
-  location: string;
-  counted: number | null;
-  note: string;
-  skipped: boolean;
-  varianceReason: VarianceReason;
-  varianceReasonOther: string;
-  countUser: string;
-  countedAt: string | null;
-  costBasis: number;
-  adjusted: boolean;
-  adjustedAt: string | null;
-  adjustedBy: string;
-};
-
-type CountSession = {
-  id: string;
-  name: string;
-  warehouseName: string | null;
-  zone: string | null;
-  categoryId: string | null;
-  categoryName: string | null;
-  staff: string;
-  note: string;
-  status: CountStatus;
-  createdAt: string;
-  createdBy: string;
-  items: CountItem[];
-  countType: CountType;
-  cycleRule: string;
-  blindCount: boolean;
-  completedAt: string | null;
-  completedBy: string;
-  auditTrail: CountAuditEntry[];
-};
+// CountAuditEntry, CountItem and CountSession are imported from @/types/stock-count.
 
 type Props = { dictionary: CountDictionary; locale: string; autoStart?: boolean; initialStatus?: string };
 type View = "list" | "wizard";
@@ -271,6 +216,9 @@ function normalizeSession(s: Partial<CountSession> & { id: string; name: string;
 export function StockCountManager({ dictionary, locale, autoStart = false, initialStatus }: Props) {
   const t = dictionary;
   const [sessions, setSessions] = useState<CountSession[]>([]);
+  // Mirrors `sessions` so persist() can diff against the latest committed value
+  // synchronously. The server is the source of truth — localStorage is gone.
+  const sessionsRef = useRef<CountSession[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   // ?new=1 (from inventory "Start Count") opens the new-session wizard directly;
   // all wizard form fields already default to the same empty values openNewWizard() sets.
@@ -280,7 +228,6 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const storageKey = useMemo(() => `pos-count-sessions-${getCurrentStoreId() ?? "default"}`, []);
   const counterRef = useRef(0);
   const quickBarcodeRef = useRef<HTMLInputElement | null>(null);
   const quickQtyRef = useRef<HTMLInputElement | null>(null);
@@ -323,15 +270,21 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     [locale],
   );
 
+  const sessionsQuery = useQuery({
+    queryKey: ["count", "sessions"],
+    queryFn: async () => (await listCountSessions()).data,
+  });
+  const seededRef = useRef(false);
+  // Seed local state once from the server, then treat it as the working copy that
+  // persist() keeps in sync. Every terminal loads the same server-side sessions.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setSessions((JSON.parse(raw) as CountSession[]).map(normalizeSession));
-    } catch {
-      // ignore
-    }
-  }, [storageKey]);
+    if (seededRef.current || !sessionsQuery.data) return;
+    seededRef.current = true;
+    const loaded = sessionsQuery.data.map(normalizeSession);
+    sessionsRef.current = loaded;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSessions(loaded);
+  }, [sessionsQuery.data]);
 
   // Sync the list filter when the ?status= deep-link changes (notification click
   // while already on the count page). Adjusted during render via the prev-prop
@@ -345,12 +298,25 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     if (initialStatus === "pending" || initialStatus === "review") setView("list");
   }
 
+  // Optimistically update local state, then sync the delta to the server so every
+  // terminal converges on the same worksheet data. Replaces localStorage entirely.
   function persist(next: CountSession[]) {
+    const prev = sessionsRef.current;
+    sessionsRef.current = next;
     setSessions(next);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(next));
-    } catch {
-      // ignore
+
+    const prevById = new Map(prev.map((s) => [s.id, s]));
+    const nextIds = new Set(next.map((s) => s.id));
+    for (const session of next) {
+      const before = prevById.get(session.id);
+      if (!before || JSON.stringify(before) !== JSON.stringify(session)) {
+        void saveCountSession(session).catch(() => {});
+      }
+    }
+    for (const session of prev) {
+      if (!nextIds.has(session.id)) {
+        void deleteCountSession(session.id).catch(() => {});
+      }
     }
   }
 
@@ -964,36 +930,33 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
   async function applyCorrection() {
     if (!active || isPending || applyTargets.length === 0 || missingReasons > 0 || reviewBlocked) return;
+    setConfirmApply(false);
     startTransition(async () => {
-      let ok = 0;
       const now = new Date().toISOString();
-      const auditTrail: CountAuditEntry[] = [];
-      for (const item of applyTargets) {
-        const label = reasonText(item);
-        try {
-          await adjustStock({
-            productId: item.productId,
-            physicalQty: item.counted!,
-            note: `${t.review.applyNote} · ${active.name} · ${label || "-"} · ${item.sku || item.productId}`,
-            referenceId: active.id,
-            movementType: "COUNT_CORRECTION",
-          });
-          ok += 1;
-          auditTrail.push({
-            id: newId("audit"),
-            productId: item.productId,
-            productName: item.name,
-            systemQty: item.systemQty,
-            countedQty: item.counted ?? 0,
-            difference: variance(item),
-            reason: label,
-            user: activeUser,
-            timestamp: now,
-          });
-        } catch {
-          // keep going
-        }
+      const items = applyTargets.map((item) => ({
+        productId: item.productId,
+        countedQty: item.counted!,
+        note: `${t.review.applyNote} · ${active.name} · ${reasonText(item) || "-"} · ${item.sku || item.productId}`,
+      }));
+      try {
+        // ONE atomic backend transaction: every correction commits together or none
+        // does. No partial application, and the session completes only on success.
+        await applyCountSession(active.id, items);
+      } catch {
+        toast.error(t.review.applyError);
+        return; // session stays in review — nothing was applied
       }
+      const auditTrail: CountAuditEntry[] = applyTargets.map((item) => ({
+        id: newId("audit"),
+        productId: item.productId,
+        productName: item.name,
+        systemQty: item.systemQty,
+        countedQty: item.counted ?? 0,
+        difference: variance(item),
+        reason: reasonText(item),
+        user: activeUser,
+        timestamp: now,
+      }));
       updateActive((session) => ({
         ...session,
         status: "completed",
@@ -1011,9 +974,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
           };
         }),
       }));
-      toast.success(t.review.applied.replace("{n}", String(ok)));
-      if (ok < applyTargets.length) toast.error(t.review.applyError);
-      setConfirmApply(false);
+      toast.success(t.review.applied.replace("{n}", String(applyTargets.length)));
       backToList();
     });
   }
