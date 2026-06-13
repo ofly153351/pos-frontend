@@ -77,6 +77,8 @@ export type StockManagerDictionary = {
     storageNoLocations: string;
     storageCurrentLabel: string;
     storageClearLabel: string;
+    storageUnavailableLabel: string;
+    defaultLocationWarning: string;
     save: string;
     saving: string;
     setupSection: string;
@@ -417,6 +419,7 @@ export const initialProductFormState: ProductInput = {
   product_code: "",
   description: "",
   storage_location: "",
+  default_location_id: "",
   sku: "",
   barcode: "",
   special_price: "",

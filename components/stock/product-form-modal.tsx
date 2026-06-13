@@ -774,9 +774,13 @@ export function ProductFormDrawer({
               <div className="mt-4 space-y-4">
                 <FormSubsection optionalText={optionalText} title={formLabels.storageAssignmentSection}>
                   <StorageAssignmentCard
-                    value={formState.storage_location ?? ""}
-                    onChange={(value) =>
-                      onFormStateChange((current) => ({ ...current, storage_location: value }))
+                    value={formState.default_location_id ?? ""}
+                    onChange={(locationId, label) =>
+                      onFormStateChange((current) => ({
+                        ...current,
+                        default_location_id: locationId,
+                        storage_location: label,
+                      }))
                     }
                     labels={{
                       hint: formLabels.storageAssignmentHint,
@@ -790,8 +794,15 @@ export function ProductFormDrawer({
                       noLocations: formLabels.storageNoLocations,
                       currentLabel: formLabels.storageCurrentLabel,
                       clearLabel: formLabels.storageClearLabel,
+                      unavailableLabel: formLabels.storageUnavailableLabel,
                     }}
                   />
+                  {!formState.default_location_id ? (
+                    <p className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                      <span aria-hidden="true">⚠</span>
+                      <span>{formLabels.defaultLocationWarning}</span>
+                    </p>
+                  ) : null}
                 </FormSubsection>
 
                 <FormSubsection optionalText={optionalText} title={formLabels.descriptionLabel}>

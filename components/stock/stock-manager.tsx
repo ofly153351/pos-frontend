@@ -338,6 +338,7 @@ function resetProductForm() {
       product_code: product.product_code ?? "",
       description: product.description ?? "",
       storage_location: product.storage_location ?? "",
+      default_location_id: product.default_location_id ?? "",
       product_type_id: product.product_type_id ?? "",
       min_stock: product.min_stock != null ? String(product.min_stock) : "",
       sku: product.sku ?? "",

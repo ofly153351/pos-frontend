@@ -35,6 +35,13 @@ function buildProductFormData(input: ProductInput) {
   formData.set("description", input.description ?? "");
   formData.set("storage_location", input.storage_location ?? "");
 
+  // Authoritative default receiving/storage location (FK). Always sent so an
+  // edit can clear it (the clear flag lets the backend null the column).
+  formData.set("default_location_id", input.default_location_id ?? "");
+  if (!input.default_location_id) {
+    formData.set("clear_default_location", "true");
+  }
+
   formData.set("sku", input.sku ?? "");
   if (!input.sku) {
     formData.set("clear_sku", "true");

@@ -3,17 +3,20 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import { listLocations } from "@/services/locations";
+import { listLocations, type Location } from "@/services/locations";
 import { listWarehouses } from "@/services/warehouses";
 
 /**
  * StorageAssignmentCard
  * ---------------------
- * Optional, cascading Warehouse -> Zone -> Storage Location picker for the
- * product form. It is a MASTER-DATA hint only: choosing a location writes a
- * readable string into the product's existing `storage_location` field and
- * NEVER creates, reserves, or moves stock. Stock is owned by the Inventory /
- * Goods-Receiving modules.
+ * Cascading Warehouse -> Zone -> Location picker that assigns a product's
+ * AUTHORITATIVE default storage/receiving location. Its `value` is a real
+ * `locations.id` (products.default_location_id) — NOT a free-text label — and
+ * `onChange` returns both the id and a human-readable label so the parent can
+ * keep the legacy `storage_location` display field in sync. Choosing a location
+ * NEVER creates, reserves, or moves stock; it only records where Goods Receiving
+ * should add incoming stock for this product. Only active, non-sale-point
+ * locations (valid receiving destinations) are selectable.
  */
 
 export type StorageAssignmentLabels = {
@@ -28,6 +31,7 @@ export type StorageAssignmentLabels = {
   noLocations: string;
   currentLabel: string;
   clearLabel: string;
+  unavailableLabel: string;
 };
 
 const selectClass =
@@ -67,79 +71,106 @@ function FieldShell({
   );
 }
 
+function composeLabel(loc: Location, warehouseName: string): string {
+  const parts: string[] = [];
+  if (warehouseName) parts.push(warehouseName);
+  if (loc.zone_name) parts.push(loc.zone_name);
+  parts.push(loc.code ? `${loc.code} (${loc.name})` : loc.name);
+  return parts.join(" · ");
+}
+
 export function StorageAssignmentCard({
   value,
   onChange,
   labels,
 }: {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (locationId: string, label: string) => void;
   labels: StorageAssignmentLabels;
 }) {
+  // The cascading pickers intentionally start blank on edit (we never pre-seed
+  // them from `value`): pre-selecting would require syncing state from a prop in
+  // an effect, which this project's lint forbids (react-hooks/set-state-in-effect).
+  // The saved value is preserved and surfaced read-only in the summary card below.
   const [warehouseId, setWarehouseId] = useState("");
   const [zone, setZone] = useState("");
   const [locationId, setLocationId] = useState("");
 
   const warehousesQuery = useQuery({ queryKey: ["warehouses"], queryFn: listWarehouses });
-  const warehouses = Array.isArray(warehousesQuery.data?.data) ? warehousesQuery.data.data : [];
-
-  const locationsQuery = useQuery({
-    queryKey: ["storage-locations", warehouseId],
-    queryFn: async () => {
-      const res = await listLocations({ warehouseId });
-      return res.data?.items ?? [];
-    },
-    enabled: Boolean(warehouseId),
-  });
-  const locations = useMemo(
-    () => (locationsQuery.data ?? []).filter((l) => l.is_active),
-    [locationsQuery.data],
+  const warehouses = useMemo(
+    () => (Array.isArray(warehousesQuery.data?.data) ? warehousesQuery.data.data : []),
+    [warehousesQuery.data],
   );
 
+  // One fetch of all store locations: used both to resolve the saved `value`
+  // (a location id) to a display label and to drive the cascading picker.
+  const locationsQuery = useQuery({
+    queryKey: ["all-locations"],
+    queryFn: async () => (await listLocations({ limit: 500 })).data?.items ?? [],
+  });
+  const allLocations = useMemo(() => locationsQuery.data ?? [], [locationsQuery.data]);
+
+  const warehouseNameOf = useMemo(() => {
+    const map = new Map(warehouses.map((w) => [w.id, w.name] as const));
+    return (id: string) => map.get(id) ?? "";
+  }, [warehouses]);
+
+  // Only active, non-sale-point locations are valid receiving destinations.
+  const selectable = useMemo(
+    () => allLocations.filter((l) => l.is_active && !l.is_sale_point),
+    [allLocations],
+  );
+  const warehouseLocations = useMemo(
+    () => selectable.filter((l) => l.warehouse_id === warehouseId),
+    [selectable, warehouseId],
+  );
   const zones = useMemo(() => {
     const set = new Set<string>();
-    locations.forEach((l) => {
+    warehouseLocations.forEach((l) => {
       if (l.zone_name) set.add(l.zone_name);
     });
     return Array.from(set);
-  }, [locations]);
-
+  }, [warehouseLocations]);
   const zoneLocations = useMemo(
-    () => locations.filter((l) => (zone ? l.zone_name === zone : true)),
-    [locations, zone],
+    () => warehouseLocations.filter((l) => (zone ? l.zone_name === zone : true)),
+    [warehouseLocations, zone],
   );
 
-  // Compose a human-readable hint string from the current selection and emit it.
-  function emit(nextWarehouseId: string, nextZone: string, nextLocationId: string) {
-    const wh = warehouses.find((w) => w.id === nextWarehouseId);
-    const loc = locations.find((l) => l.id === nextLocationId);
-    const parts: string[] = [];
-    if (wh) parts.push(wh.name);
-    if (nextZone) parts.push(nextZone);
-    if (loc) parts.push(loc.code ? `${loc.code} (${loc.name})` : loc.name);
-    onChange(parts.join(" · "));
-  }
+  const selected = useMemo(
+    () => (value ? allLocations.find((l) => l.id === value) ?? null : null),
+    [allLocations, value],
+  );
+  const resolving = locationsQuery.isLoading || warehousesQuery.isLoading;
+  const selectedLabel = selected ? composeLabel(selected, warehouseNameOf(selected.warehouse_id)) : "";
+  // A saved id that does not resolve to an active, non-sale-point location.
+  const selectedUnavailable =
+    Boolean(value) && !resolving && (!selected || !selected.is_active || selected.is_sale_point);
 
   function handleWarehouse(id: string) {
     setWarehouseId(id);
     setZone("");
     setLocationId("");
-    emit(id, "", "");
   }
   function handleZone(z: string) {
     setZone(z);
     setLocationId("");
-    emit(warehouseId, z, "");
   }
   function handleLocation(id: string) {
     setLocationId(id);
-    emit(warehouseId, zone, id);
+    if (!id) {
+      // Picking the blank "— Select —" option commits a clear, so the visible
+      // dropdown never desyncs from the committed value (parity with Clear).
+      onChange("", "");
+      return;
+    }
+    const loc = allLocations.find((l) => l.id === id);
+    onChange(id, loc ? composeLabel(loc, warehouseNameOf(loc.warehouse_id)) : "");
   }
-  function clearAll() {
+  function clearSelection() {
     setWarehouseId("");
     setZone("");
     setLocationId("");
-    onChange("");
+    onChange("", "");
   }
 
   const hasWarehouses = warehouses.length > 0;
@@ -221,16 +252,26 @@ export function StorageAssignmentCard({
       )}
 
       {value ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+        <div
+          className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
+            selectedUnavailable ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-white"
+          }`}
+        >
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               {labels.currentLabel}
             </p>
-            <p className="truncate font-medium text-slate-800">{value}</p>
+            <p
+              className={`truncate font-medium ${
+                selectedUnavailable ? "text-amber-700" : "text-slate-800"
+              }`}
+            >
+              {selected ? selectedLabel : resolving ? "…" : labels.unavailableLabel}
+            </p>
           </div>
           <button
             className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
-            onClick={clearAll}
+            onClick={clearSelection}
             type="button"
           >
             {labels.clearLabel}

@@ -41,6 +41,7 @@ export type Product = {
   product_code?: string | null;
   description?: string | null;
   storage_location?: string | null;
+  default_location_id?: string | null;
   product_type?: ProductType | null;
   product_type_id?: string | null;
   product_type_name?: string | null;
@@ -87,6 +88,7 @@ export type ProductInput = {
   name: string;
   product_code?: string;
   storage_location?: string;
+  default_location_id?: string;
   product_type_id?: string;
   sku?: string;
   barcode?: string;
