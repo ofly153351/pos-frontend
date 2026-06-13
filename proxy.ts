@@ -9,8 +9,20 @@ function getLocale(pathname: string): string {
   return supportedLocales.includes(maybeLocale ?? "") ? maybeLocale! : defaultLocale;
 }
 
-function isWorkspacePath(pathname: string): boolean {
-  return /^\/(en|th)\/(dashboard|sales|stock|customers|documents|purchases|admin\/plans)(\/.*)?$/.test(pathname);
+// Pages intentionally reachable without authentication: the shop-facing
+// customer-display second screen (auth pages are handled by isAuthPath below).
+function isPublicLocalePath(pathname: string): boolean {
+  return /^\/(en|th)\/customer-display(\/.*)?$/.test(pathname);
+}
+
+// Whitelist the public exceptions instead of enumerating protected paths, so
+// routes added later are protected by default. Everything under /(en|th)/… needs
+// a session unless it is an auth page or an explicitly public page.
+function requiresAuth(pathname: string): boolean {
+  if (!/^\/(en|th)\/.+/.test(pathname)) return false;
+  if (isAuthPath(pathname)) return false;
+  if (isPublicLocalePath(pathname)) return false;
+  return true;
 }
 
 function isAuthPath(pathname: string): boolean {
@@ -40,7 +52,7 @@ export function proxy(request: NextRequest) {
   const storeId = request.cookies.get("pos-store-id")?.value;
 
   // Protected routes – no token → redirect to login
-  if (isWorkspacePath(pathname) && !accessToken) {
+  if (requiresAuth(pathname) && !accessToken) {
     const loginUrl = new URL(`/${locale}/login`, request.url);
     const response = NextResponse.redirect(loginUrl);
     response.cookies.delete("pos-access-token");
@@ -50,7 +62,7 @@ export function proxy(request: NextRequest) {
   }
 
   // Protected routes – no store selected → redirect to setup
-  if (isWorkspacePath(pathname) && accessToken && !storeId) {
+  if (requiresAuth(pathname) && accessToken && !storeId) {
     const setupUrl = new URL(`/${locale}/setup/store`, request.url);
     const response = NextResponse.redirect(setupUrl);
     response.headers.set("Cache-Control", "no-store, must-revalidate");
