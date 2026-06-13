@@ -32,6 +32,7 @@ import {
 
 import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
+import { canManageStore, useStoreRole } from "@/lib/use-store-role";
 import type { Locale } from "@/lib/locale-config";
 import { getStoreById, listMyStores } from "@/services/stores";
 
@@ -64,6 +65,7 @@ type UserWorkspaceSidebarProps = {
     storageLocations: string;
     receiptPayment: string;
     activityLogs: string;
+    staff: string;
     stockCategories: string;
     stockLevels: string;
     stockCount: string;
@@ -192,6 +194,11 @@ export function UserWorkspaceSidebar({
   shell,
 }: UserWorkspaceSidebarProps) {
   const pathname = usePathname();
+  // Store-scoped role (store_members.role) drives visibility of management-only
+  // nav groups (Reports & Finance, Settings, Staff). Operational groups stay
+  // visible to all member roles; the backend enforces real permissions.
+  const { role: storeRole } = useStoreRole();
+  const canManage = canManageStore(storeRole);
   const [storeName, setStoreName] = useState(shell.station);
   const [storeDescription, setStoreDescription] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
@@ -217,6 +224,7 @@ export function UserWorkspaceSidebar({
   const storageLocationsHref = `/${locale}/settings/storage-locations`;
   const receiptPaymentHref = `/${locale}/settings/receipt-payment`;
   const activityLogsHref = `/${locale}/settings/activity-logs`;
+  const staffHref = `/${locale}/settings/staff`;
   const isSettingsRoute = pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`);
   const isProductsRoute =
     pathname === stockBaseHref ||
@@ -250,7 +258,7 @@ export function UserWorkspaceSidebar({
   const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
   const reportsExpanded = !collapsed && (manualReportsExpanded || isReportsRoute);
   const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
-  const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === activityLogsHref ? "activity-logs" : "store-settings";
+  const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === activityLogsHref ? "activity-logs" : pathname === staffHref ? "staff" : "store-settings";
 
   useEffect(() => {
     let isMounted = true;
@@ -668,18 +676,20 @@ export function UserWorkspaceSidebar({
           )}
         </div>
 
-        {/* Reports & Finance group (single group per spec) */}
-        <CollapsibleNavGroup
-          collapsed={collapsed}
-          baseHref={reportsInventoryValueHref}
-          icon={<BarChart3 className="h-4 w-4" />}
-          label={labels.reports}
-          active={isReportsRoute}
-          expanded={reportsExpanded}
-          onToggle={() => setManualReportsExpanded((current) => !current)}
-          items={reportsItems}
-          activeKey={activeReportsKey}
-        />
+        {/* Reports & Finance group (single group per spec) — owner/manager only */}
+        {canManage ? (
+          <CollapsibleNavGroup
+            collapsed={collapsed}
+            baseHref={reportsInventoryValueHref}
+            icon={<BarChart3 className="h-4 w-4" />}
+            label={labels.reports}
+            active={isReportsRoute}
+            expanded={reportsExpanded}
+            onToggle={() => setManualReportsExpanded((current) => !current)}
+            items={reportsItems}
+            activeKey={activeReportsKey}
+          />
+        ) : null}
 
         {trailingNavItems.map((item) => {
           const isActive = pathname === item.href;
@@ -700,7 +710,8 @@ export function UserWorkspaceSidebar({
           );
         })}
 
-        {/* Settings section */}
+        {/* Settings section — owner/manager only */}
+        {canManage ? (
         <div className="space-y-1">
           <div
             className={`flex w-full items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
@@ -817,11 +828,29 @@ export function UserWorkspaceSidebar({
                     </span>
                     <span>{labels.activityLogs}</span>
                   </Link>
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      activeSettingsKey === "staff"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
+                    }`}
+                    href={staffHref}
+                  >
+                    <span
+                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
+                        activeSettingsKey === "staff" ? "bg-violet-700 text-violet-200" : "bg-violet-900/60 text-violet-400"
+                      }`}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.staff}</span>
+                  </Link>
                 </div>
               </div>
             </div>
           ) : null}
         </div>
+        ) : null}
       </nav>
 
       <div className="mt-auto">

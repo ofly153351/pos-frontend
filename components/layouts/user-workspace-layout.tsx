@@ -47,6 +47,7 @@ type UserWorkspaceLayoutProps = {
     storageLocations: string;
     receiptPayment: string;
     activityLogs: string;
+    staff: string;
     storeLabel: string;
     stockCategories: string;
     stockLevels: string;
@@ -83,6 +84,7 @@ type UserWorkspaceLayoutProps = {
     financePnl?: string;
     sales: string;
     settings: string;
+    staff?: string;
     stock: string;
     stockCategories: string;
     stockWarehouses: string;
@@ -165,9 +167,10 @@ export function UserWorkspaceLayout({
     if (pathname.includes("/stock")) return titles.stock;
     if (pathname.includes("/purchases/suppliers")) return titles.suppliers;
     if (pathname.includes("/purchases")) return titles.purchaseOrders;
+    if (pathname.includes("/settings/staff")) return titles.staff ?? shell.staff;
     if (pathname.includes("/settings")) return titles.settings;
     return titles.dashboard;
-  }, [pathname, titles, shell.promotions, shell.editProfile, shell.reports, shell.reportsSummary, shell.finance, shell.financePnl]);
+  }, [pathname, titles, shell.promotions, shell.editProfile, shell.reports, shell.reportsSummary, shell.finance, shell.financePnl, shell.staff]);
 
   return (
     <div className="h-screen overflow-hidden bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
@@ -197,6 +200,7 @@ export function UserWorkspaceLayout({
           storageLocations: shell.storageLocations,
           receiptPayment: shell.receiptPayment,
           activityLogs: shell.activityLogs,
+          staff: shell.staff,
           stockCategories: shell.stockCategories,
           stockWarehouses: shell.stockWarehouses,
           stockLevels: shell.stockLevels,

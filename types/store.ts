@@ -10,6 +10,9 @@ export type Store = {
   logo_url?: string | null;
   name: string;
   owner_user_id?: string;
+  // Caller's store_members.role for THIS store (owner/manager/cashier/warehouse),
+  // populated by /me/stores. Source of truth for store-scoped UI permissions.
+  role?: string | null;
   phone?: string | null;
   promptpay_id?: string | null;
   tax_id?: string | null;

@@ -456,8 +456,14 @@ export function ProfileManager({ dictionary, locale }: ProfileManagerProps) {
                 <p className="mt-1 text-xs text-slate-400">{dictionary.usernameHint}</p>
               </div>
 
-              <div className="flex justify-end pt-1">
-                <button className={primaryButtonClass} type="submit">
+              {/* TODO(backend): re-enable once PUT /api/me ships — flip CAN_UPDATE_PROFILE. */}
+              <div className="flex items-center justify-end gap-3 pt-1">
+                {!CAN_UPDATE_PROFILE && (
+                  <span className="text-xs font-medium text-amber-600">
+                    {dictionary.profileSavedLocalNote}
+                  </span>
+                )}
+                <button className={primaryButtonClass} disabled={!CAN_UPDATE_PROFILE} type="submit">
                   <Save className="h-4 w-4" />
                   {dictionary.saveChanges}
                 </button>
@@ -504,8 +510,18 @@ export function ProfileManager({ dictionary, locale }: ProfileManagerProps) {
                   />
                 </div>
               </div>
-              <div className="flex justify-end pt-1">
-                <button className={primaryButtonClass} disabled={isSavingPassword} type="submit">
+              {/* TODO(backend): re-enable once PUT /api/me/password ships — flip CAN_CHANGE_PASSWORD. */}
+              <div className="flex items-center justify-end gap-3 pt-1">
+                {!CAN_CHANGE_PASSWORD && (
+                  <span className="text-xs font-medium text-amber-600">
+                    {dictionary.passwordPendingBackend}
+                  </span>
+                )}
+                <button
+                  className={primaryButtonClass}
+                  disabled={isSavingPassword || !CAN_CHANGE_PASSWORD}
+                  type="submit"
+                >
                   <ShieldCheck className="h-4 w-4" />
                   {isSavingPassword ? dictionary.updating : dictionary.updatePassword}
                 </button>

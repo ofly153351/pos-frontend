@@ -37,6 +37,7 @@ import {
 
 import { getDashboard } from "@/services/dashboard";
 import { getExpenseSummary } from "@/services/expenses";
+import { useStoreRole } from "@/lib/use-store-role";
 import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import type {
   DashboardPeriod,
@@ -299,6 +300,19 @@ function trendPercent(current: number, previous: number): number | null {
   return ((current - previous) / previous) * 100;
 }
 
+// Store timezone offset (Asia/Bangkok = UTC+7, no DST). Buckets a sale instant into
+// the same Bangkok calendar day the backend uses (`AT TIME ZONE 'Asia/Bangkok'`), so
+// near-midnight sales land on the same business day across Dashboard, P&L and Summary.
+const BKK_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+function toBangkokDay(iso: string): string {
+  const bkk = new Date(new Date(iso).getTime() + BKK_OFFSET_MS);
+  const y = bkk.getUTCFullYear();
+  const m = String(bkk.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(bkk.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function formatDateRange(locale: string, period: FilterPeriod, fromDate?: string, toDate?: string): string {
   const tag = toLocaleTag(locale);
   const now = new Date();
@@ -423,7 +437,16 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
   const [toDate, setToDate] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState<ChartMetric>("revenue");
-  const [role] = useState<UserRole>("owner");
+  // Dashboard view is driven by the STORE-scoped role (store_members.role), not
+  // the global users.role. Owner/manager get the full view; warehouse and cashier
+  // get their reduced section sets. Unknown role defaults to least-privilege.
+  const { role: storeRole } = useStoreRole();
+  const role: UserRole =
+    storeRole === "owner" || storeRole === "manager"
+      ? "owner"
+      : storeRole === "warehouse"
+        ? "warehouse"
+        : "cashier";
 
   const [data, setData] = useState<StoreDashboard | null>(null);
   const [prevData, setPrevData] = useState<StoreDashboard | null>(null);
@@ -533,8 +556,8 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
     const byDate = new Map<string, { revenue: number; orders: number; date: Date }>();
 
     for (const sale of sales) {
-      const date = new Date(sale.sold_at);
-      const key = date.toISOString().slice(0, 10);
+      const key = toBangkokDay(sale.sold_at);
+      const date = new Date(`${key}T00:00:00+07:00`);
       const existing = byDate.get(key);
       const amount = sale.total_amount ?? 0;
       if (existing) {
