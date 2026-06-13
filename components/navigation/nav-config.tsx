@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Layers3,
   Package,
-  PackagePlus,
   ReceiptText,
   Settings2,
   ShoppingCart,
@@ -63,7 +62,6 @@ export const NAV_ENTRIES: NavEntry[] = [
     href: (l) => `/${l}/inventory`,
     children: [
       { key: "stock-levels", icon: <Layers3 className="h-3.5 w-3.5" />, href: (l) => `/${l}/inventory` },
-      { key: "receive-goods", icon: <PackagePlus className="h-3.5 w-3.5" />, href: (l) => `/${l}/warehouse/receive` },
       { key: "warehouse-overview", icon: <LayoutDashboard className="h-3.5 w-3.5" />, href: (l) => `/${l}/warehouse/overview` },
       { key: "warehouses", icon: <Warehouse className="h-3.5 w-3.5" />, href: (l) => `/${l}/stock/warehouses` },
     ],

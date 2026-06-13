@@ -667,7 +667,7 @@ function buildAlertRows(
       severity: "info",
       title: t.items.pendingTransfer,
       detail: formatNumber(pendingTransfers, locale),
-      href: `/${locale}/warehouse/receive`,
+      href: `/${locale}/purchases?tab=goods-receipts`,
     });
   }
 
@@ -902,7 +902,7 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardPro
       label: t.actionCenter.items.pendingTransfer,
       value: pendingTransfers,
       helper: t.actionCenter.helpers.pendingTransfer,
-      href: `/${locale}/warehouse/receive`,
+      href: `/${locale}/purchases?tab=goods-receipts`,
       tone: pendingTransfers > 0 ? "info" : "info",
       icon: <ArrowLeftRight className="h-4 w-4" />,
     },

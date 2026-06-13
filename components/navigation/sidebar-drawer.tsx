@@ -20,10 +20,14 @@ export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: S
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const activeExpanded = useMemo(() => {
+    // Receipt editor routes activate the consolidated Purchasing / Receiving group.
+    const receiveBase = `/${locale}/warehouse/receive`;
+    const onReceive = pathname === receiveBase || pathname.startsWith(`${receiveBase}/`);
     return NAV_ENTRIES.reduce<Record<string, boolean>>((groups, entry) => {
       if (!isNavGroup(entry)) return groups;
       const base = entry.href(locale);
-      groups[entry.key] = pathname === base || pathname.startsWith(`${base}/`);
+      const onBase = pathname === base || pathname.startsWith(`${base}/`);
+      groups[entry.key] = entry.key === "purchasing" ? onBase || onReceive : onBase;
       return groups;
     }, {});
   }, [locale, pathname]);
@@ -76,7 +80,12 @@ export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: S
 
               if (isNavGroup(entry)) {
                 const base = entry.href(locale);
-                const groupActive = pathname === base || pathname.startsWith(`${base}/`);
+                const receiveBase = `/${locale}/warehouse/receive`;
+                const onReceive =
+                  entry.key === "purchasing" &&
+                  (pathname === receiveBase || pathname.startsWith(`${receiveBase}/`));
+                const groupActive =
+                  pathname === base || pathname.startsWith(`${base}/`) || onReceive;
                 const isExpanded = expanded[entry.key] ?? activeExpanded[entry.key] ?? false;
 
                 return (

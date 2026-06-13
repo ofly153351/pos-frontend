@@ -17,7 +17,6 @@ import {
   Megaphone,
   Package,
   ClipboardCheck,
-  PackagePlus,
   ReceiptText,
   Scale,
   ScrollText,
@@ -230,18 +229,27 @@ export function UserWorkspaceSidebar({
     pathname === stockBaseHref ||
     pathname === stockCategoriesHref ||
     pathname.startsWith(`${stockCategoriesHref}/`);
+  // Warehouse/Stock owns inventory levels, counts, the warehouse dashboard and
+  // warehouses — but NOT the receipt editor (which moved under Purchasing/Receiving).
   const isStockRoute =
     pathname === inventoryLevelsHref ||
     pathname.startsWith(`${inventoryLevelsHref}/`) ||
-    pathname.startsWith(`/${locale}/warehouse/`) ||
+    pathname === warehouseOverviewHref ||
+    pathname.startsWith(`${warehouseOverviewHref}/`) ||
     pathname === stockWarehousesHref ||
     pathname.startsWith(`${stockWarehousesHref}/`);
   const isDocumentsRoute =
     pathname === documentsBaseHref ||
     pathname.startsWith(`${documentsBaseHref}/`);
+  // Receipt editor routes (/warehouse/receive, /warehouse/receive/new,
+  // /warehouse/receive/[id], …) now activate the consolidated Purchasing / Receiving section.
+  const isReceivingRoute =
+    pathname === warehouseReceiveHref ||
+    pathname.startsWith(`${warehouseReceiveHref}/`);
   const isPurchasingRoute =
     pathname === purchasesBaseHref ||
-    pathname.startsWith(`${purchasesBaseHref}/`);
+    pathname.startsWith(`${purchasesBaseHref}/`) ||
+    isReceivingRoute;
   // Reports & Finance live in ONE nav group — /reports/* and /finance/* both activate it.
   const isReportsRoute =
     pathname === reportsBaseHref ||
@@ -339,21 +347,18 @@ export function UserWorkspaceSidebar({
     () => [
       { href: inventoryLevelsHref, key: "stock-levels", label: labels.stockLevels, icon: <Layers3 className="h-3.5 w-3.5" /> },
       { href: stockCountHref, key: "stock-count", label: labels.stockCount, icon: <ClipboardCheck className="h-3.5 w-3.5" /> },
-      { href: warehouseReceiveHref, key: "receive-goods", label: labels.receiveGoods, icon: <PackagePlus className="h-3.5 w-3.5" /> },
       { href: warehouseOverviewHref, key: "warehouse-overview", label: labels.warehouseOverview, icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
       { href: stockWarehousesHref, key: "warehouses", label: labels.stockWarehouses, icon: <Warehouse className="h-3.5 w-3.5" /> },
     ],
     [
       inventoryLevelsHref,
       stockCountHref,
-      labels.receiveGoods,
       labels.stockCount,
       labels.stockLevels,
       labels.stockWarehouses,
       labels.warehouseOverview,
       stockWarehousesHref,
       warehouseOverviewHref,
-      warehouseReceiveHref,
     ],
   );
 
@@ -389,13 +394,11 @@ export function UserWorkspaceSidebar({
     ? ""
     : pathname === stockCountHref || pathname.startsWith(`${stockCountHref}/`)
       ? "stock-count"
-      : pathname === warehouseReceiveHref || pathname.startsWith(`${warehouseReceiveHref}/`)
-        ? "receive-goods"
-        : pathname === warehouseOverviewHref || pathname.startsWith(`${warehouseOverviewHref}/`)
-          ? "warehouse-overview"
-          : pathname === stockWarehousesHref || pathname.startsWith(`${stockWarehousesHref}/`)
-            ? "warehouses"
-            : "stock-levels";
+      : pathname === warehouseOverviewHref || pathname.startsWith(`${warehouseOverviewHref}/`)
+        ? "warehouse-overview"
+        : pathname === stockWarehousesHref || pathname.startsWith(`${stockWarehousesHref}/`)
+          ? "warehouses"
+          : "stock-levels";
   const activeDocumentsKey = !isDocumentsRoute
     ? ""
     : pathname === documentsPendingHref

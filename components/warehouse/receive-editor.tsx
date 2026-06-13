@@ -470,7 +470,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   function handleCancel() {
     setIsCancelOpen(false);
     startTransition(async () => {
-      try { await cancelGoodsReceipt(receiptId); await refresh(); toast.success(t.badgeCancelled); router.push(`/${locale}/warehouse/receive`); }
+      try { await cancelGoodsReceipt(receiptId); await refresh(); toast.success(t.badgeCancelled); router.push(`/${locale}/purchases?tab=goods-receipts`); }
       catch (e) { const m = e instanceof Error ? e.message : t.stateSaving; setError(m); toast.error(m); }
     });
   }
@@ -502,7 +502,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-4 rounded-3xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
         <p>{receiptQuery.error instanceof Error ? receiptQuery.error.message : t.stateNoReceipt}</p>
-        <Link className="inline-flex w-fit items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 font-semibold text-rose-700 hover:bg-rose-100" href={`/${locale}/warehouse/receive`}>{t.actionBackToList}</Link>
+        <Link className="inline-flex w-fit items-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2 font-semibold text-rose-700 hover:bg-rose-100" href={`/${locale}/purchases?tab=goods-receipts`}>{t.actionBackToList}</Link>
       </div>
     );
   }
@@ -529,7 +529,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
         </div>
         <div className="flex items-center gap-3">
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge.cls}`}>{statusBadge.label}</span>
-          <Link className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50" href={`/${locale}/warehouse/receive`}>
+          <Link className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50" href={`/${locale}/purchases?tab=goods-receipts`}>
             <ArrowLeft className="h-4 w-4" />{t.actionBackToList}
           </Link>
         </div>

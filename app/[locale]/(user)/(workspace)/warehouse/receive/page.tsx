@@ -1,13 +1,14 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
-import { ReceiveGoodsIndexPage } from "@/components/warehouse/receive-goods-flow";
-import { getDictionary } from "@/lib/i18n";
-import { isSupportedLocale, type Locale } from "@/lib/locale-config";
+import { isSupportedLocale } from "@/lib/locale-config";
 
 type WarehouseReceiveIndexPageProps = {
   params: Promise<{ locale: string }>;
 };
 
+// Phase 3D: the standalone Goods Receiving list moved into the unified
+// Purchasing / Receiving workspace. Redirect (server-side, no client flash) to
+// its Goods Receipts tab. Receipt editor routes (/new, /[id]) stay live.
 export default async function WarehouseReceiveIndexPage({ params }: WarehouseReceiveIndexPageProps) {
   const { locale } = await params;
 
@@ -15,7 +16,5 @@ export default async function WarehouseReceiveIndexPage({ params }: WarehouseRec
     notFound();
   }
 
-  const dictionary = await getDictionary(locale as Locale);
-
-  return <ReceiveGoodsIndexPage dictionary={dictionary.stock.receiveGoods} locale={locale} />;
+  redirect(`/${locale}/purchases?tab=goods-receipts`);
 }

@@ -760,7 +760,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
         <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 xl:grid-cols-6">
           {([
             { href: `/${locale}/sales`, icon: ShoppingCart, label: t.quickActions.openPos, desc: t.quickActions.openPosDesc, iconBg: "bg-violet-600", hoverColor: "group-hover:text-violet-500" },
-            { href: `/${locale}/stock/receive`, icon: Package, label: t.quickActions.receiveStock, desc: t.quickActions.receiveStockDesc, iconBg: "bg-emerald-500", hoverColor: "group-hover:text-emerald-500" },
+            { href: `/${locale}/purchases?tab=goods-receipts`, icon: Package, label: t.quickActions.receiveStock, desc: t.quickActions.receiveStockDesc, iconBg: "bg-emerald-500", hoverColor: "group-hover:text-emerald-500" },
             { href: `/${locale}/inventory/counts`, icon: ClipboardCheck, label: t.quickActions.stockCount, desc: t.quickActions.stockCountDesc, iconBg: "bg-amber-500", hoverColor: "group-hover:text-amber-500" },
             { href: `/${locale}/customers`, icon: Users, label: t.quickActions.customers, desc: t.quickActions.customersDesc, iconBg: "bg-fuchsia-500", hoverColor: "group-hover:text-fuchsia-500" },
             { href: `/${locale}/documents`, icon: FileText, label: t.quickActions.createQuotation, desc: t.quickActions.createQuotationDesc, iconBg: "bg-indigo-500", hoverColor: "group-hover:text-indigo-500" },

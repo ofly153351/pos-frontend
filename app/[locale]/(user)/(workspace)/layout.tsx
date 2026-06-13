@@ -41,7 +41,7 @@ export default async function WorkspaceLayout({
         masterData: dictionary.stock.shell.masterData,
         promotions: dictionary.stock.shell.promotions,
         logout: dictionary.stock.shell.logout,
-        purchasing: dictionary.purchasing.title,
+        purchasing: dictionary.stock.shell.purchasingReceiving,
         purchaseOrders: dictionary.purchasing.purchaseOrders,
         reports: dictionary.stock.shell.reports,
         reportsInventoryValue: dictionary.stock.shell.reportsInventoryValue,
