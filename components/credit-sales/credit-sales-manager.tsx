@@ -760,29 +760,49 @@ export function CreditSalesManager({
                 <div className="mb-3">
                   <ProductCombobox
                     products={products}
+                    cartQtyOf={(id) =>
+                      createItems.find((i) => i.product_id === id)?.quantity ?? 0
+                    }
                     labels={{
                       searchPlaceholder: dictionary.searchPlaceholder,
                       skuLabel: dictionary.skuLabel,
                       stockLabel: dictionary.stockLabel,
-                      priceLabel: dictionary.priceLabel,
-                      unitLabel: dictionary.unitLabel,
                       noProductsFound: dictionary.noProductsFound,
-                      addBtn: dictionary.addProductBtn,
                       stockExceeded: dictionary.stockExceeded,
                     }}
                     onAdd={(pick: ProductPick) =>
-                      setCreateItems((prev) => [
-                        ...prev,
-                        {
-                          id: `${pick.product_id}-${prev.length}`,
-                          product_id: pick.product_id,
-                          product_name: pick.product_name,
-                          unit: pick.unit,
-                          price: pick.price,
-                          quantity: pick.quantity,
-                          total: pick.total,
-                        },
-                      ])
+                      setCreateItems((prev) => {
+                        const stock =
+                          products.find((p) => p.id === pick.product_id)?.total_stock ??
+                          Number.MAX_SAFE_INTEGER;
+                        const existing = prev.find((it) => it.product_id === pick.product_id);
+                        // Re-selecting the same product bumps its quantity (capped at
+                        // available stock) instead of creating a duplicate row.
+                        if (existing) {
+                          const nextQty = Math.min(
+                            existing.quantity + pick.quantity,
+                            Math.max(1, stock),
+                          );
+                          return prev.map((it) =>
+                            it.product_id === pick.product_id
+                              ? { ...it, quantity: nextQty, total: it.price * nextQty }
+                              : it,
+                          );
+                        }
+                        const qty = Math.min(pick.quantity, Math.max(1, stock));
+                        return [
+                          ...prev,
+                          {
+                            id: pick.product_id,
+                            product_id: pick.product_id,
+                            product_name: pick.product_name,
+                            unit: pick.unit,
+                            price: pick.price,
+                            quantity: qty,
+                            total: pick.price * qty,
+                          },
+                        ];
+                      })
                     }
                   />
                 </div>
@@ -1003,8 +1023,8 @@ export function CreditSalesManager({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
-                      {viewSale.items.map((item) => (
-                        <tr key={item.id}>
+                      {viewSale.items.map((item, index) => (
+                        <tr key={`${item.id ?? item.product_id ?? item.product_name}-${index}`}>
                           <td className="px-3 py-2 text-slate-900">
                             <span className="block max-w-[180px] truncate" title={item.product_name}>{item.product_name}</span>
                           </td>
@@ -1025,8 +1045,8 @@ export function CreditSalesManager({
                   <p className="text-sm text-slate-400">{dictionary.detailNoPayments}</p>
                 ) : (
                   <div className="space-y-2">
-                    {viewSale.payments.map((pay) => (
-                      <div key={pay.id} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3">
+                    {viewSale.payments.map((pay, index) => (
+                      <div key={`${pay.id ?? "pay"}-${index}`} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3">
                         <div>
                           <p className="text-sm font-medium text-slate-900">{fmtBaht(pay.amount)}</p>
                           <p className="text-xs text-slate-500">

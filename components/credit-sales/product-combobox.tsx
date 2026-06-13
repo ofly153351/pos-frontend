@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Minus, Package, Plus, Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 
 import type { Product } from "@/types/product";
 
@@ -22,11 +22,8 @@ export type ProductComboboxLabels = {
   searchPlaceholder: string;
   skuLabel: string;
   stockLabel: string;
-  priceLabel: string;
-  unitLabel: string;
   noProductsFound: string;
-  addBtn: string;
-  stockExceeded: string; // uses {count} — shown when qty exceeds available stock
+  stockExceeded: string; // uses {count} — shown when stock is 0 or already maxed in the cart
 };
 
 function baht(n: number): string {
@@ -37,26 +34,35 @@ function unitOf(p: Product): string {
   return p.unit_type ?? p.product_unit_name ?? "";
 }
 
-// Searchable product picker (name / SKU / barcode), POS-friendly: large touch
-// targets, scanner auto-match, qty stepper, and a compact summary card.
+// An unset total_stock is treated as "not stock-tracked" → unlimited, matching the
+// parent's cap convention; the backend is the real gate (it deducts on save).
+function stockOf(p: Product): number {
+  return p.total_stock ?? Number.MAX_SAFE_INTEGER;
+}
+
+// POS-style product picker. Searching shows a dropdown; selecting a result — by
+// click, Enter, or barcode scan (scanner sends the code + a trailing Enter) — adds
+// it straight into the transaction at quantity 1 (the parent dedupes/increments).
+// There is NO intermediate confirm card: quantity is adjusted in the item table.
 export function ProductCombobox({
   products,
   labels,
   onAdd,
+  cartQtyOf,
 }: {
   products: Product[];
   labels: ProductComboboxLabels;
   onAdd: (pick: ProductPick) => void;
+  // Current quantity of a product already in the transaction — lets the picker
+  // warn (instead of silently clamping) when the item is already at its stock cap.
+  cartQtyOf?: (productId: string) => number;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
-  const [selected, setSelected] = useState<Product | null>(null);
-  const [qty, setQty] = useState(1);
+  const [notice, setNotice] = useState("");
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // True right after a barcode auto-add, so the scanner's trailing Enter is ignored.
-  const justScannedRef = useRef(false);
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -81,20 +87,25 @@ export function ProductCombobox({
     return () => window.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  function pick(product: Product) {
-    setSelected(product);
-    setQty(1);
-    setQuery("");
-    setOpen(false);
+  // True when the product can't be added right now (no stock, or the cart already
+  // holds every available unit).
+  function blockedReason(product: Product): number | null {
+    const stock = stockOf(product);
+    const inCart = cartQtyOf?.(product.id) ?? 0;
+    if (stock < 1 || inCart >= stock) return stock < 1 ? 0 : stock;
+    return null;
   }
 
-  // Add a product immediately at qty 1 (Enter / barcode path), then clear and
-  // refocus the box for the next scan. Out-of-stock products are selected instead
-  // so the stock warning shows rather than the add silently doing nothing.
-  function quickAdd(product: Product) {
-    const maxStock = product.total_stock ?? 0;
-    if (maxStock < 1) {
-      pick(product);
+  // Add the product into the transaction at qty 1, then clear + refocus the box for
+  // the next search/scan. Blocked products (out of stock / already maxed) show a
+  // brief notice instead of being added.
+  function add(product: Product) {
+    const blocked = blockedReason(product);
+    if (blocked !== null) {
+      setNotice(`${product.name} · ${labels.stockExceeded.replace("{count}", String(blocked))}`);
+      setQuery("");
+      setActive(0);
+      setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
     const price = Number(product.base_price ?? 0);
@@ -106,8 +117,7 @@ export function ProductCombobox({
       quantity: 1,
       total: price,
     });
-    setSelected(null);
-    setQty(1);
+    setNotice("");
     setQuery("");
     setActive(0);
     setOpen(false);
@@ -115,19 +125,10 @@ export function ProductCombobox({
   }
 
   function handleQuery(value: string) {
-    justScannedRef.current = false;
+    setNotice("");
     setQuery(value);
     setOpen(true);
     setActive(0);
-    // Barcode/SKU scanner: an exact match adds the product immediately.
-    const t = value.trim();
-    if (t.length >= 6) {
-      const exact = products.find((p) => (p.barcode ?? "") === t || (p.sku ?? "") === t);
-      if (exact) {
-        justScannedRef.current = true;
-        quickAdd(exact);
-      }
-    }
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -143,47 +144,22 @@ export function ProductCombobox({
       setActive((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      // Swallow the scanner's trailing Enter (the barcode already auto-added).
-      if (justScannedRef.current) {
-        justScannedRef.current = false;
-        return;
-      }
       const t = query.trim();
       if (!t) return;
+      // Barcode/SKU scan (or typed code): an exact match adds that product; the
+      // scanner's trailing Enter is what triggers the add, so a code that is a
+      // prefix of a longer one can never auto-fire mid-stream.
       const exact = products.find((p) => (p.barcode ?? "") === t || (p.sku ?? "") === t);
       if (exact) {
-        quickAdd(exact);
+        add(exact);
         return;
       }
-      if (results[active]) quickAdd(results[active]);
+      // Otherwise Enter adds the highlighted result instantly.
+      if (results[active]) add(results[active]);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
   }
-
-  function commit() {
-    if (!selected) return;
-    const price = Number(selected.base_price ?? 0);
-    const maxStock = selected.total_stock ?? 0;
-    const q = Math.max(1, Math.floor(qty));
-    if (q > maxStock) return; // never add more than is in stock — backend deducts immediately
-    onAdd({
-      product_id: selected.id,
-      product_name: selected.name,
-      unit: unitOf(selected) || undefined,
-      price,
-      quantity: q,
-      total: price * q,
-    });
-    setSelected(null);
-    setQty(1);
-    setQuery("");
-  }
-
-  const selPrice = selected ? Number(selected.base_price ?? 0) : 0;
-  const selUnit = selected ? unitOf(selected) : "";
-  const selStock = selected?.total_stock ?? 0;
-  const exceedsStock = !!selected && qty > selStock;
 
   return (
     <div ref={boxRef} className="relative">
@@ -201,36 +177,42 @@ export function ProductCombobox({
         />
       </div>
 
-      {/* Results dropdown (capped) */}
+      {notice ? <p className="mt-1.5 text-xs font-medium text-rose-600">{notice}</p> : null}
+
+      {/* Results dropdown (capped) — click/Enter adds straight to the table */}
       {open ? (
         <div className="absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
           {results.length === 0 ? (
             <div className="px-3 py-6 text-center text-sm text-slate-400">{labels.noProductsFound}</div>
           ) : (
             <>
-              {results.map((p, i) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  title={p.name}
-                  onMouseEnter={() => setActive(i)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    pick(p);
-                  }}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition ${
-                    i === active ? "bg-violet-50" : "hover:bg-slate-50"
-                  }`}
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-slate-900">{p.name}</p>
-                    <p className="mt-0.5 truncate text-xs text-slate-500">
-                      {labels.skuLabel}: {p.sku || "—"} · {labels.stockLabel}: {p.total_stock ?? 0}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-sm font-semibold text-violet-700">{baht(Number(p.base_price ?? 0))}</span>
-                </button>
-              ))}
+              {results.map((p, i) => {
+                const stock = p.total_stock ?? 0;
+                const blocked = blockedReason(p) !== null;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    title={p.name}
+                    onMouseEnter={() => setActive(i)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      add(p);
+                    }}
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition ${
+                      i === active ? "bg-violet-50" : "hover:bg-slate-50"
+                    } ${blocked ? "opacity-50" : ""}`}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">{p.name}</p>
+                      <p className="mt-0.5 truncate text-xs text-slate-500">
+                        {labels.skuLabel}: {p.sku || "—"} · {labels.stockLabel}: {stock}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm font-semibold text-violet-700">{baht(Number(p.base_price ?? 0))}</span>
+                  </button>
+                );
+              })}
               {matches.length > MAX_RESULTS ? (
                 <div className="px-3 py-2 text-center text-[11px] text-slate-400">
                   {results.length} / {matches.length}
@@ -238,84 +220,6 @@ export function ProductCombobox({
               ) : null}
             </>
           )}
-        </div>
-      ) : null}
-
-      {/* Selected product summary + qty stepper + add */}
-      {selected ? (
-        <div className="mt-3 rounded-xl border border-violet-200 bg-violet-50/40 p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-2">
-              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
-                <Package className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-slate-900" title={selected.name}>{selected.name}</p>
-                <p className="mt-0.5 text-xs text-slate-500">
-                  {labels.skuLabel}: {selected.sku || "—"} · {labels.stockLabel}: {selected.total_stock ?? 0}
-                  {selUnit ? ` · ${labels.unitLabel}: ${selUnit}` : ""}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelected(null)}
-              className="shrink-0 rounded p-1 text-slate-400 transition hover:bg-white hover:text-slate-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">{labels.priceLabel}</span>
-              <span className="text-base font-bold text-violet-700">{baht(selPrice)}</span>
-            </div>
-            {/* POS-style quantity stepper */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"
-                aria-label="decrease"
-              >
-                <Minus className="h-4 w-4" />
-              </button>
-              <input
-                className="h-10 w-14 rounded-lg border border-slate-200 text-center text-sm font-semibold outline-none focus:border-violet-500"
-                inputMode="numeric"
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  setQty(Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1);
-                }}
-                value={qty}
-              />
-              <button
-                type="button"
-                onClick={() => setQty((q) => (selStock > 0 ? Math.min(selStock, q + 1) : q))}
-                disabled={qty >= selStock}
-                className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="increase"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {exceedsStock ? (
-            <p className="mt-2 text-center text-xs font-medium text-rose-600">
-              {labels.stockExceeded.replace("{count}", String(selStock))}
-            </p>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={commit}
-            disabled={exceedsStock}
-            className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-violet-700 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Check className="h-4 w-4" /> {labels.addBtn}
-          </button>
         </div>
       ) : null}
     </div>
