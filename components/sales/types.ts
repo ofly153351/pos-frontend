@@ -3,6 +3,7 @@ export type ProductViewMode = "grid" | "list";
 export type SalesDictionary = {
   addButton: string;
   cartTitle: string;
+  couponLabel: string;
   changeLabel: string;
   checkoutButton: string;
   checkoutSectionTitle: string;

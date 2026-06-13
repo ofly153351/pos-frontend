@@ -10,7 +10,10 @@ export type SaleItemInput = {
 
 export type CreateSaleInput = {
   customer_id?: string;
-  discount_bill?: number;
+  discount_bill?: number; // deprecated: kept during rollout, treated as manual_discount by the backend
+  manual_discount?: number;
+  promo_discount?: number;
+  promotion_ids?: string[];
   items: SaleItemInput[];
   note?: string;
   paid_amount: number;

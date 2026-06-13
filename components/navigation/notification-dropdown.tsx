@@ -12,8 +12,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { getCurrentStoreId } from "@/lib/store-storage";
 import { listProducts } from "@/services/products";
+import { listCountSessions } from "@/services/stock-count";
 
 export type NotificationLabels = {
   noneDesc: string;
@@ -32,20 +32,6 @@ export type NotificationLabels = {
 
 type Props = { labels: NotificationLabels; locale: string };
 
-function readCountSessions(): Array<{ id: string; status: string }> {
-  try {
-    const storeId = getCurrentStoreId() ?? "default";
-    const raw =
-      typeof window !== "undefined"
-        ? localStorage.getItem(`pos-count-sessions-${storeId}`)
-        : null;
-    if (!raw) return [];
-    return JSON.parse(raw) as Array<{ id: string; status: string }>;
-  } catch {
-    return [];
-  }
-}
-
 export function NotificationDropdown({ labels, locale }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -53,13 +39,22 @@ export function NotificationDropdown({ labels, locale }: Props) {
   const [outOfStock, setOutOfStock] = useState(0);
   const [pendingCounts, setPendingCounts] = useState(0);
   const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [hasError, setHasError] = useState(false);
 
   const refresh = useCallback(() => {
-    const sessions = readCountSessions();
-    setPendingCounts(
-      sessions.filter((s) => s.status === "draft" || s.status === "counting").length,
-    );
-    setPendingApprovals(sessions.filter((s) => s.status === "review").length);
+    setHasError(false);
+    listCountSessions()
+      .then((res) => {
+        const sessions = res.data ?? [];
+        setPendingCounts(
+          sessions.filter((s) => s.status === "draft" || s.status === "counting").length,
+        );
+        setPendingApprovals(sessions.filter((s) => s.status === "review").length);
+      })
+      .catch((error) => {
+        console.error("[NotificationDropdown] failed to load count sessions", error);
+        setHasError(true);
+      });
 
     listProducts({ limit: 500 })
       .then((res) => {
@@ -74,7 +69,10 @@ export function NotificationDropdown({ labels, locale }: Props) {
           ).length,
         );
       })
-      .catch(() => {});
+      .catch((error) => {
+        console.error("[NotificationDropdown] failed to load products", error);
+        setHasError(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -157,6 +155,13 @@ export function NotificationDropdown({ labels, locale }: Props) {
           <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow-sm">
             {totalBadge > 99 ? "99+" : totalBadge}
           </span>
+        )}
+        {hasError && totalBadge === 0 && (
+          <span
+            aria-hidden
+            className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white bg-amber-400 shadow-sm"
+            title="Notifications could not be loaded"
+          />
         )}
       </button>
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { ProductBrowser } from "@/components/sales/product-browser";
 import type {
@@ -15,7 +16,15 @@ import {
 } from "@/services/customers";
 import { convertToDeliveryOrder, createDocument } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 import { listProducts } from "@/services/products";
+import { listPromotions } from "@/services/promotions";
+import {
+  BILL_LEVEL_TYPES,
+  evaluatePromotion,
+  LINE_LEVEL_TYPES,
+  matchesScope,
+} from "@/components/promotions/promotion-engine";
 import {
   calculateVat,
   createParkedBill,
@@ -71,6 +80,7 @@ export type SalesManagerHandle = {
 
 type SalesManagerProps = {
   dictionary: SalesDictionary;
+  locale?: string;
   onCartItemsChange?: (count: number) => void;
   externalSearch?: string;
   onExternalSearchChange?: (value: string) => void;
@@ -82,6 +92,7 @@ const productViewStorageKey = "pos-sales-product-view";
 
 export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(function SalesManager({
   dictionary,
+  locale = "en",
   onCartItemsChange,
   externalSearch,
   onExternalSearchChange,
@@ -141,6 +152,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     null,
   );
   const [error, setError] = useState("");
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isPrintPromptOpen, setIsPrintPromptOpen] = useState(false);
   const [isReceiptPreviewLoading, setIsReceiptPreviewLoading] = useState(false);
   const [receiptPreviewHtml, setReceiptPreviewHtml] = useState("");
@@ -204,7 +217,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     }
   }
 
-  useEffect(() => {
+  function loadInitialData() {
+    setLoadError(false);
+    setIsLoadingData(true);
     startTransition(async () => {
       try {
         const [productsResponse, customersResponse, discountResponse] =
@@ -218,11 +233,19 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         setCustomers(customersResponse.data ?? []);
         setCustomerLevelDiscounts(discountResponse.data ?? []);
       } catch (nextError) {
+        setLoadError(true);
         setError(
           nextError instanceof Error ? nextError.message : "Request failed",
         );
+      } finally {
+        setIsLoadingData(false);
       }
     });
+  }
+
+  useEffect(() => {
+    loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const categories = useMemo(() => {
@@ -260,19 +283,26 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       return (
         product.name.toLowerCase().includes(keyword) ||
         (product.sku ?? "").toLowerCase().includes(keyword) ||
+        (product.barcode ?? "").toLowerCase().includes(keyword) ||
         (product.product_type_name ?? product.product_type?.name ?? "")
           .toLowerCase()
           .includes(keyword)
       );
     });
   }, [products, search, selectedCategory]);
-  const saleableSkuMap = useMemo(() => {
+  // Keyed by both SKU and barcode (lowercased) so a scanned EAN/UPC — which is
+  // usually stored in `barcode`, not `sku` — resolves to the product.
+  const saleableScanMap = useMemo(() => {
     const nextMap = new Map<string, Product>();
 
     saleableProducts.forEach((product) => {
       const sku = (product.sku ?? "").trim().toLowerCase();
       if (sku) {
         nextMap.set(sku, product);
+      }
+      const barcode = (product.barcode ?? "").trim().toLowerCase();
+      if (barcode) {
+        nextMap.set(barcode, product);
       }
     });
 
@@ -325,6 +355,84 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     );
   }, [cartSummary.total, customerDiscountPercent]);
 
+  // Active promotions, evaluated client-side: line-level promos discount each
+  // scope-matched cart line (best wins); bill-level promos (coupon, spend-x, bundle,
+  // gift) are evaluated once against their scoped subtotal. The result is folded into
+  // the bill discount so it reaches the persisted sale, the receipt and revenue reports.
+  const promotionsQuery = useQuery({
+    queryKey: ["promotions"],
+    queryFn: async () => (await listPromotions()).data,
+  });
+  const [couponCode, setCouponCode] = useState("");
+  const promoDiscountAmount = useMemo(() => {
+    const active = (promotionsQuery.data ?? []).filter((p) => p.status === "active");
+    if (active.length === 0 || cart.length === 0) return { amount: 0, ids: [] as string[] };
+    const now = new Date();
+    const customerLevel = selectedCustomer ? Number(selectedCustomer.level ?? 1) : undefined;
+    const code = couponCode.trim();
+    // Track which active promotions actually contributed, so the backend can verify
+    // the claimed promo discount against these real promotions (server-side check).
+    const idSet = new Set<string>();
+    const scopeOf = (product: Product) => ({
+      sku: product.sku,
+      category: product.product_type_name ?? product.product_type?.name,
+      brand: product.brand_name,
+    });
+
+    // Line-level: best scope-matched promo per cart line.
+    let lineTotal = 0;
+    for (const item of cart) {
+      // Promotions must be computed from the EFFECTIVE selling price — the active
+      // special_price when its window is live, else base_price — so a promo never
+      // stacks on top of the full list price when an item is already on special.
+      const unitPrice = Number(item.product.effective_price ?? item.product.base_price ?? 0);
+      let best = 0;
+      let bestId = "";
+      for (const promo of active) {
+        if (!LINE_LEVEL_TYPES.includes(promo.type)) continue;
+        if (!matchesScope(promo, scopeOf(item.product))) continue;
+        const res = evaluatePromotion(promo, { unitPrice, quantity: item.quantity, customerLevel, now });
+        if (res.applies && res.discountTotal > best) {
+          best = res.discountTotal;
+          bestId = promo.id;
+        }
+      }
+      lineTotal += best;
+      if (best > 0 && bestId) idSet.add(bestId);
+    }
+
+    // Bill-level: best single promo evaluated once against its scoped subtotal.
+    let billBest = 0;
+    let billBestId = "";
+    for (const promo of active) {
+      if (!BILL_LEVEL_TYPES.includes(promo.type)) continue;
+      let scopedQty = 0;
+      let scopedSubtotal = 0;
+      for (const item of cart) {
+        if (!matchesScope(promo, scopeOf(item.product))) continue;
+        scopedQty += item.quantity;
+        // Effective price (special when active) — bill-level promos scope off the
+        // same price the cart actually charges, preventing double-discounting.
+        scopedSubtotal += Number(item.product.effective_price ?? item.product.base_price ?? 0) * item.quantity;
+      }
+      if (scopedQty === 0) continue;
+      const res = evaluatePromotion(promo, {
+        unitPrice: scopedSubtotal / scopedQty,
+        quantity: scopedQty,
+        customerLevel,
+        couponCode: code,
+        now,
+      });
+      if (res.applies && res.discountTotal > billBest) {
+        billBest = res.discountTotal;
+        billBestId = promo.id;
+      }
+    }
+    if (billBest > 0 && billBestId) idSet.add(billBestId);
+
+    return { amount: roundCurrency(lineTotal + billBest), ids: Array.from(idSet) };
+  }, [promotionsQuery.data, cart, selectedCustomer, couponCode]);
+
   const parsedBillDiscount = Number(billDiscount || 0);
   const sanitizedBillDiscount = Number.isFinite(parsedBillDiscount)
     ? parsedBillDiscount
@@ -342,12 +450,20 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           maxBillDiscount,
         )
       : Math.min(Math.max(sanitizedBillDiscount, 0), maxBillDiscount);
-  const totalDiscountAmount =
-    cartSummary.discountAmount + customerDiscountAmount + billDiscountAmount;
-  const payableTotal = Math.max(
+  const payableBeforePromo = Math.max(
     cartSummary.total - customerDiscountAmount - billDiscountAmount,
     0,
   );
+  // Cap the promotion discount to the remaining payable so the total never goes negative.
+  const appliedPromoDiscount = Math.min(promoDiscountAmount.amount, payableBeforePromo);
+  const appliedPromotionIds =
+    appliedPromoDiscount > 0 ? promoDiscountAmount.ids : [];
+  const totalDiscountAmount =
+    cartSummary.discountAmount +
+    customerDiscountAmount +
+    billDiscountAmount +
+    appliedPromoDiscount;
+  const payableTotal = Math.max(payableBeforePromo - appliedPromoDiscount, 0);
   const vatAmount = applyVat ? roundCurrency(payableTotal * 0.07) : 0;
   const settlementTotal = applyVat
     ? roundCurrency(payableTotal + vatAmount)
@@ -551,6 +667,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setSelectedCustomerId("");
     setCustomerSettlementMode("cash_now");
     setBillDiscount("");
+    setCouponCode("");
     setNote("");
     setPaidAmount("");
     setApplyVat(false);
@@ -669,7 +786,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           return;
         }
 
-        const matchedProduct = saleableSkuMap.get(scannedCode);
+        const matchedProduct = saleableScanMap.get(scannedCode);
         if (matchedProduct) {
           addToCart(matchedProduct);
           setError("");
@@ -706,7 +823,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     return () => {
       window.removeEventListener("keydown", handleScannerKeydown);
     };
-  }, [addToCart, dictionary.unavailableProduct, saleableSkuMap]);
+  }, [addToCart, dictionary.unavailableProduct, saleableScanMap]);
 
   function updateCartQuantity(productId: string, nextQuantity: number) {
     setCart((currentCart) => {
@@ -984,8 +1101,17 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
         const response = await createSale({
           customer_id: selectedCustomerId || undefined,
+          // discount_bill kept during rollout so an un-migrated backend still reads the
+          // total; the new backend prefers the verified split below and ignores it.
           discount_bill:
-            billDiscountAmount > 0 ? billDiscountAmount : undefined,
+            billDiscountAmount + appliedPromoDiscount > 0
+              ? billDiscountAmount + appliedPromoDiscount
+              : undefined,
+          manual_discount: billDiscountAmount > 0 ? billDiscountAmount : undefined,
+          promo_discount:
+            appliedPromoDiscount > 0 ? appliedPromoDiscount : undefined,
+          promotion_ids:
+            appliedPromotionIds.length > 0 ? appliedPromotionIds : undefined,
           items: mappedItems,
           note: note.trim() || undefined,
           paid_amount: paidAmountValue,
@@ -1163,7 +1289,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setIsHoldingBill(false);
   }
 
-  if (!hasMounted) {
+  if (!hasMounted || isLoadingData) {
     return (
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
         <p className="text-sm text-slate-500">{dictionary.title}</p>
@@ -1171,8 +1297,25 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     );
   }
 
+  if (loadError) {
+    return (
+      <section className="grid place-items-center xl:h-[calc(100dvh-8rem)]">
+        <QueryErrorState locale={locale} onRetry={loadInitialData} className="max-w-md" />
+      </section>
+    );
+  }
+
   return (
     <>
+      {promotionsQuery.isError ? (
+        <div className="mb-4">
+          <QueryErrorState
+            locale={locale}
+            onRetry={() => void promotionsQuery.refetch()}
+            className="!py-4"
+          />
+        </div>
+      ) : null}
       <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
         <ProductBrowser
           categories={categories}
@@ -1201,6 +1344,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           applyVat={applyVat}
           billDiscount={billDiscount}
           billDiscountType={billDiscountType}
+          couponCode={couponCode}
           totalDiscountAmount={totalDiscountAmount}
           showNoteField={showNoteField}
           note={note}
@@ -1211,6 +1355,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           onClearCart={clearCart}
           onToggleBillDiscountField={() => setIsBillDiscountFieldOpen((c) => !c)}
           onBillDiscountTypeChange={setBillDiscountType}
+          onCouponChange={setCouponCode}
           onOpenAmountNumpad={openAmountNumpad}
           onNoteChange={setNote}
           onOpenDiscountEditor={setDiscountEditorProductId}

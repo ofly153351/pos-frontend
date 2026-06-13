@@ -182,6 +182,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
           <SalesManager
             ref={salesRef}
             dictionary={dictionary}
+            locale={locale}
             externalSearch={search}
             onCartItemsChange={handleCartChange}
             onExternalSearchChange={setSearch}

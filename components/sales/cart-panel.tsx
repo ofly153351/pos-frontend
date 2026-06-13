@@ -22,6 +22,7 @@ type Dict = {
   cartTitle: string;
   netTotalLabel: string;
   discountBillLabel: string;
+  couponLabel: string;
   totalDiscountLabel: string;
   summary: { subtotalLabel: string };
   notePlaceholder: string;
@@ -39,6 +40,7 @@ type Props = {
   applyVat: boolean;
   billDiscount: string;
   billDiscountType: "amount" | "percent";
+  couponCode: string;
   totalDiscountAmount: number;
   showNoteField: boolean;
   note: string;
@@ -49,6 +51,7 @@ type Props = {
   onClearCart: () => void;
   onToggleBillDiscountField: () => void;
   onBillDiscountTypeChange: (type: "amount" | "percent") => void;
+  onCouponChange: (v: string) => void;
   onOpenAmountNumpad: (field: "bill_discount" | "paid_amount") => void;
   onNoteChange: (v: string) => void;
   onOpenDiscountEditor: (productId: string) => void;
@@ -67,6 +70,7 @@ export function CartPanel({
   applyVat,
   billDiscount,
   billDiscountType,
+  couponCode,
   totalDiscountAmount,
   showNoteField,
   note,
@@ -77,6 +81,7 @@ export function CartPanel({
   onClearCart,
   onToggleBillDiscountField,
   onBillDiscountTypeChange,
+  onCouponChange,
   onOpenAmountNumpad,
   onNoteChange,
   onOpenDiscountEditor,
@@ -164,6 +169,17 @@ export function CartPanel({
                     </button>
                   </div>
                 </div>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-violet-700">
+                  {dictionary.couponLabel}
+                </label>
+                <input
+                  className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs uppercase tracking-wide text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  onChange={(e) => onCouponChange(e.target.value)}
+                  placeholder={dictionary.couponLabel}
+                  value={couponCode}
+                />
               </div>
               <div className="flex items-center justify-between text-xs text-slate-500">
                 <span>{dictionary.summary.subtotalLabel}</span>
