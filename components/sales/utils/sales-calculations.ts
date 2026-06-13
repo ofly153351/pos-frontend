@@ -126,7 +126,10 @@ export function removeReceiptPreviewToolbar(html: string, paymentMethod?: string
 }
 
 export function getDiscountPerUnit(item: CartItem) {
-  const unitPrice = Number(item.product.base_price ?? 0);
+  // Charge the backend's authoritative per-unit price: effective_price equals the
+  // active special_price when its window is live, otherwise base_price. The
+  // base_price fallback covers stubs (e.g. restored parked bills) that omit it.
+  const unitPrice = Number(item.product.effective_price ?? item.product.base_price ?? 0);
   const rawValue = Number(item.discountValue || 0);
   const discountValue = Number.isFinite(rawValue) ? rawValue : 0;
 
@@ -138,7 +141,7 @@ export function getDiscountPerUnit(item: CartItem) {
 }
 
 export function getCartLine(item: CartItem) {
-  const unitPrice = Number(item.product.base_price ?? 0);
+  const unitPrice = Number(item.product.effective_price ?? item.product.base_price ?? 0);
   const discountPerUnit = getDiscountPerUnit(item);
   const lineSubtotal = unitPrice * item.quantity;
   const lineDiscount = discountPerUnit * item.quantity;

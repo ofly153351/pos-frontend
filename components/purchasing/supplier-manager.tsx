@@ -20,6 +20,7 @@ import { toast } from "@/components/ui/toast";
 import { friendlyMessage } from "@/lib/form-errors";
 import { SkeletonListItem } from "@/components/ui/skeleton";
 import { AddSupplierModal } from "./add-supplier-modal";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,9 @@ type SupplierUI = {
   kpiAllTime: string;
   kpiNoDue: string;
   kpiNoLimit: string;
+  kpiOrders: string;
+  kpiLastOrder: string;
+  kpiNoOrders: string;
   sectionContact: string;
   sectionPayment: string;
   sectionAddress: string;
@@ -318,7 +322,7 @@ function SupplierCard({
               </span>
             )}
             <span className="inline-flex items-center rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600 ring-1 ring-violet-100">
-              {ui.creditDaysPrefix} 30 {ui.daysSuffix}
+              {ui.creditDaysPrefix} {supplier.credit_days ?? 0} {ui.daysSuffix}
             </span>
           </div>
         </div>
@@ -422,6 +426,29 @@ function SupplierDetail({
   const totalValue = supplierPOs.reduce((s, p) => s + p.total_cost, 0);
   const recentPOs = supplierPOs.slice(0, 5);
 
+  // ── Real KPI + detail values (no placeholders) ──
+  const outstanding = supplierPOs
+    .filter((p) => p.status === "pending" || p.status === "partial")
+    .reduce((s, p) => s + p.total_cost, 0);
+  const orderCount = supplierPOs.length;
+  // supplierPOs is sorted newest-first, so [0] is the most recent order.
+  const lastOrderAt = supplierPOs[0]?.created_at ?? null;
+  const lastOrderLabel = lastOrderAt
+    ? new Date(lastOrderAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+    : "";
+
+  const paymentMethodLabel =
+    supplier.payment_method === "promptpay"
+      ? "พร้อมเพย์ (PromptPay)"
+      : supplier.payment_method === "bank_account"
+        ? "โอนเข้าบัญชีธนาคาร"
+        : "";
+  const accountValue =
+    supplier.payment_method === "bank_account"
+      ? supplier.bank_account_number ?? ""
+      : supplier.promptpay_number ?? "";
+  const creditTerm = supplier.credit_days != null ? `${supplier.credit_days} ${ui.daysSuffix}` : "";
+
   return (
     <div className="flex h-full flex-col overflow-y-auto pretty-scroll">
       {/* ── Hero header ── */}
@@ -481,20 +508,21 @@ function SupplierDetail({
           />
           <KpiCard
             title={ui.kpiOutstanding}
-            value="฿0.00"
-            sub={ui.kpiNoDue}
+            value={`฿${fmtAmount(outstanding)}`}
+            sub={outstanding > 0 ? "" : ui.kpiNoDue}
+            alert={outstanding > 0}
             icon={<CreditCard className="h-4.5 w-4.5" />}
           />
           <KpiCard
-            title={ui.kpiCreditLimit}
-            value="฿0.00"
-            sub={ui.kpiNoLimit}
-            icon={<Building2 className="h-4.5 w-4.5" />}
+            title={ui.kpiOrders}
+            value={`${orderCount}`}
+            sub={ui.kpiAllTime}
+            icon={<ShoppingBag className="h-4.5 w-4.5" />}
           />
           <KpiCard
-            title={ui.kpiRemaining}
-            value="฿0.00"
-            sub={ui.kpiNoLimit}
+            title={ui.kpiLastOrder}
+            value={lastOrderLabel || "—"}
+            sub={lastOrderAt ? "" : ui.kpiNoOrders}
             icon={<FileText className="h-4.5 w-4.5" />}
           />
         </div>
@@ -507,15 +535,15 @@ function SupplierDetail({
             <div className="space-y-1.5">
               <InfoRow icon={<User className="h-3.5 w-3.5" />} label={ui.primaryContact} value={supplier.contact_person ?? ""} />
               <InfoRow icon={<Phone className="h-3.5 w-3.5" />} label="เบอร์โทร" value={supplier.phone ?? ""} />
-              <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="อีเมล" value="" />
+              <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="อีเมล" value={supplier.email ?? ""} />
             </div>
           </InfoCard>
 
           <InfoCard icon={<CreditCard className="h-3.5 w-3.5" />} title={ui.sectionPayment}>
             <div className="space-y-1.5">
-              <InfoRow icon={<CreditCard className="h-3.5 w-3.5" />} label="วิธีการชำระ" value="PromptPay" />
-              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เลขที่บัญชี" value="" />
-              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เครดิตเทอม" value="30 วัน" />
+              <InfoRow icon={<CreditCard className="h-3.5 w-3.5" />} label="วิธีการชำระ" value={paymentMethodLabel} />
+              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เลขที่บัญชี" value={accountValue} />
+              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เครดิตเทอม" value={creditTerm} />
               <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เลขประจำตัวผู้เสียภาษี" value={supplier.tax_id ?? ""} />
             </div>
           </InfoCard>
@@ -942,7 +970,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data: suppliers = [], isLoading: loadingSuppliers } = useQuery<Supplier[]>({
+  const { data: suppliers = [], isLoading: loadingSuppliers, isError: suppliersError, refetch: refetchSuppliers } = useQuery<Supplier[]>({
     queryKey: ["suppliers"],
     queryFn: async () => {
       const res = await listSuppliers();
@@ -995,6 +1023,16 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
     } finally {
       setIsDeletingId(null);
     }
+  }
+
+  if (suppliersError) {
+    return (
+      <div className="-mx-6 -my-6 lg:-mx-8 lg:-my-8 flex flex-col overflow-hidden" style={{ height: "calc(100dvh - 4.5rem)" }}>
+        <div className="flex flex-1 items-center justify-center p-6">
+          <QueryErrorState onRetry={() => refetchSuppliers()} />
+        </div>
+      </div>
+    );
   }
 
   return (

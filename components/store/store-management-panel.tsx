@@ -392,9 +392,9 @@ export function StoreManagementPanel({ dictionary }: Props) {
     <div className="space-y-6">
       {/* ── Page header ── */}
       <div className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/60">{dictionary.pageTitle}</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{dictionary.switchSectionTitle}</h1>
-        <p className="mt-1.5 max-w-xl text-sm text-white/70">{dictionary.pageDescription}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-500">{dictionary.pageTitle}</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{dictionary.switchSectionTitle}</h1>
+        <p className="mt-1.5 max-w-xl text-sm text-slate-500">{dictionary.pageDescription}</p>
       </div>
 
       {/* ── Alerts ── */}
