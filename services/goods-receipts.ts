@@ -47,7 +47,7 @@ export function createGoodsReceiptDraft(input: Omit<CreateGoodsReceiptDraftInput
 type ListGoodsReceiptsOptions = {
   limit?: number;
   page?: number;
-  status?: "draft" | "confirmed" | "cancelled";
+  status?: "draft" | "pending_review" | "confirmed" | "cancelled";
 };
 
 export async function listGoodsReceipts(options: ListGoodsReceiptsOptions = {}) {
@@ -122,6 +122,24 @@ export function confirmGoodsReceipt(receiptId: string) {
     {
       method: "POST",
     },
+  );
+}
+
+// Submit a draft for approval (draft -> pending_review). Cashier/warehouse can do this.
+export function submitGoodsReceipt(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}/submit`,
+    { method: "POST" },
+  );
+}
+
+// Reopen a pending-review receipt back to draft (owner/manager only).
+export function reopenGoodsReceipt(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}/reopen`,
+    { method: "POST" },
   );
 }
 

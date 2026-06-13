@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
 import {
   FileText, Package, Plus, Search,
   ShoppingBag, TrendingUp, X, XCircle,
@@ -131,6 +132,11 @@ const statusLabels = (d: Dict): Record<StatusFilter, string> => ({
 
 export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dict; onCreateOrder: () => void }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || "th";
+  // Receiving is one workflow: open the single-page Goods Receiving editor with this PO preloaded.
+  const goReceive = (poId: string) => router.push(`/${locale}/warehouse/receive/new?po=${poId}`);
   const [receivePO, setReceivePO] = useState<PurchaseOrder | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
@@ -381,7 +387,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                               {isActionable && (
                                 <button
                                   className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700 shadow-sm transition-all hover:border-violet-400 hover:shadow"
-                                  onClick={() => setReceivePO(order)}
+                                  onClick={() => goReceive(order.id)}
                                   title={d.receiveStock}
                                   type="button"
                                 >
@@ -460,7 +466,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                         <div className="mt-3 flex gap-2">
                           <button
                             className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-white py-2 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50"
-                            onClick={() => setReceivePO(order)}
+                            onClick={() => goReceive(order.id)}
                             type="button"
                           >
                             <Package className="h-3.5 w-3.5" />
