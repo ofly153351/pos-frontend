@@ -33,9 +33,7 @@ import {
   deleteWarehouse,
   listWarehouseProducts,
   listWarehouses,
-  listWarehousesForStore,
   removeWarehouseProduct,
-  transferWarehouseProduct,
   updateWarehouse,
 } from "@/services/warehouses";
 import {
@@ -45,8 +43,8 @@ import {
   updateLocation,
 } from "@/services/locations";
 import type { Location } from "@/services/locations";
+import { LocationTransferDrawer } from "@/components/stock/location-transfer-drawer";
 import { listProducts } from "@/services/products";
-import { listMyStores } from "@/services/stores";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
 import type {
   CreateWarehouseInput,
@@ -55,7 +53,6 @@ import type {
   WarehouseProduct,
 } from "@/types/warehouse";
 import type { Product } from "@/types/product";
-import type { Store } from "@/types/store";
 
 type WarehouseSectionDictionary = {
   title: string;
@@ -159,6 +156,17 @@ type WarehouseSectionDictionary = {
   locationDeleteConfirm: string;
   noLocationsLabel: string;
   locationSalePointHint: string;
+  // Phase W4A — canonical location-aware transfer drawer keys.
+  ltTitle: string; ltProduct: string; ltSource: string; ltSourceQty: string;
+  ltDestination: string; ltAmount: string; ltReason: string; ltNote: string;
+  ltSelectSource: string; ltSelectDestination: string; ltConfirm: string;
+  ltSubmitting: string; ltCancel: string; ltSuccess: string; ltForbidden: string;
+  ltSalePointTag: string; ltStorageTag: string; ltDefaultSaleHint: string;
+  ltReadyLabel: string; ltWarehouseStockLabel: string; ltTotalLabel: string; ltPreviewTitle: string;
+  ltReasonReplenish: string; ltReasonReturnStorage: string; ltReasonRebalance: string;
+  ltReasonReorganize: string; ltReasonOther: string;
+  ltValSourceRequired: string; ltValDestRequired: string; ltValSameLocation: string;
+  ltValInsufficient: string; ltValReasonRequired: string; ltValNoteRequired: string; ltNoSourceStock: string;
 };
 
 type WarehouseSectionProps = {
@@ -437,14 +445,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
     return new Set(DEFAULT_EXPORT_COLS);
   });
 
-  // Transfer modal state
+  // Canonical transfer (Phase W4A): transferTarget opens the location-aware transfer drawer.
   const [transferTarget, setTransferTarget] = useState<WarehouseProduct | null>(null);
-  const [transferQty, setTransferQty] = useState(1);
-  const [transferDestType, setTransferDestType] = useState<"warehouse" | "stock">("stock");
-  const [transferDestWarehouse, setTransferDestWarehouse] = useState("");
-  const [transferDestStore, setTransferDestStore] = useState("");
-  const [transferNote, setTransferNote] = useState("");
-  const [isTransferring, setIsTransferring] = useState(false);
 
   // Batch receive modal
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
@@ -453,40 +455,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const [isReceivingProduct, setIsReceivingProduct] = useState<{[key: string]: boolean}>({});
   const [receiveError, setReceiveError] = useState("");
 
-  // Batch transfer modal
-  const [isBatchTransferModalOpen, setIsBatchTransferModalOpen] = useState(false);
-  const [batchTransferSearch, setBatchTransferSearch] = useState("");
-  const [batchTransferQuantities, setBatchTransferQuantities] = useState<{[key: string]: number}>({});
-  const [batchTransferDestType, setBatchTransferDestType] = useState<"stock" | "warehouse">("stock");
-  const [batchTransferDestWarehouse, setBatchTransferDestWarehouse] = useState("");
-  const [batchTransferDestStore, setBatchTransferDestStore] = useState("");
-  const [batchTransferNote, setBatchTransferNote] = useState("");
-  const [isBatchTransferring, setIsBatchTransferring] = useState<{[key: string]: boolean}>({});
-  const [batchTransferError, setBatchTransferError] = useState("");
-
   // Success popup modal
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-
-  const { data: transferWarehousesData } = useQuery({
-    queryKey: ["warehouses"],
-    queryFn: listWarehouses,
-    enabled: transferTarget !== null && transferDestType === "warehouse",
-  });
-
-  const { data: myStoresData } = useQuery({
-    queryKey: ["my-stores"],
-    queryFn: listMyStores,
-    enabled: isBatchTransferModalOpen || !!transferTarget,
-  });
-
-  // Fetch warehouses belonging to the target store (for cross-store warehouse transfer)
-  const crossStoreTargetId = transferDestType === "warehouse" ? transferDestStore : batchTransferDestType === "warehouse" ? batchTransferDestStore : "";
-  const { data: targetStoreWarehousesData } = useQuery({
-    queryKey: ["warehouses-for-store", crossStoreTargetId],
-    queryFn: () => listWarehousesForStore(crossStoreTargetId),
-    enabled: !!crossStoreTargetId,
-  });
 
 
   function generateBarcodeSvg(sku: string): string {
@@ -766,15 +736,14 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       }
       if (isManageModalOpen) setIsManageModalOpen(false);
       if (isReceiveModalOpen) setIsReceiveModalOpen(false);
-      if (isBatchTransferModalOpen) setIsBatchTransferModalOpen(false);
-      if (transferTarget) { setTransferTarget(null); setTransferDestType("stock"); setTransferDestWarehouse(""); setTransferDestStore(""); setTransferNote(""); setTransferQty(1); }
+      if (transferTarget) setTransferTarget(null);
       if (previewSku) setPreviewSku(null);
       if (successMessage) setSuccessMessage(null);
     };
-    if (!isModalOpen && !isManageModalOpen && !isReceiveModalOpen && !isBatchTransferModalOpen && !transferTarget && !previewSku && !successMessage && !locationsWarehouseId && !locationFormOpen) return;
+    if (!isModalOpen && !isManageModalOpen && !isReceiveModalOpen && !transferTarget && !previewSku && !successMessage && !locationsWarehouseId && !locationFormOpen) return;
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isModalOpen, isManageModalOpen, isReceiveModalOpen, isBatchTransferModalOpen, transferTarget, previewSku, successMessage, locationsWarehouseId, locationFormOpen]);
+  }, [isModalOpen, isManageModalOpen, isReceiveModalOpen, transferTarget, previewSku, successMessage, locationsWarehouseId, locationFormOpen]);
 
   // Fetch warehouses
   const { data: warehousesData, isLoading: warehousesLoading } = useQuery({
@@ -1096,23 +1065,6 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
               <Download className="h-4 w-4" />
               {dictionary.receiveStockLabel}
             </button>
-            <button
-              className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-100 disabled:opacity-40"
-              disabled={!selectedWarehouse || warehouseProducts.length === 0}
-              onClick={() => {
-                setIsBatchTransferModalOpen(true);
-                setBatchTransferSearch("");
-                setBatchTransferQuantities({});
-                setBatchTransferDestType("stock");
-                setBatchTransferDestWarehouse("");
-                setBatchTransferNote("");
-                setBatchTransferError("");
-              }}
-              type="button"
-            >
-              <ArrowRight className="h-4 w-4" />
-              {dictionary.transferLabel}
-            </button>
           </div>
         </div>
 
@@ -1427,6 +1379,16 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       </button>
                       {canManage ? (
                         <button
+                          className="rounded-lg p-2.5 text-violet-600 transition hover:bg-violet-50"
+                          onClick={() => setTransferTarget(wp)}
+                          title={dictionary.transferLabel}
+                          type="button"
+                        >
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                      {canManage ? (
+                        <button
                           className="rounded-lg p-2.5 text-rose-600 transition hover:bg-rose-50"
                           onClick={() => handleRemoveProduct(wp.product_id)}
                           title={dictionary.deleteLabel}
@@ -1560,159 +1522,17 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         </div>
       ) : null}
 
-      {/* Transfer Modal */}
+      {/* Transfer Modal — Phase W4A canonical location-aware transfer drawer */}
       {transferTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl smooth-fade-up">
-            <h3 className="text-lg font-bold text-slate-900">{dictionary.transferTitle}</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              {dictionary.transferDestLabel}: {transferTarget.product_name}
-            </p>
-
-            {/* Quantity input */}
-            <div className="mt-4">
-              <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.transferQtyLabel}</label>
-              <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none transition focus:border-violet-400"
-                max={transferTarget.quantity}
-                min={1}
-                onChange={(e) => setTransferQty(Math.min(Math.max(1, Number(e.target.value) || 1), transferTarget.quantity))}
-                type="number"
-                value={transferQty}
-              />
-            </div>
-
-            {/* Destination type selector */}
-            <div className="mt-4">
-              <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.transferDestLabel}</label>
-              <div className="flex gap-2">
-                <button
-                  className={`flex-1 rounded-xl border px-4 py-2 text-sm font-semibold transition ${
-                    transferDestType === "stock"
-                      ? "border-violet-300 bg-violet-50 text-violet-700"
-                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
-                  onClick={() => setTransferDestType("stock")}
-                  type="button"
-                >
-                  {dictionary.transferToStockLabel}
-                </button>
-                <button
-                  className={`flex-1 rounded-xl border px-4 py-2 text-sm font-semibold transition ${
-                    transferDestType === "warehouse"
-                      ? "border-violet-300 bg-violet-50 text-violet-700"
-                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
-                  onClick={() => setTransferDestType("warehouse")}
-                  type="button"
-                >
-                  {dictionary.transferToWarehouseLabel}
-                </button>
-              </div>
-            </div>
-
-            {/* Store selector — shown for both "stock" and "warehouse" destination types */}
-            <div className="mt-4">
-              <label className="mb-1 block text-xs font-semibold text-slate-600">
-                {transferDestType === "warehouse" ? dictionary.selectTargetStoreLabel : dictionary.currentStoreLabel}
-              </label>
-              <select
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none transition focus:border-violet-400"
-                onChange={(e) => { setTransferDestStore(e.target.value); setTransferDestWarehouse(""); }}
-                value={transferDestStore}
-              >
-                <option value="">{dictionary.currentStoreLabel}</option>
-                {(myStoresData?.data ?? []).map((s: Store) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Cross-store warehouse info banner */}
-            {transferDestType === "warehouse" && transferDestStore && (
-              <p className="mt-3 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 text-xs text-violet-700">
-                {dictionary.crossStoreWarehouseInfo}
-              </p>
-            )}
-
-            {/* Warehouse selector — only for same-store warehouse transfer */}
-            {transferDestType === "warehouse" && !transferDestStore && (
-              <div className="mt-4">
-                <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.selectDestWarehouseLabel}</label>
-                <select
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none transition focus:border-violet-400"
-                  onChange={(e) => setTransferDestWarehouse(e.target.value)}
-                  value={transferDestWarehouse}
-                >
-                  <option value="">{dictionary.selectDestWarehouseLabel}</option>
-                  {(transferWarehousesData?.data ?? []).filter((w: Warehouse) => w.id !== selectedWarehouseId).map((w: Warehouse) => (
-                    <option key={w.id} value={w.id}>{w.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Note */}
-            <div className="mt-4">
-              <label className="mb-1 block text-xs font-semibold text-slate-600">{dictionary.transferNoteLabel}</label>
-              <input
-                className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none transition focus:border-violet-400"
-                onChange={(e) => setTransferNote(e.target.value)}
-                placeholder={dictionary.transferNoteLabel}
-                value={transferNote}
-              />
-            </div>
-
-            {/* Buttons */}
-            <div className="mt-6 flex gap-3">
-              <button
-                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                onClick={() => { setTransferTarget(null); setTransferDestType("stock"); setTransferDestWarehouse(""); setTransferNote(""); setTransferQty(1); }}
-                type="button"
-              >
-                {dictionary.cancel}
-              </button>
-              <button
-                className="flex-1 rounded-xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:opacity-50"
-                disabled={isTransferring || transferQty < 1 || (transferDestType === "warehouse" && !transferDestStore && !transferDestWarehouse)}
-                onClick={async () => {
-                  setIsTransferring(true);
-                  try {
-                    await transferWarehouseProduct(selectedWarehouseId!, {
-                      product_id: transferTarget.product_id,
-                      quantity: transferQty,
-                      destination_type: transferDestType,
-                      destination_id: transferDestType === "warehouse" ? transferDestWarehouse : undefined,
-                      destination_store_id: transferDestStore || undefined,
-                      note: transferNote || undefined,
-                    });
-                    await Promise.all([
-                      queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] }),
-                      queryClient.invalidateQueries({ queryKey: ["stock", "products"] }),
-                      queryClient.invalidateQueries({ queryKey: ["warehouses"] }),
-                    ]);
-                    setSuccessMessage(
-                      `${transferTarget.product_name || ""} → ${transferDestType === "stock" ? dictionary.transferToStockLabel : dictionary.transferToWarehouseLabel} (-${transferQty})`,
-                    );
-                    setTransferTarget(null);
-                    setTransferDestType("stock");
-                    setTransferDestWarehouse("");
-                    setTransferDestStore("");
-                    setTransferNote("");
-                    setTransferQty(1);
-                  } catch (err: any) {
-                    setError(err?.message || "Transfer failed");
-                  } finally {
-                    setIsTransferring(false);
-                  }
-                }}
-                type="button"
-              >
-                {isTransferring ? "..." : dictionary.transferConfirmLabel}
-              </button>
-            </div>
-          </div>
-        </div>
+        <LocationTransferDrawer
+          open
+          productId={transferTarget.product_id}
+          productName={transferTarget.product_name}
+          canManage={canManage}
+          dict={dictionary}
+          onClose={() => setTransferTarget(null)}
+          onSuccess={(msg) => { setSuccessMessage(msg); setTransferTarget(null); }}
+        />
       ) : null}
 
       {/* Create/Edit Warehouse Modal */}
@@ -2347,204 +2167,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       ) : null}
 
       {/* Batch Transfer Modal */}
-      {isBatchTransferModalOpen && selectedWarehouse ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 py-6 smooth-fade"
-          onClick={() => setIsBatchTransferModalOpen(false)}
-        >
-          <div
-            className="flex h-[80vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 bg-violet-600 px-6 py-5 text-white rounded-t-2xl">
-              <div>
-                <h3 className="text-xl font-bold">{dictionary.transferTitle}</h3>
-                <p className="mt-0.5 text-sm text-white/80">{warehouseProducts.length} {dictionary.productsLabel}</p>
-              </div>
-              <button
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/20"
-                onClick={() => setIsBatchTransferModalOpen(false)}
-                type="button"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
 
-            <div className="flex flex-col flex-1 overflow-hidden">
-              {/* Search */}
-              <div className="relative p-4 pb-0">
-                <Search className="absolute left-7 top-2/4 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                  onChange={(e) => setBatchTransferSearch(e.target.value)}
-                  placeholder={dictionary.searchProductLabel}
-                  value={batchTransferSearch}
-                />
-              </div>
-
-              {/* Destination controls */}
-              <div className="flex flex-wrap items-center gap-3 p-4 pb-0">
-                <div className="flex gap-1.5">
-                  <button
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                      batchTransferDestType === "stock"
-                        ? "border-violet-300 bg-violet-50 text-violet-700"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                    }`}
-                    onClick={() => setBatchTransferDestType("stock")}
-                    type="button"
-                  >
-                    {dictionary.transferToStockLabel}
-                  </button>
-                  <button
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                      batchTransferDestType === "warehouse"
-                        ? "border-violet-300 bg-violet-50 text-violet-700"
-                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                    }`}
-                    onClick={() => setBatchTransferDestType("warehouse")}
-                    type="button"
-                  >
-                    {dictionary.transferToWarehouseLabel}
-                  </button>
-                </div>
-                {/* Store selector for both destination types */}
-                <select
-                  className="min-w-[180px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold outline-none text-slate-700"
-                  onChange={(e) => { setBatchTransferDestStore(e.target.value); setBatchTransferDestWarehouse(""); }}
-                  value={batchTransferDestStore}
-                >
-                  <option value="">{dictionary.currentStoreLabel}</option>
-                  {(myStoresData?.data ?? []).map((s: Store) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-                {/* Warehouse selector — only for same-store warehouse transfer */}
-                {batchTransferDestType === "warehouse" && !batchTransferDestStore && (
-                  <select
-                    className="min-w-[180px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold outline-none text-slate-700"
-                    onChange={(e) => setBatchTransferDestWarehouse(e.target.value)}
-                    value={batchTransferDestWarehouse}
-                  >
-                    <option value="">{dictionary.selectDestWarehouseLabel}</option>
-                    {(transferWarehousesData?.data ?? []).filter((w: Warehouse) => w.id !== selectedWarehouseId).map((w: Warehouse) => (
-                      <option key={w.id} value={w.id}>{w.name}</option>
-                    ))}
-                  </select>
-                )}
-                <input
-                  className="flex-1 min-w-[140px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs outline-none transition focus:border-violet-400"
-                  onChange={(e) => setBatchTransferNote(e.target.value)}
-                  placeholder={dictionary.transferNoteLabel}
-                  value={batchTransferNote}
-                />
-              </div>
-
-              {batchTransferDestType === "warehouse" && batchTransferDestStore && (
-                <div className="mx-4 mt-3 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2.5 text-xs text-violet-700">{dictionary.crossStoreWarehouseInfo}</div>
-              )}
-
-              {batchTransferError && (
-                <div className="mx-4 mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-600">{batchTransferError}</div>
-              )}
-
-              {/* Product List */}
-              <div className="flex-1 overflow-y-auto p-4">
-                {(warehouseProducts.filter((wp) => wp.quantity > 0).filter((wp) => {
-                  if (!batchTransferSearch) return true;
-                  const q = batchTransferSearch.toLowerCase();
-                  return (wp.product_name?.toLowerCase().includes(q) || wp.product_sku?.toLowerCase().includes(q));
-                })).length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16">
-                    <ArrowRight className="mb-3 h-10 w-10 text-slate-300" />
-                    <p className="text-sm text-slate-500">{dictionary.noProductsLabel}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {warehouseProducts.filter((wp) => wp.quantity > 0).filter((wp) => {
-                      if (!batchTransferSearch) return true;
-                      const q = batchTransferSearch.toLowerCase();
-                      return (wp.product_name?.toLowerCase().includes(q) || wp.product_sku?.toLowerCase().includes(q));
-                    }).map((wp) => (
-                      <div
-                        key={wp.product_id}
-                        className="flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3 transition hover:border-slate-200 hover:shadow-sm"
-                      >
-                        <div className="shrink-0">
-                          {wp.image_url ? (
-                            <img alt={wp.product_name} className="h-10 w-10 rounded-lg border border-slate-200 bg-slate-100 object-cover" src={wp.image_url} />
-                          ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-xs font-bold text-slate-500">
-                              {(wp.product_name || "?").slice(0, 2).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-900">{wp.product_name || "-"}</p>
-                          <p className="truncate text-xs text-slate-400">
-                            {wp.product_sku ? `${wp.product_sku} · ` : ""}
-                            จำนวนปัจจุบัน: {wp.quantity}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <input
-                            className="w-16 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm text-center font-semibold outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                            max={wp.quantity}
-                            min={1}
-                            onChange={(e) => setBatchTransferQuantities((prev) => ({ ...prev, [wp.product_id]: Math.min(Math.max(1, Number(e.target.value) || 1), wp.quantity) }))}
-                            type="number"
-                            value={batchTransferQuantities[wp.product_id] ?? 1}
-                          />
-                          <button
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
-                            disabled={isBatchTransferring[wp.product_id] || (batchTransferDestType === "warehouse" && !batchTransferDestStore && !batchTransferDestWarehouse)}
-                            onClick={async () => {
-                              setBatchTransferError("");
-                              setIsBatchTransferring((prev) => ({ ...prev, [wp.product_id]: true }));
-                              try {
-                                const qty = batchTransferQuantities[wp.product_id] ?? 1;
-                                await transferWarehouseProduct(selectedWarehouseId!, {
-                                  product_id: wp.product_id,
-                                  quantity: qty,
-                                  destination_type: batchTransferDestType,
-                                  destination_id: batchTransferDestType === "warehouse" ? batchTransferDestWarehouse : undefined,
-                                  destination_store_id: batchTransferDestStore || undefined,
-                                  note: batchTransferNote || undefined,
-                                });
-                                await Promise.all([
-                                  queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] }),
-                                  queryClient.invalidateQueries({ queryKey: ["stock", "products"] }),
-                                  queryClient.invalidateQueries({ queryKey: ["warehouses"] }),
-                                ]);
-                                setSuccessMessage(`${wp.product_name || ""} → ${batchTransferDestType === "stock" ? dictionary.transferToStockLabel : dictionary.transferToWarehouseLabel} (-${qty})`);
-                              } catch (err: any) {
-                                setBatchTransferError(err?.message || dictionary.nameRequired);
-                              } finally {
-                                setIsBatchTransferring((prev) => ({ ...prev, [wp.product_id]: false }));
-                              }
-                            }}
-                            type="button"
-                          >
-                            {isBatchTransferring[wp.product_id] ? (
-                              <svg aria-hidden="true" className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <circle className="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-90" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" fill="currentColor" />
-                              </svg>
-                            ) : (
-                              <ArrowRight className="h-4 w-4" />
-                            )}
-                            {dictionary.transferLabel}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {/* Export column picker modal */}
       {isExportModalOpen && (
@@ -2656,7 +2279,6 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
         onClose={() => {
           setSuccessMessage(null);
           setIsReceiveModalOpen(false);
-          setIsBatchTransferModalOpen(false);
           setTransferTarget(null);
         }}
       />
