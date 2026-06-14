@@ -27,6 +27,14 @@ export type InventoryAdjustDictionary = {
   success: string;
   error: string;
   location: string;
+  targetLocation: string;
+  useDefaultLocation: string;
+  noDefaultLocation: string;
+  selectReason: string;
+  note: string;
+  notePlaceholder: string;
+  noteRequired: string;
+  reasonLabels: Record<string, string>;
 };
 
 export type InventoryDictionary = {

@@ -30,6 +30,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import type { InventoryDictionary } from "@/components/stock/inventory-types";
 import type { Product } from "@/types/product";
+import { canManageStore, useStoreRole } from "@/lib/use-store-role";
 
 type Props = { dictionary: InventoryDictionary; locale: string; initialStatus?: string };
 
@@ -44,19 +45,29 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", { currency: "THB", maximumFractionDigits: 0, style: "currency" }).format(value);
 }
 
+// The inventory page manages TOTAL store stock — the sum across every store
+// location, sale-point or not. product_view.warehouse_stock is that sum;
+// total_stock counts only sale-point locations (the POS-sellable subset) and is the
+// wrong basis here — a store with no sale-point location would always read 0 even
+// with stock on the shelves. Fall back to total_stock only if the API predates the
+// warehouse_stock field.
+function storeStock(p: Product): number {
+  return p.warehouse_stock ?? p.total_stock ?? 0;
+}
+
 // ── Status system (4 states) ──────────────────────────────────────────────────
 type Status = "ready" | "low" | "out" | "inactive";
 
 function getStatus(p: Product): Status {
   if (!p.is_active) return "inactive";
-  const s = p.total_stock ?? 0;
+  const s = storeStock(p);
   if (s <= 0) return "out";
   if (p.min_stock != null && s <= p.min_stock) return "low";
   return "ready";
 }
 
 function getStockPercent(p: Product): number {
-  const s = p.total_stock ?? 0;
+  const s = storeStock(p);
   if (s <= 0) return 0;
   if (p.max_stock != null && p.max_stock > 0) return Math.max(4, Math.min(100, Math.round((s / p.max_stock) * 100)));
   if (p.min_stock != null && p.min_stock > 0) return Math.max(4, Math.min(100, Math.round((s / (p.min_stock * 2)) * 100)));
@@ -68,7 +79,7 @@ const STATUS_BAR: Record<Status, string> = {
 };
 
 function productValue(p: Product): number {
-  return (p.cost_price ?? p.base_price ?? 0) * (p.total_stock ?? 0);
+  return (p.cost_price ?? p.base_price ?? 0) * storeStock(p);
 }
 
 // ── Movement type → label / tone / icon ──────────────────────────────────────
@@ -122,6 +133,10 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
   const [tab, setTab] = useState<"all" | "ready" | "low" | "out">(statusToTab(initialStatus));
   const [adjusting, setAdjusting] = useState<Product | null>(null);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
+  // W2 §12: only owner/manager may adjust stock (cashier is denied; the backend also
+  // enforces 403). Hide the action for everyone else.
+  const { role } = useStoreRole();
+  const canAdjust = canManageStore(role);
 
   const dtf = useMemo(() => new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }), [locale]);
 
@@ -155,7 +170,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
       if (st === "out") out++;
       // Disabled products aren't available for sale — exclude from units & value.
       if (st === "inactive") continue;
-      availableUnits += Math.max(0, p.total_stock ?? 0);
+      availableUnits += Math.max(0, storeStock(p));
       value += productValue(p);
     }
     return { totalSku: productsQuery.data?.total ?? products.length, availableUnits, value, low, out };
@@ -326,7 +341,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
                       {/* Stock + subtle bar */}
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
-                          <span className={`text-sm font-bold ${st === "out" ? "text-rose-700" : st === "low" ? "text-amber-700" : "text-slate-900"}`}>{p.total_stock ?? 0}{unit ? ` ${unit}` : ""}</span>
+                          <span className={`text-sm font-bold ${st === "out" ? "text-rose-700" : st === "low" ? "text-amber-700" : "text-slate-900"}`}>{storeStock(p)}{unit ? ` ${unit}` : ""}</span>
                           <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${STATUS_BAR[st]} opacity-70`} style={{ width: `${getStockPercent(p)}%` }} /></div>
                         </div>
                       </td>
@@ -340,6 +355,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
                       <td className="px-3 py-3">
                         <RowActions
                           labels={t.action}
+                          canAdjust={canAdjust}
                           onAdjust={() => setAdjusting(p)}
                           onHistory={() => setHistoryProduct(p)}
                           onViewProduct={() => router.push(`/${locale}/stock?product=${p.id}`)}
@@ -414,9 +430,10 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
 // ── Row actions: light [Adjust] + ... dropdown (View History / View Details) ──
 
 function RowActions({
-  labels, onAdjust, onHistory, onViewProduct,
+  labels, canAdjust, onAdjust, onHistory, onViewProduct,
 }: {
   labels: InventoryDictionary["action"];
+  canAdjust: boolean;
   onAdjust: () => void;
   onHistory: () => void;
   onViewProduct: () => void;
@@ -459,10 +476,12 @@ function RowActions({
 
   return (
     <div className="flex items-center justify-end gap-1.5">
-      <button type="button" onClick={onAdjust}
-        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
-        <SlidersHorizontal className="h-3.5 w-3.5" /> {labels.adjust}
-      </button>
+      {canAdjust ? (
+        <button type="button" onClick={onAdjust}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 text-xs font-semibold text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
+          <SlidersHorizontal className="h-3.5 w-3.5" /> {labels.adjust}
+        </button>
+      ) : null}
       <button ref={btnRef} type="button" onClick={toggle} title={labels.more} aria-label={labels.more} aria-expanded={open}
         className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300">
         <MoreVertical className="h-4 w-4" />

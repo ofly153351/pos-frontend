@@ -2360,7 +2360,28 @@
       "invalidNegative": "Stock cannot be negative",
       "success": "Stock adjusted",
       "error": "Failed to adjust stock",
-      "location": "Storage location (optional)"
+      "location": "Storage location (optional)",
+      "targetLocation": "Adjustment location",
+      "useDefaultLocation": "Using the product's default location",
+      "noDefaultLocation": "This product has no default storage location. Please set one before adjusting stock.",
+      "selectReason": "Select a reason",
+      "note": "Note",
+      "notePlaceholder": "Add details",
+      "noteRequired": "A note is required when the reason is \"Other\".",
+      "reasonLabels": {
+        "FOUND_EXTRA": "Found extra stock",
+        "RETURN_TO_STOCK": "Returned to stock",
+        "OPENING_BALANCE": "Opening balance",
+        "DAMAGED": "Damaged",
+        "LOST": "Lost",
+        "EXPIRED": "Expired",
+        "INTERNAL_USE": "Internal use",
+        "WRITE_OFF": "Write-off",
+        "SPOT_COUNT": "Spot count",
+        "SYSTEM_MISMATCH": "System mismatch",
+        "DATA_CORRECTION": "Data correction",
+        "OTHER": "Other"
+      }
     },
     "warehouseDashboard": {
       "title": "Warehouse Dashboard",

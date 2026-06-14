@@ -4,6 +4,9 @@ import { authorizedApiRequest } from "@/services/api";
 export type AddStockItem = {
   product_id: string;
   quantity: number;
+  location_id?: string;
+  reason?: string;
+  idempotency_key?: string;
   note?: string;
 };
 
@@ -59,10 +62,36 @@ export function addStock(input: AddStockInput) {
   );
 }
 
+export type RemoveStockInput = {
+  product_id: string;
+  location_id: string;
+  quantity: number;
+  reason?: string;
+  idempotency_key?: string;
+  note?: string;
+};
+
+// Deduct stock at a specific location (delta-based OUT movement). The backend
+// guards against over-removal (rejects if it would go negative) and writes the
+// movement + stock change atomically.
+export function removeStock(input: RemoveStockInput) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<StockMovement>(
+    `/api/stores/${currentStoreId}/stock/out`,
+    {
+      body: input,
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
 export type AdjustStockInput = {
   productId: string;
   physicalQty: number;
   note?: string;
+  reason?: string;
+  idempotencyKey?: string;
   referenceId?: string;
   movementType?: string;
   locationId?: string;
@@ -77,6 +106,8 @@ export function adjustStock(input: AdjustStockInput) {
         product_id: input.productId,
         physical_quantity: input.physicalQty,
         note: input.note?.trim() || undefined,
+        reason: input.reason?.trim() || undefined,
+        idempotency_key: input.idempotencyKey?.trim() || undefined,
         reference_id: input.referenceId?.trim() || undefined,
         movement_type: input.movementType?.trim() || undefined,
         location_id: input.locationId?.trim() || undefined,

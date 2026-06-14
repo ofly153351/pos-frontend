@@ -48,6 +48,7 @@ export type Product = {
   max_stock?: number | null;
   min_stock?: number;
   total_stock?: number;
+  warehouse_stock?: number;
   sku?: string | null;
   barcode?: string | null;
   special_price?: number | null;
