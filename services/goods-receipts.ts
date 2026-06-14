@@ -115,12 +115,17 @@ export function upsertGoodsReceiptItems(receiptId: string, input: UpsertGoodsRec
   );
 }
 
-export function confirmGoodsReceipt(receiptId: string) {
+export function confirmGoodsReceipt(receiptId: string, idempotencyKey?: string) {
   const storeId = ensureStoreId();
+  // Phase W3 §12: a confirm idempotency key makes a network-retried confirm safe — the
+  // backend returns the original result instead of double-applying stock/cost/PO.
+  const headers: Record<string, string> = {};
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
   return authorizedApiRequest<GoodsReceiptDraft>(
     `/api/stores/${storeId}/receipts/${receiptId}/confirm`,
     {
       method: "POST",
+      headers,
     },
   );
 }

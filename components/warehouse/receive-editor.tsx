@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
@@ -68,6 +68,9 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   const [headerErrors, setHeaderErrors] = useState<Partial<Record<keyof HeaderForm, string>>>({});
   const [error, setError] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  // Stable confirm idempotency key (Phase W3 §12): reused across a retry/double-click of
+  // the same confirm, regenerated only after a successful confirm.
+  const confirmKeyRef = useRef("");
   const [isCancelOpen, setIsCancelOpen] = useState(false);
 
   const headerInitRef = useRef(false);
@@ -109,32 +112,70 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   const allLocations = useMemo(() => locationsQuery.data ?? [], [locationsQuery.data]);
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p] as const)), [products]);
   const locationById = useMemo(() => new Map(allLocations.map((l) => [l.id, l] as const)), [allLocations]);
-  const warehouseNameById = useMemo(() => new Map((warehousesQuery.data ?? []).map((w) => [w.id, w.name] as const)), [warehousesQuery.data]);
+  const activeWarehouseIds = useMemo(
+    () => new Set((warehousesQuery.data ?? []).filter((w) => w.is_active).map((w) => w.id)),
+    [warehousesQuery.data],
+  );
   const status = receipt?.status ?? "draft";
   const editable = status === "draft";
   const hasPo = Boolean(purchaseOrderId);
   const productEditHref = `/${locale}/stock`;
 
-  // Resolve a product's authoritative default receiving location and validate it
-  // against the current receipt warehouse — mirrors the backend resolution rules.
-  const resolveLocation = useMemo(() => {
-    return (
-      productId: string,
-    ): { locationName: string; status: LocationResolveStatus; warning: string } => {
-      const product = productById.get(productId);
-      const defId = (product?.default_location_id ?? "").trim();
-      if (!defId) return { locationName: "", status: "missing", warning: t.itemNoLocation };
-      const loc = locationById.get(defId);
-      if (!loc || !loc.is_active || loc.is_sale_point) {
+  // Human label for a location: "[zone ·] (code — )name · <sale-point|storage tag>".
+  const formatLocationLabel = useCallback(
+    (loc: { name: string; code?: string; zone_name?: string; is_sale_point: boolean }) => {
+      const namePart = loc.code ? `${loc.code} — ${loc.name}` : loc.name;
+      const tag = loc.is_sale_point ? t.locationSalePointTag : t.locationStorageTag;
+      return [loc.zone_name, namePart, tag].filter(Boolean).join(" · ");
+    },
+    [t],
+  );
+
+  // A location is a valid receiving destination for the current receipt warehouse
+  // when it exists, is active, sits in the selected (active) warehouse. Sale points
+  // ARE allowed (Phase W3 §4) — is_sale_point does not block receiving.
+  const isLocationValid = useCallback(
+    (locationId: string) => {
+      const loc = locationById.get(locationId);
+      return Boolean(
+        loc && loc.is_active && selectedWarehouseId && loc.warehouse_id === selectedWarehouseId && activeWarehouseIds.has(loc.warehouse_id),
+      );
+    },
+    [locationById, selectedWarehouseId, activeWarehouseIds],
+  );
+
+  const productDefaultLocationId = useCallback(
+    (productId: string) => (productById.get(productId)?.default_location_id ?? "").trim(),
+    [productById],
+  );
+
+  // Receiving-location options for the picker: every active location in the selected
+  // active warehouse (sale-point + storage), same store. No first-row defaulting here.
+  const locationOptions = useMemo(() => {
+    if (!selectedWarehouseId) return [] as { id: string; label: string }[];
+    return allLocations
+      .filter((l) => l.warehouse_id === selectedWarehouseId && l.is_active && activeWarehouseIds.has(l.warehouse_id))
+      .map((l) => ({ id: l.id, label: formatLocationLabel(l) }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [allLocations, selectedWarehouseId, activeWarehouseIds, formatLocationLabel]);
+
+  // Resolve a row's chosen receiving location and validate it against the receipt
+  // warehouse — mirrors the backend rules. An empty selection is "missing".
+  const resolveLocation = useCallback(
+    (chosenLocationId: string): { locationName: string; status: LocationResolveStatus; warning: string } => {
+      const chosen = (chosenLocationId ?? "").trim();
+      if (!chosen) return { locationName: "", status: "missing", warning: t.itemNoLocation };
+      const loc = locationById.get(chosen);
+      if (!loc || !loc.is_active) {
         return { locationName: loc?.name ?? "", status: "unavailable", warning: t.itemLocationUnavailable };
       }
-      if (selectedWarehouseId && loc.warehouse_id !== selectedWarehouseId) {
+      if (!selectedWarehouseId || loc.warehouse_id !== selectedWarehouseId || !activeWarehouseIds.has(loc.warehouse_id)) {
         return { locationName: loc.name, status: "wrong_warehouse", warning: t.itemLocationWrongWarehouse };
       }
-      const parts = [warehouseNameById.get(loc.warehouse_id), loc.zone_name, loc.code ? `${loc.code} — ${loc.name}` : loc.name].filter(Boolean);
-      return { locationName: parts.join(" · "), status: "ok", warning: "" };
-    };
-  }, [productById, locationById, warehouseNameById, selectedWarehouseId, t]);
+      return { locationName: formatLocationLabel(loc), status: "ok", warning: "" };
+    },
+    [locationById, selectedWarehouseId, activeWarehouseIds, formatLocationLabel, t],
+  );
 
   // Location resolution is only meaningful once the product + location lists have
   // loaded. While they load (or if a fetch fails) we render a neutral "resolving"
@@ -176,6 +217,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
       if (remaining <= 0) continue;
       const product = byId.get(it.product_id);
       const key = receiveRowKey(it.product_id);
+      const defId = (product?.default_location_id ?? "").trim();
       next[key] = {
         key,
         productId: it.product_id,
@@ -186,12 +228,40 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
         quantity: String(remaining),
         unitPrice: String(it.unit_cost ?? product?.cost_price ?? 0),
         discountValue: "0",
+        // Pre-select the product default; the reconcile effect drops it if it is
+        // not valid for the receipt warehouse (no first-row fallback).
+        locationId: defId && isLocationValid(defId) ? defId : "",
       };
     }
     poImportedRef.current = true;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time import of PO lines after the PO detail loads
     if (Object.keys(next).length) setItemRows(next);
-  }, [editable, poDetailQuery.data, products, itemRows]);
+  }, [editable, poDetailQuery.data, products, itemRows, isLocationValid]);
+
+  // ── Reconcile per-line receiving locations against the current warehouse ──
+  // Runs on load and whenever the warehouse / location data changes. For each row:
+  //   • keep the chosen location if it is still valid for the receipt warehouse;
+  //   • otherwise re-resolve to the product default when that default is valid;
+  //   • otherwise clear it (leave the line unresolved — never fall back to row 1).
+  // It is idempotent (a second pass produces no change), so it cannot loop, and it
+  // never overrides a still-valid explicit selection. A user clearing a selection is
+  // preserved because clearing changes itemRows, not this effect's dependencies.
+  useEffect(() => {
+    if (!editable || !locationDataReady) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- idempotent reconciliation of line locations on warehouse/location change
+    setItemRows((cur) => {
+      let changed = false;
+      const next: Record<string, ReceiveItemRow> = {};
+      for (const [key, row] of Object.entries(cur)) {
+        if (row.locationId && isLocationValid(row.locationId)) { next[key] = row; continue; }
+        const defId = productDefaultLocationId(row.productId);
+        const resolved = defId && isLocationValid(defId) ? defId : "";
+        if (resolved !== row.locationId) { next[key] = { ...row, locationId: resolved }; changed = true; }
+        else next[key] = row;
+      }
+      return changed ? next : cur;
+    });
+  }, [editable, locationDataReady, selectedWarehouseId, allLocations, isLocationValid, productDefaultLocationId]);
 
   // ── Debounced autosave (no sessionStorage; backend authoritative) ──
   useEffect(() => {
@@ -252,7 +322,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
         const disc = Number(row.discountValue || 0);
         const overReceipt = hasPo && productReceived > remaining;
         const loc = locationDataReady
-          ? resolveLocation(row.productId)
+          ? resolveLocation(row.locationId)
           : { locationName: "", status: "resolving" as LocationResolveStatus, warning: "" };
         return {
           key: row.key,
@@ -271,6 +341,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
           lineTotal: qty * unit - disc,
           overReceipt,
           error: overReceipt ? t.overReceiptInline.replace("{remaining}", String(remaining)) : "",
+          locationId: row.locationId,
           locationName: loc.locationName,
           locationStatus: loc.status,
           locationWarning: loc.warning,
@@ -320,14 +391,14 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   }, [itemRows, headerForm]);
 
   const hasItems = editorRows.some((r) => Number(r.quantity || 0) > 0);
-  // Block submit/confirm if any item has an over-receipt, a negative qty, or a
-  // product whose default location is definitively missing/invalid/wrong-warehouse.
+  // Every line with received qty > 0 must have a valid receiving location selected.
   // "resolving" (data still loading) is NOT a block — the backend re-validates.
-  const hasBlockingError = inspection.hasOver || editorRows.some((r) =>
-    Number(r.quantity || 0) < 0 ||
-    r.locationStatus === "missing" ||
-    r.locationStatus === "unavailable" ||
-    r.locationStatus === "wrong_warehouse");
+  const hasUnresolvedLocation = editorRows.some((r) =>
+    Number(r.quantity || 0) > 0 &&
+    (r.locationStatus === "missing" || r.locationStatus === "unavailable" || r.locationStatus === "wrong_warehouse"));
+  // Block submit/confirm on over-receipt, a negative qty, or an unresolved location.
+  const hasBlockingError = inspection.hasOver || hasUnresolvedLocation || editorRows.some((r) => Number(r.quantity || 0) < 0);
+  const blockingMessage = hasUnresolvedLocation ? t.validationSelectAllLocations : t.inspectionOverWarning;
 
   // ── Mutations / handlers ──
   function setHeaderField<K extends keyof HeaderForm>(field: K, value: HeaderForm[K]) {
@@ -338,6 +409,8 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   function addProduct(product: Product) {
     if (!editable) return;
     const key = receiveRowKey(product.id);
+    const defId = (product.default_location_id ?? "").trim();
+    const initialLocationId = defId && isLocationValid(defId) ? defId : "";
     setItemRows((cur) => {
       const existing = cur[key];
       if (existing) return { ...cur, [key]: { ...existing, quantity: String(Number(existing.quantity || 0) + 1) } };
@@ -347,6 +420,8 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
           key, productId: product.id, productName: product.name, sku: product.sku ?? "", barcode: product.barcode ?? "",
           unitName: product.product_unit_name ?? "", quantity: "1",
           unitPrice: String(product.cost_price ?? product.effective_price ?? 0), discountValue: "0",
+          // Pre-select the product default when valid for the receipt warehouse.
+          locationId: initialLocationId,
         },
       };
     });
@@ -385,6 +460,9 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   }
   function setRowUnitCost(key: string, value: string) {
     setItemRows((cur) => (cur[key] ? { ...cur, [key]: { ...cur[key], unitPrice: value } } : cur));
+  }
+  function setRowLocation(key: string, value: string) {
+    setItemRows((cur) => (cur[key] ? { ...cur, [key]: { ...cur[key], locationId: value } } : cur));
   }
   function removeRow(key: string) {
     setItemRows((cur) => { const copy = { ...cur }; delete copy[key]; return copy; });
@@ -436,7 +514,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
     setError("");
     if (!validateHeader()) return;
     if (!hasItems) { setError(t.validationItemsRequired); return; }
-    if (hasBlockingError) { setError(t.inspectionOverWarning); return; }
+    if (hasBlockingError) { setError(blockingMessage); return; }
     startTransition(async () => {
       try { await persistAll(); await submitGoodsReceipt(receiptId); await refresh(); toast.success(t.badgePendingReview); }
       catch (e) { const m = e instanceof Error ? e.message : t.stateSaving; setError(m); toast.error(m); }
@@ -455,13 +533,33 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
     setIsConfirmOpen(false);
     setError("");
     if (!hasItems) { setError(t.validationItemsRequired); return; }
-    if (hasBlockingError) { setError(t.inspectionOverWarning); return; }
+    if (hasBlockingError) { setError(blockingMessage); return; }
+    if (!confirmKeyRef.current) {
+      confirmKeyRef.current = globalThis.crypto?.randomUUID?.() ?? `rc-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    }
+    const idempotencyKey = confirmKeyRef.current;
     startTransition(async () => {
       try {
         if (status === "draft") await persistAll();
-        await confirmGoodsReceipt(receiptId);
-        await refresh();
-        await queryClient.invalidateQueries({ queryKey: ["warehouse", "receive", "index"] });
+        await confirmGoodsReceipt(receiptId, idempotencyKey);
+        confirmKeyRef.current = ""; // success → a later confirm uses a fresh key
+        await refresh(); // receipt detail
+        // Phase W3: a confirm mutates stock, product cost, PO received qty/status and
+        // stock movements — invalidate every cached view that reads them so the UI
+        // reflects the new truth (not just by navigating away from the editor).
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["warehouse"] }),                       // receipt detail/lists + receive editor subqueries
+          queryClient.invalidateQueries({ queryKey: ["workspace", "goods-receipts"] }),     // purchasing workspace goods-receipts tab list
+          queryClient.invalidateQueries({ queryKey: ["workspace", "receipts"] }),           // purchasing workspace receipt summary cards
+          queryClient.invalidateQueries({ queryKey: ["workspace", "purchase-orders"] }),    // purchasing workspace PO tab
+          queryClient.invalidateQueries({ queryKey: ["warehouse-products"] }),              // per-warehouse stock
+          queryClient.invalidateQueries({ queryKey: ["purchase-orders"] }),                 // purchase orders (received qty/status)
+          queryClient.invalidateQueries({ queryKey: ["inventory"] }),                       // inventory products / movements / totals
+          queryClient.invalidateQueries({ queryKey: ["stock", "products"] }),               // product list (cost)
+          queryClient.invalidateQueries({ queryKey: ["stock", "movements"] }),              // stock movements
+          queryClient.invalidateQueries({ queryKey: ["all-products"] }),                    // product pickers
+          queryClient.invalidateQueries({ queryKey: ["reports", "inventory-value"] }),      // inventory value / cost totals
+        ]);
         toast.success(t.badgeConfirmed);
       } catch (e) { const m = e instanceof Error ? e.message : t.stateSaving; setError(m); toast.error(m); }
     });
@@ -513,9 +611,11 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
     : status === "pending_review" ? { cls: "bg-amber-100 text-amber-700", label: t.badgePendingReview }
     : { cls: "bg-violet-100 text-violet-700", label: t.badgeDraft };
   const stockPreview = stockImpactQuery.data ?? receipt.stock_preview ?? [];
-  const warehouseUsableLocations = allLocations.filter((l) => l.warehouse_id === selectedWarehouseId && l.is_active && !l.is_sale_point);
+  // Phase W3 §4: sale-point locations ARE valid receiving destinations, so a
+  // warehouse is only "without locations" when it has no active location at all.
+  const warehouseUsableLocations = allLocations.filter((l) => l.warehouse_id === selectedWarehouseId && l.is_active);
   const locationsWarning = selectedWarehouseId && !locationsQuery.isLoading && warehouseUsableLocations.length === 0
-    ? (allLocations.some((l) => l.warehouse_id === selectedWarehouseId) ? t.validationWarehouseOnlySalePoints : t.validationWarehouseWithoutLocations)
+    ? t.validationWarehouseWithoutLocations
     : null;
 
   return (
@@ -561,10 +661,12 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
             rows={editorRows}
             hasPo={hasPo}
             editable={editable}
+            locationOptions={locationOptions}
             onQtyChange={setRowQty}
             onQtyBlur={normalizeRowQty}
             onStep={stepRow}
             onUnitCostChange={setRowUnitCost}
+            onLocationChange={setRowLocation}
             onRemove={removeRow}
           />
           <ReceiveInspectionSummary dictionary={t} hasPo={hasPo} counts={inspection.counts} mismatches={inspection.mismatches} hasOver={inspection.hasOver} />

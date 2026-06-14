@@ -28,7 +28,8 @@ export type EditorRowView = {
   lineTotal: number;
   overReceipt: boolean;
   error: string;
-  // Resolved (read-only) receiving location, derived from products.default_location_id.
+  // Per-line receiving location: chosen id + resolved label/status for the picker.
+  locationId: string;
   locationName: string;
   locationStatus: LocationResolveStatus;
   locationWarning: string;
@@ -48,10 +49,12 @@ export type ReceiveItemsTableProps = {
   rows: EditorRowView[];
   hasPo: boolean;
   editable: boolean;
+  locationOptions: { id: string; label: string }[];
   onQtyChange: (key: string, value: string) => void;
   onQtyBlur: (key: string) => void;
   onStep: (key: string, delta: number) => void;
   onUnitCostChange: (key: string, value: string) => void;
+  onLocationChange: (key: string, value: string) => void;
   onRemove: (key: string) => void;
 };
 
@@ -65,29 +68,68 @@ function statusLabel(t: ReceiveDictionary, status: ReceiveRowStatus) {
   }
 }
 
-function LocationCell({ t, row }: { t: ReceiveDictionary; row: EditorRowView }) {
+function LocationCell({
+  t,
+  row,
+  editable,
+  options,
+  onChange,
+}: {
+  t: ReceiveDictionary;
+  row: EditorRowView;
+  editable: boolean;
+  options: { id: string; label: string }[];
+  onChange: (key: string, value: string) => void;
+}) {
+  // Read-only (pending/confirmed/cancelled): show the resolved label or a dash.
+  if (!editable) {
+    if (row.locationStatus === "ok") {
+      return (
+        <span className="inline-flex max-w-[220px] items-center rounded-lg bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-100">
+          {row.locationName}
+        </span>
+      );
+    }
+    return <span className="text-xs text-slate-400">—</span>;
+  }
+
   if (row.locationStatus === "resolving") {
     return <span className="text-xs text-slate-400">…</span>;
   }
-  if (row.locationStatus === "ok") {
-    return (
-      <span className="inline-flex max-w-[200px] items-center rounded-lg bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-inset ring-violet-100">
-        {row.locationName}
-      </span>
-    );
-  }
+
+  const unresolved =
+    row.locationStatus === "missing" || row.locationStatus === "unavailable" || row.locationStatus === "wrong_warehouse";
+  // Only show a value the picker actually offers; an invalid/stale id falls back to
+  // the placeholder until the reconcile pass clears it.
+  const value = options.some((o) => o.id === row.locationId) ? row.locationId : "";
+
   return (
-    <div className="flex flex-col gap-1">
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
-        <AlertTriangle className="h-3 w-3 shrink-0" />
-        {row.locationWarning}
-      </span>
-      <Link
-        className="inline-flex w-fit items-center rounded-lg border border-amber-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-50"
-        href={row.productEditHref}
+    <div className="flex min-w-[180px] flex-col gap-1">
+      <select
+        className={`w-full rounded-lg border bg-white px-2 py-1.5 text-xs font-medium outline-none focus:ring-2 ${
+          unresolved
+            ? "border-amber-300 text-amber-800 focus:border-amber-400 focus:ring-amber-100"
+            : "border-violet-200 text-slate-700 focus:border-violet-400 focus:ring-violet-100"
+        }`}
+        onChange={(e) => onChange(row.key, e.target.value)}
+        value={value}
       >
-        {t.actionGoSetProductLocation}
-      </Link>
+        <option value="">{t.placeholderLocation}</option>
+        {options.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {unresolved && options.length === 0 ? (
+        <Link
+          className="inline-flex w-fit items-center gap-1 text-[11px] font-semibold text-amber-700 transition hover:underline"
+          href={row.productEditHref}
+        >
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {t.actionGoSetProductLocation}
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -97,10 +139,12 @@ export function ReceiveItemsTable({
   rows,
   hasPo,
   editable,
+  locationOptions,
   onQtyChange,
   onQtyBlur,
   onStep,
   onUnitCostChange,
+  onLocationChange,
   onRemove,
 }: ReceiveItemsTableProps) {
   return (
@@ -148,7 +192,7 @@ export function ReceiveItemsTable({
                         ) : null}
                       </td>
                       <td className="px-3 py-3">
-                        <LocationCell row={row} t={t} />
+                        <LocationCell editable={editable} onChange={onLocationChange} options={locationOptions} row={row} t={t} />
                       </td>
                       <td className="px-3 py-3 text-right tabular-nums text-slate-600">{hasPo ? formatNumber(row.ordered) : "—"}</td>
                       <td className="px-3 py-3 text-right tabular-nums text-slate-600">{hasPo ? formatNumber(row.prevReceived) : "—"}</td>

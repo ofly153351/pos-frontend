@@ -183,6 +183,9 @@ export type ReceiveDictionary = {
   itemLocationUnavailable: string;
   itemLocationWrongWarehouse: string;
   actionGoSetProductLocation: string;
+  locationSalePointTag: string;
+  locationStorageTag: string;
+  validationSelectAllLocations: string;
   statePrereqError: string;
   emptyItems: string;
   actionSaveDraft: string;
@@ -368,9 +371,11 @@ export function buildDraftItemsPayload(itemRows: Record<string, ItemFormRow>) {
 }
 
 // ── Single-page editor model ─────────────────────────────────────────────────
-// Rows are keyed by PRODUCT. The receiving location is no longer chosen per row —
-// it is resolved from the product's authoritative default storage location
-// (products.default_location_id) and shown read-only, so one product = one row.
+// Rows are keyed by PRODUCT (one product = one row). Each row carries an explicit
+// receiving locationId: it is PRE-SELECTED from the product's authoritative default
+// (products.default_location_id) when that default is valid for the receipt
+// warehouse, and the user can override it per line. An empty locationId means the
+// line is unresolved and must be selected before submit/confirm.
 
 export type ReceiveItemRow = {
   key: string;
@@ -382,6 +387,7 @@ export type ReceiveItemRow = {
   quantity: string; // kept as a string so the input can be temporarily empty while typing
   unitPrice: string;
   discountValue: string;
+  locationId: string; // explicit per-line receiving location ("" = unresolved)
 };
 
 export type ReceiveRowStatus = "complete" | "short" | "over" | "not_received" | "received";
@@ -403,8 +409,10 @@ export function buildEditorRows(receipt?: GoodsReceiptDraft | null): Record<stri
     const key = receiveRowKey(item.product_id);
     const existing = rows[key];
     if (existing) {
-      // Pre-Phase-2 drafts could split one product across locations; merge them.
+      // Pre-Phase-2 drafts could split one product across locations; merge them and
+      // keep the first persisted location as the row's selection.
       existing.quantity = String(Number(existing.quantity || 0) + Number(item.quantity || 0));
+      if (!existing.locationId) existing.locationId = (item.location_id ?? "").trim();
       continue;
     }
     rows[key] = {
@@ -417,18 +425,22 @@ export function buildEditorRows(receipt?: GoodsReceiptDraft | null): Record<stri
       quantity: String(item.quantity),
       unitPrice: String(item.unit_price ?? 0),
       discountValue: String(item.discount_value ?? 0),
+      // Reopening a draft restores the user's previously chosen receiving location.
+      locationId: (item.location_id ?? "").trim(),
     };
   }
   return rows;
 }
 
 export function buildEditorItemsPayload(rows: Record<string, ReceiveItemRow>) {
-  // location_id is intentionally omitted — the backend resolves the authoritative
-  // location from the product's default and ignores any client-supplied value.
+  // location_id carries the user's explicit per-line receiving location so it is
+  // persisted on the draft (and restored on reopen). When empty, the backend
+  // resolves the product's authoritative default.
   return Object.values(rows)
     .filter((row) => Number(row.quantity) > 0)
     .map((row) => ({
       discount_value: Number(row.discountValue || 0),
+      location_id: row.locationId ? row.locationId : undefined,
       product_id: row.productId,
       quantity: Math.floor(Number(row.quantity) || 0),
       unit_price: Number(row.unitPrice || 0),
