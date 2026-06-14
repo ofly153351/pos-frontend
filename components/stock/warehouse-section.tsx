@@ -3,6 +3,7 @@
 import * as XLSX from "xlsx";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -46,8 +47,8 @@ import {
 import type { Location } from "@/services/locations";
 import { listProducts } from "@/services/products";
 import { listMyStores } from "@/services/stores";
+import { canManageStore, useStoreRole } from "@/lib/use-store-role";
 import type {
-  AddWarehouseProductInput,
   CreateWarehouseInput,
   UpdateWarehouseInput,
   Warehouse,
@@ -123,6 +124,9 @@ type WarehouseSectionDictionary = {
   editQtyTitle: string;
   exportBarcodeLabel: string;
   receiveStockLabel: string;
+  addDisabledMessage: string;
+  removeHasStockMessage: string;
+  locationDeleteBlockedMessage: string;
   receiveStockTitle: string;
   transferLabel: string;
   transferTitle: string;
@@ -372,6 +376,13 @@ function WarehouseComboBox({
 
 export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const params = useParams();
+  const locale = typeof params?.locale === "string" ? params.locale : "th";
+  const { role } = useStoreRole();
+  const canManage = canManageStore(role);
+  // Phase W0: single visible banner for disabled/blocked safety messages.
+  const [opNotice, setOpNotice] = useState("");
   const [isPending, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -736,7 +747,9 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
       setLocationDeleteConfirmId(null);
       await refetchManagedLocations();
       await queryClient.invalidateQueries({ queryKey: ["warehouse", "receive", "locations"] });
-    } catch { /* ignore */ }
+    } catch {
+      setOpNotice(dictionary.locationDeleteBlockedMessage);
+    }
   }
 
   // Close modals on Escape
@@ -934,28 +947,13 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   );
 
   const handleAddProduct = useCallback(
-    async (productId: string) => {
-      if (!selectedWarehouse || addingProductIds.has(productId)) return;
-
-      setAddError("");
-      setAddingProductIds((prev) => new Set(prev).add(productId));
-
-      try {
-        const input: AddWarehouseProductInput = { product_id: productId, quantity: addProductQuantity };
-        await addWarehouseProduct(selectedWarehouse.id, input);
-        await queryClient.invalidateQueries({
-          queryKey: ["warehouse-products", selectedWarehouse.id],
-        });
-      } catch (err: any) {
-        setAddError(err?.message || "Failed to add product");
-        setAddingProductIds((prev) => {
-          const next = new Set(prev);
-          next.delete(productId);
-          return next;
-        });
-      }
+    async (_productId: string) => {
+      // Phase W0: direct warehouse stock-add is disabled — it changed stocks with no
+      // movement and could auto-create locations. Receiving now goes through the
+      // canonical Goods Receipt workflow.
+      setOpNotice(dictionary.addDisabledMessage);
     },
-    [selectedWarehouse, addingProductIds, addProductQuantity, queryClient],
+    [dictionary.addDisabledMessage],
   );
 
   const handleRemoveProduct = useCallback(
@@ -978,17 +976,30 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           queryKey: ["warehouse-products", selectedWarehouseId],
         });
       } catch {
-        // Error handled silently - refetch to reconcile
+        // Backend now rejects removal while stock remains — show the guidance and
+        // reconcile the cache.
+        setOpNotice(dictionary.removeHasStockMessage);
         await queryClient.refetchQueries({
           queryKey: ["warehouse-products", selectedWarehouseId],
         });
       }
     },
-    [selectedWarehouseId, queryClient],
+    [selectedWarehouseId, queryClient, dictionary.removeHasStockMessage],
   );
 
   return (
     <div className="w-full xl:px-2 2xl:px-4">
+      {opNotice ? (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+            <p className="text-sm font-medium text-amber-800">{opNotice}</p>
+          </div>
+          <button type="button" onClick={() => setOpNotice("")} aria-label="dismiss" className="shrink-0 rounded p-1 text-amber-500 transition hover:bg-amber-100">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
       <div>
         {/* Stats Cards */}
         <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -1044,10 +1055,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             <button
               className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm md:text-[15px] font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-40"
               disabled={!selectedWarehouse}
-              onClick={() => {
-                setShowAddProduct(true);
-                setProductSearch("");
-              }}
+              onClick={() => setOpNotice(dictionary.addDisabledMessage)}
               type="button"
             >
               <Plus className="h-4 w-4" />
@@ -1081,13 +1089,8 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
             </button>
             <button
               className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-40"
-              disabled={!selectedWarehouse || warehouseProducts.length === 0}
-              onClick={() => {
-                setIsReceiveModalOpen(true);
-                setReceiveSearch("");
-                setReceiveQuantities({});
-                setReceiveError("");
-              }}
+              disabled={!selectedWarehouse}
+              onClick={() => router.push(`/${locale}/warehouse/receive/new`)}
               type="button"
             >
               <Download className="h-4 w-4" />
@@ -1255,10 +1258,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           <p className="text-sm font-medium text-slate-500">{dictionary.noProductsInWarehouseLabel}</p>
           <button
             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-violet-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-200/70 transition hover:bg-violet-800"
-            onClick={() => {
-              setShowAddProduct(true);
-              setProductSearch("");
-            }}
+            onClick={() => setOpNotice(dictionary.addDisabledMessage)}
             type="button"
           >
             <Plus className="h-4 w-4" />
@@ -1425,14 +1425,16 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       >
                         <Barcode className="h-4 w-4" />
                       </button>
-                      <button
-                        className="rounded-lg p-2.5 text-rose-600 transition hover:bg-rose-50"
-                        onClick={() => handleRemoveProduct(wp.product_id)}
-                        title={dictionary.deleteLabel}
-                        type="button"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {canManage ? (
+                        <button
+                          className="rounded-lg p-2.5 text-rose-600 transition hover:bg-rose-50"
+                          onClick={() => handleRemoveProduct(wp.product_id)}
+                          title={dictionary.deleteLabel}
+                          type="button"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      ) : null}
                     </div>
                   </td>
                 </tr>
