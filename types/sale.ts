@@ -11,6 +11,7 @@ export type SaleItemInput = {
 export type CreateSaleInput = {
   customer_id?: string;
   discount_bill?: number; // deprecated: kept during rollout, treated as manual_discount by the backend
+  location_id?: string; // Phase W4B: the active sale-point location to deduct from (else store default)
   manual_discount?: number;
   promo_discount?: number;
   promotion_ids?: string[];
@@ -51,6 +52,7 @@ export type Sale = {
   discount_amount?: number;
   id: string;
   items?: SaleItem[];
+  location_id?: string | null; // Phase W4B: the sale-point location this sale deducted from
   note?: string | null;
   paid_amount?: number;
   payment_method: SalePaymentMethod;

@@ -27,13 +27,18 @@ export function getSaleById(saleId: string) {
   return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales/${saleId}`);
 }
 
-export function createSale(input: CreateSaleInput) {
+// Phase W4B: the optional idempotency key makes a network-retried checkout safe — the
+// backend returns the original sale instead of creating a second sale / second payment /
+// second stock deduction. The sale deducts from input.location_id (the active sale point).
+export function createSale(input: CreateSaleInput, idempotencyKey?: string) {
   const currentStoreId = ensureStoreId();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
   return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales`, {
     body: input,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     method: "POST",
   });
 }

@@ -18,6 +18,13 @@ import { convertToDeliveryOrder, createDocument } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { listProducts } from "@/services/products";
+import {
+  listLocations,
+  listLocationProducts,
+  type Location,
+} from "@/services/locations";
+import { canManageStore, useStoreRole } from "@/lib/use-store-role";
+import { ApiError } from "@/services/api";
 import { listPromotions } from "@/services/promotions";
 import {
   BILL_LEVEL_TYPES,
@@ -90,6 +97,17 @@ type SalesManagerProps = {
 
 const productViewStorageKey = "pos-sales-product-view";
 
+// Prefer a backend field-level message (e.g. the Thai sale-location validation copy that
+// the API places in error.fields[], not the generic top-level "validation failed") so the
+// cashier sees the actionable message rather than the envelope text.
+function errorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.fields?.length) {
+    return err.fields[0]?.message || err.message;
+  }
+  if (err instanceof Error) return err.message;
+  return "Request failed";
+}
+
 export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(function SalesManager({
   dictionary,
   locale = "en",
@@ -100,7 +118,21 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   onHoldBillSuccess,
 }: SalesManagerProps, ref) {
   const [hasMounted, setHasMounted] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [rawProducts, setRawProducts] = useState<Product[]>([]);
+  // Phase W4B — POS sale-point location. Every sale deducts from exactly one active
+  // sale-point location (the store default, or an explicit pick by owner/manager). The
+  // displayed/sellable stock is that location's stock, never the product grand total.
+  const [saleLocations, setSaleLocations] = useState<Location[]>([]);
+  const [selectedSaleLocationId, setSelectedSaleLocationId] = useState("");
+  const [saleLocationStock, setSaleLocationStock] = useState<Record<string, number>>({});
+  const [locationStockReady, setLocationStockReady] = useState(false);
+  const [locationStockError, setLocationStockError] = useState(false);
+  const { role: storeRole } = useStoreRole();
+  const canSelectSaleLocation = canManageStore(storeRole);
+  // Idempotency lifecycle: a stable key per checkout intent so a retried submit (double
+  // click / network retry) returns the original sale instead of creating a second one.
+  const saleIdempotencyKeyRef = useRef("");
+  const saleIntentSigRef = useRef("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerLevelDiscounts, setCustomerLevelDiscounts] = useState<
     CustomerLevelDiscount[]
@@ -222,16 +254,33 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setIsLoadingData(true);
     startTransition(async () => {
       try {
-        const [productsResponse, customersResponse, discountResponse] =
+        const [productsResponse, customersResponse, discountResponse, locationsResponse] =
           await Promise.all([
             listProducts({ limit: 500 }),
             listCustomers(),
             listCustomerLevelDiscounts(),
+            listLocations({ limit: 500 }),
           ]);
 
-        setProducts(productsResponse.data?.items ?? []);
+        setRawProducts(productsResponse.data?.items ?? []);
         setCustomers(customersResponse.data ?? []);
         setCustomerLevelDiscounts(discountResponse.data ?? []);
+
+        // Only active sale-point locations are eligible to sell from.
+        const sellable = (locationsResponse.data?.items ?? []).filter(
+          (loc) => loc.is_active && loc.is_sale_point,
+        );
+        setSaleLocations(sellable);
+        // Resolve the active sale location: keep the current pick if still valid,
+        // else the store default sale location, else the first active sale point.
+        setSelectedSaleLocationId((current) => {
+          if (current && sellable.some((loc) => loc.id === current)) {
+            return current;
+          }
+          const fallback =
+            sellable.find((loc) => loc.is_default_sale) ?? sellable[0];
+          return fallback?.id ?? "";
+        });
       } catch (nextError) {
         setLoadError(true);
         setError(
@@ -247,6 +296,95 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Load (and reload) the on-hand stock for the active sale location. This is the single
+  // source of POS availability; products with no row here are treated as 0 at this point.
+  async function loadSaleLocationStock(locationId: string) {
+    if (!locationId) {
+      setSaleLocationStock({});
+      setLocationStockReady(true);
+      return;
+    }
+    const response = await listLocationProducts(locationId, { limit: 1000 });
+    const next: Record<string, number> = {};
+    (response.data?.items ?? []).forEach((row) => {
+      next[row.product_id] = row.quantity;
+    });
+    setSaleLocationStock(next);
+    setLocationStockReady(true);
+  }
+
+  // Re-fetch sale-point stock whenever the active sale location changes (§11 cart
+  // revalidation is driven off the resulting saleLocationStock change below).
+  useEffect(() => {
+    setLocationStockReady(false);
+    setLocationStockError(false);
+    let active = true;
+    void (async () => {
+      try {
+        if (!active) return;
+        await loadSaleLocationStock(selectedSaleLocationId);
+      } catch {
+        if (active) {
+          // Surface a retryable error instead of a silently-empty catalog.
+          setSaleLocationStock({});
+          setLocationStockError(true);
+          setLocationStockReady(true);
+        }
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [selectedSaleLocationId]);
+
+  // §11 — cart revalidation: when sale-point stock changes (location switch or a
+  // post-sale refresh), re-clamp every cart line to what the active location now holds
+  // and drop lines that are no longer available, warning the cashier once.
+  useEffect(() => {
+    if (!locationStockReady) return;
+    setCart((currentCart) => {
+      if (currentCart.length === 0) return currentCart;
+      let reduced = false;
+      const next = currentCart
+        .map((item) => {
+          const available = saleLocationStock[item.product.id] ?? 0;
+          const clampedQty = Math.min(item.quantity, available);
+          if (clampedQty < item.quantity) reduced = true;
+          return {
+            ...item,
+            // keep the cart line's product stock in sync with the active location
+            product: { ...item.product, total_stock: available },
+            quantity: clampedQty,
+          };
+        })
+        .filter((item) => item.quantity > 0);
+      if (reduced) {
+        toast.info(dictionary.saleLocationCartAdjusted);
+      }
+      // Always return the re-synced lines so each line's max reflects the active
+      // location; the effect only re-runs when the location/stock actually changes.
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saleLocationStock, locationStockReady]);
+
+  // Location-aware product list: total_stock is overridden with the on-hand quantity at
+  // the active sale location, so every downstream consumer (cards, search, add-to-cart
+  // guards, cart clamps) reflects sale-point availability rather than the grand total.
+  const products = useMemo(
+    () =>
+      rawProducts.map((product) => ({
+        ...product,
+        total_stock: saleLocationStock[product.id] ?? 0,
+      })),
+    [rawProducts, saleLocationStock],
+  );
+
+  const activeSaleLocation = useMemo(
+    () => saleLocations.find((loc) => loc.id === selectedSaleLocationId) ?? null,
+    [saleLocations, selectedSaleLocationId],
+  );
 
   const categories = useMemo(() => {
     const categorySet = new Set<string>();
@@ -655,9 +793,12 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         listProducts({ limit: 500 }),
         listCustomers(),
         listCustomerLevelDiscounts(),
+        // Refresh the active sale-point stock so the freshly-deducted quantities show
+        // immediately after a sale (§ query invalidation).
+        loadSaleLocationStock(selectedSaleLocationId),
       ]);
 
-    setProducts(productsResponse.data?.items ?? []);
+    setRawProducts(productsResponse.data?.items ?? []);
     setCustomers(customersResponse.data ?? []);
     setCustomerLevelDiscounts(discountResponse.data ?? []);
   }
@@ -1052,6 +1193,13 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       return;
     }
 
+    // §3 — a real (stock-deducting) sale needs an active sale-point location. Invoice
+    // settlement creates a document via a separate flow and is not gated here.
+    if (!isInvoiceSettlement && !selectedSaleLocationId) {
+      setError(dictionary.saleLocationRequired);
+      return;
+    }
+
     if (!isInvoiceSettlement && paidAmountValue < settlementTotal) {
       setError(dictionary.insufficientPayment);
       return;
@@ -1099,26 +1247,61 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           return;
         }
 
-        const response = await createSale({
-          customer_id: selectedCustomerId || undefined,
-          // discount_bill kept during rollout so an un-migrated backend still reads the
-          // total; the new backend prefers the verified split below and ignores it.
-          discount_bill:
-            billDiscountAmount + appliedPromoDiscount > 0
-              ? billDiscountAmount + appliedPromoDiscount
-              : undefined,
-          manual_discount: billDiscountAmount > 0 ? billDiscountAmount : undefined,
-          promo_discount:
-            appliedPromoDiscount > 0 ? appliedPromoDiscount : undefined,
-          promotion_ids:
-            appliedPromotionIds.length > 0 ? appliedPromotionIds : undefined,
+        // Idempotency: derive a stable key from this checkout's intent. A retried
+        // submit of the same cart/payment/location reuses the key (backend returns the
+        // original sale); any change to the intent mints a new key.
+        const intentSig = JSON.stringify({
+          location: selectedSaleLocationId,
+          payment: paymentMethod,
+          paid: paidAmountValue,
+          customer: selectedCustomerId,
+          note: note.trim(),
+          manual: billDiscountAmount,
+          promo: appliedPromoDiscount,
+          promotionIds: appliedPromotionIds,
+          vat: applyVat,
           items: mappedItems,
-          note: note.trim() || undefined,
-          paid_amount: paidAmountValue,
-          payment_method: paymentMethod,
-          vat_included: false,
-          vat_percent: applyVat ? 7 : 0,
         });
+        if (
+          saleIntentSigRef.current !== intentSig ||
+          !saleIdempotencyKeyRef.current
+        ) {
+          saleIntentSigRef.current = intentSig;
+          saleIdempotencyKeyRef.current =
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : `sale-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        }
+
+        const response = await createSale(
+          {
+            customer_id: selectedCustomerId || undefined,
+            location_id: selectedSaleLocationId || undefined,
+            // discount_bill kept during rollout so an un-migrated backend still reads the
+            // total; the new backend prefers the verified split below and ignores it.
+            discount_bill:
+              billDiscountAmount + appliedPromoDiscount > 0
+                ? billDiscountAmount + appliedPromoDiscount
+                : undefined,
+            manual_discount: billDiscountAmount > 0 ? billDiscountAmount : undefined,
+            promo_discount:
+              appliedPromoDiscount > 0 ? appliedPromoDiscount : undefined,
+            promotion_ids:
+              appliedPromotionIds.length > 0 ? appliedPromotionIds : undefined,
+            items: mappedItems,
+            note: note.trim() || undefined,
+            paid_amount: paidAmountValue,
+            payment_method: paymentMethod,
+            vat_included: false,
+            vat_percent: applyVat ? 7 : 0,
+          },
+          saleIdempotencyKeyRef.current,
+        );
+
+        // Sale committed — the intent is consumed; clear the key so the next bill mints
+        // a fresh one (and a true retry before this point still reuses the same key).
+        saleIntentSigRef.current = "";
+        saleIdempotencyKeyRef.current = "";
 
         // Customer display: payment success (before clearing the cart's totals).
         publishDisplayState({
@@ -1138,9 +1321,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           void prepareReceiptPreview(response.data.id, paymentMethod);
         }
       } catch (nextError) {
-        setError(
-          nextError instanceof Error ? nextError.message : "Request failed",
-        );
+        setError(errorMessage(nextError));
       }
     });
   }
@@ -1210,21 +1391,36 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   }
 
   function confirmRestoreBill(bill: any) {
-    const items = (bill.items ?? []).map((item: any) => ({
-      discountType: item.discount_type ?? "none",
-      discountValue: item.discount_value ?? "0",
-      product:
-        products.find((p) => p.id === item.product_id) ??
-        ({
-          id: item.product_id,
-          base_price: item.base_price ?? item.price ?? 0,
-          image_url: null,
-          name: item.product_name ?? "Unknown",
-          sku: null,
-        } as Product),
-      quantity: item.quantity ?? 0,
-    }));
+    // Clamp restored lines to the active sale point's stock (§11): a bill parked when more
+    // was on hand must not re-enter the cart over-quantity. Lines now unavailable are dropped.
+    let restoreReduced = false;
+    const items = (bill.items ?? [])
+      .map((item: any) => {
+        const available = saleLocationStock[item.product_id] ?? 0;
+        const requested = item.quantity ?? 0;
+        const quantity = Math.min(requested, available);
+        if (quantity < requested) restoreReduced = true;
+        const baseProduct =
+          products.find((p) => p.id === item.product_id) ??
+          ({
+            id: item.product_id,
+            base_price: item.base_price ?? item.price ?? 0,
+            image_url: null,
+            name: item.product_name ?? "Unknown",
+            sku: null,
+          } as Product);
+        return {
+          discountType: item.discount_type ?? "none",
+          discountValue: item.discount_value ?? "0",
+          product: { ...baseProduct, total_stock: available },
+          quantity,
+        };
+      })
+      .filter((line: CartItem) => line.quantity > 0);
     setCart(items);
+    if (restoreReduced) {
+      toast.info(dictionary.saleLocationCartAdjusted);
+    }
     setSelectedCustomerId(bill.selectedCustomerId ?? "");
     setCustomerSettlementMode(bill.customerSettlementMode ?? "cash_now");
     setPaymentMethod(bill.paymentMethod ?? "cash");
@@ -1289,10 +1485,36 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setIsHoldingBill(false);
   }
 
-  if (!hasMounted || isLoadingData) {
+  // Keep the loading screen up until the active sale location's stock has been fetched
+  // once, so the catalog never flashes empty (every product would read total_stock=0
+  // before the location stock arrives).
+  if (
+    !hasMounted ||
+    isLoadingData ||
+    (selectedSaleLocationId && !locationStockReady && !locationStockError)
+  ) {
     return (
       <section className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8">
         <p className="text-sm text-slate-500">{dictionary.title}</p>
+      </section>
+    );
+  }
+
+  if (locationStockError) {
+    return (
+      <section className="grid place-items-center xl:h-[calc(100dvh-8rem)]">
+        <QueryErrorState
+          locale={locale}
+          onRetry={() => {
+            setLocationStockError(false);
+            setLocationStockReady(false);
+            void loadSaleLocationStock(selectedSaleLocationId).catch(() => {
+              setLocationStockError(true);
+              setLocationStockReady(true);
+            });
+          }}
+          className="max-w-md"
+        />
       </section>
     );
   }
@@ -1316,6 +1538,40 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           />
         </div>
       ) : null}
+      {/* Phase W4B — active sale point. Stock shown/sold is this location's stock. */}
+      {saleLocations.length === 0 ? (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {dictionary.saleLocationRequired}
+        </div>
+      ) : (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-violet-600">
+            {dictionary.saleLocationLabel}
+          </span>
+          {canSelectSaleLocation ? (
+            <select
+              value={selectedSaleLocationId}
+              onChange={(event) => setSelectedSaleLocationId(event.target.value)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 focus:border-violet-400 focus:outline-none"
+            >
+              {saleLocations.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                  {loc.warehouse_name ? ` · ${loc.warehouse_name}` : ""}
+                  {loc.is_default_sale ? " ★" : ""}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-sm font-medium text-slate-700">
+              {activeSaleLocation?.name ?? "—"}
+              {activeSaleLocation?.warehouse_name
+                ? ` · ${activeSaleLocation.warehouse_name}`
+                : ""}
+            </span>
+          )}
+        </div>
+      )}
       <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
         <ProductBrowser
           categories={categories}

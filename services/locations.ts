@@ -13,6 +13,7 @@ export type Location = {
   name: string;
   code?: string;
   is_sale_point: boolean;
+  is_default_sale?: boolean; // Phase W4B: the store's default sale-point location for POS
   is_active: boolean;
   created_at: string;
   updated_at: string;
