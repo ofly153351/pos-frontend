@@ -137,6 +137,10 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [customerLevelDiscounts, setCustomerLevelDiscounts] = useState<
     CustomerLevelDiscount[]
   >([]);
+  // True when member-tier discount data could not be loaded. The POS still opens
+  // (resilient), but checkout is blocked for a selected member so a missing tier
+  // discount can never be silently applied as 0% (see submitSale).
+  const [discountsError, setDiscountsError] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
 
   // Notify parent when cart items change (for cashier modal close confirmation)
@@ -254,17 +258,18 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setIsLoadingData(true);
     startTransition(async () => {
       try {
-        const [productsResponse, customersResponse, discountResponse, locationsResponse] =
+        // Required POS data — products (catalog), customers and locations. A failure
+        // here is fatal and shows the retryable error screen. All three are readable at
+        // operate level, so cashiers load the POS just like owners/managers.
+        const [productsResponse, customersResponse, locationsResponse] =
           await Promise.all([
             listProducts({ limit: 500 }),
             listCustomers(),
-            listCustomerLevelDiscounts(),
             listLocations({ limit: 500 }),
           ]);
 
         setRawProducts(productsResponse.data?.items ?? []);
         setCustomers(customersResponse.data ?? []);
-        setCustomerLevelDiscounts(discountResponse.data ?? []);
 
         // Only active sale-point locations are eligible to sell from.
         const sellable = (locationsResponse.data?.items ?? []).filter(
@@ -281,6 +286,18 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
             sellable.find((loc) => loc.is_default_sale) ?? sellable[0];
           return fallback?.id ?? "";
         });
+
+        // Optional POS data — member-tier discounts. A failure must NOT crash the POS;
+        // instead we flag it (discountsError) and block checkout for a selected member in
+        // submitSale, so a missing discount can never be silently applied as 0%.
+        try {
+          const discountResponse = await listCustomerLevelDiscounts();
+          setCustomerLevelDiscounts(discountResponse.data ?? []);
+          setDiscountsError(false);
+        } catch {
+          setCustomerLevelDiscounts([]);
+          setDiscountsError(true);
+        }
       } catch (nextError) {
         setLoadError(true);
         setError(
@@ -1197,6 +1214,14 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     // settlement creates a document via a separate flow and is not gated here.
     if (!isInvoiceSettlement && !selectedSaleLocationId) {
       setError(dictionary.saleLocationRequired);
+      return;
+    }
+
+    // Resilience guard (no silent misprice): if member-tier discount data could not be
+    // loaded, block checkout for a selected member rather than apply a wrong (0%) tier
+    // discount. Walk-in sales (no selected customer) are unaffected.
+    if (selectedCustomer && discountsError) {
+      setError(dictionary.customerDiscountUnavailable);
       return;
     }
 

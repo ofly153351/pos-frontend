@@ -496,6 +496,7 @@
     "saleLocationLabel": "จุดขาย",
     "saleLocationRequired": "ไม่พบตำแหน่งขายที่พร้อมใช้งาน กรุณากำหนดจุดขายก่อนทำรายการ",
     "saleLocationCartAdjusted": "ปรับจำนวนสินค้าในตะกร้าตามสต็อกของจุดขายแล้ว",
+    "customerDiscountUnavailable": "ไม่สามารถโหลดส่วนลดระดับสมาชิกได้ กรุณาลองใหม่หรือนำลูกค้าออกก่อนชำระเงิน",
     "receiptTitle": "รายละเอียดใบเสร็จ",
     "unitPriceLabel": "ราคาต่อหน่วย",
     "vatToggleLabel": "VAT 7%",

@@ -496,6 +496,7 @@
     "saleLocationLabel": "Sale point",
     "saleLocationRequired": "No active sale point found. Please set a sale point before selling.",
     "saleLocationCartAdjusted": "Cart quantities were adjusted to the sale point's available stock.",
+    "customerDiscountUnavailable": "Member-tier discounts could not be loaded. Please retry or remove the customer before checkout.",
     "receiptTitle": "Receipt details",
     "unitPriceLabel": "Unit price",
     "vatToggleLabel": "VAT 7%",

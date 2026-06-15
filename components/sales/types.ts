@@ -114,6 +114,7 @@ export type SalesDictionary = {
   saleLocationLabel: string;
   saleLocationRequired: string;
   saleLocationCartAdjusted: string;
+  customerDiscountUnavailable: string;
   searchPlaceholder: string;
   stockLabel: string;
   summary: {
