@@ -1,21 +1,9 @@
 export type InvoiceDiscountType = "amount" | "percent";
 export type InvoiceStatus = "unpaid" | "partially_paid" | "paid" | string;
 
-export type InvoiceItemInput = {
-  discount_type?: InvoiceDiscountType;
-  discount_value?: number;
-  product_id: string;
-  quantity: number;
-};
-
-export type CreateInvoiceInput = {
-  customer_id: string;
-  due_at?: string;
-  items: InvoiceItemInput[];
-  note?: string;
-  vat_included?: boolean;
-  vat_percent?: number;
-};
+// Phase W5 — CreateInvoiceInput and InvoiceItemInput removed with the orphaned
+// createInvoice() service (the legacy invoice-create endpoint is disabled; invoice
+// creation now flows through the documents module).
 
 export type CreateInvoicePaymentInput = {
   note?: string;

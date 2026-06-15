@@ -139,14 +139,17 @@ export function LocationTransferDrawer({
     () => activeLocations.filter((l) => !l.is_sale_point).reduce((a, l) => a + (qtyByLoc[l.id] ?? 0), 0),
     [activeLocations, qtyByLoc],
   );
-  // NOTE on product_view field naming (legacy, intentionally mapped here):
-  //   product.warehouse_stock = SUM(quantity) across EVERY location  → grand TOTAL
-  //   product.total_stock      = SUM(quantity) where is_sale_point    → READY/sellable
-  // So totalBefore uses warehouse_stock and readyBefore uses total_stock; warehouseBefore is
-  // the non-sale remainder. Authoritative across all locations incl. inactive (Blocker 2).
-  const totalBefore = productAggQ.data?.warehouse_stock ?? activeSum;
-  const readyBefore = productAggQ.data?.total_stock ?? (activeSum - activeWhSum);
-  const warehouseBefore = totalBefore - readyBefore;
+  // Phase W5 — use the explicit, correctly-named aggregates instead of guessing from the
+  // historically-mislabeled legacy fields. ready_stock = sale-point sum, storage_stock =
+  // non-sale-point sum, grand total = ready + storage. Authoritative across all locations
+  // incl. inactive. Falls back to legacy fields then to the active-location sums so an
+  // un-migrated backend response still renders (total_stock==ready, warehouse_stock==grand).
+  const readyBefore =
+    productAggQ.data?.ready_stock ?? productAggQ.data?.total_stock ?? (activeSum - activeWhSum);
+  const warehouseBefore =
+    productAggQ.data?.storage_stock ??
+    ((productAggQ.data?.warehouse_stock ?? activeSum) - readyBefore);
+  const totalBefore = readyBefore + warehouseBefore;
   const readyDelta = (dst?.is_sale_point ? amt : 0) - (src?.is_sale_point ? amt : 0);
 
   async function handleSubmit() {

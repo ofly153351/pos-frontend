@@ -47,8 +47,12 @@ export type Product = {
   product_type_name?: string | null;
   max_stock?: number | null;
   min_stock?: number;
-  total_stock?: number;
-  warehouse_stock?: number;
+  // Phase W5 stock aggregate contract. The two legacy fields are historically mislabeled
+  // and DEPRECATED — prefer ready_stock / storage_stock:
+  total_stock?: number; // DEPRECATED: == ready_stock (sale-point sum), NOT a grand total
+  warehouse_stock?: number; // DEPRECATED: grand total across all locations, NOT storage-only
+  ready_stock?: number; // W5: POS-sellable stock (SUM where is_sale_point); == total_stock
+  storage_stock?: number; // W5: non-sale-point storage (SUM where NOT is_sale_point)
   sku?: string | null;
   barcode?: string | null;
   special_price?: number | null;
