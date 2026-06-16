@@ -105,10 +105,20 @@ export type InventorySnapshot = {
   missing_cost: number;
 };
 
+export type DeadStockItem = {
+  product_id: string;
+  product_name: string;
+  remaining: number;        // current units in stock
+  tied_value: number;       // cost_price * remaining
+  last_sold: string | null; // ISO timestamp, or null if never sold
+  never_sold: boolean;
+};
+
 export type DeadStockStat = {
   days: number; // idle threshold the count/value were computed for
   count: number;
   value: number; // tied capital at cost
+  items: DeadStockItem[]; // per-product breakdown, ordered by tied value desc
 };
 
 export type InventoryReport = {

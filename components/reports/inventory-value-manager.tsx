@@ -76,6 +76,10 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
     const nf = new Intl.NumberFormat(locale === "th" ? "th-TH" : "en-US", { maximumFractionDigits: 0 });
     return (n: number) => nf.format(n);
   }, [locale]);
+  const shortDate = useMemo(() => {
+    const df = new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { year: "numeric", month: "short", day: "numeric" });
+    return (iso: string | null) => (iso ? df.format(new Date(iso)) : "—");
+  }, [locale]);
 
   // ── Active products are the basis for value, cost, SKU and units (sellable
   //    inventory). Inactive/discontinued items are excluded. ──
@@ -136,7 +140,7 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
   //    express what share of stock value is sitting idle. ──
   const deadStock = useMemo(() => {
     const d = inventoryQuery.data?.dead_stock;
-    return { count: d?.count ?? 0, capital: d?.value ?? 0 };
+    return { count: d?.count ?? 0, capital: d?.value ?? 0, items: d?.items ?? [] };
   }, [inventoryQuery.data]);
   const inventoryValueCost = inventoryQuery.data?.snapshot.inventory_value ?? 0;
   const deadCapitalShare = inventoryValueCost > 0 ? (deadStock.capital / inventoryValueCost) * 100 : 0;
@@ -431,6 +435,58 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
             </div>
           </div>
         )}
+
+        {/* Per-product dead-stock breakdown */}
+        {!inventoryQuery.isPending ? (
+          deadStock.items.length > 0 ? (
+            <div className="mt-4 overflow-hidden rounded-2xl border border-rose-100">
+              <div className="flex items-center justify-between gap-3 bg-rose-50/70 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600"><AlertTriangle className="h-4 w-4" /></span>
+                  <div>
+                    <p className="text-sm font-bold text-rose-800">{t.deadStock.capitalLabel}</p>
+                    <p className="text-[11px] text-rose-700/70">{t.deadStock.capitalHint}</p>
+                  </div>
+                </div>
+                <p className="shrink-0 text-lg font-black text-rose-700">{money(deadStock.capital)}</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[480px] border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-rose-50 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                      <th className="px-3 py-2 font-bold">{t.deadStock.colProduct}</th>
+                      <th className="px-3 py-2 text-right font-bold">{t.deadStock.colCurrentStock}</th>
+                      <th className="px-3 py-2 text-right font-bold">{t.deadStock.colValue}</th>
+                      <th className="px-3 py-2 text-right font-bold">{t.deadStock.colLastSold}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {deadStock.items.map((it) => (
+                      <tr key={it.product_id} className="transition hover:bg-rose-50/40">
+                        <td className="px-3 py-2.5">
+                          <span className="block max-w-[260px] truncate text-sm font-medium text-slate-800" title={it.product_name}>{it.product_name}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-sm font-semibold tabular-nums text-slate-700">{int(it.remaining)}</td>
+                        <td className="px-3 py-2.5 text-right text-sm font-bold tabular-nums text-rose-700">{money(it.tied_value)}</td>
+                        <td className="px-3 py-2.5 text-right">
+                          {it.never_sold ? (
+                            <span className="inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-600">{t.deadStock.neverSold}</span>
+                          ) : (
+                            <span className="text-sm tabular-nums text-slate-500">{shortDate(it.last_sold)}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 flex items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-8 text-sm text-slate-400">
+              {t.deadStock.empty}
+            </div>
+          )
+        ) : null}
 
         {/* Accuracy note */}
         <p className="mt-3 text-[11px] text-slate-400">{t.deadStock.windowNote}</p>
