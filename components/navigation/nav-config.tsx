@@ -50,10 +50,10 @@ export const NAV_ENTRIES: NavEntry[] = [
   {
     key: "products",
     icon: <Package className="h-4 w-4" />,
-    href: (l) => `/${l}/stock`,
+    href: (l) => `/${l}/products`,
     children: [
-      { key: "product-list", icon: <Layers3 className="h-3.5 w-3.5" />, href: (l) => `/${l}/stock` },
-      { key: "master-data", icon: <Tags className="h-3.5 w-3.5" />, href: (l) => `/${l}/stock/categories` },
+      { key: "product-list", icon: <Layers3 className="h-3.5 w-3.5" />, href: (l) => `/${l}/products` },
+      { key: "master-data", icon: <Tags className="h-3.5 w-3.5" />, href: (l) => `/${l}/products/categories` },
     ],
   },
   {

@@ -202,8 +202,8 @@ export function UserWorkspaceSidebar({
   const [storeDescription, setStoreDescription] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [storeLogoUrl, setStoreLogoUrl] = useState("");
-  const stockBaseHref = `/${locale}/stock`;
-  const stockCategoriesHref = `/${locale}/stock/categories`;
+  const productsBaseHref = `/${locale}/products`;
+  const productsCategoriesHref = `/${locale}/products/categories`;
   const stockWarehousesHref = `/${locale}/stock/warehouses`;
   const warehouseOverviewHref = `/${locale}/warehouse/overview`;
   const warehouseReceiveHref = `/${locale}/warehouse/receive`;
@@ -226,9 +226,9 @@ export function UserWorkspaceSidebar({
   const staffHref = `/${locale}/settings/staff`;
   const isSettingsRoute = pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`);
   const isProductsRoute =
-    pathname === stockBaseHref ||
-    pathname === stockCategoriesHref ||
-    pathname.startsWith(`${stockCategoriesHref}/`);
+    pathname === productsBaseHref ||
+    pathname === productsCategoriesHref ||
+    pathname.startsWith(`${productsCategoriesHref}/`);
   // Warehouse/Stock owns inventory levels, counts, the warehouse dashboard and
   // warehouses — but NOT the receipt editor (which moved under Purchasing/Receiving).
   const isStockRoute =
@@ -337,10 +337,10 @@ export function UserWorkspaceSidebar({
 
   const productsItems: SidebarGroupItem[] = useMemo(
     () => [
-      { href: stockBaseHref, key: "product-list", label: labels.productList, icon: <Layers3 className="h-3.5 w-3.5" /> },
-      { href: stockCategoriesHref, key: "master-data", label: labels.masterData, icon: <Tags className="h-3.5 w-3.5" /> },
+      { href: productsBaseHref, key: "product-list", label: labels.productList, icon: <Layers3 className="h-3.5 w-3.5" /> },
+      { href: productsCategoriesHref, key: "master-data", label: labels.masterData, icon: <Tags className="h-3.5 w-3.5" /> },
     ],
-    [labels.masterData, labels.productList, stockBaseHref, stockCategoriesHref],
+    [labels.masterData, labels.productList, productsBaseHref, productsCategoriesHref],
   );
 
   const stockItems: SidebarGroupItem[] = useMemo(
@@ -374,7 +374,7 @@ export function UserWorkspaceSidebar({
 
   const activeProductsKey = !isProductsRoute
     ? ""
-    : pathname === stockCategoriesHref || pathname.startsWith(`${stockCategoriesHref}/`)
+    : pathname === productsCategoriesHref || pathname.startsWith(`${productsCategoriesHref}/`)
       ? "master-data"
       : "product-list";
 
@@ -491,7 +491,7 @@ export function UserWorkspaceSidebar({
         {/* Products group (master data) */}
         <CollapsibleNavGroup
           collapsed={collapsed}
-          baseHref={stockBaseHref}
+          baseHref={productsBaseHref}
           icon={<Package className="h-4 w-4" />}
           label={labels.products}
           active={isProductsRoute}

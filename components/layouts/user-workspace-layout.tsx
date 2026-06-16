@@ -86,6 +86,7 @@ type UserWorkspaceLayoutProps = {
     settings: string;
     staff?: string;
     stock: string;
+    inventory?: string;
     stockCategories: string;
     stockWarehouses: string;
     warehouseOverview: string;
@@ -163,7 +164,7 @@ export function UserWorkspaceLayout({
     if (pathname.includes("/warehouse/overview")) return titles.warehouseOverview;
     if (pathname.includes("/stock/categories")) return titles.stockCategories;
     if (pathname.includes("/stock/warehouses")) return titles.stockWarehouses;
-    if (pathname.includes("/inventory")) return titles.stock;
+    if (pathname.includes("/inventory")) return titles.inventory ?? titles.stock;
     if (pathname.includes("/stock")) return titles.stock;
     if (pathname.includes("/purchases/suppliers")) return titles.suppliers;
     if (pathname.includes("/purchases")) return titles.purchaseOrders;

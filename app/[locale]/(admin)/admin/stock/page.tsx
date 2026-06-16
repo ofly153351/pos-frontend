@@ -13,5 +13,5 @@ export default async function AdminStockPage({ params }: AdminStockPageProps) {
     notFound();
   }
 
-  redirect(`/${locale}/stock`);
+  redirect(`/${locale}/products`);
 }

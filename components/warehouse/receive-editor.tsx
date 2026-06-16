@@ -119,7 +119,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   const status = receipt?.status ?? "draft";
   const editable = status === "draft";
   const hasPo = Boolean(purchaseOrderId);
-  const productEditHref = `/${locale}/stock`;
+  const productEditHref = `/${locale}/products`;
 
   // Human label for a location: "[zone ·] (code — )name · <sale-point|storage tag>".
   const formatLocationLabel = useCallback(

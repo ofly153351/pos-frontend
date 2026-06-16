@@ -93,6 +93,7 @@ export default async function WorkspaceLayout({
         settings: dictionary.storeManagement.pageTitle,
         staff: dictionary.userManagement.pageTitle,
         stock: dictionary.stock.title,
+        inventory: dictionary.inventory.title,
         stockCategories: dictionary.stock.shell.stockCategories,
         stockWarehouses: dictionary.stock.shell.stockWarehouses,
         warehouseOverview: dictionary.stock.shell.warehouseOverview,
