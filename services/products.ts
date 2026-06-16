@@ -174,6 +174,13 @@ export async function listProducts(options: ListProductsOptions = {}) {
   };
 }
 
+export function getProductById(productId: string) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<Product>(
+    `/api/stores/${currentStoreId}/products/${productId}`,
+  );
+}
+
 export function createProduct(input: ProductInput) {
   const currentStoreId = ensureStoreId();
   return authorizedApiRequest<Product>(`/api/stores/${currentStoreId}/products`, {

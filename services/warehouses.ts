@@ -72,9 +72,11 @@ export function updateWarehouse(warehouseId: string, input: UpdateWarehouseInput
 
 export function deleteWarehouse(warehouseId: string) {
   const storeId = ensureStoreId();
+  // DELETE returns { success, message } with no data payload, so allow empty data —
+  // otherwise the client throws on a successful delete (showing a misleading error).
   return authorizedApiRequest<Warehouse>(
     `/api/stores/${storeId}/warehouses/${warehouseId}`,
-    { method: "DELETE" },
+    { method: "DELETE", allowEmptyData: true },
     { requireToken: true },
   );
 }
