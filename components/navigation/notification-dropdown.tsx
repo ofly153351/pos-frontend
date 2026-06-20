@@ -59,9 +59,13 @@ export function NotificationDropdown({ labels, locale }: Props) {
     listProducts({ limit: 500 })
       .then((res) => {
         const items = res.data?.items ?? [];
-        setOutOfStock(items.filter((p) => (p.total_stock ?? 0) === 0).length);
+        // Exclude inactive (disabled) products — they are not sellable, so they must
+        // not raise stock alerts. Mirrors inventory-manager getStatus(), which treats
+        // !is_active as "inactive" and excludes it from the low/out KPI counts.
+        const active = items.filter((p) => p.is_active);
+        setOutOfStock(active.filter((p) => (p.total_stock ?? 0) === 0).length);
         setLowStock(
-          items.filter(
+          active.filter(
             (p) =>
               (p.total_stock ?? 0) > 0 &&
               p.min_stock != null &&
