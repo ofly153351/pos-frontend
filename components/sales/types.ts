@@ -87,6 +87,8 @@ export type SalesDictionary = {
   printReceiptSkipButton: string;
   printWindowBlockedError: string;
   receiptPreviewLoading: string;
+  receiptPreviewError: string;
+  receiptPreviewRetryButton: string;
   receiptPreviewPrintButton: string;
   receiptPreviewTitle: string;
   requestFailedLabel: string;

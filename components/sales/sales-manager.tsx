@@ -57,7 +57,7 @@ import {
   getCartLine,
 } from "./utils/sales-calculations";
 import { CheckoutSummaryModal } from "./checkout-summary-modal";
-import { ReceiptPreviewModal } from "./receipt-preview-modal";
+import { ReceiptPreviewModal, type ReceiptPreviewStatus } from "./receipt-preview-modal";
 import { PostInvoiceModal } from "./post-invoice-modal";
 import { ActionsMenuModal } from "./actions-menu-modal";
 import { ParkedBillsDrawer } from "./parked-bills-drawer";
@@ -191,8 +191,11 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isPrintPromptOpen, setIsPrintPromptOpen] = useState(false);
-  const [isReceiptPreviewLoading, setIsReceiptPreviewLoading] = useState(false);
+  const [receiptStatus, setReceiptStatus] = useState<ReceiptPreviewStatus>("loading");
   const [receiptPreviewHtml, setReceiptPreviewHtml] = useState("");
+  // Remembered so Retry re-renders the preview with the same payment method
+  // (drives cash-only QR stripping) without re-creating the sale.
+  const [receiptMethod, setReceiptMethod] = useState<string | undefined>(undefined);
   const [completedSaleId, setCompletedSaleId] = useState<string | null>(null);
   const [isTaxInvoicePending, startTaxInvoiceTransition] = useTransition();
   const [isPending, startTransition] = useTransition();
@@ -1341,7 +1344,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
         if (response.data?.id) {
           setCompletedSaleId(response.data.id);
-          setReceiptPreviewHtml("");
           setIsPrintPromptOpen(true);
           void prepareReceiptPreview(response.data.id, paymentMethod);
         }
@@ -1351,19 +1353,35 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     });
   }
 
+  // Loads the receipt HTML for an already-created sale. This is a read-only
+  // render — it never re-submits payment, so it is safe to call again on Retry.
   async function prepareReceiptPreview(saleId: string, method?: string) {
-    setIsReceiptPreviewLoading(true);
+    setReceiptStatus("loading");
+    setReceiptPreviewHtml("");
+    setReceiptMethod(method);
 
     try {
       const html = await getSaleReceiptPreviewHtml(saleId);
       setReceiptPreviewHtml(removeReceiptPreviewToolbar(html, method));
+      setReceiptStatus("success");
     } catch (nextError) {
-      setError(
-        nextError instanceof Error ? nextError.message : "Request failed",
-      );
-    } finally {
-      setIsReceiptPreviewLoading(false);
+      // Keep the raw transport error out of the UI; the modal shows a localized
+      // message instead. Log enough to diagnose, but never tokens/credentials.
+      setReceiptPreviewHtml("");
+      setReceiptStatus("error");
+      console.error("[receipt-preview] failed to load", {
+        saleId,
+        status: nextError instanceof ApiError ? nextError.status : undefined,
+        message: nextError instanceof Error ? nextError.message : "unknown error",
+      });
     }
+  }
+
+  // Retries only the receipt render for the already-completed sale — never the
+  // checkout. Disabled cases are guarded by the missing completedSaleId.
+  function retryReceiptPreview() {
+    if (!completedSaleId) return;
+    void prepareReceiptPreview(completedSaleId, receiptMethod);
   }
 
   function handlePrintFromPrompt(frameWindow: Window) {
@@ -1754,13 +1772,16 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       <ReceiptPreviewModal
         isOpen={isPrintPromptOpen}
         html={receiptPreviewHtml}
-        isLoading={isReceiptPreviewLoading}
+        status={receiptStatus}
         onClose={closeReceiptPreview}
         onPrint={handlePrintFromPrompt}
+        onRetry={retryReceiptPreview}
         onCreateTaxInvoice={completedSaleId ? handleCreateTaxInvoiceFromReceipt : undefined}
         isTaxInvoicePending={isTaxInvoicePending}
         dictionary={{
           receiptPreviewLoading: dictionary.receiptPreviewLoading,
+          receiptPreviewError: dictionary.receiptPreviewError,
+          receiptPreviewRetryButton: dictionary.receiptPreviewRetryButton,
           receiptPreviewTitle: dictionary.receiptPreviewTitle,
           printReceiptNowButton: dictionary.printReceiptNowButton,
           closeReceiptButton: dictionary.closeReceiptButton,

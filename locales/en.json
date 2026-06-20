@@ -449,6 +449,8 @@
     "receiptPreviewTitle": "Receipt preview",
     "receiptPreviewPrintButton": "Print",
     "receiptPreviewLoading": "Loading receipt preview...",
+    "receiptPreviewError": "Unable to load the receipt preview.",
+    "receiptPreviewRetryButton": "Try again",
     "requestFailedLabel": "Request failed",
     "quickCashLabel": "Quick cash",
     "quickCashExactAmountLabel": "Exact",

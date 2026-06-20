@@ -449,6 +449,8 @@
     "receiptPreviewTitle": "พรีวิวใบเสร็จ",
     "receiptPreviewPrintButton": "พิมพ์",
     "receiptPreviewLoading": "กำลังโหลดตัวอย่างใบเสร็จ...",
+    "receiptPreviewError": "ไม่สามารถโหลดตัวอย่างใบเสร็จได้",
+    "receiptPreviewRetryButton": "ลองใหม่",
     "requestFailedLabel": "คำขอล้มเหลว",
     "quickCashLabel": "ยอดรับด่วน",
     "quickCashExactAmountLabel": "ยอดเงินพอดี",
