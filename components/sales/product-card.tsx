@@ -26,6 +26,8 @@ type ProductCardProps = {
   qtyInCart: number;
   onAdd: () => void;
   labels: ProductCardLabels;
+  /** Short promo label ("ลด 10%", "ซื้อ 3 แถม 1"). Rendered when config.showPromoBadge. */
+  promoLabel?: string | null;
 };
 
 // ── Literal class maps — Tailwind scanner sees every class, no safelist needed ──
@@ -52,6 +54,7 @@ const SIZE: Record<
     qty: string;
     stockPos: string;
     qtyPos: string;
+    promoPos: string;
   }
 > = {
   sm: {
@@ -68,6 +71,7 @@ const SIZE: Record<
     qty: "h-5 min-w-5 px-1 text-[10px]",
     stockPos: "right-1.5 top-1.5",
     qtyPos: "left-1.5 top-1.5",
+    promoPos: "bottom-1.5 left-1.5",
   },
   md: {
     radius: "rounded-[14px]",
@@ -83,6 +87,7 @@ const SIZE: Record<
     qty: "h-6 min-w-6 px-1.5 text-[11px]",
     stockPos: "right-2 top-2",
     qtyPos: "left-2 top-2",
+    promoPos: "bottom-2 left-2",
   },
   lg: {
     radius: "rounded-2xl",
@@ -98,6 +103,7 @@ const SIZE: Record<
     qty: "h-7 min-w-7 px-2 text-[12px]",
     stockPos: "right-2.5 top-2.5",
     qtyPos: "left-2.5 top-2.5",
+    promoPos: "bottom-2.5 left-2.5",
   },
 };
 
@@ -121,7 +127,7 @@ function stockBadge(item: ProductCardItem, labels: ProductCardLabels) {
   };
 }
 
-export function ProductCard({ item, config, qtyInCart, onAdd, labels }: ProductCardProps) {
+export function ProductCard({ item, config, qtyInCart, onAdd, labels, promoLabel }: ProductCardProps) {
   const outOfStock = item.stock === 0;
   const inCart = qtyInCart > 0;
   const badge = stockBadge(item, labels);
@@ -160,8 +166,14 @@ export function ProductCard({ item, config, qtyInCart, onAdd, labels }: ProductC
         ) : null}
 
         {inCart ? (
-          <span className={`absolute z-10 flex items-center justify-center rounded-full bg-violet-600 font-mono font-bold text-white shadow-sm ${s.qty} ${s.qtyPos}`}>
+          <span className={`absolute z-10 flex items-center justify-center rounded-full bg-violet-600 nums font-bold text-white shadow-sm ${s.qty} ${s.qtyPos}`}>
             x{qtyInCart}
+          </span>
+        ) : null}
+
+        {config.showPromoBadge && promoLabel ? (
+          <span className={`absolute z-10 max-w-[calc(100%-1rem)] truncate rounded-full border border-amber-300 bg-amber-500 font-semibold text-white shadow-sm ${s.badge} ${s.promoPos}`}>
+            {promoLabel}
           </span>
         ) : null}
 
@@ -186,7 +198,7 @@ export function ProductCard({ item, config, qtyInCart, onAdd, labels }: ProductC
 
       {/* Footer pinned to bottom */}
       <div className={`mt-auto flex items-center justify-between gap-2 ${s.footPad}`}>
-        <span className={`font-mono tabular-nums font-bold text-slate-900 ${s.price}`}>
+        <span className={`nums font-bold text-slate-900 ${s.price}`}>
           ฿{baht(item.price)}
         </span>
         <span

@@ -45,25 +45,30 @@ export const BILL_LEVEL_TYPES: PromotionType[] = [
 // line whose identity is listed in scopeIds (case-insensitive). Store scope matches all.
 export function matchesScope(
   c: Campaign,
-  item: { sku?: string | null; category?: string | null; brand?: string | null },
+  item: { id?: string | null; sku?: string | null; category?: string | null; brand?: string | null },
 ): boolean {
   if (c.scopeType === "store") return true;
   const ids = c.scopeIds.map((s) => s.trim().toLowerCase()).filter(Boolean);
   if (ids.length === 0) return false;
+  if (c.scopeType === "products") {
+    // scopeIds may hold product UUIDs (current ScopePicker behaviour) or SKUs (intended).
+    // Check both so existing promos (UUID-stored) and future ones (SKU-stored) both match.
+    const sku = item.sku?.trim().toLowerCase();
+    const id = item.id?.trim().toLowerCase();
+    return !!(sku && ids.includes(sku)) || !!(id && ids.includes(id));
+  }
   const value =
-    c.scopeType === "products"
-      ? item.sku
-      : c.scopeType === "category"
-        ? item.category
-        : c.scopeType === "brand"
-          ? item.brand
-          : undefined;
+    c.scopeType === "category"
+      ? item.category
+      : c.scopeType === "brand"
+        ? item.brand
+        : undefined;
   return !!value && ids.includes(value.trim().toLowerCase());
 }
 
 // ── Schedule helpers ─────────────────────────────────────────────────────────
 
-function isWithinSchedule(c: Campaign, now: Date): { ok: boolean; reason?: string } {
+export function isWithinSchedule(c: Campaign, now: Date): { ok: boolean; reason?: string } {
   if (c.startDate) {
     const start = new Date(c.startDate);
     if (now < start) return { ok: false, reason: "not_started" };

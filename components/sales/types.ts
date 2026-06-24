@@ -45,8 +45,20 @@ export type SalesDictionary = {
   discountPercentLabel: string;
   discountSummaryLabel: string;
   totalDiscountLabel: string;
+  itemDiscountLabel: string;
   discountTypeLabel: string;
   discountValueLabel: string;
+  discountScopeLabel: string;
+  discountScopeWholeLine: string;
+  discountScopePerUnit: string;
+  discountPreviewUnitPriceLabel: string;
+  discountPreviewQtyLabel: string;
+  discountPreviewLineSubtotalLabel: string;
+  discountPreviewLineDiscountLabel: string;
+  discountPreviewPerUnitDiscountLabel: string;
+  discountPreviewTotalDiscountLabel: string;
+  discountPreviewAfterDiscountLabel: string;
+  discountBadgePerUnit: string;
   emptyCart: string;
   emptyHistory: string;
   emptyProducts: string;
@@ -62,9 +74,19 @@ export type SalesDictionary = {
   notePlaceholder: string;
   paymentMethodCard: string;
   paymentMethodPromptPay: string;
+  paymentMethodQrLabel: string;
+  paymentMethodBankTransferLabel: string;
+  paymentMethodCreditCardLabel: string;
+  paymentMethodDebitCardLabel: string;
   paymentMethodCash: string;
   paymentMethodCashLabel: string;
   paymentMethodLabel: string;
+  bankAccountLabel: string;
+  bankAccountNone: string;
+  bankTransferInstructions: string;
+  bankTransferAccountNo: string;
+  bankTransferAccountName: string;
+  bankTransferBankName: string;
   invoiceButton: string;
   markUnpaidButton: string;
   markPaidButton: string;
@@ -117,7 +139,12 @@ export type SalesDictionary = {
   saleLocationRequired: string;
   saleLocationCartAdjusted: string;
   customerDiscountUnavailable: string;
+  noSalePointConfigured: string;
+  noSalePointDescription: string;
+  configureSalePoint: string;
+  contactManager: string;
   searchPlaceholder: string;
+  scanWithCamera: string;
   stockLabel: string;
   summary: {
     discountLabel: string;
@@ -140,6 +167,20 @@ export type SalesDictionary = {
   viewReceiptButton: string;
   printInvoiceButton: string;
   categoryFilterAll: string;
+  promo: {
+    tab: string;
+    all: string;
+    storeWide: string;
+    discountLabel: string;
+    badge: {
+      percent: string; // contains "{v}"
+      amount: string; // contains "{v}"
+      price: string; // contains "{v}"
+      bxgy: string; // contains "{b}" and "{g}"
+      member: string;
+      generic: string;
+    };
+  };
   holdBillLabel: string;
   restoreBillLabel: string;
   restoreBillDrawerTitle: string;

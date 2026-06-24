@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { ProductBrowser } from "@/components/sales/product-browser";
@@ -8,7 +8,7 @@ import type {
   ProductViewMode,
   SalesDictionary,
 } from "@/components/sales/types";
-import { publishDisplayState, WELCOME } from "@/lib/customer-display";
+import { publishDisplayState, WELCOME, AUTO_RETURN_MS } from "@/lib/customer-display";
 import { fetchPromptPayQR } from "@/services/payment";
 import {
   listCustomerLevelDiscounts,
@@ -26,12 +26,16 @@ import {
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
 import { ApiError } from "@/services/api";
 import { listPromotions } from "@/services/promotions";
+import { listBankAccounts } from "@/services/stores";
+import { getReceiptSettings } from "@/services/receipt-settings";
 import {
   BILL_LEVEL_TYPES,
   evaluatePromotion,
   LINE_LEVEL_TYPES,
   matchesScope,
 } from "@/components/promotions/promotion-engine";
+import type { Campaign } from "@/components/promotions/promotion-types";
+import { buildPromoDisplayIndex } from "@/components/sales/promo-display";
 import {
   calculateVat,
   createParkedBill,
@@ -48,12 +52,12 @@ import type {
   VatCalculateSummary,
 } from "@/types/sale";
 
+import { MapPin } from "lucide-react";
 import {
-  formatAmount,
   roundCurrency,
   parsePaidAmountAsCeilInt,
   removeReceiptPreviewToolbar,
-  getDiscountPerUnit,
+  getApiDiscountPerUnit,
   getCartLine,
 } from "./utils/sales-calculations";
 import { CheckoutSummaryModal } from "./checkout-summary-modal";
@@ -69,7 +73,11 @@ import { CartPanel } from "./cart-panel";
 import { ProductPopup } from "./product-popup";
 import { useNumpad } from "./use-numpad";
 
+// Sentinel category value selecting the promotion tab (vs. a product-type name).
+const PROMO_CATEGORY = "__promo__";
+
 type CartItem = {
+  discountScope: "line" | "unit";
   discountType: SaleDiscountType;
   discountValue: string;
   product: Product;
@@ -83,6 +91,8 @@ export type SalesManagerHandle = {
   toggleNote: () => void;
   clearCartExternal: () => void;
   openActions: () => void;
+  /** Resolve a camera-scanned code and add it to the cart (fullscreen modal). */
+  scanCode: (code: string) => void;
 };
 
 type SalesManagerProps = {
@@ -127,7 +137,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [saleLocationStock, setSaleLocationStock] = useState<Record<string, number>>({});
   const [locationStockReady, setLocationStockReady] = useState(false);
   const [locationStockError, setLocationStockError] = useState(false);
-  const { role: storeRole } = useStoreRole();
+  const { role: storeRole, storeName, storeLogoUrl } = useStoreRole();
   const canSelectSaleLocation = canManageStore(storeRole);
   // Idempotency lifecycle: a stable key per checkout intent so a retried submit (double
   // click / network retry) returns the original sale instead of creating a second one.
@@ -151,6 +161,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const search = externalSearch !== undefined ? externalSearch : internalSearch;
   const setSearch = onExternalSearchChange ?? setInternalSearch;
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedPromoId, setSelectedPromoId] = useState<string | null>(null);
   const [productView, setProductView] = useState<ProductViewMode>("grid");
   const [selectedCustomerId, setSelectedCustomerId] = useState("");
   const [customerSettlementMode, setCustomerSettlementMode] = useState<
@@ -160,6 +171,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [billDiscount, setBillDiscount] = useState("");
   const [paidAmount, setPaidAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState("");
   const [applyVat, setApplyVat] = useState(false);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
@@ -200,6 +212,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [isTaxInvoicePending, startTaxInvoiceTransition] = useTransition();
   const [isPending, startTransition] = useTransition();
   const [isRestoreDrawerOpen, setIsRestoreDrawerOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [parkedBills, setParkedBills] = useState<any[]>([]);
   const [isHoldingBill, setIsHoldingBill] = useState(false);
   const [holdBillLabel, setHoldBillLabel] = useState("");
@@ -207,6 +220,10 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const previousCartLengthRef = useRef(0);
   const barcodeBufferRef = useRef("");
   const barcodeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards the customer-display success window: prevents cart.length===0 from
+  // immediately overwriting the success phase. Set on sale completion, cleared by
+  // its own timer (which also publishes WELCOME) or when a new sale starts.
+  const successWindowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setHasMounted(true);
@@ -231,6 +248,10 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
+      }
+
+      if (successWindowTimerRef.current) {
+        clearTimeout(successWindowTimerRef.current);
       }
     };
   }, []);
@@ -406,6 +427,11 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     [saleLocations, selectedSaleLocationId],
   );
 
+  const promotionsQuery = useQuery({
+    queryKey: ["promotions"],
+    queryFn: async () => (await listPromotions()).data,
+  });
+
   const categories = useMemo(() => {
     const categorySet = new Set<string>();
     products.forEach((product) => {
@@ -417,16 +443,66 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     return Array.from(categorySet).sort((a, b) => a.localeCompare(b));
   }, [products]);
 
+  // Short per-card promo badge label, localized from the campaign's type + value.
+  const promoBadgeLabel = useCallback(
+    (c: Campaign): string => {
+      const b = dictionary.promo.badge;
+      switch (c.type) {
+        case "percentage":
+        case "happy_hour":
+          return b.percent.replace("{v}", String(c.percentOff ?? 0));
+        case "fixed_amount":
+          return b.amount.replace("{v}", String(c.amountOff ?? 0));
+        case "fixed_price":
+          return b.price.replace("{v}", String(c.fixedPrice ?? 0));
+        case "buy_x_get_y":
+          return b.bxgy
+            .replace("{b}", String(c.buyQty ?? 1))
+            .replace("{g}", String(c.getQty ?? 1));
+        case "member_price":
+          return b.member;
+        default:
+          return b.generic;
+      }
+    },
+    [dictionary.promo.badge],
+  );
+
+  // POS promotion display index — drives the promo tab, per-promo sub-chips, the
+  // per-card discount badge and the store-wide info strip. `new Date()` re-evaluates
+  // each build so time-gated promos (happy hour) appear/disappear with their window.
+  const promoIndex = useMemo(
+    () => buildPromoDisplayIndex(promotionsQuery.data, products, new Date(), promoBadgeLabel),
+    [promotionsQuery.data, products, promoBadgeLabel],
+  );
+  const promotionProductIds = promoIndex.coveredProductIds;
+
+  // Leaving the promo tab clears the active sub-chip so it doesn't silently filter
+  // a regular category view when the user returns.
+  const handleCategoryChange = useCallback((category: string) => {
+    setSelectedCategory(category);
+    if (category !== PROMO_CATEGORY) setSelectedPromoId(null);
+  }, []);
+
   const saleableProducts = useMemo(() => {
     const keyword = search.trim().toLowerCase();
+    const isPromoFilter = selectedCategory === PROMO_CATEGORY;
 
     return products.filter((product) => {
       if (!product.is_active || (product.total_stock ?? 0) <= 0) {
         return false;
       }
 
-      // Filter by selected category
-      if (selectedCategory) {
+      if (isPromoFilter) {
+        if (selectedPromoId) {
+          // A specific promo sub-chip is selected → only its matched products.
+          const ids = promoIndex.promoIdsByProduct.get(product.id);
+          if (!ids || !ids.has(selectedPromoId)) return false;
+        } else if (!promotionProductIds.has(product.id)) {
+          // "All promotions" → union of every product-targeting promo.
+          return false;
+        }
+      } else if (selectedCategory) {
         const productCategory =
           product.product_type_name ?? product.product_type?.name ?? "";
         if (productCategory !== selectedCategory) {
@@ -447,7 +523,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           .includes(keyword)
       );
     });
-  }, [products, search, selectedCategory]);
+  }, [products, search, selectedCategory, selectedPromoId, promoIndex, promotionProductIds]);
   // Keyed by both SKU and barcode (lowercased) so a scanned EAN/UPC — which is
   // usually stored in `barcode`, not `sku` — resolves to the product.
   const saleableScanMap = useMemo(() => {
@@ -506,10 +582,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   }, [customerLevelDiscounts, selectedCustomer]);
 
   const customerDiscountAmount = useMemo(() => {
-    return (
-      (cartSummary.total *
-        Math.min(Math.max(customerDiscountPercent, 0), 100)) /
-      100
+    return roundCurrency(
+      (cartSummary.total * Math.min(Math.max(customerDiscountPercent, 0), 100)) / 100,
     );
   }, [cartSummary.total, customerDiscountPercent]);
 
@@ -517,10 +591,27 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   // scope-matched cart line (best wins); bill-level promos (coupon, spend-x, bundle,
   // gift) are evaluated once against their scoped subtotal. The result is folded into
   // the bill discount so it reaches the persisted sale, the receipt and revenue reports.
-  const promotionsQuery = useQuery({
-    queryKey: ["promotions"],
-    queryFn: async () => (await listPromotions()).data,
+
+  const bankAccountsQuery = useQuery({
+    queryKey: ["bank-accounts"],
+    queryFn: async () => {
+      const storeId = (await import("@/lib/store-storage")).getCurrentStoreId();
+      if (!storeId) return [];
+      return (await listBankAccounts(storeId)).data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
   });
+  const bankAccounts = useMemo(() => bankAccountsQuery.data ?? [], [bankAccountsQuery.data]);
+
+  const receiptSettingsQuery = useQuery({
+    queryKey: ["receipt-settings-channels"],
+    queryFn: async () => (await getReceiptSettings()).data,
+    staleTime: 5 * 60 * 1000,
+  });
+  const enabledPaymentChannels = useMemo(
+    () => (receiptSettingsQuery.data?.payment_channels ?? []).filter((c) => c.enabled).map((c) => c.key),
+    [receiptSettingsQuery.data],
+  );
   const [couponCode, setCouponCode] = useState("");
   const promoDiscountAmount = useMemo(() => {
     const active = (promotionsQuery.data ?? []).filter((p) => p.status === "active");
@@ -532,6 +623,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     // the claimed promo discount against these real promotions (server-side check).
     const idSet = new Set<string>();
     const scopeOf = (product: Product) => ({
+      id: product.id,
       sku: product.sku,
       category: product.product_type_name ?? product.product_type?.name,
       brand: product.brand_name,
@@ -604,28 +696,36 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const billDiscountAmount =
     billDiscountType === "percent"
       ? Math.min(
-          (billDiscountBase * billDiscountPercent) / 100,
+          roundCurrency((billDiscountBase * billDiscountPercent) / 100),
           maxBillDiscount,
         )
       : Math.min(Math.max(sanitizedBillDiscount, 0), maxBillDiscount);
-  const payableBeforePromo = Math.max(
-    cartSummary.total - customerDiscountAmount - billDiscountAmount,
-    0,
+  const payableBeforePromo = roundCurrency(
+    Math.max(cartSummary.total - customerDiscountAmount - billDiscountAmount, 0),
   );
   // Cap the promotion discount to the remaining payable so the total never goes negative.
   const appliedPromoDiscount = Math.min(promoDiscountAmount.amount, payableBeforePromo);
   const appliedPromotionIds =
     appliedPromoDiscount > 0 ? promoDiscountAmount.ids : [];
-  const totalDiscountAmount =
+  // Names of the promotions that actually contributed — shown under the promo
+  // discount line in the cart so the cashier sees which campaign applied.
+  const promoNameById = new Map(
+    (promotionsQuery.data ?? []).map((p) => [p.id, p.name] as const),
+  );
+  const appliedPromoNames = appliedPromotionIds
+    .map((id) => promoNameById.get(id))
+    .filter((n): n is string => Boolean(n));
+  const totalDiscountAmount = roundCurrency(
     cartSummary.discountAmount +
     customerDiscountAmount +
     billDiscountAmount +
-    appliedPromoDiscount;
-  const payableTotal = Math.max(payableBeforePromo - appliedPromoDiscount, 0);
+    appliedPromoDiscount,
+  );
+  const payableTotal = roundCurrency(Math.max(payableBeforePromo - appliedPromoDiscount, 0));
   const vatAmount = applyVat ? roundCurrency(payableTotal * 0.07) : 0;
   const settlementTotal = applyVat
-    ? roundCurrency(payableTotal + vatAmount)
-    : roundCurrency(payableTotal);
+    ? Math.round(payableTotal + vatAmount)
+    : Math.round(payableTotal);
   const isNetworkCustomerSelected = Boolean(selectedCustomerId);
   const isInvoiceSettlement =
     isNetworkCustomerSelected && customerSettlementMode === "invoice";
@@ -642,8 +742,18 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   // Re-runs when the payment method or amount changes so the QR always matches.
   useEffect(() => {
     if (cart.length === 0) {
-      publishDisplayState(WELCOME);
+      // If we just published success, the success-window timer owns the WELCOME
+      // transition — don't overwrite the success phase from this path.
+      if (!successWindowTimerRef.current) {
+        publishDisplayState(WELCOME);
+      }
       return;
+    }
+
+    // A new sale started while the success window was still active — cancel it.
+    if (successWindowTimerRef.current) {
+      clearTimeout(successWindowTimerRef.current);
+      successWindowTimerRef.current = null;
     }
 
     // Checkout open → payment screen. QR methods (promptpay/transfer/qr) → fetch a
@@ -653,16 +763,27 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       const total = roundCurrency(settlementTotal);
       const isQrMethod = ["promptpay", "transfer", "qr"].includes(paymentMethod);
       if (isQrMethod) {
-        publishDisplayState({ phase: "payment", total, method: paymentMethod }); // immediate (QR loading)
+        publishDisplayState({ phase: "payment", storeName: storeName || undefined, storeLogoUrl, total, method: paymentMethod }); // immediate (QR loading)
         fetchPromptPayQR(total)
           .then((res) => {
             if (active && res.data?.qr) {
-              publishDisplayState({ phase: "payment", total, method: paymentMethod, qr: res.data.qr });
+              publishDisplayState({ phase: "payment", storeName: storeName || undefined, storeLogoUrl, total, method: paymentMethod, qr: res.data.qr });
             }
           })
           .catch(() => {/* keep no-QR payment screen */});
+      } else if (paymentMethod === "bank_transfer") {
+        const acc = bankAccounts.find((a) => a.id === selectedBankAccountId && a.is_active)
+          ?? bankAccounts.find((a) => a.is_active);
+        publishDisplayState({
+          phase: "payment",
+          storeName: storeName || undefined,
+          storeLogoUrl,
+          total,
+          method: paymentMethod,
+          bankAccount: acc ? { bankName: acc.bank_name, accountName: acc.account_name, accountNo: acc.account_no } : undefined,
+        });
       } else {
-        publishDisplayState({ phase: "payment", total, method: paymentMethod });
+        publishDisplayState({ phase: "payment", storeName: storeName || undefined, storeLogoUrl, total, method: paymentMethod });
       }
       return () => { active = false; };
     }
@@ -670,36 +791,80 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     // Default: live cart on the customer screen.
     publishDisplayState({
       phase: "selling",
+      storeName: storeName || undefined,
+      storeLogoUrl,
       items: cart.map((item) => {
         const line = getCartLine(item);
+        const origUnit = roundCurrency(line.unitPrice);
+        const finalUnit = roundCurrency(line.lineTotal / Math.max(item.quantity, 1));
+        const discVal = Number(item.discountValue || 0);
+        // Build DisplayItemDiscount when a cashier discount is applied.
+        // For per-unit amount: effective value = totalDiscount / qty (capped by getCartLine).
+        // For whole-line amount: effective value = totalDiscount itself.
+        // For percent: value is the rate (e.g. 10 for 10%).
+        let discField: import("@/lib/customer-display").DisplayItemDiscount | undefined;
+        if (line.lineDiscount > 0 && discVal > 0 && item.discountType) {
+          let displayValue: number;
+          if (item.discountType === "percent") {
+            displayValue = Math.min(Math.max(discVal, 0), 100);
+          } else if (item.discountScope === "unit") {
+            displayValue = item.quantity > 0 ? roundCurrency(line.lineDiscount / item.quantity) : 0;
+          } else {
+            displayValue = roundCurrency(line.lineDiscount);
+          }
+          discField = {
+            type: item.discountType as "amount" | "percent",
+            scope: item.discountScope,
+            value: displayValue,
+            totalDiscount: roundCurrency(line.lineDiscount),
+          };
+        }
         return {
           name: item.product.name,
           qty: item.quantity,
-          unitPrice: roundCurrency(line.lineSubtotal / Math.max(item.quantity, 1)),
+          originalUnitPrice: origUnit,
+          unitPrice: finalUnit,
           lineTotal: roundCurrency(line.lineTotal),
+          hasItemDiscount: line.lineDiscount > 0,
+          imageUrl: item.product.image_url ?? null,
+          discount: discField,
         };
       }),
-      subtotal: roundCurrency(cartSummary.subtotal),
-      discount: roundCurrency(totalDiscountAmount),
+      subtotalBeforeDiscount: roundCurrency(cartSummary.subtotal),
+      itemDiscount: roundCurrency(cartSummary.discountAmount),
+      customerDiscount: roundCurrency(customerDiscountAmount),
+      customerDiscountPercent: customerDiscountPercent,
+      promoDiscount: roundCurrency(appliedPromoDiscount),
+      billDiscount: roundCurrency(billDiscountAmount),
+      couponCode: couponCode.trim() || undefined,
       vat: roundCurrency(vatAmount),
       total: roundCurrency(settlementTotal),
-      customer: selectedCustomer?.full_name || undefined,
+      customerName: selectedCustomer?.full_name || undefined,
+      customerLevel: selectedCustomer ? Number(selectedCustomer.level ?? 1) : undefined,
     });
   }, [
     cart,
     cartSummary,
-    totalDiscountAmount,
+    customerDiscountAmount,
+    customerDiscountPercent,
+    billDiscountAmount,
+    appliedPromoDiscount,
     vatAmount,
     settlementTotal,
     selectedCustomer,
+    couponCode,
     isCheckoutSummaryOpen,
     quotationMode,
     paymentMethod,
+    storeName,
+    storeLogoUrl,
+    bankAccounts,
+    selectedBankAccountId,
   ]);
 
   const quickCashOptions = useMemo(() => {
     const baseOptions = [5, 10, 20, 50, 100, 500, 1000];
-    const settlementQuickAmount = Math.ceil(Math.max(settlementTotal, 0));
+    const settlementQuickAmount = Math.max(settlementTotal, 0);
 
     if (
       settlementQuickAmount > 0 &&
@@ -756,7 +921,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
             return {
               code: item.product.sku ?? undefined,
-              discount_per_unit: getDiscountPerUnit(item),
+              discount_per_unit: getApiDiscountPerUnit(item),
               name: item.product.name,
               price: line.unitPrice,
               qty: item.quantity,
@@ -802,7 +967,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     }
 
     if (!isPaidAmountTouched) {
-      setPaidAmount(String(Math.ceil(Math.max(settlementTotal, 0))));
+      setPaidAmount(String(Math.max(settlementTotal, 0)));
       setLastQuickCashAmount(null);
     }
   }, [isInvoiceSettlement, isPaidAmountTouched, settlementTotal]);
@@ -856,6 +1021,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     toggleNote: () => setShowNoteField((c) => !c),
     clearCartExternal: clearCart,
     openActions: () => setIsActionsMenuOpen(true),
+    scanCode: handleCameraScan,
   }));
 
   useEffect(() => {
@@ -891,6 +1057,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         return [
           ...currentCart,
           {
+            discountScope: "line",
             discountType: "amount",
             discountValue: "0",
             product,
@@ -986,6 +1153,21 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     };
   }, [addToCart, dictionary.unavailableProduct, saleableScanMap]);
 
+  // Camera scan (mobile): resolve the decoded code exactly like the physical
+  // scanner's trailing-Enter path — an exact match in the saleable map adds to
+  // the cart; otherwise surface the same "not available" message.
+  function handleCameraScan(code: string) {
+    const scannedCode = code.trim().toLowerCase();
+    if (!scannedCode) return;
+    const matchedProduct = saleableScanMap.get(scannedCode);
+    if (matchedProduct) {
+      addToCart(matchedProduct);
+      setError("");
+      return;
+    }
+    setError(`${dictionary.unavailableProduct} (${scannedCode})`);
+  }
+
   function updateCartQuantity(productId: string, nextQuantity: number) {
     setCart((currentCart) => {
       if (nextQuantity <= 0) {
@@ -1050,6 +1232,17 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setCart((currentCart) =>
       currentCart.map((item) =>
         item.product.id === productId ? { ...item, discountType } : item,
+      ),
+    );
+  }
+
+  function updateCartDiscountScope(
+    productId: string,
+    discountScope: "line" | "unit",
+  ) {
+    setCart((currentCart) =>
+      currentCart.map((item) =>
+        item.product.id === productId ? { ...item, discountScope } : item,
       ),
     );
   }
@@ -1237,10 +1430,13 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       try {
         const mappedItems = cart.map((item) => {
           const discountValue = Number(item.discountValue || 0);
+          // Convert line-scope amount discounts to per-unit for the backend API
+          // (backend contract: discount_value is always per-unit × qty = line total).
+          const apiDiscountValue = discountValue > 0 ? getApiDiscountPerUnit(item) : undefined;
 
           return {
-            discount_type: discountValue > 0 ? item.discountType : undefined,
-            discount_value: discountValue > 0 ? discountValue : undefined,
+            discount_type: apiDiscountValue ? item.discountType : undefined,
+            discount_value: apiDiscountValue,
             product_id: item.product.id,
             quantity: item.quantity,
           };
@@ -1334,9 +1530,21 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         // Customer display: payment success (before clearing the cart's totals).
         publishDisplayState({
           phase: "success",
+          storeName: storeName || undefined,
+          storeLogoUrl,
           total: settlementTotal,
+          receivedAmount: effectivePaidAmount > 0 ? roundCurrency(effectivePaidAmount) : undefined,
           change: changeAmount > 0 ? changeAmount : undefined,
+          method: paymentMethod,
         });
+        // Block the cart-clear effect from immediately overwriting success with WELCOME.
+        // After AUTO_RETURN_MS the timer publishes WELCOME itself (matching the display
+        // subscriber's own timer), so localStorage is never stale past the success window.
+        if (successWindowTimerRef.current) clearTimeout(successWindowTimerRef.current);
+        successWindowTimerRef.current = setTimeout(() => {
+          successWindowTimerRef.current = null;
+          publishDisplayState(WELCOME);
+        }, AUTO_RETURN_MS);
 
         clearCart();
         toast.success(dictionary.checkoutSuccess);
@@ -1433,12 +1641,13 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function confirmRestoreBill(bill: any) {
     // Clamp restored lines to the active sale point's stock (§11): a bill parked when more
     // was on hand must not re-enter the cart over-quantity. Lines now unavailable are dropped.
     let restoreReduced = false;
-    const items = (bill.items ?? [])
-      .map((item: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items = (bill.items ?? []).map((item: any) => {
         const available = saleLocationStock[item.product_id] ?? 0;
         const requested = item.quantity ?? 0;
         const quantity = Math.min(requested, available);
@@ -1453,6 +1662,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
             sku: null,
           } as Product);
         return {
+          // Bills parked before the scope field existed default to "unit" to
+          // preserve the original per-unit semantics of that era.
+          discountScope: (item.discount_scope as "line" | "unit") ?? "unit",
           discountType: item.discount_type ?? "none",
           discountValue: item.discount_value ?? "0",
           product: { ...baseProduct, total_stock: available },
@@ -1501,6 +1713,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         items: cart.map((item) => {
           const dv = Number(item.discountValue);
           return {
+            discount_scope: item.discountScope,
             discount_type: item.discountType || undefined,
             discount_value: dv > 0 ? dv : undefined,
             product_id: item.product.id,
@@ -1570,6 +1783,72 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     );
   }
 
+  // ── Adaptive sale-point slots (evaluated after all loading gates are passed) ──
+  // Case A (0 locations): blocker replaces the product grid.
+  // Case B (1 location):  auto-selected by loadInitialData; no UI shown.
+  // Case C (>1 + manage): compact select in ProductBrowser toolbar.
+  // Case D (>1 + operate-only): compact read-only label in toolbar.
+  const salePointBlockerNode = saleLocations.length === 0 ? (
+    <div className="mt-6 flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-6 py-12 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+        <MapPin className="h-7 w-7 text-amber-500" />
+      </div>
+      <div>
+        <p className="text-base font-semibold text-slate-900">
+          {dictionary.noSalePointConfigured}
+        </p>
+        <p className="mt-1 text-sm text-slate-500">
+          {dictionary.noSalePointDescription}
+        </p>
+      </div>
+      {canSelectSaleLocation ? (
+        <a
+          href={`/${locale}/settings/storage-locations`}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700"
+        >
+          {dictionary.configureSalePoint}
+        </a>
+      ) : (
+        <p className="text-sm font-medium text-amber-700">
+          {dictionary.contactManager}
+        </p>
+      )}
+    </div>
+  ) : undefined;
+
+  const salePointSlotNode = saleLocations.length > 1 ? (
+    canSelectSaleLocation ? (
+      // Case C: compact selector for owner / manager
+      <div className="flex min-h-[48px] shrink-0 items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 transition hover:border-violet-400">
+        <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-violet-600">
+          {dictionary.saleLocationLabel}
+        </span>
+        <select
+          aria-label={dictionary.saleLocationLabel}
+          className="min-w-[120px] cursor-pointer border-none bg-transparent text-sm font-medium text-slate-700 outline-none"
+          onChange={(e) => setSelectedSaleLocationId(e.target.value)}
+          value={selectedSaleLocationId}
+        >
+          {saleLocations.map((loc) => (
+            <option key={loc.id} value={loc.id}>
+              {loc.name}{loc.is_default_sale ? " ★" : ""}
+            </option>
+          ))}
+        </select>
+      </div>
+    ) : (
+      // Case D: read-only label for cashier (multiple locations, no switch allowed)
+      <div className="flex min-h-[48px] shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3">
+        <span className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {dictionary.saleLocationLabel}
+        </span>
+        <span className="text-sm font-medium text-slate-700">
+          {activeSaleLocation?.name ?? "—"}
+        </span>
+      </div>
+    )
+  ) : undefined;
+
   return (
     <>
       {promotionsQuery.isError ? (
@@ -1581,40 +1860,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           />
         </div>
       ) : null}
-      {/* Phase W4B — active sale point. Stock shown/sold is this location's stock. */}
-      {saleLocations.length === 0 ? (
-        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {dictionary.saleLocationRequired}
-        </div>
-      ) : (
-        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm">
-          <span className="text-xs font-semibold uppercase tracking-wide text-violet-600">
-            {dictionary.saleLocationLabel}
-          </span>
-          {canSelectSaleLocation ? (
-            <select
-              value={selectedSaleLocationId}
-              onChange={(event) => setSelectedSaleLocationId(event.target.value)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 focus:border-violet-400 focus:outline-none"
-            >
-              {saleLocations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                  {loc.warehouse_name ? ` · ${loc.warehouse_name}` : ""}
-                  {loc.is_default_sale ? " ★" : ""}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="text-sm font-medium text-slate-700">
-              {activeSaleLocation?.name ?? "—"}
-              {activeSaleLocation?.warehouse_name
-                ? ` · ${activeSaleLocation.warehouse_name}`
-                : ""}
-            </span>
-          )}
-        </div>
-      )}
       <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
         <ProductBrowser
           categories={categories}
@@ -1624,14 +1869,24 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
             cart.find((item) => item.product.id === productId)?.quantity ?? 0
           }
           onAddToCart={addToCart}
-          onCategoryFilterChange={setSelectedCategory}
+          onCategoryFilterChange={handleCategoryChange}
           onProductViewChange={setProductView}
           hideSearch={externalSearch !== undefined}
           onSearchChange={setSearch}
+          onScanDetected={handleCameraScan}
           productView={productView}
           products={saleableProducts}
+          promoCategory={PROMO_CATEGORY}
+          promotionProductIds={promotionProductIds}
+          promoChips={promoIndex.chips}
+          promoStoreWide={promoIndex.storeWide}
+          selectedPromoId={selectedPromoId}
+          onPromoSelect={setSelectedPromoId}
+          productPromoLabels={promoIndex.badgeByProduct}
           search={search}
           selectedCategory={selectedCategory}
+          salePointSlot={salePointSlotNode}
+          salePointBlocker={salePointBlockerNode}
         />
 
         {/* ── Right: Cart panel ── */}
@@ -1645,6 +1900,11 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           billDiscountType={billDiscountType}
           couponCode={couponCode}
           totalDiscountAmount={totalDiscountAmount}
+          itemDiscountAmount={roundCurrency(cartSummary.discountAmount)}
+          customerDiscountAmount={customerDiscountAmount}
+          billDiscountAmount={billDiscountAmount}
+          promoDiscountAmount={appliedPromoDiscount}
+          promoNames={appliedPromoNames}
           showNoteField={showNoteField}
           note={note}
           isPending={isPending}
@@ -1715,6 +1975,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         setInvoiceDueDate={setInvoiceDueDate}
         paymentMethod={paymentMethod}
         setPaymentMethod={setPaymentMethod}
+        selectedBankAccountId={selectedBankAccountId}
+        setSelectedBankAccountId={setSelectedBankAccountId}
+        bankAccounts={bankAccounts}
         paidAmount={paidAmount}
         note={note}
         setNote={setNote}
@@ -1737,6 +2000,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         isInvoiceSettlement={isInvoiceSettlement}
         customerTypeLabel={customerTypeLabel}
         cartLength={cart.length}
+        enabledPaymentChannels={enabledPaymentChannels}
         onClose={() => { setIsCheckoutSummaryOpen(false); setQuotationMode(false); }}
         onSubmit={() => { setIsCheckoutSummaryOpen(false); submitSale(); }}
         onCreateQuotation={handleCreateQuotation}
@@ -1758,6 +2022,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         item={discountEditorItem}
         onClose={() => setDiscountEditorProductId(null)}
         onDiscountTypeChange={updateCartDiscountType}
+        onDiscountScopeChange={updateCartDiscountScope}
         onInputChange={onDiscountEditorInputChange}
         onInputKeyDown={onDiscountEditorInputKeyDown}
         onDigit={appendDiscountEditorDigit}

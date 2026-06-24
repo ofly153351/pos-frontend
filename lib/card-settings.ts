@@ -14,6 +14,7 @@ export type CardSettings = {
   lines: CardLines;
   size: CardSize;
   showStock: boolean;
+  showPromoBadge: boolean;
 };
 
 export const DEFAULT_CARD_SETTINGS: CardSettings = {
@@ -23,6 +24,7 @@ export const DEFAULT_CARD_SETTINGS: CardSettings = {
   lines: 2,
   size: "md",
   showStock: true,
+  showPromoBadge: true,
 };
 
 export const CARD_SIZE_MIN: Record<CardSize, string> = {
