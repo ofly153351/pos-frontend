@@ -151,7 +151,7 @@ export type WsDict = {
 export function formatTHB(amount: number): string {
   return new Intl.NumberFormat("th-TH", {
     currency: "THB",
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     style: "currency",
   }).format(Number.isFinite(amount) ? amount : 0);
 }

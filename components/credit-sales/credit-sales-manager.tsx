@@ -26,7 +26,6 @@ import {
   addCreditPayment,
   cancelCreditSale,
   createCreditSale,
-  getCreditStatementUrl,
   listCreditSales,
 } from "@/services/credit-sales";
 import { ApiError } from "@/services/api";
@@ -41,6 +40,7 @@ import type {
 } from "@/types/credit-sale";
 import { CustomerCombobox } from "@/components/credit-sales/customer-combobox";
 import { ProductCombobox, type ProductPick } from "@/components/credit-sales/product-combobox";
+import { CreditStatementModal } from "@/components/credit-sales/credit-statement-modal";
 
 // ─── Dictionary type ───────────────────────────────────────────────────────
 type CreditSalesDictionary = {
@@ -84,6 +84,7 @@ type CreditSalesDictionary = {
   addProductBtn: string;
   productNamePlaceholder: string;
   searchPlaceholder: string;
+  scanWithCamera: string;
   skuLabel: string;
   stockLabel: string;
   priceLabel: string;
@@ -156,8 +157,18 @@ type CreditSalesDictionary = {
   errSaveFailed: string;
 };
 
+// Subset of the `creditStatement` i18n section consumed by the bill preview modal.
+type BillModalDictionary = {
+  title: string;
+  print: string;
+  close: string;
+  loading: string;
+  notFound: string;
+};
+
 type CreditSalesManagerProps = {
   dictionary: CreditSalesDictionary;
+  billDictionary: BillModalDictionary;
   locale: string;
   prefilledCustomerId?: string;
   prefilledCustomerName?: string;
@@ -208,7 +219,7 @@ function computeStatus(sale: CreditSale): CreditSaleStatus {
 }
 
 function fmtBaht(n: number): string {
-  return `฿${n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `฿${n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 function fmtDate(iso: string): string {
@@ -220,6 +231,7 @@ function fmtDate(iso: string): string {
 // ─── Component ────────────────────────────────────────────────────────────
 export function CreditSalesManager({
   dictionary,
+  billDictionary,
   locale,
   prefilledCustomerId,
 }: CreditSalesManagerProps) {
@@ -260,6 +272,9 @@ export function CreditSalesManager({
 
   // ── Detail modal
   const [viewSale, setViewSale] = useState<CreditSale | null>(null);
+
+  // ── Bill preview modal (ใบวางบิล rendered by the shared document template)
+  const [billSaleId, setBillSaleId] = useState<string | null>(null);
 
   // ── Payment modal
   const [payingSale, setPayingSale] = useState<CreditSale | null>(null);
@@ -581,7 +596,7 @@ export function CreditSalesManager({
                   const totalQty = sale.items.reduce((n, i) => n + i.quantity, 0);
                   return (
                     <tr key={sale.id} className="transition-colors hover:bg-slate-50">
-                      <td className="px-4 py-3 font-mono text-xs font-medium text-slate-700">
+                      <td className="px-4 py-3 nums text-xs font-medium text-slate-700 whitespace-nowrap">
                         {sale.document_number}
                       </td>
                       <td className="px-4 py-3">
@@ -765,6 +780,7 @@ export function CreditSalesManager({
                     }
                     labels={{
                       searchPlaceholder: dictionary.searchPlaceholder,
+                      scanWithCamera: dictionary.scanWithCamera,
                       skuLabel: dictionary.skuLabel,
                       stockLabel: dictionary.stockLabel,
                       noProductsFound: dictionary.noProductsFound,
@@ -957,7 +973,7 @@ export function CreditSalesManager({
             {/* Header */}
             <div className="flex items-start justify-between bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-4">
               <div>
-                <p className="font-mono text-lg font-bold text-white">{viewSale.document_number}</p>
+                <p className="nums text-lg font-bold text-white">{viewSale.document_number}</p>
                 <div className="mt-1 flex items-center gap-2">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${TYPE_CLASSES[viewSale.type]} bg-white/20 text-white`}>
                     {typeLabel(viewSale.type)}
@@ -1091,7 +1107,7 @@ export function CreditSalesManager({
               <div className="flex gap-2">
                 <button
                   className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  onClick={() => window.open(getCreditStatementUrl(viewSale.id), "_blank")}
+                  onClick={() => setBillSaleId(viewSale.id)}
                   type="button"
                 >
                   <span className="flex items-center gap-1.5">
@@ -1114,6 +1130,16 @@ export function CreditSalesManager({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {/* ── Bill preview modal (ใบวางบิล) ───────────────────────────────────────── */}
+      {billSaleId ? (
+        <CreditStatementModal
+          creditSaleId={billSaleId}
+          open={billSaleId !== null}
+          onClose={() => setBillSaleId(null)}
+          dict={billDictionary}
+        />
       ) : null}
 
       {/* ── Payment modal ─────────────────────────────────────────────────────── */}

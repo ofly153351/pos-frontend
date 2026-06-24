@@ -71,7 +71,7 @@ export function ExpenseManager({ dictionary: t, locale }: Props) {
 
   // ── Formatters ──
   const money = useMemo(() => {
-    const nf = new Intl.NumberFormat(locale === "th" ? "th-TH" : "en-US", { style: "currency", currency: "THB", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const nf = new Intl.NumberFormat(locale === "th" ? "th-TH" : "en-US", { style: "currency", currency: "THB", minimumFractionDigits: 0, maximumFractionDigits: 0 });
     return (n: number) => nf.format(n);
   }, [locale]);
   const int = useMemo(() => {

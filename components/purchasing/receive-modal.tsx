@@ -89,7 +89,7 @@ export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModa
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h4 className="text-lg font-bold text-slate-900">{dictionary.receiveStock}</h4>
-              <p className="text-xs text-slate-500 font-mono mt-1">{purchaseOrder.order_number}</p>
+              <p className="nums text-xs text-slate-500 mt-1">{purchaseOrder.order_number}</p>
             </div>
             <button
               className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
@@ -137,7 +137,7 @@ export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModa
                         <p className="text-sm font-medium text-slate-900">
                           {new Intl.NumberFormat("th-TH", {
                             currency: "THB",
-                            minimumFractionDigits: 2,
+                            minimumFractionDigits: 0,
                             style: "currency",
                           }).format(item.unit_cost)}
                         </p>

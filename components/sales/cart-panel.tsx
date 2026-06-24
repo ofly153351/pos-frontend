@@ -51,7 +51,7 @@ type Props = {
   customerDiscountAmount: number;
   billDiscountAmount: number;
   promoDiscountAmount: number;
-  promoNames: string[];
+  promoBreakdown: Array<{ name: string; amount: number }>;
   showNoteField: boolean;
   note: string;
   isPending: boolean;
@@ -86,7 +86,7 @@ export function CartPanel({
   customerDiscountAmount,
   billDiscountAmount,
   promoDiscountAmount,
-  promoNames,
+  promoBreakdown,
   showNoteField,
   note,
   isPending,
@@ -232,18 +232,14 @@ export function CartPanel({
                     </span>
                     <span className="nums">-฿{formatAmount(promoDiscountAmount)}</span>
                   </div>
-                  {promoNames.length > 0 && (
+                  {promoBreakdown.length > 0 && (
                     <ul className="mt-1 space-y-0.5 pl-5">
-                      {promoNames.slice(0, 2).map((n, i) => (
-                        <li key={i} className="truncate text-[11px] text-amber-600">
-                          {n}
+                      {promoBreakdown.map((p, i) => (
+                        <li key={i} className="flex items-center justify-between gap-2 text-[11px] text-amber-600">
+                          <span className="truncate">{p.name}</span>
+                          <span className="nums shrink-0">-฿{formatAmount(p.amount)}</span>
                         </li>
                       ))}
-                      {promoNames.length > 2 && (
-                        <li className="text-[11px] text-amber-600">
-                          +{promoNames.length - 2}
-                        </li>
-                      )}
                     </ul>
                   )}
                 </div>

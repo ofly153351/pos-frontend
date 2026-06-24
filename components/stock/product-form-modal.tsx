@@ -436,14 +436,14 @@ function POSPreviewCard({
 
   const formattedPrice = useMemo(() => {
     const n = Number(formState.base_price);
-    if (!formState.base_price || Number.isNaN(n)) return "฿0.00";
-    return new Intl.NumberFormat("th-TH", { currency: "THB", minimumFractionDigits: 2, style: "currency" }).format(n);
+    if (!formState.base_price || Number.isNaN(n)) return "฿0";
+    return new Intl.NumberFormat("th-TH", { currency: "THB", minimumFractionDigits: 0, style: "currency" }).format(n);
   }, [formState.base_price]);
 
   const specialFormattedPrice = useMemo(() => {
     const n = Number(formState.special_price);
     if (!formState.special_price || Number.isNaN(n) || n <= 0) return null;
-    return new Intl.NumberFormat("th-TH", { currency: "THB", minimumFractionDigits: 2, style: "currency" }).format(n);
+    return new Intl.NumberFormat("th-TH", { currency: "THB", minimumFractionDigits: 0, style: "currency" }).format(n);
   }, [formState.special_price]);
 
   return (

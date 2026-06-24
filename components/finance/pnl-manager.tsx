@@ -52,8 +52,8 @@ export function PnlManager({ dictionary: t, locale }: Props) {
     const nf = new Intl.NumberFormat(locale === "th" ? "th-TH" : "en-US", {
       style: "currency",
       currency: "THB",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     });
     return (n: number) => nf.format(n);
   }, [locale]);

@@ -92,6 +92,7 @@ export type ReceiveDictionary = {
   placeholderReferenceNo: string;
   placeholderScanCode: string;
   placeholderSearchProducts: string;
+  scanWithCamera?: string;
   placeholderSelectSupplier: string;
   placeholderSelectWarehouse: string;
   startPageDescription: string;
@@ -254,7 +255,8 @@ export function formatSignedNumber(value?: number | null) {
 export function formatCurrency(value?: number | null) {
   return new Intl.NumberFormat("th-TH", {
     currency: "THB",
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
     style: "currency",
   }).format(value ?? 0);
 }

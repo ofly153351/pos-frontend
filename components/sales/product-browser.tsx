@@ -64,8 +64,8 @@ type ProductBrowserProps = {
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
     currency: "THB",
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
     style: "currency",
   }).format(value);
 }

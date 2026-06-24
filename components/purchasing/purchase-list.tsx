@@ -102,7 +102,7 @@ function SupplierCell({ name, logoUrl, size = "sm" }: { name?: string; logoUrl?:
 
 function formatTHB(amount: number) {
   return new Intl.NumberFormat("th-TH", {
-    currency: "THB", minimumFractionDigits: 2, style: "currency",
+    currency: "THB", minimumFractionDigits: 0, style: "currency",
   }).format(amount);
 }
 
@@ -119,7 +119,7 @@ function KpiCard({ icon, label, value, accent }: KpiCardProps) {
       </div>
       <div className="min-w-0">
         <p className="truncate text-xs font-medium text-slate-500">{label}</p>
-        <p className="font-mono text-lg font-bold leading-tight text-slate-900">{value}</p>
+        <p className="nums text-lg font-bold leading-tight text-slate-900">{value}</p>
       </div>
     </div>
   );
@@ -362,7 +362,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                           className={`group transition-colors hover:bg-violet-50/50 ${order.status === "cancelled" ? "opacity-60" : ""}`}
                         >
                           <td className="px-6 py-3.5">
-                            <span className="font-mono text-xs font-semibold text-violet-700">{order.order_number}</span>
+                            <span className="nums text-xs font-semibold text-violet-700 whitespace-nowrap">{order.order_number}</span>
                           </td>
                           <td className="max-w-[200px] px-4 py-3.5">
                             <SupplierCell name={order.supplier?.name} logoUrl={order.supplier?.logo_url} />
@@ -374,7 +374,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                             </span>
                           </td>
                           <td className="px-4 py-3.5 text-right">
-                            <span className="font-mono text-sm font-bold text-slate-900">{formatTHB(order.total_cost)}</span>
+                            <span className="nums text-sm font-bold text-slate-900">{formatTHB(order.total_cost)}</span>
                           </td>
                           <td className="px-4 py-3.5 text-xs text-slate-500">{formatDate(order.created_at)}</td>
                           <td className="px-4 py-3.5">
@@ -440,7 +440,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-mono text-xs font-semibold text-violet-700">{order.order_number}</p>
+                            <p className="nums text-xs font-semibold text-violet-700">{order.order_number}</p>
                             <p className="truncate text-sm font-medium text-slate-800">{order.supplier?.name ?? "—"}</p>
                           </div>
                         </div>
@@ -458,7 +458,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                           </span>
                           <span>{formatDate(order.created_at)}</span>
                         </div>
-                        <span className="font-mono text-base font-bold text-slate-900">{formatTHB(order.total_cost)}</span>
+                        <span className="nums text-base font-bold text-slate-900">{formatTHB(order.total_cost)}</span>
                       </div>
 
                       {/* Action buttons */}

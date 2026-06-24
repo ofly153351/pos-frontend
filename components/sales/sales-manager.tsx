@@ -615,7 +615,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [couponCode, setCouponCode] = useState("");
   const promoDiscountAmount = useMemo(() => {
     const active = (promotionsQuery.data ?? []).filter((p) => p.status === "active");
-    if (active.length === 0 || cart.length === 0) return { amount: 0, ids: [] as string[] };
+    if (active.length === 0 || cart.length === 0) return { amount: 0, ids: [] as string[], discountByPromoId: new Map<string, number>() };
     const now = new Date();
     const customerLevel = selectedCustomer ? Number(selectedCustomer.level ?? 1) : undefined;
     const code = couponCode.trim();
@@ -628,6 +628,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       category: product.product_type_name ?? product.product_type?.name,
       brand: product.brand_name,
     });
+
+    // Track per-promo contribution for the cart breakdown display.
+    const discountByPromoId = new Map<string, number>();
 
     // Line-level: best scope-matched promo per cart line.
     let lineTotal = 0;
@@ -648,7 +651,10 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         }
       }
       lineTotal += best;
-      if (best > 0 && bestId) idSet.add(bestId);
+      if (best > 0 && bestId) {
+        idSet.add(bestId);
+        discountByPromoId.set(bestId, (discountByPromoId.get(bestId) ?? 0) + best);
+      }
     }
 
     // Bill-level: best single promo evaluated once against its scoped subtotal.
@@ -678,9 +684,12 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         billBestId = promo.id;
       }
     }
-    if (billBest > 0 && billBestId) idSet.add(billBestId);
+    if (billBest > 0 && billBestId) {
+      idSet.add(billBestId);
+      discountByPromoId.set(billBestId, (discountByPromoId.get(billBestId) ?? 0) + billBest);
+    }
 
-    return { amount: roundCurrency(lineTotal + billBest), ids: Array.from(idSet) };
+    return { amount: roundCurrency(lineTotal + billBest), ids: Array.from(idSet), discountByPromoId };
   }, [promotionsQuery.data, cart, selectedCustomer, couponCode]);
 
   const parsedBillDiscount = Number(billDiscount || 0);
@@ -707,14 +716,23 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const appliedPromoDiscount = Math.min(promoDiscountAmount.amount, payableBeforePromo);
   const appliedPromotionIds =
     appliedPromoDiscount > 0 ? promoDiscountAmount.ids : [];
-  // Names of the promotions that actually contributed — shown under the promo
-  // discount line in the cart so the cashier sees which campaign applied.
+  // Per-promo breakdown: name + amount contributed — shown in cart so cashier
+  // can verify each campaign applied correctly.
   const promoNameById = new Map(
     (promotionsQuery.data ?? []).map((p) => [p.id, p.name] as const),
   );
-  const appliedPromoNames = appliedPromotionIds
-    .map((id) => promoNameById.get(id))
-    .filter((n): n is string => Boolean(n));
+  const appliedPromoBreakdown = appliedPromotionIds
+    .map((id) => ({
+      name: promoNameById.get(id) ?? id,
+      amount: roundCurrency(
+        Math.min(
+          promoDiscountAmount.discountByPromoId.get(id) ?? 0,
+          appliedPromoDiscount,
+        ),
+      ),
+    }))
+    .filter((p) => p.amount > 0);
+  const appliedPromoNames = appliedPromoBreakdown.map((p) => p.name);
   const totalDiscountAmount = roundCurrency(
     cartSummary.discountAmount +
     customerDiscountAmount +
@@ -1904,7 +1922,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           customerDiscountAmount={customerDiscountAmount}
           billDiscountAmount={billDiscountAmount}
           promoDiscountAmount={appliedPromoDiscount}
-          promoNames={appliedPromoNames}
+          promoBreakdown={appliedPromoBreakdown}
           showNoteField={showNoteField}
           note={note}
           isPending={isPending}
@@ -1986,6 +2004,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         billDiscountType={billDiscountType}
         customerDiscountAmount={customerDiscountAmount}
         customerDiscountPercent={customerDiscountPercent}
+        promoDiscountAmount={appliedPromoDiscount}
+        promoNames={appliedPromoNames}
         effectivePaidAmount={effectivePaidAmount}
         changeAmount={changeAmount}
         isPending={isPending}

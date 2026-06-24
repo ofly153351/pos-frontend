@@ -140,7 +140,7 @@ export function ProductsTable({
 
   function formatCurrency(value: number) {
     return new Intl.NumberFormat("th-TH", {
-      currency: "THB", maximumFractionDigits: 2, minimumFractionDigits: 2, style: "currency",
+      currency: "THB", maximumFractionDigits: 0, minimumFractionDigits: 0, style: "currency",
     }).format(value);
   }
 

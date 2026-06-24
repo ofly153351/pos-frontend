@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Banknote, ChevronDown, FileText, Loader2, Search, ShoppingCart, X } from "lucide-react";
+import { Banknote, ChevronDown, FileText, Loader2, Search, ShoppingCart, Ticket, X } from "lucide-react";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 import { formatCurrency, formatAmount, parsePaidAmountAsCeilInt } from "./utils/sales-calculations";
 
@@ -31,6 +31,16 @@ type Dict = {
   paymentMethodLabel: string;
   paymentMethodCashLabel: string;
   paymentMethodPromptPay: string;
+  paymentMethodQrLabel: string;
+  paymentMethodBankTransferLabel: string;
+  paymentMethodCreditCardLabel: string;
+  paymentMethodDebitCardLabel: string;
+  bankAccountLabel: string;
+  bankAccountNone: string;
+  bankTransferInstructions: string;
+  bankTransferAccountNo: string;
+  bankTransferAccountName: string;
+  bankTransferBankName: string;
   customerPaymentLabel: string;
   changeLabel: string;
   quickCashLabel: string;
@@ -47,6 +57,7 @@ type Dict = {
   };
   totalPaidLabel: string;
   confirmPaymentButton: string;
+  promo?: { tab: string };
 };
 
 type CartSummary = {
@@ -81,6 +92,7 @@ function CustomerCombobox({ customers, customerLevelDiscounts, value, onChange, 
     : customers;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!open) { setQuery(""); return; }
     inputRef.current?.focus();
   }, [open]);
@@ -189,6 +201,15 @@ function getDueDatePresetOptions() {
   }));
 }
 
+type BankAccountSummary = {
+  id: string;
+  bank_name: string;
+  account_no: string;
+  account_name: string;
+  is_active: boolean;
+  is_default: boolean;
+};
+
 type Props = {
   isOpen: boolean;
   customers: Customer[];
@@ -205,6 +226,9 @@ type Props = {
   setInvoiceDueDate: (v: string) => void;
   paymentMethod: string;
   setPaymentMethod: (v: string) => void;
+  selectedBankAccountId: string;
+  setSelectedBankAccountId: (id: string) => void;
+  bankAccounts: BankAccountSummary[];
   paidAmount: string;
   note: string;
   setNote: (v: string) => void;
@@ -213,6 +237,8 @@ type Props = {
   billDiscountType: "amount" | "percent";
   customerDiscountAmount: number;
   customerDiscountPercent: number;
+  promoDiscountAmount: number;
+  promoNames?: string[];
   effectivePaidAmount: number;
   changeAmount: number;
   isPending: boolean;
@@ -227,6 +253,7 @@ type Props = {
   isInvoiceSettlement: boolean;
   customerTypeLabel: string;
   cartLength: number;
+  enabledPaymentChannels?: string[];
   onClose: () => void;
   onSubmit: () => void;
   onCreateQuotation: () => void;
@@ -251,6 +278,9 @@ export function CheckoutSummaryModal({
   setInvoiceDueDate,
   paymentMethod,
   setPaymentMethod,
+  selectedBankAccountId,
+  setSelectedBankAccountId,
+  bankAccounts,
   paidAmount,
   note,
   setNote,
@@ -259,6 +289,8 @@ export function CheckoutSummaryModal({
   billDiscountType,
   customerDiscountAmount,
   customerDiscountPercent,
+  promoDiscountAmount,
+  promoNames,
   effectivePaidAmount,
   changeAmount,
   isPending,
@@ -273,6 +305,7 @@ export function CheckoutSummaryModal({
   isInvoiceSettlement,
   customerTypeLabel,
   cartLength,
+  enabledPaymentChannels,
   onClose,
   onSubmit,
   onCreateQuotation,
@@ -533,14 +566,19 @@ export function CheckoutSummaryModal({
                 <label className="mb-2 block text-sm font-semibold text-violet-800">
                   {dictionary.paymentMethodLabel}
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   {[
-                    { label: dictionary.paymentMethodCashLabel, value: "cash" },
-                    { label: dictionary.paymentMethodPromptPay, value: "transfer" },
-                  ].map((option) => (
+                    { label: dictionary.paymentMethodCashLabel, value: "cash", always: true },
+                    { label: dictionary.paymentMethodQrLabel, value: "promptpay", always: true },
+                    { label: dictionary.paymentMethodBankTransferLabel, value: "bank_transfer", always: true },
+                    { label: dictionary.paymentMethodCreditCardLabel, value: "credit_card", always: false },
+                    { label: dictionary.paymentMethodDebitCardLabel, value: "debit_card", always: false },
+                  ]
+                    .filter((o) => o.always || (enabledPaymentChannels ?? []).includes(o.value))
+                    .map((option) => (
                     <button
                       key={option.value}
-                      className={`rounded-lg border px-4 py-3 text-sm font-semibold transition ${
+                      className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
                         paymentMethod === option.value
                           ? "border-violet-600 bg-violet-600 text-white"
                           : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
@@ -552,17 +590,42 @@ export function CheckoutSummaryModal({
                     </button>
                   ))}
                 </div>
+
+                {/* Bank transfer account selector */}
+                {paymentMethod === "bank_transfer" && (
+                  <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/60 p-3">
+                    {bankAccounts.filter((a) => a.is_active).length === 0 ? (
+                      <p className="text-xs text-amber-600">{dictionary.bankAccountNone}</p>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-violet-700">{dictionary.bankTransferInstructions}</p>
+                        {bankAccounts.filter((a) => a.is_active).map((acc) => (
+                          <button
+                            key={acc.id}
+                            type="button"
+                            onClick={() => setSelectedBankAccountId(acc.id)}
+                            className={`w-full rounded-lg border px-3 py-2.5 text-left text-sm transition ${
+                              selectedBankAccountId === acc.id
+                                ? "border-violet-600 bg-white ring-1 ring-violet-600"
+                                : "border-violet-200 bg-white hover:border-violet-400"
+                            }`}
+                          >
+                            <div className="font-semibold text-slate-800">{acc.bank_name}</div>
+                            <div className="mt-0.5 font-mono text-xs text-slate-600">{acc.account_no}</div>
+                            <div className="text-xs text-slate-500">{acc.account_name}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ) : null}
 
-            {/* Paid amount + quick cash */}
-            {!quotationMode && customerSettlementMode === "cash_now" ? (
+            {/* Paid amount + quick cash (only for cash) */}
+            {!quotationMode && customerSettlementMode === "cash_now" && paymentMethod === "cash" ? (
               <div className="flex flex-col gap-3">
-                <div
-                  className={`grid gap-3 ${
-                    paymentMethod === "transfer" ? "grid-cols-1" : "grid-cols-2"
-                  }`}
-                >
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-2 block text-sm font-semibold text-violet-800">
                       {dictionary.customerPaymentLabel}
@@ -582,18 +645,16 @@ export function CheckoutSummaryModal({
                       }
                     />
                   </div>
-                  {paymentMethod !== "transfer" ? (
-                    <div>
-                      <label className="mb-2 block text-sm font-semibold text-violet-800">
-                        {dictionary.changeLabel}
-                      </label>
-                      <input
-                        className="w-full rounded-lg border border-violet-100 bg-violet-50 px-3 py-2.5 text-right text-xs font-semibold text-slate-700 outline-none"
-                        readOnly
-                        value={formatCurrency(Math.max(changeAmount, 0))}
-                      />
-                    </div>
-                  ) : null}
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-violet-800">
+                      {dictionary.changeLabel}
+                    </label>
+                    <input
+                      className="w-full rounded-lg border border-violet-100 bg-violet-50 px-3 py-2.5 text-right text-xs font-semibold text-slate-700 outline-none"
+                      readOnly
+                      value={formatCurrency(Math.max(changeAmount, 0))}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -655,6 +716,18 @@ export function CheckoutSummaryModal({
                     : formatCurrency(0)}
                 </span>
               </div>
+              {promoDiscountAmount > 0 ? (
+                <div className="flex items-center justify-between text-sm text-amber-600">
+                  <span className="flex items-center gap-1">
+                    <Ticket className="h-3.5 w-3.5 shrink-0" />
+                    {dictionary.promo?.tab ?? "โปรโมชั่น"}
+                    {promoNames && promoNames.length > 0
+                      ? ` ×${promoNames.length}`
+                      : ""}
+                  </span>
+                  <span>-{formatCurrency(promoDiscountAmount)}</span>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between text-sm text-slate-400">
                 <span>{dictionary.customerTypeLabel}</span>
                 <span className="font-medium text-slate-600">

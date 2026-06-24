@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 
 import type { Product } from "@/types/product";
+import { ScanButton } from "@/components/shared/scan-button";
 
 // Cap the number of rendered rows so a 1000+ product catalog never mounts as one
 // giant DOM list — search narrows it, and broad queries show the first slice only.
@@ -24,10 +25,11 @@ export type ProductComboboxLabels = {
   stockLabel: string;
   noProductsFound: string;
   stockExceeded: string; // uses {count} — shown when stock is 0 or already maxed in the cart
+  scanWithCamera?: string;
 };
 
 function baht(n: number): string {
-  return `฿${n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  return `฿${n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
 function unitOf(p: Product): string {
@@ -131,6 +133,28 @@ export function ProductCombobox({
     setActive(0);
   }
 
+  // Camera scan → resolve an exact barcode/SKU match and add it straight away
+  // (same rule as the scanner's trailing-Enter path). No exact hit drops the code
+  // into the search box so the user can pick from the filtered list.
+  function handleCameraScan(code: string) {
+    const needle = code.trim();
+    if (!needle) return;
+    const lower = needle.toLowerCase();
+    const exact = products.find(
+      (p) =>
+        (p.barcode ?? "") === needle ||
+        (p.sku ?? "") === needle ||
+        (p.barcode ?? "").toLowerCase() === lower ||
+        (p.sku ?? "").toLowerCase() === lower,
+    );
+    if (exact) {
+      add(exact);
+      return;
+    }
+    handleQuery(needle);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }
+
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
       setOpen(true);
@@ -163,17 +187,24 @@ export function ProductCombobox({
 
   return (
     <div ref={boxRef} className="relative">
-      {/* Search input */}
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input
-          ref={inputRef}
-          className="w-full rounded-lg border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-violet-500"
-          onChange={(e) => handleQuery(e.target.value)}
-          onFocus={() => setOpen(true)}
-          onKeyDown={onKeyDown}
-          placeholder={labels.searchPlaceholder}
-          value={query}
+      {/* Search input + camera scan */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            ref={inputRef}
+            className="w-full rounded-lg border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-violet-500"
+            onChange={(e) => handleQuery(e.target.value)}
+            onFocus={() => setOpen(true)}
+            onKeyDown={onKeyDown}
+            placeholder={labels.searchPlaceholder}
+            value={query}
+          />
+        </div>
+        <ScanButton
+          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-violet-600 transition hover:border-violet-400 hover:bg-violet-50 disabled:opacity-40"
+          onScan={handleCameraScan}
+          title={labels.scanWithCamera}
         />
       </div>
 

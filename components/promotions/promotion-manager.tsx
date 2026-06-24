@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -46,6 +46,7 @@ import type {
   PromotionType,
   ScopeType,
 } from "./promotion-types";
+import { ScopePicker } from "./scope-picker";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -193,7 +194,7 @@ function fmtDate(iso?: string) {
 }
 
 function fmtBaht(n: number) {
-  return "฿" + n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  return "฿" + n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function detectConflicts(form: Partial<Campaign>, campaigns: Campaign[], editingId: string | null): Campaign[] {
@@ -334,44 +335,6 @@ function FormSection({ title, subtitle, children }: { title: string; subtitle?: 
         {subtitle ? <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p> : null}
       </div>
       {children}
-    </div>
-  );
-}
-
-// ── Tag input ────────────────────────────────────────────────────────────────
-
-function TagInput({ values, onChange, placeholder, hint }: { values: string[]; onChange: (v: string[]) => void; placeholder: string; hint: string }) {
-  const [input, setInput] = useState("");
-  function add() {
-    const val = input.trim();
-    if (val && !values.includes(val)) onChange([...values, val]);
-    setInput("");
-  }
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <input
-          className="h-9 min-w-0 flex-1 rounded-xl border border-slate-200 px-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add(); } }}
-          placeholder={placeholder}
-        />
-        <button type="button" onClick={add} className="h-9 rounded-xl bg-violet-50 px-3 text-sm font-medium text-violet-700 hover:bg-violet-100">
-          <Plus className="h-4 w-4" />
-        </button>
-      </div>
-      <p className="text-[11px] text-slate-400">{hint}</p>
-      {values.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {values.map((v) => (
-            <span key={v} className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">
-              {v}
-              <button type="button" onClick={() => onChange(values.filter((x) => x !== v))}><X className="h-3 w-3 opacity-60 hover:opacity-100" /></button>
-            </span>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -795,9 +758,9 @@ function SimulatorPanel({ form, dict }: { form: Partial<Campaign>; dict: Promoti
               </p>
               {result.applies ? (
                 <div className="space-y-1 text-xs">
-                  <div className="flex justify-between text-slate-600"><span>{d.originalTotal}</span><span className="font-mono">{fmtBaht(price * qty)}</span></div>
-                  <div className="flex justify-between text-rose-600"><span>{d.discount}</span><span className="font-mono">−{fmtBaht(result.discount)}</span></div>
-                  <div className="flex justify-between text-sm font-bold"><span>{d.finalTotal}</span><span className="font-mono text-violet-700">{fmtBaht(result.final)}</span></div>
+                  <div className="flex justify-between text-slate-600"><span>{d.originalTotal}</span><span className="nums">{fmtBaht(price * qty)}</span></div>
+                  <div className="flex justify-between text-rose-600"><span>{d.discount}</span><span className="nums">−{fmtBaht(result.discount)}</span></div>
+                  <div className="flex justify-between text-sm font-bold"><span>{d.finalTotal}</span><span className="nums text-violet-700">{fmtBaht(result.final)}</span></div>
                 </div>
               ) : (
                 <p className="text-xs text-rose-600">{d.reason}: {result.reason}</p>
@@ -837,7 +800,7 @@ function ConflictPanel({ conflicts, dict }: { conflicts: Campaign[]; dict: Promo
 
 // ── Promotion Impact Summary ─────────────────────────────────────────────────
 
-function ImpactSummaryPanel({ form, dict }: { form: Partial<Campaign>; dict: PromotionDictionary }) {
+function ImpactSummaryPanel({ form, dict, scopeNames }: { form: Partial<Campaign>; dict: PromotionDictionary; scopeNames?: Record<string, string> }) {
   const scopeType = form.scopeType ?? "store";
   const ids = form.scopeIds ?? [];
 
@@ -874,7 +837,7 @@ function ImpactSummaryPanel({ form, dict }: { form: Partial<Campaign>; dict: Pro
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {ids.slice(0, 6).map((id) => (
-                  <span key={id} className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">{id}</span>
+                  <span key={id} className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">{scopeNames?.[id] ?? id}</span>
                 ))}
                 {ids.length > 6 && (
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">+{ids.length - 6}</span>
@@ -903,6 +866,7 @@ type EditorProps = {
 
 function PromotionEditor({ form, onChange, onSave, onCancel, campaigns, editingId, dict, isPending }: EditorProps) {
   const conflicts = useMemo(() => detectConflicts(form, campaigns, editingId), [form, campaigns, editingId]);
+  const [scopeNames, setScopeNames] = useState<Record<string, string>>({});
   const days = DAY_KEYS.map((k, i) => ({ key: k, label: dict.scheduleStep.days[k], value: i }));
   const limitTypes: { key: LimitType; label: string }[] = [
     { key: "unlimited",    label: dict.scheduleStep.unlimited },
@@ -1090,11 +1054,12 @@ function PromotionEditor({ form, onChange, onSave, onCancel, campaigns, editingI
                 })}
               </div>
               {(form.scopeType ?? "store") !== "store" ? (
-                <TagInput
-                  values={form.scopeIds ?? []}
+                <ScopePicker
+                  scopeType={form.scopeType as "category" | "brand" | "products"}
+                  selectedIds={form.scopeIds ?? []}
                   onChange={(v) => onChange({ scopeIds: v })}
-                  placeholder={dict.scopeStep.tagPlaceholder}
-                  hint={dict.scopeStep.tagHint}
+                  onNamesChange={setScopeNames}
+                  dict={dict}
                 />
               ) : null}
             </div>
@@ -1263,7 +1228,7 @@ function PromotionEditor({ form, onChange, onSave, onCancel, campaigns, editingI
           <div className="sticky top-6 space-y-4">
             <LivePreviewPanel form={form} dict={dict} />
             <SimulatorPanel form={form} dict={dict} />
-            <ImpactSummaryPanel form={form} dict={dict} />
+            <ImpactSummaryPanel form={form} dict={dict} scopeNames={scopeNames} />
             <ConflictPanel conflicts={conflicts} dict={dict} />
           </div>
         </div>
@@ -1556,7 +1521,7 @@ export function PromotionManager({ dictionary: dict, locale }: PromotionManagerP
                       <td className="px-4 py-3 text-xs text-slate-600">{scopeLabel}{c.scopeIds.length > 0 ? ` (${c.scopeIds.length})` : ""}</td>
                       <td className="px-4 py-3"><StatusBadge status={status} dict={dict} /></td>
                       <td className="px-4 py-3 text-right font-bold text-violet-600">#{c.priority}</td>
-                      <td className="px-4 py-3 text-right font-mono tabular-nums text-slate-700">{c.usageCount.toLocaleString()}</td>
+                      <td className="px-4 py-3 text-right nums text-slate-700">{c.usageCount.toLocaleString()}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">{fmtDate(c.startDate) ?? "—"}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">{fmtDate(c.endDate) ?? dict.list.noEnd}</td>
                       <td className="px-4 py-3">

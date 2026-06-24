@@ -2,20 +2,23 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Award, ChevronDown, CreditCard, Crown, FileText, Pencil, Plus, Search, Star, Trash2, Users, X } from "lucide-react";
+import { Award, ChevronDown, CreditCard, Crown, FileText, Pencil, Plus, Search, Star, Trash2, Truck, Users, X } from "lucide-react";
 
 import {
   createCustomer,
+  createShippingAddress,
   deleteCustomer,
   deleteCustomerLevelDiscount,
+  deleteShippingAddress,
   listCustomerLevelDiscounts,
   listCustomers,
   updateCustomer,
+  updateShippingAddress,
   upsertCustomerLevelDiscount,
 } from "@/services/customers";
 import { getStatementPDFUrl } from "@/services/documents";
 import { friendlyMessage } from "@/lib/form-errors";
-import type { Customer, CustomerLevelDiscount } from "@/types/customer";
+import type { Customer, CustomerLevelDiscount, ShippingAddress } from "@/types/customer";
 import type { Locale } from "@/lib/locale-config";
 
 type CustomerNetworkDictionary = {
@@ -83,12 +86,69 @@ type CustomerNetworkDictionary = {
   totalBillsLabel: string;
   totalPurchaseLabel: string;
   updateTitle: string;
+  shippingSectionTitle: string;
+  shippingContactLabel: string;
+  shippingPhoneLabel: string;
+  shippingAddressLabel: string;
+  shippingProvinceLabel: string;
+  shippingSubDistrictLabel: string;
+  shippingDistrictLabel: string;
+  shippingPostalCodeLabel: string;
+  deliveryNoteLabel: string;
+  addShippingAddressBtn: string;
+  noShippingAddresses: string;
+  useCustomerAddressLabel: string;
+  shippingLabelLabel: string;
+  shippingLabelPlaceholder: string;
+  recipientNameLabel: string;
+  recipientPhoneLabel: string;
+  defaultAddressLabel: string;
+  setAsDefaultLabel: string;
+  removeAddressBtn: string;
 };
 
 type CustomerNetworkManagerProps = {
   dictionary: CustomerNetworkDictionary;
   locale: Locale;
 };
+
+type LocalShippingAddress = {
+  _tempId: string;
+  _isNew: boolean;
+  _isDeleted: boolean;
+  id?: string;
+  label: string;
+  recipient_name: string;
+  recipient_phone: string;
+  address: string;
+  sub_district: string;
+  district: string;
+  province: string;
+  postal_code: string;
+  note: string;
+  use_customer_address: boolean;
+  is_default: boolean;
+};
+
+function localFromSaved(a: ShippingAddress): LocalShippingAddress {
+  return {
+    _tempId: a.id,
+    _isNew: false,
+    _isDeleted: false,
+    id: a.id,
+    label: a.label,
+    recipient_name: a.recipient_name,
+    recipient_phone: a.recipient_phone,
+    address: a.address,
+    sub_district: a.sub_district,
+    district: a.district,
+    province: a.province,
+    postal_code: a.postal_code,
+    note: a.note,
+    use_customer_address: a.use_customer_address,
+    is_default: a.is_default,
+  };
+}
 
 type CustomerFormState = {
   address: string;
@@ -150,6 +210,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isDiscountDrawerOpen, setIsDiscountDrawerOpen] = useState(false);
+  const [localShippingAddresses, setLocalShippingAddresses] = useState<LocalShippingAddress[]>([]);
 
   useEffect(() => {
     async function loadInitialData() {
@@ -168,6 +229,17 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
     }
     void loadInitialData();
   }, []);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (isCustomerModalOpen) closeCustomerModal();
+        else if (isDiscountDrawerOpen) closeDiscountDrawer();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isCustomerModalOpen, isDiscountDrawerOpen]);
 
   // ─── KPI ──────────────────────────────────────────────────────────────────
   const kpi = useMemo(() => {
@@ -253,6 +325,36 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
   function clearForm() {
     setFormState(initialFormState);
     setEditingCustomerId(null);
+    setLocalShippingAddresses([]);
+  }
+
+  // ─── Shipping address helpers ─────────────────────────────────────────────
+  function addLocalAddress() {
+    const tempId = `new-${localShippingAddresses.length}-${Date.now()}`;
+    const isFirst = localShippingAddresses.filter(a => !a._isDeleted).length === 0;
+    setLocalShippingAddresses(prev => [...prev, {
+      _tempId: tempId, _isNew: true, _isDeleted: false,
+      label: "", recipient_name: "", recipient_phone: "",
+      address: "", sub_district: "", district: "", province: "", postal_code: "",
+      note: "", use_customer_address: false, is_default: isFirst,
+    }]);
+  }
+
+  function updateLocalAddress(tempId: string, updates: Partial<LocalShippingAddress>) {
+    setLocalShippingAddresses(prev => prev.map(a => a._tempId === tempId ? { ...a, ...updates } : a));
+  }
+
+  function removeLocalAddress(tempId: string) {
+    setLocalShippingAddresses(prev => {
+      const addr = prev.find(a => a._tempId === tempId);
+      if (!addr) return prev;
+      if (addr._isNew) return prev.filter(a => a._tempId !== tempId);
+      return prev.map(a => a._tempId === tempId ? { ...a, _isDeleted: true } : a);
+    });
+  }
+
+  function setDefaultAddress(tempId: string) {
+    setLocalShippingAddresses(prev => prev.map(a => ({ ...a, is_default: a._tempId === tempId })));
   }
 
   function openCreateModal() {
@@ -318,10 +420,34 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
           tax_id: formState.tax_id.trim() || undefined,
         };
 
+        let savedCustomerId: string;
         if (editingCustomerId) {
           await updateCustomer(editingCustomerId, payload);
+          savedCustomerId = editingCustomerId;
         } else {
-          await createCustomer(payload);
+          const res = await createCustomer(payload);
+          savedCustomerId = res.data?.id ?? "";
+        }
+
+        // Save shipping address changes in parallel
+        if (savedCustomerId) {
+          const ops: Promise<unknown>[] = [];
+          for (const a of localShippingAddresses) {
+            const addrPayload = {
+              label: a.label, recipient_name: a.recipient_name, recipient_phone: a.recipient_phone,
+              address: a.address, sub_district: a.sub_district, district: a.district,
+              province: a.province, postal_code: a.postal_code, note: a.note,
+              use_customer_address: a.use_customer_address, is_default: a.is_default,
+            };
+            if (a._isDeleted && a.id) {
+              ops.push(deleteShippingAddress(savedCustomerId, a.id));
+            } else if (!a._isDeleted && a._isNew) {
+              ops.push(createShippingAddress(savedCustomerId, addrPayload));
+            } else if (!a._isDeleted && !a._isNew && a.id) {
+              ops.push(updateShippingAddress(savedCustomerId, a.id, addrPayload));
+            }
+          }
+          await Promise.all(ops);
         }
 
         await reloadData();
@@ -349,6 +475,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
       phone: customer.phone ?? "",
       tax_id: customer.tax_id ?? "",
     });
+    setLocalShippingAddresses((customer.shipping_addresses ?? []).map(localFromSaved));
     setIsCustomerModalOpen(true);
   }
 
@@ -550,7 +677,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
                       </td>
                       <td className="px-4 py-3 text-right text-slate-700">
                         {customer.total_purchase != null
-                          ? `฿${customer.total_purchase.toLocaleString("th-TH", { minimumFractionDigits: 2 })}`
+                          ? `฿${customer.total_purchase.toLocaleString("th-TH", { minimumFractionDigits: 0 })}`
                           : "—"}
                       </td>
                       <td className="px-4 py-3 text-right text-slate-700">
@@ -614,7 +741,6 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
       {isCustomerModalOpen ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]"
-          onClick={closeCustomerModal}
         >
           <div
             className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
@@ -751,6 +877,145 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
                   rows={2}
                   value={formState.address}
                 />
+              </div>
+
+              {/* Shipping addresses — multi-address panel */}
+              <div className="mb-4 rounded-xl border border-violet-100 bg-violet-50/40 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Truck className="h-4 w-4 text-violet-600" />
+                    <span className="text-sm font-semibold text-slate-700">{dictionary.shippingSectionTitle}</span>
+                  </div>
+                  <button
+                    className="text-xs font-medium text-violet-600 hover:text-violet-800 transition"
+                    onClick={addLocalAddress}
+                    type="button"
+                  >
+                    {dictionary.addShippingAddressBtn}
+                  </button>
+                </div>
+
+                {localShippingAddresses.filter(a => !a._isDeleted).length === 0 && (
+                  <p className="text-xs text-slate-400 italic">{dictionary.noShippingAddresses}</p>
+                )}
+
+                {localShippingAddresses.filter(a => !a._isDeleted).map((addr) => (
+                  <div key={addr._tempId} className="mb-3 rounded-lg border border-violet-200 bg-white p-3 shadow-sm last:mb-0">
+                    {/* Header row: label + default badge + remove */}
+                    <div className="mb-2 flex items-center gap-2">
+                      <input
+                        className="flex-1 rounded border border-slate-200 px-2 py-1.5 text-xs outline-none transition focus:border-violet-500"
+                        onChange={(e) => updateLocalAddress(addr._tempId, { label: e.target.value })}
+                        placeholder={dictionary.shippingLabelPlaceholder}
+                        value={addr.label}
+                      />
+                      {addr.is_default ? (
+                        <span className="shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">
+                          {dictionary.defaultAddressLabel}
+                        </span>
+                      ) : (
+                        <button
+                          className="shrink-0 text-xs text-slate-400 hover:text-violet-600 transition"
+                          onClick={() => setDefaultAddress(addr._tempId)}
+                          type="button"
+                        >
+                          {dictionary.setAsDefaultLabel}
+                        </button>
+                      )}
+                      <button
+                        className="shrink-0 rounded p-1 text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                        onClick={() => removeLocalAddress(addr._tempId)}
+                        title={dictionary.removeAddressBtn}
+                        type="button"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Use customer address toggle */}
+                    <label className="mb-2 flex cursor-pointer items-center gap-2">
+                      <input
+                        checked={addr.use_customer_address}
+                        className="accent-violet-600"
+                        onChange={(e) => updateLocalAddress(addr._tempId, { use_customer_address: e.target.checked })}
+                        type="checkbox"
+                      />
+                      <span className="text-xs text-slate-600">{dictionary.useCustomerAddressLabel}</span>
+                    </label>
+
+                    {addr.use_customer_address ? (
+                      <p className="rounded bg-violet-50 px-3 py-2 text-xs text-violet-600">
+                        {formState.address.trim() || "—"}
+                      </p>
+                    ) : (
+                      <>
+                        <div className="mb-2 grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.recipientNameLabel}</label>
+                            <input
+                              className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-violet-500"
+                              onChange={(e) => updateLocalAddress(addr._tempId, { recipient_name: e.target.value })}
+                              value={addr.recipient_name}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.recipientPhoneLabel}</label>
+                            <input
+                              className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-violet-500"
+                              onChange={(e) => updateLocalAddress(addr._tempId, { recipient_phone: e.target.value })}
+                              type="tel"
+                              value={addr.recipient_phone}
+                            />
+                          </div>
+                        </div>
+                        <div className="mb-2">
+                          <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.shippingAddressLabel}</label>
+                          <textarea
+                            className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-violet-500"
+                            onChange={(e) => updateLocalAddress(addr._tempId, { address: e.target.value })}
+                            rows={2}
+                            value={addr.address}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.shippingSubDistrictLabel}</label>
+                            <input
+                              className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-violet-500"
+                              onChange={(e) => updateLocalAddress(addr._tempId, { sub_district: e.target.value })}
+                              value={addr.sub_district}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.shippingDistrictLabel}</label>
+                            <input
+                              className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-violet-500"
+                              onChange={(e) => updateLocalAddress(addr._tempId, { district: e.target.value })}
+                              value={addr.district}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.shippingProvinceLabel}</label>
+                            <input
+                              className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-violet-500"
+                              onChange={(e) => updateLocalAddress(addr._tempId, { province: e.target.value })}
+                              value={addr.province}
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.shippingPostalCodeLabel}</label>
+                            <input
+                              className="w-full rounded border border-slate-200 px-2 py-1.5 text-xs outline-none focus:border-violet-500"
+                              maxLength={5}
+                              onChange={(e) => updateLocalAddress(addr._tempId, { postal_code: e.target.value.replace(/\D/g, "") })}
+                              value={addr.postal_code}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
               </div>
 
               {/* Active toggle */}

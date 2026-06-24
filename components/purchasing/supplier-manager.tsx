@@ -185,7 +185,7 @@ type SupplierManagerProps = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtAmount(v: number) {
-  return v.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return v.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function fmtDate(iso: string) {
@@ -362,7 +362,7 @@ function KpiCard({
         {icon}
       </div>
       <div>
-        <p className={`text-xl font-bold tabular-nums leading-tight ${
+        <p className={`nums text-xl font-bold leading-tight ${
           primary ? "text-white" : alert ? "text-red-600" : "text-slate-800"
         }`}>
           {value}
@@ -606,11 +606,11 @@ function SupplierDetail({
                     key={po.id}
                     className={`border-t border-slate-100 transition-colors hover:bg-violet-50/40 ${idx % 2 !== 0 ? "bg-slate-50/30" : ""}`}
                   >
-                    <td className="px-4 py-3 font-mono text-xs font-medium text-slate-700">
+                    <td className="px-4 py-3 nums text-xs font-medium text-slate-700 whitespace-nowrap">
                       {po.order_number}
                     </td>
                     <td className="px-4 py-3 text-slate-500">{fmtDate(po.created_at)}</td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-800">
+                    <td className="px-4 py-3 text-right font-semibold nums text-slate-800">
                       ฿{fmtAmount(po.total_cost)}
                     </td>
                     <td className="px-4 py-3 text-center">
