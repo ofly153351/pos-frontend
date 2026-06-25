@@ -149,35 +149,83 @@ function explainItem(item: ContextItem, data: CopilotOverview, lang: Lang): Saku
 }
 
 function explainWhy(item: ContextItem, data: CopilotOverview, lang: Lang): SakuSection[] {
+  const { decisionEngine: de, inventoryIntelligence: intel, moneyIntelligence: money } = data
+
   if (item.type === 'action') {
     const a = item.data as CopilotAction
-    const de = data.decisionEngine
     const scored = de?.todayPriorities.find(p => p.action.id === a.id)
       ?? de?.weekPriorities.find(p => p.action.id === a.id)
       ?? (de?.topPriority?.action.id === a.id ? de.topPriority : null)
-    const sections: SakuSection[] = [
-      sec('🎯', lang === 'en' ? `Why: ${a.title}` : `ทำไม: ${a.title}`, scored?.reason ?? a.description),
-    ]
-    if (a.impactValue) sections.push(sec('💰', lang === 'en' ? 'Impact' : 'ผลกระทบ', a.impactValue))
-    if (scored && de?.topPriority?.action.id === a.id) {
-      sections.push(sec('🏆', '', lang === 'en' ? '#1 priority right now' : 'ควรทำเป็นอันดับ 1 ตอนนี้'))
+    const isTop = de?.topPriority?.action.id === a.id
+    const sections: SakuSection[] = []
+
+    sections.push(sec('🔍', lang === 'en' ? 'Why' : 'ทำไม', scored?.reason ?? a.description))
+
+    if (a.id.includes('reorder') || a.id.includes('oos')) {
+      const reorder = intel.urgentReorders.find(r => a.id.includes(r.productId)) ?? intel.urgentReorders[0]
+      if (reorder) {
+        sections.push(sec('⏰', lang === 'en' ? 'Why now' : 'ทำไมต้องตอนนี้',
+          lang === 'en'
+            ? `Only ${reorder.daysOfStock.toFixed(1)} days left at ${reorder.avgDailySales.toFixed(1)}/day`
+            : `เหลือแค่ ${reorder.daysOfStock.toFixed(1)} วัน (ขาย ${reorder.avgDailySales.toFixed(1)} ชิ้น/วัน)`,
+          lang === 'en' ? 'Lead time 2-3 days — may run out before delivery' : 'เวลาส่ง 2-3 วัน อาจหมดก่อนของมาถึง',
+        ))
+      }
+    } else if (a.id.includes('collect') || a.id.includes('credit')) {
+      const worst = money.agingCustomers.filter(c => c.daysOverdue > 0).sort((x, y) => y.daysOverdue - x.daysOverdue)[0]
+      if (worst) {
+        sections.push(sec('⏰', lang === 'en' ? 'Why now' : 'ทำไมต้องตอนนี้',
+          lang === 'en'
+            ? `${worst.customerName}: ${worst.daysOverdue}d overdue — bad debt risk rises weekly`
+            : `${worst.customerName}: ค้าง ${worst.daysOverdue} วัน — เสี่ยงหนี้สูญเพิ่มทุกสัปดาห์`,
+        ))
+      }
+    } else if (a.id.includes('receipt')) {
+      sections.push(sec('⏰', lang === 'en' ? 'Why now' : 'ทำไมต้องตอนนี้',
+        lang === 'en' ? 'Received stock not sellable until approved' : 'ของรับมาแล้วแต่ขายไม่ได้จนกว่าจะอนุมัติ',
+      ))
+    }
+
+    if (isTop) {
+      sections.push(sec('🏆', lang === 'en' ? 'Why first' : 'ทำไมต้องก่อน',
+        lang === 'en' ? '#1 priority — highest impact right now' : 'สำคัญอันดับ 1 — กระทบธุรกิจมากสุดตอนนี้',
+      ))
+    } else if (scored) {
+      const rank = de?.todayPriorities.findIndex(p => p.action.id === a.id)
+      if (rank !== undefined && rank >= 0) {
+        sections.push(sec('📊', lang === 'en' ? 'Priority' : 'ลำดับ',
+          lang === 'en' ? `#${rank + 1} in today's list` : `อันดับ ${rank + 1} ของวันนี้`,
+        ))
+      }
+    }
+
+    if (a.impactValue) {
+      sections.push(sec('🎯', lang === 'en' ? 'What next' : 'ควรทำ', a.impactValue))
     }
     return sections
   }
+
   if (item.type === 'risk') {
     const r = item.data as CopilotRisk
     return [
-      sec('⚠️', lang === 'en' ? `Why: ${r.title}` : `ทำไม: ${r.title}`, r.impact),
+      sec('🔍', lang === 'en' ? 'Why' : 'ทำไม', r.impact),
       sec('🎯', lang === 'en' ? 'Action' : 'แนะนำ', r.action),
     ]
   }
+
   if (item.type === 'customer') {
     const c = item.data as { name: string; value: number }
-    return [sec('👤', c.name,
-      lang === 'en'
-        ? `Outstanding ${fmtMoney(c.value)} — collecting improves cash flow`
-        : `ค้าง ${fmtMoney(c.value)} — เก็บได้จะช่วยเงินสดหมุนเวียน`,
-    )]
+    const cust = money.agingCustomers.find(ac => ac.customerName === c.name)
+    return [
+      sec('🔍', lang === 'en' ? 'Why' : 'ทำไม',
+        lang === 'en' ? `${fmtMoney(c.value)} outstanding — cash your business can't use` : `ค้าง ${fmtMoney(c.value)} — เงินที่ธุรกิจใช้ไม่ได้`,
+      ),
+      sec('⏰', lang === 'en' ? 'Why now' : 'ทำไมต้องตอนนี้',
+        cust
+          ? (lang === 'en' ? `${cust.daysOverdue}d overdue — collection rate drops after 60d` : `ค้าง ${cust.daysOverdue} วัน — อัตราเก็บได้ลดหลัง 60 วัน`)
+          : (lang === 'en' ? 'Older debts harder to collect' : 'ยิ่งค้างนานยิ่งเก็บยาก'),
+      ),
+    ]
   }
   return explainItem(item, data, lang)
 }
@@ -190,43 +238,136 @@ function buildConsequence(data: CopilotOverview, ctx: ConversationContext, lang:
   }
   const item = ctx.lastItems[0]
   const sections: SakuSection[] = []
+  const { inventoryIntelligence: intel, moneyIntelligence: money, decisionEngine: de } = data
 
   if (item.type === 'action') {
     const a = item.data as CopilotAction
-    if (a.id.includes('out_of_stock') || a.id.includes('reorder')) {
-      sections.push(sec('⚠️', lang === 'en' ? 'If ignored' : 'ถ้าไม่ทำ',
-        lang === 'en' ? 'Lost sales from out-of-stock items' : 'เสียยอดขายจากสินค้าหมด',
-        lang === 'en' ? 'Customers may switch to competitors' : 'ลูกค้าอาจไปซื้อร้านอื่น',
+    if (a.id.includes('reorder') || a.id.includes('oos')) {
+      const reorder = intel.urgentReorders.find(r => a.id.includes(r.productId)) ?? intel.urgentReorders[0]
+      if (reorder) {
+        sections.push(sec('⏰', lang === 'en' ? 'Short-term' : 'ระยะสั้น',
+          lang === 'en'
+            ? `Runs out in ${reorder.daysOfStock.toFixed(1)} days (selling ${reorder.avgDailySales.toFixed(1)}/day)`
+            : `หมดใน ${reorder.daysOfStock.toFixed(1)} วัน (ขาย ${reorder.avgDailySales.toFixed(1)} ชิ้น/วัน)`,
+        ))
+        sections.push(sec('💰', lang === 'en' ? 'Business impact' : 'ผลกระทบ',
+          lang === 'en' ? 'Lost daily revenue — customers switch to competitors' : 'เสียยอดขายทุกวัน — ลูกค้าอาจไปร้านอื่น',
+          data.healthScore.inventory.outOfStockCount > 1
+            ? (lang === 'en' ? `${data.healthScore.inventory.outOfStockCount} products already out` : `หมดแล้ว ${data.healthScore.inventory.outOfStockCount} รายการ`)
+            : '',
+        ))
+      } else {
+        sections.push(sec('⚠️', lang === 'en' ? 'If ignored' : 'ถ้าไม่ทำ',
+          lang === 'en' ? `${data.healthScore.inventory.outOfStockCount} out of stock — losing sales daily` : `หมด ${data.healthScore.inventory.outOfStockCount} รายการ — เสียยอดขายทุกวัน`,
+        ))
+      }
+      sections.push(sec('📅', lang === 'en' ? 'Timeline' : 'ควรทำเมื่อไร',
+        lang === 'en' ? 'Order today — lead time 2-3 days' : 'สั่งวันนี้ — ส่งปกติ 2-3 วัน',
       ))
-    } else if (a.id.includes('credit') || a.id.includes('overdue')) {
-      sections.push(sec('⚠️', lang === 'en' ? 'If ignored' : 'ถ้าไม่ทำ',
-        lang === 'en' ? 'Cash flow tightens' : 'เงินสดหมุนเวียนลดลง',
-        lang === 'en' ? 'Older debts become harder to collect' : 'ยิ่งค้างนานยิ่งเก็บยาก',
+    } else if (a.id.includes('collect') || a.id.includes('credit') || a.id.includes('overdue')) {
+      const overdueCustomers = money.agingCustomers.filter(c => c.daysOverdue > 0)
+      const worst = [...overdueCustomers].sort((x, y) => y.daysOverdue - x.daysOverdue)[0]
+      sections.push(sec('⏰', lang === 'en' ? 'Short-term' : 'ระยะสั้น',
+        lang === 'en' ? `${fmtMoney(money.totalOverdue)} stuck in overdue receivables` : `${fmtMoney(money.totalOverdue)} ค้างในลูกหนี้เกินกำหนด`,
+        worst ? (lang === 'en' ? `Worst: ${worst.customerName} — ${worst.daysOverdue}d overdue` : `แย่สุด: ${worst.customerName} — ค้าง ${worst.daysOverdue} วัน`) : '',
+      ))
+      sections.push(sec('💰', lang === 'en' ? 'Business impact' : 'ผลกระทบ',
+        lang === 'en' ? 'Cash flow tightens — older debts harder to collect' : 'เงินสดลดลง — ยิ่งค้างนานยิ่งเก็บยาก',
+        overdueCustomers.length > 1 ? (lang === 'en' ? `${overdueCustomers.length} overdue customers` : `ลูกหนี้เกินกำหนด ${overdueCustomers.length} ราย`) : '',
+      ))
+      sections.push(sec('📅', lang === 'en' ? 'Timeline' : 'ควรทำเมื่อไร',
+        lang === 'en' ? 'Contact this week — delay increases bad debt risk' : 'ติดตามสัปดาห์นี้ — ช้ายิ่งเสี่ยงหนี้สูญ',
       ))
     } else if (a.id.includes('dead') || a.id.includes('overstock')) {
-      sections.push(sec('⚠️', lang === 'en' ? 'If ignored' : 'ถ้าไม่ทำ',
-        lang === 'en' ? 'Capital stays locked in unsold inventory' : 'เงินทุนจมอยู่ในสินค้าขายไม่ออก',
-        lang === 'en' ? 'Storage costs accumulate' : 'เสียพื้นที่จัดเก็บ',
+      const total = intel.totalDeadCapitalValue + intel.totalOverstockValue
+      sections.push(sec('⏰', lang === 'en' ? 'Short-term' : 'ระยะสั้น',
+        lang === 'en' ? `${fmtMoney(total)} locked in non-moving stock` : `${fmtMoney(total)} จมในสินค้าไม่เคลื่อนไหว`,
+      ))
+      sections.push(sec('💰', lang === 'en' ? 'Business impact' : 'ผลกระทบ',
+        lang === 'en' ? 'Capital unavailable for fast sellers — storage costs accumulate' : 'เงินทุนไม่พร้อมสั่งสินค้าขายดี — เสียพื้นที่เก็บ',
+      ))
+      sections.push(sec('📅', lang === 'en' ? 'Timeline' : 'ควรทำเมื่อไร',
+        lang === 'en' ? 'Start clearance this week' : 'เริ่มโปรลดราคาสัปดาห์นี้',
+      ))
+    } else if (a.id.includes('cost') || a.id.includes('fix-costs')) {
+      sections.push(sec('⏰', lang === 'en' ? 'Short-term' : 'ระยะสั้น',
+        lang === 'en' ? `${data.healthScore.inventory.missingCostCount} products without cost — profit is wrong` : `${data.healthScore.inventory.missingCostCount} สินค้าไม่มีราคาทุน — กำไรที่แสดงผิด`,
+      ))
+      sections.push(sec('💰', lang === 'en' ? 'Business impact' : 'ผลกระทบ',
+        lang === 'en' ? 'May sell at a loss without knowing' : 'อาจขายขาดทุนโดยไม่รู้',
+      ))
+      sections.push(sec('📅', lang === 'en' ? 'Timeline' : 'ควรทำเมื่อไร',
+        lang === 'en' ? 'Fix today — every sale distorts reports further' : 'แก้วันนี้ — ทุกบิลที่ขายทำให้รายงานผิดไปเรื่อยๆ',
+      ))
+    } else if (a.id.includes('receipt') || a.id.includes('approve')) {
+      sections.push(sec('⏰', lang === 'en' ? 'Short-term' : 'ระยะสั้น',
+        lang === 'en' ? 'Received stock not in system — can\'t sell it' : 'ของรับมาแล้วแต่ยังไม่เข้าระบบ — ขายไม่ได้',
+      ))
+      sections.push(sec('💰', lang === 'en' ? 'Business impact' : 'ผลกระทบ',
+        lang === 'en' ? 'Shelf shows empty while stock sits in receiving' : 'ชั้นวางแสดงว่าหมด ทั้งที่ของอยู่ห้องรับสินค้า',
+      ))
+      sections.push(sec('📅', lang === 'en' ? 'Timeline' : 'ควรทำเมื่อไร',
+        lang === 'en' ? 'Approve today — unlocks sellable stock' : 'อนุมัติวันนี้ — ปลดล็อคสต็อกขาย',
+      ))
+    } else if (a.id.includes('po') || a.id.includes('followup')) {
+      sections.push(sec('⏰', lang === 'en' ? 'Short-term' : 'ระยะสั้น', a.description))
+      sections.push(sec('💰', lang === 'en' ? 'Business impact' : 'ผลกระทบ',
+        lang === 'en' ? 'Delayed restocking — may run out before delivery' : 'สั่งซื้อล่าช้า — อาจหมดก่อนของมาถึง',
       ))
     } else {
-      sections.push(sec('⚠️', lang === 'en' ? 'If ignored' : 'ถ้าไม่ทำ',
-        lang === 'en' ? 'Issue may escalate or cost more later' : 'ปัญหาอาจรุนแรงขึ้นหรือเสียค่าใช้จ่ายมากขึ้น',
+      sections.push(sec('⚠️', lang === 'en' ? 'If ignored' : 'ถ้าไม่ทำ', a.impactValue ?? a.description))
+      sections.push(sec('📅', lang === 'en' ? 'Timeline' : 'ควรทำเมื่อไร',
+        de?.topPriority?.action.id === a.id
+          ? (lang === 'en' ? '#1 priority — act today' : 'สำคัญอันดับ 1 — ควรทำวันนี้')
+          : (lang === 'en' ? 'Handle this week' : 'จัดการสัปดาห์นี้'),
       ))
     }
   } else if (item.type === 'risk') {
     const r = item.data as CopilotRisk
-    sections.push(sec('⚠️', lang === 'en' ? 'Consequence' : 'ผลกระทบถ้าปล่อยไว้', r.impact))
-    sections.push(sec('🎯', lang === 'en' ? 'Recommended' : 'ควรทำ', r.action))
+    sections.push(sec('⏰', lang === 'en' ? 'If ignored' : 'ถ้าปล่อยไว้', r.impact))
+    sections.push(sec('🎯', lang === 'en' ? 'Action' : 'ควรทำ', r.action))
+    const urgMap: Record<string, string> = { critical: 'ตอนนี้', high: 'วันนี้', medium: 'สัปดาห์นี้' }
+    const urgMapEn: Record<string, string> = { critical: 'Now', high: 'Today', medium: 'This week' }
+    sections.push(sec('📅', lang === 'en' ? 'Timeline' : 'ระยะเวลา',
+      lang === 'en' ? (urgMapEn[r.severity] ?? 'When convenient') : (urgMap[r.severity] ?? 'เมื่อสะดวก'),
+    ))
   } else if (item.type === 'customer') {
     const c = item.data as { name: string; value: number }
-    sections.push(sec('⚠️', lang === 'en' ? 'If not collected' : 'ถ้าไม่เก็บ',
-      lang === 'en' ? `${fmtMoney(c.value)} stays unavailable for operations` : `${fmtMoney(c.value)} ไม่พร้อมใช้ในธุรกิจ`,
-      lang === 'en' ? 'Risk of becoming bad debt' : 'เสี่ยงกลายเป็นหนี้สูญ',
+    const cust = money.agingCustomers.find(ac => ac.customerName === c.name)
+    sections.push(sec('⏰', lang === 'en' ? 'Short-term' : 'ระยะสั้น',
+      lang === 'en' ? `${fmtMoney(c.value)} unavailable for operations` : `${fmtMoney(c.value)} ใช้ในธุรกิจไม่ได้`,
+      cust ? (lang === 'en' ? `${cust.daysOverdue} days overdue` : `ค้าง ${cust.daysOverdue} วัน`) : '',
     ))
+    sections.push(sec('💰', lang === 'en' ? 'Business impact' : 'ผลกระทบ',
+      lang === 'en' ? 'Risk of bad debt — harder to collect each week' : 'เสี่ยงหนี้สูญ — ยิ่งผ่านไปยิ่งเก็บยาก',
+    ))
+    sections.push(sec('📅', lang === 'en' ? 'Timeline' : 'ควรทำเมื่อไร',
+      cust && cust.daysOverdue > 60
+        ? (lang === 'en' ? 'Contact immediately — high bad debt risk' : 'ติดต่อทันที — เสี่ยงหนี้สูญสูง')
+        : (lang === 'en' ? 'Follow up this week' : 'ติดตามสัปดาห์นี้'),
+    ))
+  } else if (item.type === 'product') {
+    const p = item.data as { name: string; value: number }
+    const reorder = intel.urgentReorders.find(r => r.productName === p.name)
+    if (reorder) {
+      sections.push(sec('⏰', lang === 'en' ? 'Short-term' : 'ระยะสั้น',
+        lang === 'en'
+          ? `Runs out in ${reorder.daysOfStock.toFixed(1)}d (selling ${reorder.avgDailySales.toFixed(1)}/day)`
+          : `หมดใน ${reorder.daysOfStock.toFixed(1)} วัน (ขาย ${reorder.avgDailySales.toFixed(1)} ชิ้น/วัน)`,
+      ))
+      sections.push(sec('🎯', lang === 'en' ? 'Action' : 'แนะนำ',
+        lang === 'en' ? `Order ${reorder.reorderQty} units` : `สั่งซื้อ ${reorder.reorderQty} ชิ้น`,
+      ))
+    } else {
+      sections.push(sec('📦', p.name,
+        lang === 'en' ? `Stock: ${p.value}` : `คงเหลือ: ${p.value}`,
+        p.value === 0 ? (lang === 'en' ? 'Out of stock — losing sales' : 'หมดสต็อก — เสียยอดขาย') : '',
+      ))
+    }
   }
 
   if (sections.length === 0) {
-    sections.push(sec('🤔', '', lang === 'en' ? 'No significant consequence for this item.' : 'ไม่มีผลกระทบสำคัญสำหรับเรื่องนี้'))
+    sections.push(sec('ℹ️', '', lang === 'en' ? 'No significant consequence.' : 'ไม่มีผลกระทบสำคัญ'))
   }
   return sections
 }
@@ -289,66 +430,82 @@ function generateFollowUps(
 
   const add = (label: string, query: string) => { if (result.length < 4) result.push({ label, query }) }
 
-  // Context-aware: if last items reference specific products/customers, suggest item-level follow-ups
+  // Context-aware: data-driven chips from actual item state
   const lastItem = ctx?.lastItems?.[0]
   if (lastItem) {
     if (lastItem.type === 'product') {
-      add(lang === 'en' ? 'Need to reorder?' : '🛒 ต้องสั่งซื้อเพิ่มไหม', lang === 'en' ? 'should I reorder' : 'ต้องสั่งซื้อเพิ่มไหม')
-      add(lang === 'en' ? 'What if ignored?' : '⚠️ ถ้าปล่อยไว้จะเป็นไง', lang === 'en' ? 'what happens if ignored' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
-      add(lang === 'en' ? 'Similar risks?' : '📦 สินค้าไหนเสี่ยงอีก', lang === 'en' ? 'other products at risk' : 'สินค้าไหนเสี่ยงแบบนี้อีก')
+      const p = lastItem.data as { name: string; value: number }
+      const reorder = intel.urgentReorders.find(r => r.productName === p.name)
+      if (reorder) {
+        add(lang === 'en' ? `🛒 Order ${reorder.reorderQty} units` : `🛒 สั่ง ${reorder.reorderQty} ชิ้น`, lang === 'en' ? 'should I reorder' : 'ต้องสั่งซื้อเพิ่มไหม')
+        add(lang === 'en' ? `⏰ ${reorder.daysOfStock.toFixed(0)}d left` : `⏰ เหลือ ${reorder.daysOfStock.toFixed(0)} วัน`, lang === 'en' ? 'what happens if ignored' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
+      } else {
+        add(lang === 'en' ? 'Reorder?' : '🛒 สั่งเพิ่มไหม', lang === 'en' ? 'should I reorder' : 'ต้องสั่งซื้อเพิ่มไหม')
+        add(lang === 'en' ? 'If ignored?' : '⚠️ ถ้าปล่อยไว้?', lang === 'en' ? 'what happens if ignored' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
+      }
+      if (intel.urgentReorders.length > 1) {
+        add(lang === 'en' ? `📦 ${intel.urgentReorders.length} more at risk` : `📦 เสี่ยงอีก ${intel.urgentReorders.length} รายการ`, lang === 'en' ? 'other products at risk' : 'สินค้าไหนเสี่ยงอีก')
+      }
     } else if (lastItem.type === 'customer') {
-      add(lang === 'en' ? 'Aging details' : '📊 ค้างนานแค่ไหน', lang === 'en' ? 'aging details' : 'ลูกหนี้ค้างชำระ')
-      add(lang === 'en' ? 'What if not collected?' : '⚠️ ถ้าไม่เก็บจะเป็นไง', lang === 'en' ? 'what happens if not collected' : 'ถ้าไม่เก็บเงินจะเกิดอะไรขึ้น')
-      add(lang === 'en' ? 'Who to collect first?' : '🎯 ควรติดตามใครก่อน', lang === 'en' ? 'who to collect first' : 'ควรติดตามใครก่อน')
-      add(lang === 'en' ? 'Total collectible' : '💰 เก็บได้อีกเท่าไร', lang === 'en' ? 'total outstanding' : 'ลูกหนี้ค้างชำระ')
+      const c = lastItem.data as { name: string; value: number }
+      const cust = money.agingCustomers.find(ac => ac.customerName === c.name)
+      if (cust) {
+        add(lang === 'en' ? `📊 ${cust.daysOverdue}d overdue` : `📊 ค้าง ${cust.daysOverdue} วัน`, lang === 'en' ? 'aging details' : 'ลูกหนี้ค้างชำระ')
+      }
+      add(lang === 'en' ? '⚠️ Bad debt risk?' : '⚠️ เสี่ยงหนี้สูญ?', lang === 'en' ? 'what happens if not collected' : 'ถ้าไม่เก็บเงินจะเกิดอะไรขึ้น')
+      const overdueCount = money.agingCustomers.filter(ac => ac.daysOverdue > 0).length
+      if (overdueCount > 1) {
+        add(lang === 'en' ? `🎯 ${overdueCount} overdue` : `🎯 ค้าง ${overdueCount} ราย`, lang === 'en' ? 'who to collect first' : 'ควรติดตามใครก่อน')
+      }
+      add(lang === 'en' ? `💰 ${fmtMoney(money.totalOutstanding)} total` : `💰 รวม ${fmtMoney(money.totalOutstanding)}`, lang === 'en' ? 'total outstanding' : 'ลูกหนี้ค้างชำระ')
       return result
     } else if (lastItem.type === 'action') {
-      add(lang === 'en' ? 'Why?' : '🤔 ทำไมต้องทำ', lang === 'en' ? 'why is this important' : 'ทำไมสำคัญ')
-      add(lang === 'en' ? 'Do today?' : '📅 ควรทำวันนี้ไหม', lang === 'en' ? 'should I do this today' : 'ควรทำวันนี้ไหม')
-      add(lang === 'en' ? 'What if ignored?' : '⚠️ ถ้าไม่ทำจะเป็นไง', lang === 'en' ? 'what happens if ignored' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
+      add(lang === 'en' ? '🔍 Why?' : '🔍 ทำไม', lang === 'en' ? 'why is this important' : 'ทำไมสำคัญ')
+      add(lang === 'en' ? '📅 Do today?' : '📅 วันนี้ไหม', lang === 'en' ? 'should I do this today' : 'ควรทำวันนี้ไหม')
+      add(lang === 'en' ? '⚠️ If ignored?' : '⚠️ ถ้าไม่ทำ?', lang === 'en' ? 'what happens if ignored' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
       return result
     }
     if (result.length >= 3) return result
   }
 
-  // Topic-based follow-ups (fill remaining slots)
+  // Topic-based follow-ups with actual data values in labels
   if (topic === 'actions' || topic === 'overview') {
-    if (h.inventory.outOfStockCount > 0) add(lang === 'en' ? 'Low stock details' : '📦 สินค้าใกล้หมด', lang === 'en' ? 'stock status' : 'สินค้าใกล้หมด')
-    if (money.totalOverdue > 0) add(lang === 'en' ? 'Overdue debtors' : '👤 ลูกหนี้ค้าง', lang === 'en' ? 'overdue debtors' : 'ลูกหนี้ค้างชำระ')
-    if (purch.costChanges.length > 0) add(lang === 'en' ? 'Cost changes' : '💰 ต้นทุนเปลี่ยน', lang === 'en' ? 'cost changes' : 'ต้นทุนที่เปลี่ยน')
-    add(lang === 'en' ? 'Profit report' : '💰 กำไรเท่าไหร่', lang === 'en' ? 'profit report' : 'กำไรเท่าไหร่')
+    if (h.inventory.outOfStockCount > 0) add(lang === 'en' ? `📦 ${h.inventory.outOfStockCount} out of stock` : `📦 หมด ${h.inventory.outOfStockCount} รายการ`, lang === 'en' ? 'stock status' : 'สินค้าใกล้หมด')
+    if (money.totalOverdue > 0) add(lang === 'en' ? `👤 ${fmtMoney(money.totalOverdue)} overdue` : `👤 ค้าง ${fmtMoney(money.totalOverdue)}`, lang === 'en' ? 'overdue debtors' : 'ลูกหนี้ค้างชำระ')
+    if (purch.costChanges.length > 0) add(lang === 'en' ? `💰 ${purch.costChanges.length} cost changes` : `💰 ต้นทุนเปลี่ยน ${purch.costChanges.length}`, lang === 'en' ? 'cost changes' : 'ต้นทุนที่เปลี่ยน')
+    add(lang === 'en' ? `💰 Profit ${fmtMoney(data.summary.netProfit)}` : `💰 กำไร ${fmtMoney(data.summary.netProfit)}`, lang === 'en' ? 'profit report' : 'กำไรเท่าไหร่')
   } else if (topic === 'stock') {
-    if (intel.urgentReorders.length > 0) add(lang === 'en' ? 'Reorder now' : '🛒 ต้องสั่งซื้ออะไร', lang === 'en' ? 'reorder suggestions' : 'ต้องสั่งซื้ออะไร')
-    if (intel.topDeadCapital.length > 0) add(lang === 'en' ? 'Dead stock' : '💀 สินค้าค้างสต็อก', lang === 'en' ? 'dead stock' : 'สินค้าค้างสต็อก')
-    add(lang === 'en' ? 'What if ignored?' : '⚠️ ถ้าไม่ทำจะเป็นไง', lang === 'en' ? 'what happens if I ignore this' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
-    add(lang === 'en' ? 'Purchasing overview' : '🛒 สรุปจัดซื้อ', lang === 'en' ? 'purchasing' : 'จัดซื้อ')
+    if (intel.urgentReorders.length > 0) add(lang === 'en' ? `🛒 Order ${intel.urgentReorders.length} items` : `🛒 สั่ง ${intel.urgentReorders.length} รายการ`, lang === 'en' ? 'reorder suggestions' : 'ต้องสั่งซื้ออะไร')
+    if (intel.topDeadCapital.length > 0) add(lang === 'en' ? `💀 ${fmtMoney(intel.totalDeadCapitalValue)} dead` : `💀 จม ${fmtMoney(intel.totalDeadCapitalValue)}`, lang === 'en' ? 'dead stock' : 'สินค้าค้างสต็อก')
+    add(lang === 'en' ? '⚠️ If ignored?' : '⚠️ ถ้าไม่ทำ?', lang === 'en' ? 'what happens if I ignore this' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
+    add(lang === 'en' ? '🛒 Purchasing' : '🛒 จัดซื้อ', lang === 'en' ? 'purchasing' : 'จัดซื้อ')
   } else if (topic === 'sales') {
-    add(lang === 'en' ? 'Profit details' : '💰 กำไรสุทธิ', lang === 'en' ? 'profit' : 'กำไร')
-    if (h.inventory.outOfStockCount > 0) add(lang === 'en' ? 'Stock issues' : '📦 สต็อกมีปัญหา', lang === 'en' ? 'stock' : 'สต็อก')
-    add(lang === 'en' ? 'Top priorities' : '🎯 ควรทำอะไร', lang === 'en' ? 'what should I do' : 'วันนี้ทำอะไรก่อน')
+    add(lang === 'en' ? `💰 Net ${fmtMoney(data.summary.netProfit)}` : `💰 สุทธิ ${fmtMoney(data.summary.netProfit)}`, lang === 'en' ? 'profit' : 'กำไร')
+    if (h.inventory.outOfStockCount > 0) add(lang === 'en' ? `📦 ${h.inventory.outOfStockCount} out` : `📦 หมด ${h.inventory.outOfStockCount}`, lang === 'en' ? 'stock' : 'สต็อก')
+    add(lang === 'en' ? '🎯 Priorities' : '🎯 ทำอะไรก่อน', lang === 'en' ? 'what should I do' : 'วันนี้ทำอะไรก่อน')
   } else if (topic === 'profit') {
-    if (money.operatingExpenses > 0) add(lang === 'en' ? 'Expenses breakdown' : '📊 ค่าใช้จ่ายอะไรบ้าง', lang === 'en' ? 'expenses' : 'ค่าใช้จ่าย')
-    if (purch.costChanges.length > 0) add(lang === 'en' ? 'Cost changes' : '💰 ต้นทุนเปลี่ยนไหม', lang === 'en' ? 'cost changes' : 'ต้นทุน')
-    add(lang === 'en' ? 'Opportunities' : '💡 โอกาสเพิ่มกำไร', lang === 'en' ? 'opportunities' : 'โอกาส')
+    if (money.operatingExpenses > 0) add(lang === 'en' ? `📊 Expenses ${fmtMoney(money.operatingExpenses)}` : `📊 จ่าย ${fmtMoney(money.operatingExpenses)}`, lang === 'en' ? 'expenses' : 'ค่าใช้จ่าย')
+    if (purch.costChanges.length > 0) add(lang === 'en' ? `💰 ${purch.costChanges.length} cost changes` : `💰 ต้นทุนเปลี่ยน ${purch.costChanges.length}`, lang === 'en' ? 'cost changes' : 'ต้นทุน')
+    add(lang === 'en' ? '💡 Opportunities' : '💡 เพิ่มกำไร', lang === 'en' ? 'opportunities' : 'โอกาส')
   } else if (topic === 'aging') {
-    add(lang === 'en' ? 'What if not collected?' : '⚠️ ถ้าไม่เก็บจะเป็นไง', lang === 'en' ? 'what happens if I dont collect' : 'ถ้าไม่เก็บเงินจะเกิดอะไรขึ้น')
-    add(lang === 'en' ? 'Top priorities' : '🎯 ควรทำอะไรก่อน', lang === 'en' ? 'priorities' : 'วันนี้ทำอะไรก่อน')
+    add(lang === 'en' ? '⚠️ If not collected?' : '⚠️ ถ้าไม่เก็บ?', lang === 'en' ? 'what happens if I dont collect' : 'ถ้าไม่เก็บเงินจะเกิดอะไรขึ้น')
+    add(lang === 'en' ? '🎯 Priorities' : '🎯 ทำอะไรก่อน', lang === 'en' ? 'priorities' : 'วันนี้ทำอะไรก่อน')
   } else if (topic === 'purchasing') {
-    if (purch.concentrationRisk !== 'low') add(lang === 'en' ? 'Supplier risk' : '⚠️ เสี่ยงพึ่งรายเดียว', lang === 'en' ? 'supplier concentration risk' : 'ความเสี่ยงซัพพลายเออร์')
-    add(lang === 'en' ? 'Stock status' : '📦 สต็อกตอนนี้', lang === 'en' ? 'stock' : 'สต็อก')
-    add(lang === 'en' ? 'Profit impact' : '💰 กำไรเท่าไหร่', lang === 'en' ? 'profit' : 'กำไร')
+    if (purch.concentrationRisk !== 'low') add(lang === 'en' ? '⚠️ Supplier risk' : '⚠️ เสี่ยงพึ่งรายเดียว', lang === 'en' ? 'supplier concentration risk' : 'ความเสี่ยงซัพพลายเออร์')
+    add(lang === 'en' ? '📦 Stock' : '📦 สต็อก', lang === 'en' ? 'stock' : 'สต็อก')
+    add(lang === 'en' ? `💰 Profit ${fmtMoney(data.summary.netProfit)}` : `💰 กำไร ${fmtMoney(data.summary.netProfit)}`, lang === 'en' ? 'profit' : 'กำไร')
   } else if (topic === 'risks') {
-    add(lang === 'en' ? 'Consequences' : '⚠️ ถ้าไม่ทำจะเป็นไง', lang === 'en' ? 'what happens if ignored' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
-    add(lang === 'en' ? 'Do it today?' : '📅 ควรทำวันนี้ไหม', lang === 'en' ? 'should I do this today' : 'ควรทำวันนี้ไหม')
-    add(lang === 'en' ? 'Opportunities' : '💡 โอกาส', lang === 'en' ? 'opportunities' : 'โอกาส')
+    add(lang === 'en' ? '⚠️ Consequences' : '⚠️ ถ้าปล่อยไว้?', lang === 'en' ? 'what happens if ignored' : 'ถ้าไม่ทำจะเกิดอะไรขึ้น')
+    add(lang === 'en' ? '📅 Do today?' : '📅 วันนี้ไหม', lang === 'en' ? 'should I do this today' : 'ควรทำวันนี้ไหม')
+    add(lang === 'en' ? '💡 Opportunities' : '💡 โอกาส', lang === 'en' ? 'opportunities' : 'โอกาส')
   } else if (topic === 'consequence' || topic === 'urgency') {
-    add(lang === 'en' ? 'Top priorities' : '🎯 ทำอะไรก่อน', lang === 'en' ? 'priorities' : 'วันนี้ทำอะไรก่อน')
-    add(lang === 'en' ? 'Store overview' : '📊 ภาพรวมร้าน', lang === 'en' ? 'overview' : 'ภาพรวมร้าน')
+    add(lang === 'en' ? '🎯 Priorities' : '🎯 ทำอะไรก่อน', lang === 'en' ? 'priorities' : 'วันนี้ทำอะไรก่อน')
+    add(lang === 'en' ? '📊 Overview' : '📊 ภาพรวม', lang === 'en' ? 'overview' : 'ภาพรวมร้าน')
   } else {
-    if (data.risks.length > 0) add(lang === 'en' ? 'Issues' : '⚠️ ปัญหาที่พบ', lang === 'en' ? 'issues' : 'ปัญหา')
-    add(lang === 'en' ? 'Store overview' : '📊 ภาพรวมร้าน', lang === 'en' ? 'overview' : 'ภาพรวมร้าน')
-    add(lang === 'en' ? 'Priorities' : '🎯 ทำอะไรก่อน', lang === 'en' ? 'priorities' : 'วันนี้ทำอะไรก่อน')
-    add(lang === 'en' ? 'Stock status' : '📦 สต็อก', lang === 'en' ? 'stock' : 'สต็อก')
+    if (data.risks.length > 0) add(lang === 'en' ? `⚠️ ${data.risks.length} issues` : `⚠️ ปัญหา ${data.risks.length}`, lang === 'en' ? 'issues' : 'ปัญหา')
+    add(lang === 'en' ? '📊 Overview' : '📊 ภาพรวม', lang === 'en' ? 'overview' : 'ภาพรวมร้าน')
+    add(lang === 'en' ? '🎯 Priorities' : '🎯 ทำอะไรก่อน', lang === 'en' ? 'priorities' : 'วันนี้ทำอะไรก่อน')
+    add(lang === 'en' ? '📦 Stock' : '📦 สต็อก', lang === 'en' ? 'stock' : 'สต็อก')
   }
 
   return result
@@ -522,6 +679,12 @@ function buildSakuResponse(
         `${d.productName} — ${fmtMoney(d.tiedValue)}${d.neverSold ? (lang === 'en' ? ' (never sold)' : ' (ไม่เคยขาย)') : ''}`
       )
       sections.push(sec('💀', lang === 'en' ? 'Dead stock' : 'ค้างสต็อก', ...deadLines))
+    }
+
+    if (h.inventory.outOfStockCount > 0) {
+      sections.push(sec('🏢', lang === 'en' ? 'Warehouse' : 'คลังสินค้า',
+        lang === 'en' ? 'Check warehouse for transfer-ready stock before purchasing' : 'ตรวจคลังว่ามีสต็อกโอนมาหน้าร้านได้ก่อนสั่งซื้อ',
+      ))
     }
 
     const stockCtx: ConversationContext = { lastTopic: 'stock', lastItems: items, lastItemType: items.length > 0 ? 'product' : null }
@@ -751,6 +914,11 @@ const SECTION_BG: Record<string, string> = {
   '✅': 'bg-emerald-50 border-emerald-200',
   '💀': 'bg-slate-50 border-slate-300',
   '🚧': 'bg-amber-50 border-amber-200',
+  '⏰': 'bg-orange-50 border-orange-200',
+  '📅': 'bg-blue-50 border-blue-200',
+  '🔍': 'bg-violet-50 border-violet-200',
+  '🏆': 'bg-amber-50 border-amber-200',
+  '💰': 'bg-emerald-50 border-emerald-100',
 }
 
 function SectionBlock({ section }: { section: SakuSection }) {

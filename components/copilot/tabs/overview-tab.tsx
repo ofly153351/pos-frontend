@@ -5,10 +5,6 @@ import { useParams, useRouter } from "next/navigation"
 import {
   TrendingUp,
   TrendingDown,
-  ChevronRight,
-  ChevronDown,
-  Send,
-  MessageSquare,
   ArrowRight,
   Sparkles,
 } from "lucide-react"
@@ -27,24 +23,6 @@ function fmtMoney(n: number) {
 function fmtChange(pct: number) {
   const sign = pct >= 0 ? '+' : ''
   return `${sign}${pct.toFixed(1)}%`
-}
-
-function scoreColor(s: number) {
-  if (s >= 80) return 'text-emerald-600'
-  if (s >= 60) return 'text-amber-500'
-  return 'text-rose-500'
-}
-
-function scoreDot(s: number) {
-  if (s >= 80) return 'bg-emerald-500'
-  if (s >= 60) return 'bg-amber-400'
-  return 'bg-rose-500'
-}
-
-function scoreBar(s: number) {
-  if (s >= 80) return 'bg-emerald-500'
-  if (s >= 60) return 'bg-amber-400'
-  return 'bg-rose-500'
 }
 
 // ── Owner Narrative Engine ───────────────────────────────────────────────────
@@ -122,30 +100,14 @@ function buildOwnerNarrative(data: CopilotOverview): string {
   return lines.join('\n\n')
 }
 
-function buildDynamicSuggestions(data: CopilotOverview): string[] {
-  const suggestions: string[] = []
-  const add = (s: string) => { if (suggestions.length < 4) suggestions.push(s) }
-
-  if (data.decisionEngine?.topPriority) add('🎯 วันนี้ทำอะไรก่อน')
-  if (data.healthScore.inventory.outOfStockCount > 0 || data.healthScore.inventory.lowStockCount > 0) add('📦 สินค้าใกล้หมด')
-  if (data.moneyIntelligence.totalOverdue > 0) add('👤 ลูกหนี้ค้างชำระ')
-  if (data.purchasingIntelligence.costChanges.length > 0) add('💰 ต้นทุนเปลี่ยนไหม')
-  add('📊 ภาพรวมร้าน')
-  if (suggestions.length < 4) add('💰 กำไรเท่าไหร่')
-
-  return suggestions.slice(0, 4)
-}
-
 // ── component ─────────────────────────────────────────────────────────────────
 
 export function OverviewTab() {
-  const { data, isLoading, error, refetch, setActiveTab, sendChatMessage } = useCopilot()
-  const [askInput, setAskInput] = useState('')
+  const { data, isLoading, error, refetch, setActiveTab } = useCopilot()
   const router = useRouter()
   const params = useParams()
   const locale = (params.locale as string) || 'th'
   const [now] = useState(() => new Date())
-  const [healthExpanded, setHealthExpanded] = useState(false)
 
   function navigate(route: string) {
     router.push(`/${locale}${route}`)
@@ -194,7 +156,7 @@ export function OverviewTab() {
     )
   }
 
-  const { healthScore: h, summary: s } = data
+  const { summary: s } = data
   const de = data.decisionEngine
   const intel = data.inventoryIntelligence
   const money = data.moneyIntelligence
@@ -254,10 +216,10 @@ export function OverviewTab() {
   return (
     <div className="divide-y divide-slate-100">
 
-      {/* ── SECTION 1 — Today's Business Summary ───────────────────────── */}
+      {/* ── SECTION 1 — วันนี้ร้านเป็นอย่างไร ────────────────────────── */}
       <div className="px-4 pb-5 pt-4">
         <p className="mb-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-          {dateStr}
+          {dateStr} — วันนี้ร้านเป็นอย่างไร
         </p>
 
         <div className="flex gap-4">
@@ -311,11 +273,11 @@ export function OverviewTab() {
         </div>
       </div>
 
-      {/* ── SECTION 2 — สิ่งที่ต้องดูแลทันที ───────────────────────────── */}
+      {/* ── SECTION 2 — สิ่งที่ต้องทำก่อน ─────────────────────────────── */}
       {top3Priorities.length > 0 && (
         <div className="px-4 py-4">
           <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-rose-500">
-            สิ่งที่ต้องดูแลทันที
+            สิ่งที่ต้องทำก่อน
           </p>
           <div className="space-y-2.5">
             {top3Priorities.map((p, i) => (
@@ -412,12 +374,12 @@ export function OverviewTab() {
         </div>
       )}
 
-      {/* ── SECTION 4 — สรุปสำหรับเจ้าของร้าน ──────────────────────────── */}
+      {/* ── SECTION 4 — สรุปจากผู้ช่วย ────────────────────────────────── */}
       <div className="px-4 py-4">
         <div className="mb-3 flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5 text-violet-500" />
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            สรุปสำหรับเจ้าของร้าน
+            สรุปจากผู้ช่วย
           </p>
         </div>
         <div className="rounded-xl border border-violet-100 bg-violet-50/50 px-4 py-3.5">
@@ -425,96 +387,6 @@ export function OverviewTab() {
             {narrative}
           </p>
         </div>
-      </div>
-
-      {/* ── ASK ASSISTANT ───────────────────────────────────────────────── */}
-      <div className="px-4 py-4">
-        <p className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-          <MessageSquare className="h-3 w-3 text-violet-500" />
-          ถามผู้ช่วย
-        </p>
-        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 transition-colors focus-within:border-violet-300 focus-within:bg-white">
-          <input
-            value={askInput}
-            onChange={e => setAskInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && askInput.trim()) {
-                sendChatMessage(askInput.trim())
-                setAskInput('')
-              }
-            }}
-            placeholder="ถามเกี่ยวกับร้านของคุณ..."
-            className="flex-1 bg-transparent text-[13px] text-slate-800 placeholder:text-slate-400 focus:outline-none"
-          />
-          <button
-            onClick={() => {
-              if (askInput.trim()) {
-                sendChatMessage(askInput.trim())
-                setAskInput('')
-              }
-            }}
-            disabled={!askInput.trim()}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white transition-colors hover:bg-violet-700 disabled:opacity-40"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {buildDynamicSuggestions(data).map(q => (
-            <button
-              key={q}
-              onClick={() => sendChatMessage(q)}
-              className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-500 transition-colors hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── STORE HEALTH (collapsed) ────────────────────────────────────── */}
-      <div className="px-4 py-3">
-        <button
-          onClick={() => setHealthExpanded(v => !v)}
-          className="flex w-full items-center justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <span className={`h-2 w-2 rounded-full ${scoreDot(h.overall)}`} />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              สุขภาพร้าน
-            </span>
-            <span className={`text-[12px] font-bold tabular-nums ${scoreColor(h.overall)}`}>
-              {h.overall}/100
-            </span>
-          </div>
-          {healthExpanded
-            ? <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-            : <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
-          }
-        </button>
-        {healthExpanded && (
-          <div className="mt-3 space-y-2">
-            {[
-              { label: 'ยอดขาย', score: h.sales.score },
-              { label: 'สินค้า', score: h.inventory.score },
-              { label: 'การเงิน', score: h.finance.score },
-              { label: 'ดำเนินงาน', score: h.operations.score },
-            ].map(({ label, score }) => (
-              <div key={label} className="flex items-center gap-2">
-                <span className="w-20 shrink-0 text-[11px] text-slate-500">{label}</span>
-                <div className="h-1.5 flex-1 rounded-full bg-slate-100">
-                  <div
-                    className={`h-1.5 rounded-full transition-all ${scoreBar(score)}`}
-                    style={{ width: `${score}%` }}
-                  />
-                </div>
-                <span className={`w-7 shrink-0 text-right text-[11px] font-semibold tabular-nums ${scoreColor(score)}`}>
-                  {score}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="h-6" />
