@@ -147,6 +147,7 @@ export type SupplierProduct = {
   product_id: string;
   product_name: string;
   product_sku: string;
+  barcode: string;
   supplier_sku: string;
   supplier_price: number;
   created_at: string;

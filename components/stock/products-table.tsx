@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -9,7 +9,7 @@ import { DEFAULT_LABEL_FLAGS } from "@/lib/barcode";
 import { printBarcodeBatch } from "@/lib/label";
 
 import type { ManagementDictionary, StockManagerDictionary } from "@/components/stock/types";
-import type { Product } from "@/types/product";
+import type { Product, ProductType } from "@/types/product";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { StockReceiveModal } from "@/components/stock/stock-receive-modal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +35,10 @@ type ProductsTableProps = {
   /** When false, the per-row Adjust-stock action is hidden (product master list). */
   showStockActions?: boolean;
   products: Product[];
+  productTypes?: ProductType[];
+  onBulkEnable?: (ids: string[]) => void;
+  onBulkDisable?: (ids: string[]) => void;
+  onBulkCategoryChange?: (ids: string[], categoryId: string) => void;
   receiveDictionary: {
     receiveStockTitle: string;
     receiveStock: string;
@@ -115,6 +119,10 @@ export function ProductsTable({
   onRowClick,
   showStockActions = true,
   products,
+  productTypes,
+  onBulkEnable,
+  onBulkDisable,
+  onBulkCategoryChange,
   receiveDictionary,
   tableDictionary,
 }: ProductsTableProps) {
@@ -124,6 +132,8 @@ export function ProductsTable({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
   const [density, setDensity] = useState<Density>("comfortable");
+  const [changeCategoryOpen, setChangeCategoryOpen] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
   // Restore density preference
   useEffect(() => {
@@ -309,7 +319,7 @@ export function ProductsTable({
                           {product.name}
                         </span>
                         {product.sku ? (
-                          <span className="inline-flex w-fit max-w-full items-center truncate rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-slate-500" title={product.sku}>
+                          <span className="inline-flex w-fit max-w-full items-center truncate rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500" title={product.sku}>
                             {product.sku}
                           </span>
                         ) : null}
@@ -319,7 +329,7 @@ export function ProductsTable({
                     <td className={`px-4 ${pad}`}>
                       {code ? (
                         <div className="flex items-center gap-1.5">
-                          <span className="min-w-0 truncate font-mono text-[13px] text-slate-600" title={code}>{code}</span>
+                          <span className="min-w-0 truncate text-[13px] text-slate-600" title={code}>{code}</span>
                           <button
                             type="button"
                             title={copiedId === product.id ? t.copied : t.copy}
@@ -381,7 +391,7 @@ export function ProductsTable({
                         <div className="flex min-w-0 items-start gap-1.5">
                           <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-400" aria-hidden="true" />
                           <span className="flex min-w-0 flex-col">
-                            <span className="truncate font-mono text-xs font-bold text-slate-700" title={product.storage_location ?? ""}>{loc.primary}</span>
+                            <span className="truncate text-xs font-bold text-slate-700" title={product.storage_location ?? ""}>{loc.primary}</span>
                             {loc.rest ? <span className="truncate text-[11px] text-slate-400" title={loc.rest}>{loc.rest}</span> : null}
                           </span>
                         </div>
@@ -461,6 +471,24 @@ export function ProductsTable({
                 {t.receiveAction}
               </button>
             ) : null}
+            {onBulkEnable ? (
+              <button type="button" onClick={() => { onBulkEnable(Array.from(selectedIds)); setSelectedIds(new Set()); }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">
+                {t.bulkEnableLabel ?? "เปิดใช้"}
+              </button>
+            ) : null}
+            {onBulkDisable ? (
+              <button type="button" onClick={() => { onBulkDisable(Array.from(selectedIds)); setSelectedIds(new Set()); }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                {t.bulkDisableLabel ?? "ปิดใช้"}
+              </button>
+            ) : null}
+            {onBulkCategoryChange && productTypes && productTypes.length > 0 ? (
+              <button type="button" onClick={() => setChangeCategoryOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50">
+                {t.bulkChangeCategoryLabel ?? "เปลี่ยนหมวดหมู่"}
+              </button>
+            ) : null}
             <button type="button" onClick={() => setConfirmDeleteIds(Array.from(selectedIds))}
               className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50">
               <Trash2 className="h-4 w-4" /> {t.deleteAction}
@@ -470,6 +498,46 @@ export function ProductsTable({
               className="ml-1 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
               <X className="h-4 w-4" />
             </button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Change Category mini-modal */}
+      {changeCategoryOpen ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 sm:items-center" onClick={() => setChangeCategoryOpen(false)}>
+          <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="mb-4 font-bold text-slate-900">{t.changeCategoryTitle ?? "เปลี่ยนหมวดหมู่"}</p>
+            <select
+              className="w-full rounded-lg border border-violet-200 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+              value={selectedCategoryId}
+              onChange={(e) => setSelectedCategoryId(e.target.value)}
+            >
+              <option value="">{t.changeCategorySelectPlaceholder ?? "เลือกหมวดหมู่..."}</option>
+              {productTypes?.map((pt) => (
+                <option key={pt.id} value={pt.id}>{pt.name}</option>
+              ))}
+            </select>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button type="button" onClick={() => setChangeCategoryOpen(false)}
+                className="rounded-lg border border-slate-200 px-3.5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={!selectedCategoryId}
+                onClick={() => {
+                  if (selectedCategoryId && onBulkCategoryChange) {
+                    onBulkCategoryChange(Array.from(selectedIds), selectedCategoryId);
+                    setChangeCategoryOpen(false);
+                    setSelectedCategoryId("");
+                    setSelectedIds(new Set());
+                  }
+                }}
+                className="rounded-lg bg-violet-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {t.changeCategoryApply ?? "นำไปใช้"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

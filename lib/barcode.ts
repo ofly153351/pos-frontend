@@ -17,6 +17,7 @@ export type LabelContentFlags = {
   showName: boolean;
   showSku: boolean;
   showPrice: boolean;
+  showSalePrice: boolean;
   showBarcodeNumber: boolean;
   showCategory: boolean;
   showBrand: boolean;
@@ -28,6 +29,7 @@ export const DEFAULT_LABEL_FLAGS: LabelContentFlags = {
   showName: true,
   showSku: true,
   showPrice: false,
+  showSalePrice: false,
   showBarcodeNumber: true,
   showCategory: false,
   showBrand: false,

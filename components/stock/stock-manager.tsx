@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { CatalogSetupSection } from "@/components/stock/catalog-setup-section";
@@ -22,8 +23,8 @@ import {
   listProducts,
   updateProduct,
 } from "@/services/products";
-import { adjustStock } from "@/services/stock-movements";
 import { addSupplierProduct, listSuppliers, type Supplier } from "@/services/suppliers";
+import { listLocations, type Location } from "@/services/locations";
 import { ApiError } from "@/services/api";
 import { friendlyMessage } from "@/lib/form-errors";
 import { toast } from "@/components/ui/toast";
@@ -35,6 +36,29 @@ function isLowStockProduct(product: Product) {
   const stock = product.total_stock ?? 0;
   if (stock <= 0) return false;
   return product.min_stock != null && stock <= product.min_stock;
+}
+
+function productToFormInput(product: Product, units: ProductUnit[]): ProductInput {
+  const legacyUnitId = product.unit_type
+    ? units.find((u) => u.code === product.unit_type)?.id
+    : undefined;
+  return {
+    base_price: String(product.base_price ?? ""),
+    brand_id: product.brand_id ?? "",
+    cost_price: product.cost_price != null ? String(product.cost_price) : "",
+    is_active: product.is_active,
+    name: product.name,
+    product_code: product.product_code ?? "",
+    description: product.description ?? "",
+    storage_location: product.storage_location ?? "",
+    default_location_id: product.default_location_id ?? "",
+    product_type_id: product.product_type_id ?? "",
+    min_stock: product.min_stock != null ? String(product.min_stock) : "",
+    sku: product.sku ?? "",
+    barcode: product.barcode ?? "",
+    special_price: product.special_price ? String(product.special_price) : "",
+    unit_id: product.product_unit_id ?? product.unit_id ?? legacyUnitId ?? "",
+  };
 }
 
 const DEFAULT_CATEGORIES_DICT: CategoriesDictionary = {
@@ -105,6 +129,8 @@ export function StockManager({
   allowStockActions = false,
 }: StockManagerProps) {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const initialDetailProductId = searchParams.get("product") ?? undefined;
   const [productPageSize, setProductPageSize] = useState(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("stock-page-size");
@@ -122,6 +148,8 @@ export function StockManager({
   const [selectedProductUnitId, setSelectedProductUnitId] = useState("");
   const [selectedProductBrandId, setSelectedProductBrandId] = useState("");
   const [selectedStockStatus, setSelectedStockStatus] = useState<ProductStockStatus>("all");
+  const [selectedLocationId, setSelectedLocationId] = useState("");
+  const [selectedNoLocation, setSelectedNoLocation] = useState(false);
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -252,6 +280,13 @@ export function StockManager({
     queryKey: ["stock", "product-units"],
   });
 
+  const { data: locations = [] } = useQuery<Location[]>({
+    enabled: hasMounted,
+    queryFn: async () => { const r = await listLocations({ limit: 200 }); return r.data?.items ?? []; },
+    queryKey: ["stock", "locations"],
+    staleTime: 60_000,
+  });
+
   const [sortBy, setSortBy] = useState<"created_at" | "updated_at">("created_at");
   const isSearching = search.trim().length > 0;
 
@@ -297,19 +332,42 @@ export function StockManager({
     );
   }
 
-  const filteredProducts = products.filter((product) => {
+  // Products matching all active filters EXCEPT stock-status (used for chip counts).
+  const productsForStatusCounts = products.filter((product) => {
     const keyword = search.trim().toLowerCase();
     if (selectedProductTypeId && product.product_type_id !== selectedProductTypeId) return false;
     const productUnitId = product.product_unit_id ?? product.unit_id;
     if (selectedProductUnitId && productUnitId !== selectedProductUnitId) return false;
     if (selectedProductBrandId && product.brand_id !== selectedProductBrandId) return false;
+    if (selectedLocationId && product.default_location_id !== selectedLocationId) return false;
+    if (selectedNoLocation && product.default_location_id) return false;
+    if (keyword) return product.name.toLowerCase().includes(keyword) || (product.sku ?? "").toLowerCase().includes(keyword);
+    return true;
+  });
+
+  const statusCounts = {
+    all: productsForStatusCounts.length,
+    active: productsForStatusCounts.filter((p) => p.is_active).length,
+    low_stock: productsForStatusCounts.filter(isLowStockProduct).length,
+    out_of_stock: productsForStatusCounts.filter((p) => (p.total_stock ?? 0) === 0).length,
+    inactive: productsForStatusCounts.filter((p) => !p.is_active).length,
+  };
+
+  const filteredProducts = productsForStatusCounts.filter((product) => {
     if (selectedStockStatus === "active" && !product.is_active) return false;
     if (selectedStockStatus === "inactive" && product.is_active) return false;
     if (selectedStockStatus === "low_stock" && !isLowStockProduct(product)) return false;
     if (selectedStockStatus === "out_of_stock" && (product.total_stock ?? 0) !== 0) return false;
-    if (keyword) return product.name.toLowerCase().includes(keyword) || (product.sku ?? "").toLowerCase().includes(keyword);
     return true;
   });
+
+  const summaryStats = {
+    total: productTotal,
+    ready: filteredProducts.filter((p) => p.is_active && (p.total_stock ?? 0) > 0 && !isLowStockProduct(p)).length,
+    low: filteredProducts.filter(isLowStockProduct).length,
+    out: filteredProducts.filter((p) => (p.total_stock ?? 0) === 0).length,
+    value: filteredProducts.reduce((sum, p) => sum + (p.total_stock ?? 0) * (p.cost_price ?? 0), 0),
+  };
 
   const isCategoriesView = initialSection === "categories";
 
@@ -378,16 +436,10 @@ function resetProductForm() {
               supplier_sku: formState.sku?.trim() || "",
             });
           }
-          const initialStock = Number(formState.initial_stock || 0);
-          if (!Number.isNaN(initialStock) && initialStock > 0) {
-            await adjustStock({
-              productId: created.data.id,
-              physicalQty: initialStock,
-              note: formState.storage_location?.trim()
-                ? `Initial stock on create • ${formState.storage_location.trim()}`
-                : "Initial stock on create",
-            });
-          }
+          // Opening-balance stock is seeded by createProduct itself (initial_stock →
+          // OPENING_BALANCE ADD at the default sale-point location, in one transaction).
+          // No separate SET adjustment here: a SET requires expected_quantity + reason,
+          // which a fresh product can't supply, so that path always failed.
         }
         closeProductModal();
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
@@ -423,6 +475,45 @@ function resetProductForm() {
         await Promise.all(productIds.map((id) => deleteProduct(id)));
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
         toast.success("ลบสินค้าสำเร็จ");
+      } catch (nextError) {
+        toast.error(friendlyMessage(nextError));
+      }
+    });
+  }
+
+  async function handleBulkEnable(ids: string[]) {
+    startTransition(async () => {
+      try {
+        const targets = products.filter((p) => ids.includes(p.id));
+        await Promise.all(targets.map((p) => updateProduct(p.id, { ...productToFormInput(p, productUnits), is_active: true })));
+        queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
+        toast.success(`เปิดใช้งาน ${ids.length} รายการสำเร็จ`);
+      } catch (nextError) {
+        toast.error(friendlyMessage(nextError));
+      }
+    });
+  }
+
+  async function handleBulkDisable(ids: string[]) {
+    startTransition(async () => {
+      try {
+        const targets = products.filter((p) => ids.includes(p.id));
+        await Promise.all(targets.map((p) => updateProduct(p.id, { ...productToFormInput(p, productUnits), is_active: false })));
+        queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
+        toast.success(`ปิดใช้งาน ${ids.length} รายการสำเร็จ`);
+      } catch (nextError) {
+        toast.error(friendlyMessage(nextError));
+      }
+    });
+  }
+
+  async function handleBulkCategoryChange(ids: string[], categoryId: string) {
+    startTransition(async () => {
+      try {
+        const targets = products.filter((p) => ids.includes(p.id));
+        await Promise.all(targets.map((p) => updateProduct(p.id, { ...productToFormInput(p, productUnits), product_type_id: categoryId })));
+        queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
+        toast.success(`เปลี่ยนหมวดหมู่ ${ids.length} รายการสำเร็จ`);
       } catch (nextError) {
         toast.error(friendlyMessage(nextError));
       }
@@ -470,12 +561,19 @@ function resetProductForm() {
         <StockLevelsSection
           dictionary={dictionary}
           allowStockActions={allowStockActions}
+          initialDetailProductId={initialDetailProductId}
           emptyState={dictionary.emptyState}
           error={error || (productsQueryError instanceof Error ? productsQueryError.message : "")}
           filteredProducts={filteredProducts}
           isPending={isPending || isProductsFetching}
           loadingLabel={dictionary.loading}
+          locations={locations}
+          locationFilter={selectedLocationId}
+          noLocationFilter={selectedNoLocation}
           managementDictionary={managementDictionary}
+          onBulkEnable={handleBulkEnable}
+          onBulkDisable={handleBulkDisable}
+          onBulkCategoryChange={handleBulkCategoryChange}
           onPageChange={setProductPage}
           onPageSizeChange={(size) => {
             setProductPageSize(size);
@@ -488,6 +586,8 @@ function resetProductForm() {
           onDeleteMany={handleDeleteMany}
           onEdit={openEditModal}
           onAdjustStock={(product) => setAdjustingProduct(product)}
+          onLocationFilterChange={(value) => { setSelectedLocationId(value); setProductPage(1); }}
+          onNoLocationFilterChange={(value) => { setSelectedNoLocation(value); setProductPage(1); }}
           onOpenCreateModal={openCreateModal}
           onProductTypeFilterChange={(value) => { setSelectedProductTypeId(value); setProductPage(1); }}
           onProductUnitFilterChange={(value) => { setSelectedProductUnitId(value); setProductPage(1); }}
@@ -505,7 +605,9 @@ function resetProductForm() {
           productBrandFilter={selectedProductBrandId}
           productBrands={productBrands}
           search={search}
+          statusCounts={statusCounts}
           stockStatusFilter={selectedStockStatus}
+          summaryStats={summaryStats}
         />
       ) : null}
 

@@ -7,8 +7,15 @@ export type Warehouse = {
   phone?: string | null;
   contact_name?: string | null;
   is_active: boolean;
+  // is_default is the stable system-protection flag (migration: the store's default
+  // warehouse). Exposed so the UI can avoid offering destructive actions on it.
+  is_default?: boolean;
   created_at: string;
   updated_at: string;
+  // deleted_at is the archive timestamp (migration 047). Present only on archived rows
+  // (the backend omits it for live rows), so `!!deleted_at` partitions Archived from
+  // Active/Inactive in the management filters and drives the "Archived" badge.
+  deleted_at?: string | null;
 };
 
 export type CreateWarehouseInput = {

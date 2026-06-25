@@ -44,3 +44,5 @@ next-env.d.ts
 # local development artifacts
 .claude/
 tsc.out
+.tmp/
+types/bank-account.ts

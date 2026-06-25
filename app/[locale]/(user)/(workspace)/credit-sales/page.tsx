@@ -22,6 +22,7 @@ export default async function CreditSalesPage({ params, searchParams }: CreditSa
   return (
     <CreditSalesManager
       dictionary={dictionary.creditSales}
+      billDictionary={dictionary.creditStatement}
       locale={locale}
       prefilledCustomerId={customerId}
       prefilledCustomerName={customerName}

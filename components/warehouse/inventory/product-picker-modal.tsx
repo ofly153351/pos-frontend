@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -85,9 +85,12 @@ export function ProductPickerModal({ open, warehouseId, title, dict, onPick, onC
                   >
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-semibold text-slate-800">{item.product_name}</span>
-                      <span className="block truncate font-mono text-[11px] text-slate-400">{item.sku || dict.noBarcode}</span>
+                      <span className="block truncate text-[11px] text-slate-400">{item.sku || dict.noBarcode}</span>
                     </span>
-                    <span className="shrink-0 text-sm font-bold tabular-nums text-slate-700">{formatNumber(item.total_stock)}</span>
+                    <span className="shrink-0 text-right">
+                      <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400">{dict.colTotal}</span>
+                      <span className="block text-sm font-bold tabular-nums text-slate-700">{formatNumber(item.total_stock)}</span>
+                    </span>
                   </button>
                 </li>
               ))}

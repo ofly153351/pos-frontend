@@ -64,6 +64,17 @@ function buildProductFormData(input: ProductInput) {
     formData.set("min_stock", input.min_stock);
   }
 
+  // Opening-balance stock, seeded at create time only. The backend posts it as a single
+  // OPENING_BALANCE ADD movement at the product's resolved default sale-point location, in
+  // the same transaction as the insert. Sent only when > 0; the update parser ignores it,
+  // so carrying a stray value on edit is harmless.
+  if (typeof input.initial_stock === "string" && input.initial_stock.trim()) {
+    const qty = Number(input.initial_stock);
+    if (Number.isFinite(qty) && qty > 0) {
+      formData.set("initial_stock", String(Math.trunc(qty)));
+    }
+  }
+
   if (input.special_price) {
     formData.set("special_price", input.special_price);
   }

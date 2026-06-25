@@ -115,7 +115,7 @@ export function InvoicePrintClient({ saleId, dict }: Props) {
           <FileText className="h-4 w-4 text-violet-600" />
         </div>
         <span className="font-semibold text-slate-700">{dict.title}</span>
-        <span className="font-mono text-sm text-slate-400">{invoiceNo}</span>
+        <span className="nums text-sm text-slate-400">{invoiceNo}</span>
 
         <div className="ml-auto flex items-center gap-2">
           {/* Format toggle */}

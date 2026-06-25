@@ -31,6 +31,7 @@ export interface ReceiptSettingsData {
   date_format: string;
   time_format: "24h" | "12h";
   currency_position: "before" | "after";
+  round_amount: boolean;
   created_at: string;
   updated_at: string;
 }

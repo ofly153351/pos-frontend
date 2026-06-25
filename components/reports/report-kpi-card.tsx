@@ -22,6 +22,12 @@ export type ReportKpiCardProps = {
   warningHint?: string;
   /** Colour the value red when the figure is genuinely bad (e.g. negative profit). */
   valueTone?: "default" | "danger";
+  /** Optional node rendered below the hint (e.g. a trend badge). */
+  footer?: ReactNode;
+  /** Extra classes for the outer article (e.g. grid col-span passthrough). */
+  className?: string;
+  /** Show a skeleton placeholder in place of the value (hides hint/footer). */
+  loading?: boolean;
 };
 
 export function ReportKpiCard({
@@ -35,6 +41,9 @@ export function ReportKpiCard({
   warning = false,
   warningHint,
   valueTone = "default",
+  footer,
+  className,
+  loading = false,
 }: ReportKpiCardProps) {
   const borderClass = warning
     ? "border-amber-300 ring-1 ring-amber-100"
@@ -44,7 +53,7 @@ export function ReportKpiCard({
 
   return (
     <article
-      className={`rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${borderClass}`}
+      className={`rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${borderClass}${className ? ` ${className}` : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -57,15 +66,22 @@ export function ReportKpiCard({
               />
             ) : null}
           </div>
-          <p
-            className={`mt-1 truncate text-xl font-black 2xl:text-2xl ${
-              valueTone === "danger" ? "text-rose-600" : "text-slate-900"
-            }`}
-            title={warningHint}
-          >
-            {value}
-          </p>
-          {hint ? <p className="mt-1 truncate text-[11px] text-slate-400">{hint}</p> : null}
+          {loading ? (
+            <span className="mt-1.5 block h-6 w-20 animate-pulse rounded bg-slate-100" />
+          ) : (
+            <>
+              <p
+                className={`nums mt-1 truncate text-xl font-black 2xl:text-2xl ${
+                  valueTone === "danger" ? "text-rose-600" : "text-slate-900"
+                }`}
+                title={warningHint}
+              >
+                {value}
+              </p>
+              {hint ? <p className="mt-1 truncate text-[11px] text-slate-400">{hint}</p> : null}
+              {footer ? <div className="mt-1.5">{footer}</div> : null}
+            </>
+          )}
         </div>
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
           <span className={iconColor}>{icon}</span>

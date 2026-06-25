@@ -89,6 +89,11 @@ export function removeStock(input: RemoveStockInput) {
 export type AdjustStockInput = {
   productId: string;
   physicalQty: number;
+  // expectedQuantity is the CURRENT on-hand at locationId, captured when the form was
+  // prepared. The backend requires it for a SET and rejects the write unless it matches
+  // the live location quantity — this is what stops a store-wide total being written into
+  // one location and detects a stale count. Always send it for a set/actual-count.
+  expectedQuantity?: number;
   note?: string;
   reason?: string;
   idempotencyKey?: string;
@@ -105,6 +110,9 @@ export function adjustStock(input: AdjustStockInput) {
       body: {
         product_id: input.productId,
         physical_quantity: input.physicalQty,
+        // Sent as-is (including 0); omitted only when undefined so the backend's
+        // "expected required" guard fires rather than silently allowing an unguarded set.
+        expected_quantity: input.expectedQuantity,
         note: input.note?.trim() || undefined,
         reason: input.reason?.trim() || undefined,
         idempotency_key: input.idempotencyKey?.trim() || undefined,

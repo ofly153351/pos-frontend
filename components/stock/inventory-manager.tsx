@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import {
   Coins,
   Eye,
   History,
+  Info,
   Layers,
   MoreVertical,
   PackagePlus,
@@ -26,8 +27,10 @@ import {
 import { listProducts } from "@/services/products";
 import { listMovements } from "@/services/stock-movements";
 import { StockAdjustDrawer } from "@/components/stock/stock-adjust-drawer";
+import { ScanButton } from "@/components/shared/scan-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import type { InventoryDictionary } from "@/components/stock/inventory-types";
 import type { Product } from "@/types/product";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
@@ -45,14 +48,27 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", { currency: "THB", maximumFractionDigits: 0, style: "currency" }).format(value);
 }
 
-// The inventory page manages TOTAL store stock — the sum across every store
-// location, sale-point or not. product_view.warehouse_stock is that sum;
-// total_stock counts only sale-point locations (the POS-sellable subset) and is the
-// wrong basis here — a store with no sale-point location would always read 0 even
-// with stock on the shelves. Fall back to total_stock only if the API predates the
-// warehouse_stock field.
-function storeStock(p: Product): number {
-  return p.warehouse_stock ?? p.total_stock ?? 0;
+// Stock basis — three views of a product's on-hand:
+//   salePointStock  = sale-point (POS-sellable) on-hand. This is the OPERATIONAL number:
+//                     it drives status, low/out alerts, the "หน้าร้าน" column and the
+//                     Available Units KPI. It matches the product list, the dashboard and
+//                     the notification bell (all sale-point), so the whole app agrees.
+//                     A product whose stock sits only in storage reads 0 here — correct,
+//                     because it cannot be sold at the counter until it is moved forward.
+//   storageStock    = non-sale-point (back-of-house) reserve, shown in the "ในคลัง" column.
+//   totalStock      = grand total across every location, used only for inventory VALUE
+//                     (capital tied up), never for sellability/alerts.
+function salePointStock(p: Product): number {
+  return p.ready_stock ?? p.total_stock ?? 0;
+}
+
+function storageStock(p: Product): number {
+  return p.storage_stock ?? 0;
+}
+
+function totalStock(p: Product): number {
+  // Prefer the API's grand total; fall back to the two parts for older payloads.
+  return p.warehouse_stock ?? salePointStock(p) + storageStock(p);
 }
 
 // ── Status system (4 states) ──────────────────────────────────────────────────
@@ -60,14 +76,14 @@ type Status = "ready" | "low" | "out" | "inactive";
 
 function getStatus(p: Product): Status {
   if (!p.is_active) return "inactive";
-  const s = storeStock(p);
+  const s = salePointStock(p);
   if (s <= 0) return "out";
   if (p.min_stock != null && s <= p.min_stock) return "low";
   return "ready";
 }
 
 function getStockPercent(p: Product): number {
-  const s = storeStock(p);
+  const s = salePointStock(p);
   if (s <= 0) return 0;
   if (p.max_stock != null && p.max_stock > 0) return Math.max(4, Math.min(100, Math.round((s / p.max_stock) * 100)));
   if (p.min_stock != null && p.min_stock > 0) return Math.max(4, Math.min(100, Math.round((s / (p.min_stock * 2)) * 100)));
@@ -79,7 +95,8 @@ const STATUS_BAR: Record<Status, string> = {
 };
 
 function productValue(p: Product): number {
-  return (p.cost_price ?? p.base_price ?? 0) * storeStock(p);
+  // Inventory value = capital tied up across ALL locations, so use the grand total.
+  return (p.cost_price ?? p.base_price ?? 0) * totalStock(p);
 }
 
 // ── Movement type → label / tone / icon ──────────────────────────────────────
@@ -170,7 +187,8 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
       if (st === "out") out++;
       // Disabled products aren't available for sale — exclude from units & value.
       if (st === "inactive") continue;
-      availableUnits += Math.max(0, storeStock(p));
+      // "Available Units" = what can actually be sold now → sale-point only.
+      availableUnits += Math.max(0, salePointStock(p));
       value += productValue(p);
     }
     return { totalSku: productsQuery.data?.total ?? products.length, availableUnits, value, low, out };
@@ -256,13 +274,14 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
       {/* KPI cards */}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         {KPIS.map((k) => (
-          <div key={k.label} className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${k.tone}`}><k.icon className="h-4 w-4" /></span>
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{k.label}</span>
-            </div>
-            <p className="mt-2 text-2xl font-black text-slate-900">{k.value}</p>
-          </div>
+          <ReportKpiCard
+            key={k.label}
+            label={k.label}
+            value={k.value}
+            icon={<k.icon className="h-5 w-5" />}
+            iconBg={k.tone}
+            iconColor=""
+          />
         ))}
       </div>
 
@@ -281,11 +300,24 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
             </button>
           ))}
         </div>
-        <div className="relative w-full max-w-xs sm:w-64">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.search}
-            className="h-10 w-full rounded-xl border border-violet-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
+        <div className="flex w-full max-w-xs items-center gap-2 sm:w-72">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.search}
+              className="h-10 w-full rounded-xl border border-violet-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
+          </div>
+          <ScanButton
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-white text-violet-600 transition hover:border-violet-400 hover:bg-violet-50"
+            onScan={(code) => setSearch(code)}
+            title={t.scanWithCamera}
+          />
         </div>
+      </div>
+
+      {/* Sale-point vs storage legend — explains which number drives the alerts. */}
+      <div className="mb-3 flex items-start gap-2 rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2 text-xs text-slate-600">
+        <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-500" />
+        <span>{t.salePointHint}</span>
       </div>
 
       {/* Main grid: table (left) + activity feed (right) */}
@@ -297,7 +329,8 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
               <thead className="sticky top-0 z-20">
                 <tr className="bg-slate-100 text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3.5 font-bold">{t.col.product}</th>
-                  <th className="px-4 py-3.5 font-bold">{t.col.available}</th>
+                  <th className="px-4 py-3.5 font-bold">{t.col.salePoint}</th>
+                  <th className="hidden px-3 py-3.5 font-bold lg:table-cell">{t.col.storage}</th>
                   <th className="hidden px-3 py-3.5 font-bold sm:table-cell">{t.col.minStock}</th>
                   <th className="px-4 py-3.5 font-bold">{t.col.status}</th>
                   <th className="hidden px-4 py-3.5 text-right font-bold md:table-cell">{t.col.stockValue}</th>
@@ -310,6 +343,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
                     <tr key={i}>
                       <td className="px-4 py-3"><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-lg bg-slate-200" /><div className="flex-1 space-y-1.5"><Skeleton className="h-4 w-32 bg-slate-200" /><Skeleton className="h-3 w-20 bg-slate-100" /></div></div></td>
                       <td className="px-4 py-3"><Skeleton className="h-4 w-20 bg-slate-100" /></td>
+                      <td className="hidden px-3 py-3 lg:table-cell"><Skeleton className="h-4 w-8 bg-slate-100" /></td>
                       <td className="hidden px-3 py-3 sm:table-cell"><Skeleton className="h-4 w-8 bg-slate-100" /></td>
                       <td className="px-4 py-3"><Skeleton className="h-5 w-16 rounded-full bg-slate-100" /></td>
                       <td className="hidden px-4 py-3 md:table-cell"><Skeleton className="ml-auto h-4 w-16 bg-slate-100" /></td>
@@ -317,7 +351,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
                     </tr>
                   ))
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">{t.empty}</td></tr>
+                  <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">{t.empty}</td></tr>
                 ) : filtered.map((p, i) => {
                   const st = getStatus(p);
                   const unit = p.product_unit_name ?? "";
@@ -334,16 +368,25 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
                           </div>
                           <div className="min-w-0">
                             <p className="truncate text-sm font-bold text-slate-900" title={p.name}>{p.name}</p>
-                            <p className="truncate font-mono text-[11px] text-slate-400">{p.sku ?? "-"}{p.barcode ? ` · ${p.barcode}` : ""}</p>
+                            <p className="truncate text-[11px] text-slate-400">{p.sku ?? "-"}{p.barcode ? ` · ${p.barcode}` : ""}</p>
                           </div>
                         </div>
                       </td>
-                      {/* Stock + subtle bar */}
+                      {/* Sale-point stock (operational basis for status/alerts) + subtle bar */}
                       <td className="px-4 py-3">
                         <div className="flex flex-col gap-1">
-                          <span className={`text-sm font-bold ${st === "out" ? "text-rose-700" : st === "low" ? "text-amber-700" : "text-slate-900"}`}>{storeStock(p)}{unit ? ` ${unit}` : ""}</span>
+                          <span className={`text-sm font-bold ${st === "out" ? "text-rose-700" : st === "low" ? "text-amber-700" : "text-slate-900"}`}>{salePointStock(p)}{unit ? ` ${unit}` : ""}</span>
                           <div className="h-1 w-16 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${STATUS_BAR[st]} opacity-70`} style={{ width: `${getStockPercent(p)}%` }} /></div>
+                          {/* Grand total caption — visible only when storage column is hidden, so the
+                              full picture is never lost on narrow screens. */}
+                          {storageStock(p) > 0 && (
+                            <span className="text-[11px] text-slate-400 lg:hidden">{t.col.total} {totalStock(p)}{unit ? ` ${unit}` : ""}</span>
+                          )}
                         </div>
+                      </td>
+                      {/* In-storage (back-of-house reserve) */}
+                      <td className="hidden px-3 py-3 lg:table-cell">
+                        <span className={`text-sm font-medium ${storageStock(p) > 0 ? "text-slate-600" : "text-slate-300"}`}>{storageStock(p)}{storageStock(p) > 0 && unit ? ` ${unit}` : ""}</span>
                       </td>
                       {/* Min stock */}
                       <td className="hidden px-3 py-3 text-sm font-medium text-slate-500 sm:table-cell">{p.min_stock != null ? p.min_stock : "—"}</td>
@@ -358,7 +401,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
                           canAdjust={canAdjust}
                           onAdjust={() => setAdjusting(p)}
                           onHistory={() => setHistoryProduct(p)}
-                          onViewProduct={() => router.push(`/${locale}/stock?product=${p.id}`)}
+                          onViewProduct={() => router.push(`/${locale}/products?product=${p.id}`)}
                         />
                       </td>
                     </tr>

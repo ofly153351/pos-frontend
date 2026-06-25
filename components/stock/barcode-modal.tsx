@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { Barcode, Check, ClipboardCopy, Download, FileText, Loader2, Printer, X } from "lucide-react";
@@ -61,6 +61,9 @@ export type BarcodeModalLabels = {
   showBrand: string;
   showLocation: string;
   showStoreName: string;
+  showSalePrice: string;
+  origPriceInput: string;
+  salePriceInput: string;
   quantityLabel: string;
   printerModeLabel: string;
   printerLabel: string;
@@ -127,6 +130,7 @@ const CONTENT_FLAG_KEYS: Array<{ flag: keyof LabelContentFlags; labelKey: keyof 
   { flag: "showName",          labelKey: "showName"          },
   { flag: "showSku",           labelKey: "showSku"           },
   { flag: "showPrice",         labelKey: "showPrice"         },
+  { flag: "showSalePrice",     labelKey: "showSalePrice"     },
   { flag: "showBarcodeNumber", labelKey: "showBarcodeNumber" },
   { flag: "showCategory",      labelKey: "showCategory"      },
   { flag: "showBrand",         labelKey: "showBrand"         },
@@ -159,6 +163,8 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
   const [a4Layout, setA4Layout]       = useState<A4LayoutId>("4x10");
   const [quantity, setQuantity]       = useState(1);
   const [flags, setFlags]             = useState<LabelContentFlags>(DEFAULT_LABEL_FLAGS);
+  const [salePriceInput, setSalePriceInput] = useState("");
+  const [origPriceInput, setOrigPriceInput] = useState("");
   const [copied, setCopied]           = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -175,12 +181,18 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
   const brandName    = product?.brand_name ?? null;
   const location     = product?.storage_location?.trim() || null;
 
+  const salePriceNum = salePriceInput.trim() ? parseFloat(salePriceInput) : null;
+  const validSalePrice = salePriceNum !== null && !isNaN(salePriceNum) && salePriceNum >= 0;
+  const origPriceNum = origPriceInput.trim() ? parseFloat(origPriceInput) : null;
+  const validOrigPrice = origPriceNum !== null && !isNaN(origPriceNum) && origPriceNum >= 0;
+
   const labelData: LabelData | null = product
     ? {
         name: product.name,
         sku: product.sku ?? null,
         barcode: product.barcode ?? null,
-        price: product.base_price,
+        price: (flags.showSalePrice && validOrigPrice) ? origPriceNum : product.base_price,
+        salePrice: (flags.showSalePrice && validSalePrice) ? salePriceNum : null,
         location,
         category: categoryName,
         brand: brandName,
@@ -208,6 +220,8 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
     setA4Layout("4x10");
     setQuantity(1);
     setFlags(DEFAULT_LABEL_FLAGS);
+    setSalePriceInput("");
+    setOrigPriceInput(product ? String(product.base_price ?? "") : "");
     setCopied(false);
     setIsExporting(false);
   }, [product?.id]);
@@ -387,9 +401,9 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
             {/* Product info */}
             <div className="rounded-xl border border-violet-100 bg-violet-50/40 p-4">
               <p className="text-sm font-bold text-slate-900 leading-snug">{product.name}</p>
-              {product.sku ? <p className="mt-0.5 font-mono text-[11px] text-slate-400">{product.sku}</p> : null}
+              {product.sku ? <p className="mt-0.5 tabular-nums text-[11px] text-slate-400">{product.sku}</p> : null}
               {barcodeCode ? (
-                <p className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-violet-200 bg-white px-2 py-1 font-mono text-xs font-semibold text-violet-700">
+                <p className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-violet-200 bg-white px-2 py-1 tabular-nums text-xs font-semibold text-violet-700">
                   <Barcode className="h-3 w-3" />
                   {barcodeCode}
                 </p>
@@ -442,7 +456,7 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
                       }`}
                     >
                       <span>{labels[labelKey] as string}</span>
-                      <span className={`mt-0.5 font-mono text-[10px] ${template === key ? "text-violet-100" : "text-slate-400"}`}>
+                      <span className={`mt-0.5 text-[10px] ${template === key ? "text-violet-100" : "text-slate-400"}`}>
                         {d.w}×{d.h} mm
                       </span>
                     </button>
@@ -467,6 +481,47 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
                   </label>
                 ))}
               </div>
+
+              {/* Sale price inputs — shown when showSalePrice is enabled */}
+              {flags.showSalePrice ? (
+                <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/50 p-3 space-y-2.5">
+                  {/* Original price (crossed-out) — editable, defaults to base_price */}
+                  <div>
+                    <p className="mb-1 text-[11px] font-bold text-slate-500">{labels.origPriceInput}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-400">฿</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={origPriceInput}
+                        onChange={(e) => setOrigPriceInput(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-500 line-through outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                      />
+                    </div>
+                  </div>
+                  {/* New sale price */}
+                  <div>
+                    <p className="mb-1 text-[11px] font-bold text-rose-600">{labels.salePriceInput}</p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-rose-400">฿</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        value={salePriceInput}
+                        onChange={(e) => setSalePriceInput(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-sm font-semibold text-rose-600 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+                      />
+                    </div>
+                  </div>
+                  {!flags.showPrice ? (
+                    <p className="text-[10px] text-amber-600">⚠ เปิด "ราคา" ด้วยเพื่อแสดงราคาขีดทับ</p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             {/* Quantity */}

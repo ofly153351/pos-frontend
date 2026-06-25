@@ -9,10 +9,39 @@ import { getCurrentStoreId } from "@/lib/store-storage";
 import { listProducts } from "@/services/products";
 import { createDocument } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
+import { ScanButton } from "@/components/shared/scan-button";
 import type { CreateDocumentPayload, DocumentType } from "@/types/document";
 import type { Product } from "@/types/product";
 
-type Customer = { id: string; full_name: string };
+type ShippingAddress = {
+  id: string;
+  label: string;
+  recipient_name: string;
+  recipient_phone: string;
+  address: string;
+  sub_district: string;
+  district: string;
+  province: string;
+  postal_code: string;
+  note: string;
+  use_customer_address: boolean;
+  is_default: boolean;
+};
+
+type Customer = {
+  id: string;
+  full_name: string;
+  phone?: string | null;
+  address?: string | null;
+  shipping_contact?: string | null;
+  shipping_phone?: string | null;
+  shipping_address?: string | null;
+  shipping_province?: string | null;
+  shipping_district?: string | null;
+  shipping_postal_code?: string | null;
+  delivery_note?: string | null;
+  shipping_addresses?: ShippingAddress[];
+};
 
 type Dict = {
   createTitle: string;
@@ -23,6 +52,7 @@ type Dict = {
   validUntil?: string;
   description: string;
   productSearch: string;
+  scanWithCamera: string;
   productNotFound: string;
   quantity: string;
   unitPrice: string;
@@ -45,6 +75,7 @@ type Dict = {
   typeBill: string;
   typeCreditNote: string;
   typeDeliveryOrder?: string;
+  selectShippingAddressLabel?: string;
 };
 
 type LineItem = {
@@ -69,6 +100,12 @@ const TYPE_LABELS: Record<string, keyof Dict> = {
   DELIVERY_ORDER: "typeDeliveryOrder",
 };
 
+// Types a user may hand-author here. RECEIPT is excluded — receipts come from POS
+// sales, never from this modal.
+const CREATABLE_TYPES: DocumentType[] = [
+  "INVOICE", "TAX_INVOICE", "QUOTATION", "BILL", "CREDIT_NOTE", "DELIVERY_ORDER",
+];
+
 function today() {
   return new Date().toISOString().split("T")[0];
 }
@@ -89,6 +126,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const [isClosing, setIsClosing] = useState(false);
   const [docType, setDocType] = useState<DocumentType>(initialType);
   const [customerId, setCustomerId] = useState("");
+  const [selectedShippingAddressId, setSelectedShippingAddressId] = useState("");
   const [docDate, setDocDate] = useState(today());
   const [dueDate, setDueDate] = useState("");
   const [vatEnabled, setVatEnabled] = useState(false);
@@ -146,6 +184,55 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     return list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "th"));
   })();
 
+  // Selecting a customer pre-fills a Delivery Order's delivery block.
+  // If the customer has multi-address entries, auto-apply the default (or first).
+  // The picker lets the user switch.
+  function applyShippingAddress(addr: ShippingAddress, c: Customer) {
+    if (addr.use_customer_address) {
+      setDeliveryContact(c.full_name || "");
+      setDeliveryPhone(c.phone?.trim() || "");
+      setDeliveryAddress(c.address?.trim() || "");
+    } else {
+      setDeliveryContact(addr.recipient_name || c.full_name || "");
+      setDeliveryPhone(addr.recipient_phone || c.phone?.trim() || "");
+      const parts = [addr.address, addr.sub_district, addr.district, addr.province, addr.postal_code].filter(Boolean);
+      setDeliveryAddress(parts.join(" ") || c.address?.trim() || "");
+      if (addr.note) setNotes((prev) => (prev.trim() ? prev : addr.note));
+    }
+  }
+
+  function handleShippingAddressPick(addrId: string, c: Customer) {
+    setSelectedShippingAddressId(addrId);
+    const addr = (c.shipping_addresses ?? []).find((a) => a.id === addrId);
+    if (addr) applyShippingAddress(addr, c);
+  }
+
+  function handleCustomerChange(id: string) {
+    setCustomerId(id);
+    setSelectedShippingAddressId("");
+    if (docType !== "DELIVERY_ORDER") return;
+    const c = customers.find((x) => x.id === id);
+    if (!c) return;
+    const addrs = c.shipping_addresses ?? [];
+    if (addrs.length > 0) {
+      // Auto-apply the default address (or first if none marked default)
+      const def = addrs.find((a) => a.is_default) ?? addrs[0];
+      setSelectedShippingAddressId(def.id);
+      applyShippingAddress(def, c);
+    } else {
+      // Fall back to legacy single shipping profile
+      const shipAddr = [c.shipping_address, c.shipping_district, c.shipping_province, c.shipping_postal_code]
+        .map((s) => (s ?? "").trim())
+        .filter(Boolean)
+        .join(" ");
+      setDeliveryContact(c.shipping_contact?.trim() || c.full_name || "");
+      setDeliveryPhone(c.shipping_phone?.trim() || c.phone?.trim() || "");
+      setDeliveryAddress(shipAddr || c.address?.trim() || "");
+      const note = c.delivery_note?.trim();
+      if (note) setNotes((prev) => (prev.trim() ? prev : note));
+    }
+  }
+
   function addProductToItems(product: Product) {
     const price = Number(product.effective_price ?? product.base_price ?? 0);
     setItems((prev) => {
@@ -179,6 +266,19 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     });
     setProductSearch("");
     setShowProductList(false);
+  }
+
+  // Resolve a typed or scanned code to an exact SKU/barcode match and add it. Shared by
+  // the search field (Enter) and the camera scanner; addProductToItems clears the search.
+  function addByCode(raw: string): boolean {
+    const code = raw.trim().toLowerCase();
+    if (!code) return false;
+    const found = productsRaw.find(
+      (p) => (p.barcode ?? "").toLowerCase() === code || (p.sku ?? "").toLowerCase() === code,
+    );
+    if (!found) return false;
+    addProductToItems(found);
+    return true;
   }
 
   // Barcode scanner listener
@@ -312,7 +412,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               <p className="text-xs text-violet-200">{d.createSubtitle}</p>
             </div>
             <div className="hidden items-center gap-1 rounded-lg bg-violet-700/50 p-1 md:flex">
-              {(Object.keys(TYPE_LABELS) as DocumentType[]).map((t) => (
+              {CREATABLE_TYPES.map((t) => (
                 <button
                   key={t}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
@@ -349,7 +449,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 value={docType}
                 onChange={(e) => setDocType(e.target.value as DocumentType)}
               >
-                {(Object.keys(TYPE_LABELS) as DocumentType[]).map((t) => (
+                {CREATABLE_TYPES.map((t) => (
                   <option key={t} value={t}>{d[TYPE_LABELS[t]] as string}</option>
                 ))}
               </select>
@@ -363,7 +463,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 <select
                   className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                   value={customerId}
-                  onChange={(e) => setCustomerId(e.target.value)}
+                  onChange={(e) => handleCustomerChange(e.target.value)}
                 >
                   <option value="">— {d.selectCustomer} —</option>
                   {customers.map((c) => (
@@ -371,6 +471,31 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                   ))}
                 </select>
               </div>
+
+              {/* Shipping address picker — shown for DELIVERY_ORDER when customer has multi-addresses */}
+              {docType === "DELIVERY_ORDER" && customerId && (() => {
+                const c = customers.find((x) => x.id === customerId);
+                const addrs = c?.shipping_addresses ?? [];
+                if (addrs.length < 2) return null;
+                return (
+                  <div className="md:col-span-3">
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {d.selectShippingAddressLabel ?? "เลือกที่อยู่จัดส่ง"}
+                    </label>
+                    <select
+                      className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                      value={selectedShippingAddressId}
+                      onChange={(e) => c && handleShippingAddressPick(e.target.value, c)}
+                    >
+                      {addrs.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.label || a.address || a.recipient_name}{a.is_default ? " ★" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })()}
 
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -500,27 +625,43 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               </div>
             )}
 
-            {/* Product search + barcode */}
+            {/* Product search + barcode + camera */}
             <div className="relative mt-4" ref={productWrapperRef}>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  ref={productSearchRef}
-                  className="w-full rounded-xl border border-violet-200 bg-white py-2.5 pl-9 pr-4 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                  placeholder={d.productSearch}
-                  value={productSearch}
-                  onChange={(e) => { setProductSearch(e.target.value); setShowProductList(true); }}
-                  onFocus={() => setShowProductList(true)}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    ref={productSearchRef}
+                    className="w-full rounded-xl border border-violet-200 bg-white py-2.5 pl-9 pr-9 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    placeholder={d.productSearch}
+                    value={productSearch}
+                    onChange={(e) => { setProductSearch(e.target.value); setShowProductList(true); }}
+                    onFocus={() => setShowProductList(true)}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter") return;
+                      e.preventDefault();
+                      // Exact scan/SKU hit adds directly; otherwise add the top match.
+                      if (addByCode(productSearch)) return;
+                      if (filteredProducts[0]) addProductToItems(filteredProducts[0]);
+                    }}
+                  />
+                  {productSearch && (
+                    <button
+                      type="button"
+                      onClick={() => { setProductSearch(""); setShowProductList(false); }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <ScanButton
+                  className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl border border-violet-200 bg-white text-violet-600 transition-colors hover:border-violet-300 hover:bg-violet-50"
+                  onScan={(code) => {
+                    if (!addByCode(code)) { setProductSearch(code); setShowProductList(true); }
+                  }}
+                  title={d.scanWithCamera}
                 />
-                {productSearch && (
-                  <button
-                    type="button"
-                    onClick={() => { setProductSearch(""); setShowProductList(false); }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                )}
               </div>
               {showProductList && (
                 <div className="absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-xl border border-violet-100 bg-white shadow-lg">
@@ -538,7 +679,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                           <span className="font-medium text-slate-800">{p.name}</span>
                           {p.sku && <span className="ml-2 text-xs text-slate-400">{p.sku}</span>}
                         </div>
-                        <span className="font-mono text-sm font-semibold text-violet-700">
+                        <span className="nums text-sm font-semibold text-violet-700">
                           ฿{Number(p.effective_price ?? p.base_price ?? 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}
                         </span>
                       </button>
@@ -596,19 +737,19 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                         </td>
                         <td className="px-3 py-2">
                           {item.product_id ? (
-                            <span className="block px-2.5 py-1.5 text-right font-mono text-sm font-medium text-slate-700">
+                            <span className="block px-2.5 py-1.5 text-right nums text-sm font-medium text-slate-700">
                               {item.unit_price.toLocaleString("th-TH", { minimumFractionDigits: 2 })}
                             </span>
                           ) : (
                             <input
                               type="number" min={0} step="0.01"
-                              className="w-full rounded-lg border border-violet-200 px-2.5 py-1.5 text-right font-mono text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                              className="w-full rounded-lg border border-violet-200 px-2.5 py-1.5 text-right nums text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                               value={item.unit_price}
                               onChange={(e) => updateItem(i, "unit_price", Number(e.target.value))}
                             />
                           )}
                         </td>
-                        <td className="px-3 py-2 text-right font-mono text-sm font-semibold text-slate-800">
+                        <td className="px-3 py-2 text-right nums text-sm font-semibold text-slate-800">
                           {fmt(lineAmount(item))}
                         </td>
                         <td className="px-2 py-2">
@@ -655,7 +796,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               <div className="space-y-2 rounded-xl border border-violet-100 p-4">
                 <div className="flex justify-between text-sm text-slate-500">
                   <span>{d.subtotal}</span>
-                  <span className="font-mono tabular-nums">{fmt(subtotal)}</span>
+                  <span className="nums">{fmt(subtotal)}</span>
                 </div>
                 <label className="flex cursor-pointer items-center justify-between">
                   <span className="text-sm text-slate-600">{d.enableVat}</span>
@@ -667,12 +808,12 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 {vatEnabled && (
                   <div className="flex justify-between text-sm text-slate-500">
                     <span>VAT 7%</span>
-                    <span className="font-mono tabular-nums">{fmt(vatAmount)}</span>
+                    <span className="nums">{fmt(vatAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between border-t border-violet-100 pt-2 font-semibold text-slate-800">
                   <span>{d.total}</span>
-                  <span className="font-mono tabular-nums text-violet-700">{fmt(total)}</span>
+                  <span className="nums text-violet-700">{fmt(total)}</span>
                 </div>
               </div>
             </div>

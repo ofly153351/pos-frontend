@@ -6,6 +6,8 @@ import type {
   Document,
   DocumentListQuery,
   DocumentListResponse,
+  DocumentType,
+  RelatedDocument,
   UpdateDocumentStatusPayload,
 } from "@/types/document";
 
@@ -40,15 +42,15 @@ export async function createDocument(payload: CreateDocumentPayload): Promise<Do
 }
 
 export async function updateDocumentStatus(id: string, payload: UpdateDocumentStatusPayload): Promise<void> {
-  await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: payload });
+  await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: payload, allowEmptyData: true });
 }
 
 export async function deleteDocument(id: string): Promise<void> {
-  await authorizedApiRequest(`${base()}/${id}`, { method: "DELETE" });
+  await authorizedApiRequest(`${base()}/${id}`, { method: "DELETE", allowEmptyData: true });
 }
 
 export async function bulkDocumentAction(payload: BulkActionPayload): Promise<void> {
-  await authorizedApiRequest(`${base()}/bulk`, { method: "POST", body: payload });
+  await authorizedApiRequest(`${base()}/bulk`, { method: "POST", body: payload, allowEmptyData: true });
 }
 
 export async function convertQuotation(id: string): Promise<Document> {
@@ -75,8 +77,25 @@ export async function convertToDeliveryOrder(id: string): Promise<Document> {
   return res.data;
 }
 
+// Generic workflow conversion — server validates the (source → target) pair
+// against the allowed matrix and links the new document back to its source.
+export async function convertDocument(id: string, targetType: DocumentType): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-to`, {
+    method: "POST",
+    body: { target_type: targetType },
+  });
+  return res.data;
+}
+
 export async function getDocumentPrintHtml(id: string): Promise<string> {
   return authorizedRawRequest<string>(`${base()}/${id}/print`, { method: "GET", responseType: "text" });
+}
+
+// Every document in the same conversion family (lineage via source_document_id),
+// ordered chronologically for the timeline.
+export async function getRelatedDocuments(id: string): Promise<RelatedDocument[]> {
+  const res = await authorizedApiRequest<{ items: RelatedDocument[] }>(`${base()}/${id}/related`);
+  return res.data.items ?? [];
 }
 
 export interface InvoicePDFParams {

@@ -11,6 +11,7 @@ import {
   Clock3,
   CreditCard,
   FileText,
+  History,
   LayoutDashboard,
   Layers3,
   MapPin,
@@ -60,6 +61,7 @@ type UserWorkspaceSidebarProps = {
     financePnl: string;
     receiveGoods: string;
     register: string;
+    salesHistory: string;
     settings: string;
     storageLocations: string;
     receiptPayment: string;
@@ -224,7 +226,8 @@ export function UserWorkspaceSidebar({
   const receiptPaymentHref = `/${locale}/settings/receipt-payment`;
   const activityLogsHref = `/${locale}/settings/activity-logs`;
   const staffHref = `/${locale}/settings/staff`;
-  const isSettingsRoute = pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`);
+  // storage-locations moved to Inventory — exclude it from Settings active detection.
+  const isSettingsRoute = (pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`)) && !pathname.startsWith(storageLocationsHref);
   const isProductsRoute =
     pathname === productsBaseHref ||
     pathname === productsCategoriesHref ||
@@ -237,7 +240,8 @@ export function UserWorkspaceSidebar({
     pathname === warehouseOverviewHref ||
     pathname.startsWith(`${warehouseOverviewHref}/`) ||
     pathname === stockWarehousesHref ||
-    pathname.startsWith(`${stockWarehousesHref}/`);
+    pathname.startsWith(`${stockWarehousesHref}/`) ||
+    pathname.startsWith(storageLocationsHref);
   const isDocumentsRoute =
     pathname === documentsBaseHref ||
     pathname.startsWith(`${documentsBaseHref}/`);
@@ -266,7 +270,7 @@ export function UserWorkspaceSidebar({
   const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
   const reportsExpanded = !collapsed && (manualReportsExpanded || isReportsRoute);
   const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
-  const activeSettingsKey = !isSettingsRoute ? "" : pathname === storageLocationsHref ? "storage-locations" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === activityLogsHref ? "activity-logs" : pathname === staffHref ? "staff" : "store-settings";
+  const activeSettingsKey = !isSettingsRoute ? "" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === activityLogsHref ? "activity-logs" : pathname === staffHref ? "staff" : "store-settings";
 
   useEffect(() => {
     let isMounted = true;
@@ -322,18 +326,16 @@ export function UserWorkspaceSidebar({
 
   const promotionsHref = `/${locale}/promotions`;
 
-  const navItems = [
-    {
-      href: `/${locale}/dashboard`,
-      key: "dashboard",
-      label: labels.dashboard,
-    },
+  // Section A: Sales & Customers — ordered per approved navigation spec.
+  const sectionAItems = [
+    { href: `/${locale}/dashboard`, key: "dashboard", label: labels.dashboard },
     { href: `/${locale}/sales`, key: "register", label: labels.register },
-    { href: promotionsHref, key: "promotions", label: labels.promotions },
-    { href: `/${locale}/customers`, key: "customers", label: labels.customers },
+    { href: `/${locale}/receipts`, key: "sales-history", label: labels.salesHistory },
+    { href: documentsBaseHref, key: "documents", label: labels.documents },
     { href: `/${locale}/credit-sales`, key: "credit-sales", label: labels.creditSales },
+    { href: `/${locale}/customers`, key: "customers", label: labels.customers },
+    { href: promotionsHref, key: "promotions", label: labels.promotions },
   ];
-  const [topNavItems, trailingNavItems] = [navItems.slice(0, 2), navItems.slice(2)];
 
   const productsItems: SidebarGroupItem[] = useMemo(
     () => [
@@ -345,9 +347,10 @@ export function UserWorkspaceSidebar({
 
   const stockItems: SidebarGroupItem[] = useMemo(
     () => [
+      { href: warehouseOverviewHref, key: "warehouse-overview", label: labels.warehouseOverview, icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
       { href: inventoryLevelsHref, key: "stock-levels", label: labels.stockLevels, icon: <Layers3 className="h-3.5 w-3.5" /> },
       { href: stockCountHref, key: "stock-count", label: labels.stockCount, icon: <ClipboardCheck className="h-3.5 w-3.5" /> },
-      { href: warehouseOverviewHref, key: "warehouse-overview", label: labels.warehouseOverview, icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
+      { href: storageLocationsHref, key: "storage-locations", label: labels.storageLocations, icon: <MapPin className="h-3.5 w-3.5" /> },
       { href: stockWarehousesHref, key: "warehouses", label: labels.stockWarehouses, icon: <Warehouse className="h-3.5 w-3.5" /> },
     ],
     [
@@ -356,20 +359,23 @@ export function UserWorkspaceSidebar({
       labels.stockCount,
       labels.stockLevels,
       labels.stockWarehouses,
+      labels.storageLocations,
       labels.warehouseOverview,
+      stockCountHref,
       stockWarehousesHref,
+      storageLocationsHref,
       warehouseOverviewHref,
     ],
   );
 
   const reportsItems: SidebarGroupItem[] = useMemo(
     () => [
+      { href: reportsSummaryHref, key: "reports-summary", label: labels.reportsSummary, icon: <BarChart3 className="h-3.5 w-3.5" /> },
       { href: reportsInventoryValueHref, key: "reports-inventory-value", label: labels.reportsInventoryValue, icon: <Boxes className="h-3.5 w-3.5" /> },
       { href: financeExpensesHref, key: "finance-expenses", label: labels.financeExpenses, icon: <Wallet className="h-3.5 w-3.5" /> },
       { href: financePnlHref, key: "finance-pnl", label: labels.financePnl, icon: <Scale className="h-3.5 w-3.5" /> },
-      { href: reportsSummaryHref, key: "reports-summary", label: labels.reportsSummary, icon: <BarChart3 className="h-3.5 w-3.5" /> },
     ],
-    [reportsInventoryValueHref, labels.reportsInventoryValue, financeExpensesHref, labels.financeExpenses, financePnlHref, labels.financePnl, reportsSummaryHref, labels.reportsSummary],
+    [reportsSummaryHref, labels.reportsSummary, reportsInventoryValueHref, labels.reportsInventoryValue, financeExpensesHref, labels.financeExpenses, financePnlHref, labels.financePnl],
   );
 
   const activeProductsKey = !isProductsRoute
@@ -392,13 +398,15 @@ export function UserWorkspaceSidebar({
 
   const activeStockKey = !isStockRoute
     ? ""
-    : pathname === stockCountHref || pathname.startsWith(`${stockCountHref}/`)
-      ? "stock-count"
-      : pathname === warehouseOverviewHref || pathname.startsWith(`${warehouseOverviewHref}/`)
-        ? "warehouse-overview"
-        : pathname === stockWarehousesHref || pathname.startsWith(`${stockWarehousesHref}/`)
-          ? "warehouses"
-          : "stock-levels";
+    : pathname === warehouseOverviewHref || pathname.startsWith(`${warehouseOverviewHref}/`)
+      ? "warehouse-overview"
+      : pathname === stockCountHref || pathname.startsWith(`${stockCountHref}/`)
+        ? "stock-count"
+        : pathname.startsWith(storageLocationsHref)
+          ? "storage-locations"
+          : pathname === stockWarehousesHref || pathname.startsWith(`${stockWarehousesHref}/`)
+            ? "warehouses"
+            : "stock-levels";
   const activeDocumentsKey = !isDocumentsRoute
     ? ""
     : pathname === documentsPendingHref
@@ -422,8 +430,10 @@ export function UserWorkspaceSidebar({
       "credit-sales": <CreditCard className={className} />,
       customers: <Users className={className} />,
       dashboard: <LayoutDashboard className={className} />,
+      documents: <ReceiptText className={className} />,
       promotions: <Megaphone className={className} />,
       register: <CircleDollarSign className={className} />,
+      "sales-history": <History className={className} />,
       settings: <Settings2 className={className} />,
     } as const;
 
@@ -453,8 +463,9 @@ export function UserWorkspaceSidebar({
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto space-y-1 pb-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-700/40">
-        {topNavItems.map((item) => {
-          const isActive = pathname === item.href;
+        {/* Section A — Sales & Customers */}
+        {sectionAItems.map((item) => {
+          const isActive = item.key === "documents" ? isDocumentsRoute : pathname === item.href;
           const isRegister = item.key === "register";
           const commonClasses = `flex items-center gap-3 px-4 py-3 text-sm ${
             isActive
@@ -488,6 +499,9 @@ export function UserWorkspaceSidebar({
           );
         })}
 
+        {/* Section B — Products & Inventory */}
+        <div aria-hidden="true" className="mx-3 mt-3 border-t border-white/10" />
+
         {/* Products group (master data) */}
         <CollapsibleNavGroup
           collapsed={collapsed}
@@ -513,6 +527,9 @@ export function UserWorkspaceSidebar({
           items={stockItems}
           activeKey={activeStockKey}
         />
+
+        {/* Section C — Purchasing */}
+        <div aria-hidden="true" className="mx-3 mt-3 border-t border-white/10" />
 
         {/* Purchasing section */}
         <div className="space-y-1">
@@ -611,107 +628,25 @@ export function UserWorkspaceSidebar({
           ) : null}
         </div>
 
-        <div className="space-y-1">
-          <Link
-            href={documentsBaseHref}
-            className={`flex items-center gap-3 px-3 py-2.5 text-sm font-semibold ${
-              documentsItemClass
-            } ${collapsed ? "justify-center px-2" : ""}`}
-          >
-            <span
-              className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
-                isDocumentsRoute
-                  ? "bg-white/15 text-white"
-                  : "bg-violet-900/60 text-violet-300"
-              }`}
-            >
-              <ReceiptText className="h-4 w-4" />
-            </span>
-            {!collapsed ? (
-              <span className="truncate">{labels.documents}</span>
-            ) : null}
-          </Link>
-          {false && (
-            <div>
-              <div className="min-h-0">
-                <div className="space-y-1 pt-1 pl-6">
-                  <Link
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
-                      activeDocumentsKey === "bills"
-                        ? "bg-violet-800/80 font-semibold text-violet-200"
-                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
-                    }`}
-                    href={documentsBaseHref}
-                  >
-                    <span
-                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
-                        activeDocumentsKey === "bills"
-                          ? "bg-violet-700 text-violet-200"
-                          : "bg-violet-900/60 text-violet-400"
-                      }`}
-                    >
-                      <ReceiptText className="h-3.5 w-3.5" />
-                    </span>
-                    <span>{labels.documentBills}</span>
-                  </Link>
-                  <Link
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
-                      activeDocumentsKey === "pending"
-                        ? "bg-violet-800/80 font-semibold text-violet-200"
-                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
-                    }`}
-                    href={documentsPendingHref}
-                  >
-                    <span
-                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
-                        activeDocumentsKey === "pending"
-                          ? "bg-violet-700 text-violet-200"
-                          : "bg-violet-900/60 text-violet-400"
-                      }`}
-                    >
-                      <Clock3 className="h-3.5 w-3.5" />
-                    </span>
-                    <span>{labels.documentPending}</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Reports & Finance group (single group per spec) — owner/manager only */}
+        {/* Section D — Administration (owner/manager only) */}
         {canManage ? (
-          <CollapsibleNavGroup
-            collapsed={collapsed}
-            baseHref={reportsInventoryValueHref}
-            icon={<BarChart3 className="h-4 w-4" />}
-            label={labels.reports}
-            active={isReportsRoute}
-            expanded={reportsExpanded}
-            onToggle={() => setManualReportsExpanded((current) => !current)}
-            items={reportsItems}
-            activeKey={activeReportsKey}
-          />
+          <>
+            <div aria-hidden="true" className="mx-3 mt-3 border-t border-white/10" />
+
+            {/* Reports & Finance group */}
+            <CollapsibleNavGroup
+              collapsed={collapsed}
+              baseHref={reportsSummaryHref}
+              icon={<BarChart3 className="h-4 w-4" />}
+              label={labels.reports}
+              active={isReportsRoute}
+              expanded={reportsExpanded}
+              onToggle={() => setManualReportsExpanded((current) => !current)}
+              items={reportsItems}
+              activeKey={activeReportsKey}
+            />
+          </>
         ) : null}
-
-        {trailingNavItems.map((item) => {
-          const isActive = pathname === item.href;
-
-          return (
-            <Link
-              key={item.key}
-              className={`flex items-center gap-3 px-4 py-3 text-sm ${
-                isActive
-                  ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
-                  : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
-              } ${collapsed ? "justify-center px-2" : ""}`}
-              href={item.href}
-            >
-              {getNavIcon(item.key, isActive)}
-              {!collapsed ? <span>{item.label}</span> : null}
-            </Link>
-          );
-        })}
 
         {/* Settings section — owner/manager only */}
         {canManage ? (
@@ -779,23 +714,6 @@ export function UserWorkspaceSidebar({
                       <Store className="h-3.5 w-3.5" />
                     </span>
                     <span>{labels.settings}</span>
-                  </Link>
-                  <Link
-                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
-                      activeSettingsKey === "storage-locations"
-                        ? "bg-violet-800/80 font-semibold text-violet-200"
-                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
-                    }`}
-                    href={storageLocationsHref}
-                  >
-                    <span
-                      className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${
-                        activeSettingsKey === "storage-locations" ? "bg-violet-700 text-violet-200" : "bg-violet-900/60 text-violet-400"
-                      }`}
-                    >
-                      <MapPin className="h-3.5 w-3.5" />
-                    </span>
-                    <span>{labels.storageLocations}</span>
                   </Link>
                   <Link
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${

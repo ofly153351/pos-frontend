@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
@@ -484,7 +484,7 @@ function POSPreviewCard({
             {formState.name || <span className="text-slate-300">—</span>}
           </p>
           {formState.sku ? (
-            <p className="mt-0.5 font-mono text-xs text-slate-400">{formState.sku}</p>
+            <p className="mt-0.5 text-xs text-slate-400">{formState.sku}</p>
           ) : null}
           <div className="mt-3 flex items-end justify-between gap-2">
             <div>
@@ -507,7 +507,7 @@ function POSPreviewCard({
       </div>
       {formState.barcode || formState.sku ? (
         <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-          <p className="font-mono text-xs text-slate-500">{formState.barcode ?? formState.sku}</p>
+          <p className="text-xs text-slate-500">{formState.barcode ?? formState.sku}</p>
         </div>
       ) : null}
     </div>

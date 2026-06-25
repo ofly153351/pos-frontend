@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -599,7 +599,7 @@ export function StoreManagementPanel({ dictionary }: Props) {
                         <div key={acc.id} className="flex items-center gap-3 rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-2.5">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-slate-800">{acc.bank_name}</p>
-                            <p className="text-xs text-slate-500 font-mono">{acc.account_no}{acc.account_name ? ` · ${acc.account_name}` : ""}</p>
+                            <p className="text-xs text-slate-500">{acc.account_no}{acc.account_name ? ` · ${acc.account_name}` : ""}</p>
                           </div>
                           <button
                             type="button"

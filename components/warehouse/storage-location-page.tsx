@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ChevronDown,
@@ -29,6 +30,7 @@ import {
   createLocation,
   updateLocation,
   deleteLocation,
+  getLocationDeletionAssessment,
   renameZone,
   deleteZone,
   renameFloor,
@@ -36,6 +38,8 @@ import {
   type Location,
 } from "@/services/locations";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
+import { DeletionDialog } from "@/components/warehouse/deletion-dialog";
+import { useDeletionFlow } from "@/hooks/use-deletion-flow";
 import { toast } from "@/components/ui/toast";
 
 import {
@@ -58,7 +62,11 @@ export type { StorageLocationDictionary };
 // ── Page ──────────────────────────────────────────────────────────────────────
 const PAGE_SIZE = 12;
 
-export function StorageLocationPage({ dictionary }: { dictionary: StorageLocationDictionary; locale: string }) {
+// §10 lifecycle filter — Active / Inactive / Archived. Archived is absent by default.
+type StatusFilter = "active" | "inactive" | "archived";
+
+export function StorageLocationPage({ dictionary, locale }: { dictionary: StorageLocationDictionary; locale: string }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const [selectedWarehouseId, setSelectedWarehouseId] = useState("");
@@ -66,6 +74,7 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
   const [selectedFloor, setSelectedFloor] = useState<string | null>(null);
   const [searchQuery, setSearchQuery]     = useState("");
   const [page, setPage]                   = useState(1);
+  const [statusFilter, setStatusFilter]   = useState<StatusFilter>("active");
 
   const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [expandedZones, setExpandedZones]     = useState<Set<string>>(new Set());
@@ -75,7 +84,7 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
 
   const [isModalOpen, setIsModalOpen]         = useState(false);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-  const [confirmAction, setConfirmAction]     = useState<"disable" | "enable" | "delete" | null>(null);
+  const [confirmAction, setConfirmAction]     = useState<"disable" | "enable" | null>(null);
   const [form, setForm]                       = useState<LocationForm>(emptyForm());
   const [formError, setFormError]             = useState("");
   const [isPending, startTransition]          = useTransition();
@@ -193,7 +202,7 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
   }
 
   // ── Queries ────────────────────────────────────────────────────────────────
-  const warehousesQuery = useQuery({ queryKey: ["warehouses"], queryFn: listWarehouses });
+  const warehousesQuery = useQuery({ queryKey: ["warehouses"], queryFn: () => listWarehouses() });
 
   const locationsQuery = useQuery({
     queryKey: ["storage-locations", selectedWarehouseId],
@@ -202,6 +211,17 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
       return res.data?.items ?? [];
     },
     enabled: !!selectedWarehouseId,
+  });
+
+  // Archived rows are excluded from the live query (backend default deleted_at IS NULL), so they
+  // are fetched on demand only while the Archived tab is open (§10/§11/§13).
+  const archivedQuery = useQuery({
+    queryKey: ["storage-locations", selectedWarehouseId, "archived"],
+    queryFn: async () => {
+      const res = await listLocations({ warehouseId: selectedWarehouseId, includeArchived: true });
+      return (res.data?.items ?? []).filter((l) => Boolean(l.deleted_at));
+    },
+    enabled: !!selectedWarehouseId && statusFilter === "archived",
   });
 
   const productsQuery = useQuery({
@@ -213,14 +233,17 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
     enabled: !!selectedLocation?.id && isDrawerOpen,
   });
 
-  const warehouses   = Array.isArray(warehousesQuery.data?.data) ? warehousesQuery.data.data : [];
-  const allLocations = locationsQuery.data ?? [];
+  const warehouses        = Array.isArray(warehousesQuery.data?.data) ? warehousesQuery.data.data : [];
+  const allLocations      = locationsQuery.data ?? [];
+  const archivedLocations = archivedQuery.data ?? [];
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time default selection of first warehouse (pre-existing)
     if (!selectedWarehouseId && warehouses.length) setSelectedWarehouseId(warehouses[0].id);
   }, [warehouses, selectedWarehouseId]);
 
-  useEffect(() => { setPage(1); }, [selectedWarehouseId, selectedZone, selectedFloor, searchQuery]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- reset pagination when the active filter set changes (pre-existing)
+  useEffect(() => { setPage(1); }, [selectedWarehouseId, selectedZone, selectedFloor, searchQuery, statusFilter]);
 
   const tree = useMemo(() => deriveTree(allLocations), [allLocations]);
 
@@ -231,6 +254,7 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
       try { return JSON.parse(localStorage.getItem(`floor_order_${selectedWarehouseId}`) ?? "{}"); }
       catch { return {}; }
     })();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- merges persisted floor order into state when tree/warehouse changes (pre-existing)
     setFloorOrder((prev) => {
       const next = new Map(prev);
       for (const zone of tree) {
@@ -260,7 +284,15 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
   }, [floorOrder, selectedWarehouseId]);
 
   const filteredLocations = useMemo(() => {
-    let list = allLocations;
+    // §10 base set by status tab. The live query already excludes archived (backend default
+    // deleted_at IS NULL), so is_active cleanly partitions it into Active | Inactive; archived
+    // rows come from the separate on-demand query.
+    let list =
+      statusFilter === "archived"
+        ? archivedLocations
+        : statusFilter === "inactive"
+        ? allLocations.filter((l) => !l.is_active)
+        : allLocations.filter((l) => l.is_active);
     if (selectedZone  !== null) list = list.filter((l) => (l.zone_name  || "") === selectedZone);
     if (selectedFloor !== null) list = list.filter((l) => (l.floor_name || "") === selectedFloor);
     if (searchQuery.trim()) {
@@ -268,7 +300,7 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
       list = list.filter((l) => l.code?.toLowerCase().includes(q) || l.name.toLowerCase().includes(q));
     }
     return list;
-  }, [allLocations, selectedZone, selectedFloor, searchQuery]);
+  }, [allLocations, archivedLocations, statusFilter, selectedZone, selectedFloor, searchQuery]);
 
   const totalPages     = Math.max(1, Math.ceil(filteredLocations.length / PAGE_SIZE));
   const pagedLocations = filteredLocations.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -371,19 +403,31 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
     });
   }
 
-  function handleDelete() {
-    if (!selectedLocation) return;
-    startTransition(async () => {
-      try {
-        await deleteLocation(selectedLocation.id);
-        toast.success(dictionary.toastDeleted);
-        await queryClient.invalidateQueries({ queryKey: ["storage-locations", selectedWarehouseId] });
-        setConfirmAction(null);
-        closeDrawer();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : dictionary.toastError);
-      }
-    });
+  // ── Safe delete / archive (§8-9) ───────────────────────────────────────────
+  // The backend resolves archive-vs-permanent-delete under a row lock and reports blockers;
+  // the dialog adapts to that assessment. Replaces the old unconditional hard delete.
+  const deletionFlow = useDeletionFlow({
+    assess: (id) => getLocationDeletionAssessment(id).then((r) => r.data),
+    remove: (id, expected) => deleteLocation(id, expected).then((r) => r.data),
+    onSuccess: (outcome) => {
+      toast.success(
+        outcome.action === "archived" ? dictionary.lifecycle.archivedToast : dictionary.lifecycle.deletedToast,
+      );
+      // The row left the live pool (and may have entered the archived pool) — refresh both (§13).
+      void queryClient.invalidateQueries({ queryKey: ["storage-locations", selectedWarehouseId] });
+      void queryClient.invalidateQueries({ queryKey: ["storage-locations", selectedWarehouseId, "archived"] });
+      closeDrawer();
+    },
+  });
+
+  // Routes the drawer's action intent: delete → adaptive flow; disable/enable → simple confirm.
+  function requestLocationAction(action: "disable" | "enable" | "delete") {
+    if (action === "delete") {
+      if (!selectedLocation) return;
+      deletionFlow.begin({ id: selectedLocation.id, name: selectedLocation.name, code: selectedLocation.code });
+      return;
+    }
+    setConfirmAction(action);
   }
 
   // ── Card renderer ──────────────────────────────────────────────────────────
@@ -391,6 +435,7 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
     const status     = getStatus(loc);
     const styles     = STATUS_STYLES[status];
     const isSelected = selectedLocation?.id === loc.id && isDrawerOpen;
+    const isArchived = Boolean(loc.deleted_at);
     return (
       <button
         key={loc.id}
@@ -414,20 +459,35 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
             </>
           )}
         </div>
-        <span className="font-mono text-lg font-black leading-none tracking-wider text-slate-900">
+        <span className="text-lg font-black leading-none tracking-wider text-slate-900">
           {loc.code || loc.name}
         </span>
         {loc.code && <span className="mt-1.5 truncate text-xs text-slate-500">{loc.name}</span>}
         <div className="mt-auto flex items-center gap-2 pt-4">
-          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${styles.dot}`} />
-          <span className="text-xs font-semibold text-slate-600">{styles.label(dictionary)}</span>
+          {isArchived ? (
+            <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+              {dictionary.lifecycle.badgeArchived}
+            </span>
+          ) : (
+            <>
+              <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${styles.dot}`} />
+              <span className="text-xs font-semibold text-slate-600">{styles.label(dictionary)}</span>
+            </>
+          )}
         </div>
-        <div className={`absolute inset-x-0 bottom-0 h-1 ${styles.strip} opacity-60`} />
+        <div className={`absolute inset-x-0 bottom-0 h-1 ${isArchived ? "bg-slate-300" : styles.strip} opacity-60`} />
       </button>
     );
   }
 
   const selectedWarehouse = warehouses.find((w) => w.id === selectedWarehouseId);
+
+  // §10 lifecycle filter tabs — reuse existing status labels (no new locale keys needed).
+  const statusTabs: { key: StatusFilter; label: string }[] = [
+    { key: "active",   label: dictionary.infoActive },
+    { key: "inactive", label: dictionary.statusInactive },
+    { key: "archived", label: dictionary.statusArchived },
+  ];
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
@@ -788,6 +848,22 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
               </div>
               <p className="mt-0.5 text-xs text-slate-500">{filteredLocations.length} {dictionary.gridTotal}</p>
             </div>
+
+            {/* §10 Status filter — Active / Inactive / Archived. Archived is absent by default. */}
+            <div className="flex shrink-0 gap-1 rounded-xl bg-slate-100 p-1">
+              {statusTabs.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setStatusFilter(t.key)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+                    statusFilter === t.key ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5">
@@ -798,7 +874,7 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
                 </div>
                 <p className="text-sm font-medium text-slate-500">{dictionary.gridNoWarehouse}</p>
               </div>
-            ) : locationsQuery.isLoading ? (
+            ) : (statusFilter === "archived" ? archivedQuery.isLoading : locationsQuery.isLoading) ? (
               <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(clamp(200px,25%,300px),1fr))]">
                 {Array.from({ length: 9 }).map((_, i) => (
                   <div key={i} className="h-36 animate-pulse rounded-2xl bg-violet-50" />
@@ -813,9 +889,11 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
                   <p className="text-sm font-semibold text-slate-700">
                     {searchQuery ? dictionary.gridSearchEmpty : dictionary.gridEmpty}
                   </p>
-                  <p className="mt-1 text-xs text-slate-400">{dictionary.gridEmptyHint}</p>
+                  {statusFilter === "active" && !searchQuery && (
+                    <p className="mt-1 text-xs text-slate-400">{dictionary.gridEmptyHint}</p>
+                  )}
                 </div>
-                {!searchQuery && (
+                {!searchQuery && statusFilter === "active" && (
                   <button
                     className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50"
                     onClick={openAddModal}
@@ -863,7 +941,7 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
           selectedLocation={selectedLocation}
           onClose={closeDrawer}
           onEdit={openEditModal}
-          onConfirmAction={setConfirmAction}
+          onConfirmAction={requestLocationAction}
           products={productsQuery.data ?? []}
           isProductsLoading={productsQuery.isLoading}
           warehouses={warehouses}
@@ -886,24 +964,18 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
         dictionary={dictionary}
       />
 
-      {/* ── Confirm: disable / enable / delete location ──────────────────────── */}
+      {/* ── Confirm: disable / enable location (delete is handled by DeletionDialog) ── */}
       <ConfirmDialog
-        confirmLabel={confirmAction === "delete" ? dictionary.deleteButton : confirmAction === "disable" ? dictionary.disableButton : dictionary.enableButton}
-        danger={confirmAction !== "enable"}
+        confirmLabel={confirmAction === "disable" ? dictionary.disableButton : dictionary.enableButton}
+        danger={confirmAction === "disable"}
         isOpen={!!confirmAction}
-        title={
-          confirmAction === "disable" ? dictionary.confirmDisableTitle
-          : confirmAction === "enable" ? dictionary.confirmEnableTitle
-          : dictionary.confirmDeleteTitle
-        }
+        title={confirmAction === "disable" ? dictionary.confirmDisableTitle : dictionary.confirmEnableTitle}
         onCancel={() => setConfirmAction(null)}
-        onConfirm={confirmAction === "delete" ? handleDelete : handleToggleActive}
+        onConfirm={handleToggleActive}
       >
         {confirmAction === "disable"
           ? dictionary.confirmDisableBody.replace("{code}", selectedLocation?.code || selectedLocation?.name || "")
-          : confirmAction === "enable"
-          ? dictionary.confirmEnableBody.replace("{code}", selectedLocation?.code || selectedLocation?.name || "")
-          : dictionary.confirmDeleteBody.replace("{code}", selectedLocation?.code || selectedLocation?.name || "")}
+          : dictionary.confirmEnableBody.replace("{code}", selectedLocation?.code || selectedLocation?.name || "")}
       </ConfirmDialog>
 
       {/* ── Confirm: delete zone / floor ─────────────────────────────────────── */}
@@ -921,6 +993,27 @@ export function StorageLocationPage({ dictionary }: { dictionary: StorageLocatio
           ? dictionary.confirmDeleteFloorBody.replace("{name}", deleteTarget.floorName || dictionary.unfloored)
           : ""}
       </ConfirmDialog>
+
+      {/* ── Adaptive delete / archive (§8-9) ─────────────────────────────────── */}
+      <DeletionDialog
+        open={deletionFlow.open}
+        entity="location"
+        target={deletionFlow.target}
+        assessment={deletionFlow.assessment}
+        phase={deletionFlow.phase}
+        error={deletionFlow.error}
+        stateChanged={deletionFlow.stateChanged}
+        dict={dictionary.lifecycle}
+        onConfirm={deletionFlow.confirm}
+        onCancel={deletionFlow.cancel}
+        onRetry={deletionFlow.retry}
+        onNavigate={(navTarget) => {
+          deletionFlow.cancel();
+          closeDrawer();
+          // Stock here is per-location: transfer/adjust both live on the stock surface.
+          router.push(navTarget === "transfer" ? `/${locale}/stock/warehouses` : `/${locale}/stock`);
+        }}
+      />
     </div>
   );
 }

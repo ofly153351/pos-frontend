@@ -88,7 +88,7 @@ export function ReceiveDocumentSection({
           {isFromPo ? (
             <div className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-violet-50/60 px-4 py-3 text-slate-700">
               <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">{t.sourceFromPo}</span>
-              <span className="font-mono text-sm">{purchaseOrderNo || purchaseOrderId}</span>
+              <span className="nums text-sm">{purchaseOrderNo || purchaseOrderId}</span>
             </div>
           ) : (
             <select className={fieldClass()} onChange={(e) => onPurchaseOrderChange(e.target.value)} value="">

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { ArrowLeftRight, MapPin } from "lucide-react";
 
@@ -65,8 +65,8 @@ export function WarehouseProductTable({ dict, items, onViewLocations, onTransfer
                   {item.unit ? <span className="text-xs text-slate-400">{item.unit}</span> : null}
                 </td>
                 <td className="hidden px-3 py-2.5 lg:table-cell">
-                  <div className="font-mono text-xs text-slate-600">{item.sku || "—"}</div>
-                  <div className="font-mono text-[11px] text-slate-400">{item.barcode || dict.noBarcode}</div>
+                  <div className="text-xs text-slate-600">{item.sku || "—"}</div>
+                  <div className="text-[11px] text-slate-400">{item.barcode || dict.noBarcode}</div>
                 </td>
                 <td className="hidden px-3 py-2.5 lg:table-cell">
                   <span className="text-xs text-slate-600">{item.category_name || dict.uncategorized}</span>

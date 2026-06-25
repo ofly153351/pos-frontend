@@ -29,13 +29,26 @@ export class ApiError extends Error {
   status: number;
   code?: ApiErrorCode;
   fields?: ApiFieldError[];
+  /**
+   * Structured machine-readable payload from `error.details` (e.g. a deletion blocker code +
+   * dependency assessment). Carried verbatim so callers can drive adaptive remediation UI
+   * without re-parsing the human message. Typed `unknown` — narrow with a type guard.
+   */
+  details?: unknown;
 
-  constructor(message: string, status: number, code?: ApiErrorCode, fields?: ApiFieldError[]) {
+  constructor(
+    message: string,
+    status: number,
+    code?: ApiErrorCode,
+    fields?: ApiFieldError[],
+    details?: unknown,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.code = code;
     this.fields = fields;
+    this.details = details;
   }
 
   /** Returns a map of field → first error message, useful for inline validation UI. */
@@ -111,14 +124,19 @@ function toApiError(error: unknown) {
   if (error instanceof AxiosError) {
     const status = error.response?.status ?? 500;
     const payload = error.response?.data as
-      | { success: boolean; message?: string; error?: { code?: ApiErrorCode; message?: string; fields?: ApiFieldError[] } }
+      | {
+          success: boolean;
+          message?: string;
+          error?: { code?: ApiErrorCode; message?: string; fields?: ApiFieldError[]; details?: unknown };
+        }
       | undefined;
 
     const message = payload?.message || error.message || "Request failed";
     const code = payload?.error?.code;
     const fields = payload?.error?.fields;
+    const details = payload?.error?.details;
 
-    return new ApiError(message, status, code, fields);
+    return new ApiError(message, status, code, fields, details);
   }
 
   return new ApiError("Request failed", 500);

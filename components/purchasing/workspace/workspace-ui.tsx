@@ -47,7 +47,7 @@ export function ProgressBar({ progress, caption }: { progress: PoProgress; capti
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
         <div className={`h-full rounded-full ${tone}`} style={{ width: `${progress.pct}%` }} />
       </div>
-      <p className="mt-1 font-mono text-[11px] text-slate-500">{caption}</p>
+      <p className="mt-1 text-[11px] text-slate-500">{caption}</p>
     </div>
   );
 }

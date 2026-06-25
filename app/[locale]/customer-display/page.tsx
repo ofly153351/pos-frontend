@@ -12,5 +12,5 @@ export default async function CustomerDisplayPage({ params }: Props) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const dictionary = await getDictionary(locale as Locale);
-  return <CustomerDisplay dict={dictionary.customerDisplay} storeName="" />;
+  return <CustomerDisplay dict={dictionary.customerDisplay} locale={locale} storeName="" />;
 }

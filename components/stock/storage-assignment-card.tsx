@@ -96,7 +96,7 @@ export function StorageAssignmentCard({
   const [zone, setZone] = useState("");
   const [locationId, setLocationId] = useState("");
 
-  const warehousesQuery = useQuery({ queryKey: ["warehouses"], queryFn: listWarehouses });
+  const warehousesQuery = useQuery({ queryKey: ["warehouses"], queryFn: () => listWarehouses() });
   const warehouses = useMemo(
     () => (Array.isArray(warehousesQuery.data?.data) ? warehousesQuery.data.data : []),
     [warehousesQuery.data],

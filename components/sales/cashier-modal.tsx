@@ -13,6 +13,7 @@ import { SidebarDrawer } from "@/components/navigation/sidebar-drawer";
 import type { NavLabels } from "@/components/navigation/nav-config";
 import { SalesManager } from "@/components/sales/sales-manager";
 import type { SalesManagerHandle } from "@/components/sales/sales-manager";
+import { ScanButton } from "@/components/shared/scan-button";
 import type { SalesDictionary } from "@/components/sales/types";
 
 const CLOSE_DURATION = 220;
@@ -124,6 +125,12 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         </div>
 
+        <ScanButton
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-violet-200 bg-white text-violet-600 transition hover:border-violet-400 hover:bg-violet-50"
+          onScan={(code) => salesRef.current?.scanCode(code)}
+          title={dictionary.scanWithCamera}
+        />
+
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             className="flex h-10 items-center gap-1.5 rounded-full border border-violet-200 bg-white px-3.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
@@ -140,7 +147,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
             type="button"
           >
             <span className={`h-1.5 w-1.5 rounded-full ${vatOn ? "bg-white" : "bg-violet-300"}`} />
-            VAT {vatOn ? "7%" : "off"}
+            VAT 7%
           </button>
           <button
             className="flex h-10 items-center rounded-full border border-orange-200 bg-orange-50 px-3.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-100"

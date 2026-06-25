@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -337,7 +337,7 @@ export function PurchaseForm({ dictionary: d, onClose, onSuccess }: PurchaseForm
                             >
                               <div className="min-w-0 text-left">
                                 <p className="truncate font-medium text-slate-800">{p.product_name}</p>
-                                <p className="truncate font-mono text-[11px] text-slate-400">
+                                <p className="truncate text-[11px] text-slate-400">
                                   {p.product_sku}{p.supplier_sku ? ` · ${p.supplier_sku}` : ""}
                                   {p.barcode ? ` · ${p.barcode}` : ""}
                                 </p>

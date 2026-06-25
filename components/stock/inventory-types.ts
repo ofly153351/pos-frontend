@@ -35,12 +35,34 @@ export type InventoryAdjustDictionary = {
   notePlaceholder: string;
   noteRequired: string;
   reasonLabels: Record<string, string>;
+  // Location-aware adjustment (unified Warehouse + Inventory entry points).
+  storeTotal: string;
+  locationQty: string;
+  selectedLocationLabel: string;
+  changeLocation: string;
+  selectLocationPrompt: string;
+  selectLocationRequired: string;
+  noValidLocation: string;
+  loadingLocations: string;
+  systemQty: string;
+  countedQty: string;
+  variance: string;
+  staleNotice: string;
+  highVarianceWarning: string;
+  varianceConfirm: string;
+  salePointTag: string;
+  storageTag: string;
+  defaultTag: string;
+  useContinuously: string;
+  lockedHint: string;
+  configureLocationCta: string;
 };
 
 export type InventoryDictionary = {
   title: string;
   subtitle: string;
   search: string;
+  scanWithCamera: string;
   empty: string;
   loading: string;
   openCount: string;
@@ -51,9 +73,13 @@ export type InventoryDictionary = {
     lowStock: string;
     outOfStock: string;
   };
+  salePointHint: string;
   col: {
     product: string;
     available: string;
+    salePoint: string;
+    storage: string;
+    total: string;
     minStock: string;
     status: string;
     stockValue: string;
@@ -95,6 +121,10 @@ export type CountDictionary = {
     namePlaceholder: string;
     warehouse: string;
     allWarehouses: string;
+    location: string;
+    selectLocation: string;
+    locationHelp: string;
+    salePoint: string;
     zone: string;
     zonePlaceholder: string;
     allZones: string;
@@ -178,6 +208,7 @@ export type CountDictionary = {
   };
   scanPlaceholder: string;
   scanNotFound: string;
+  scanWithCamera: string;
   countMode: { table: string; quick: string };
   counting: { hidden: string };
   countFilter: {
@@ -232,6 +263,7 @@ export type CountDictionary = {
     applied: string;
     applyNote: string;
     applyError: string;
+    legacyNoLocation: string;
     correctionResult: string;
     applyCol: string;
     varianceItems: string;

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronsUpDown, MapPin, Search, Warehouse as WarehouseIcon } from "lucide-react";
@@ -79,7 +79,7 @@ export function WarehouseSelector({
               <span className="flex items-center gap-2">
                 <span className="truncate text-sm font-bold text-slate-900">{selected.name}</span>
                 {selected.code ? (
-                  <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-500">
+                  <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">
                     {selected.code}
                   </span>
                 ) : null}
@@ -150,7 +150,7 @@ export function WarehouseSelector({
                       {w.id === value ? <Check className="h-4 w-4 text-violet-600" /> : null}
                     </span>
                     <span className="min-w-0 flex-1 truncate font-medium text-slate-700">{w.name}</span>
-                    {w.code ? <span className="shrink-0 font-mono text-[11px] text-slate-400">{w.code}</span> : null}
+                    {w.code ? <span className="shrink-0 text-[11px] text-slate-400">{w.code}</span> : null}
                     {!w.is_active ? (
                       <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
                         {dict.statusInactive}

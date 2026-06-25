@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { ChevronRight, Folder, Layers, Pencil, PackageOpen, X } from "lucide-react";
+import { ChevronRight, Folder, Layers, Pencil, PackageOpen, Trash2, X } from "lucide-react";
 import type { Warehouse } from "@/types/warehouse";
 import type { Location, LocationProduct } from "@/services/locations";
 import {
@@ -28,6 +28,7 @@ export function LocationDetailDrawer({
   products, isProductsLoading, warehouses, dictionary,
 }: Props) {
   const drawerStatus = selectedLocation ? getStatus(selectedLocation) : ("available" as const);
+  const isArchived = Boolean(selectedLocation?.deleted_at);
 
   return (
     <div
@@ -45,7 +46,7 @@ export function LocationDetailDrawer({
           <div className={`shrink-0 border-b border-violet-100 bg-gradient-to-b ${DRAWER_BG[drawerStatus]} px-5 py-5`}>
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="font-mono text-xl font-black leading-none tracking-wider text-slate-900">
+                <p className="text-xl font-black leading-none tracking-wider text-slate-900">
                   {selectedLocation.code || selectedLocation.name}
                 </p>
                 {selectedLocation.code && (
@@ -59,6 +60,11 @@ export function LocationDetailDrawer({
                   {selectedLocation.is_sale_point && (
                     <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-bold text-violet-700">
                       {dictionary.statusSalePoint}
+                    </span>
+                  )}
+                  {isArchived && (
+                    <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-600">
+                      {dictionary.lifecycle.badgeArchived}
                     </span>
                   )}
                 </div>
@@ -112,7 +118,7 @@ export function LocationDetailDrawer({
               <div className="space-y-3">
                 <div>
                   <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{dictionary.infoCode}</p>
-                  <p className="font-mono text-sm font-bold text-slate-900">{selectedLocation.code || "-"}</p>
+                  <p className="text-sm font-bold text-slate-900">{selectedLocation.code || "-"}</p>
                 </div>
                 <div>
                   <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{dictionary.infoName}</p>
@@ -162,28 +168,38 @@ export function LocationDetailDrawer({
             </div>
           </div>
 
-          {/* ── Actions ── */}
-          <div className="shrink-0 space-y-2 border-t border-violet-100 p-4">
-            <button
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-50"
-              onClick={() => onEdit(selectedLocation)}
-              type="button"
-            >
-              <Pencil className="h-4 w-4" />
-              {dictionary.editButton}
-            </button>
-            <button
-              className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
-                selectedLocation.is_active
-                  ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-              }`}
-              onClick={() => onConfirmAction(selectedLocation.is_active ? "disable" : "enable")}
-              type="button"
-            >
-              {selectedLocation.is_active ? dictionary.disableButton : dictionary.enableButton}
-            </button>
-          </div>
+          {/* ── Actions ── (archived rows are read-only history §12) */}
+          {!isArchived && (
+            <div className="shrink-0 space-y-2 border-t border-violet-100 p-4">
+              <button
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 transition-colors hover:bg-violet-50"
+                onClick={() => onEdit(selectedLocation)}
+                type="button"
+              >
+                <Pencil className="h-4 w-4" />
+                {dictionary.editButton}
+              </button>
+              <button
+                className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors ${
+                  selectedLocation.is_active
+                    ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                }`}
+                onClick={() => onConfirmAction(selectedLocation.is_active ? "disable" : "enable")}
+                type="button"
+              >
+                {selectedLocation.is_active ? dictionary.disableButton : dictionary.enableButton}
+              </button>
+              <button
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-white px-4 py-2.5 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                onClick={() => onConfirmAction("delete")}
+                type="button"
+              >
+                <Trash2 className="h-4 w-4" />
+                {dictionary.deleteButton}
+              </button>
+            </div>
+          )}
         </>
       ) : null}
     </div>

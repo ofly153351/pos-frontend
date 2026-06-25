@@ -442,7 +442,6 @@ function SellingScreen({
   // Ref array for individual item DOM nodes — used for auto-scroll.
   const itemEls = useRef<(HTMLDivElement | null)[]>([]);
   const prevItemsRef = useRef<DisplayItem[]>([]);
-  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [highlightIdx, setHighlightIdx] = useState<number | null>(null);
 
   // Track which item changed (new or qty increased) for highlight + scroll.
@@ -468,11 +467,6 @@ function SellingScreen({
 
     if (changedIdx !== null) {
       setHighlightIdx(changedIdx);
-      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-      highlightTimerRef.current = setTimeout(() => {
-        setHighlightIdx(null);
-        highlightTimerRef.current = null;
-      }, 3000);
       // Auto-scroll to changed item; use "nearest" to avoid jumping when visible.
       requestAnimationFrame(() => {
         itemEls.current[changedIdx!]?.scrollIntoView({
@@ -481,13 +475,6 @@ function SellingScreen({
         });
       });
     }
-
-    return () => {
-      if (highlightTimerRef.current) {
-        clearTimeout(highlightTimerRef.current);
-        highlightTimerRef.current = null;
-      }
-    };
   }, [state.items]);
 
   // Dev-only bill invariant check.

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Barcode, Eye, MapPin, Pencil, Trash2 } from "lucide-react";
@@ -188,7 +188,7 @@ export function ProductCardGrid({
                   {/* SKU: fixed h-4 reserves one line even when the value is empty, so the
                       header height stays constant whether or not a product has a SKU. */}
                   <p
-                    className="mt-0.5 h-4 truncate font-mono text-[11px] leading-4 text-slate-400"
+                    className="mt-0.5 h-4 truncate text-[11px] leading-4 text-slate-400"
                     title={product.sku ?? ""}
                   >
                     {product.sku || " "}

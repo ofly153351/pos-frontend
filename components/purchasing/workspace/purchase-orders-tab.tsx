@@ -178,7 +178,7 @@ export function PurchaseOrdersTab({
                         className={`transition-colors hover:bg-violet-50/40 ${po.status === "cancelled" ? "opacity-60" : ""}`}
                       >
                         <td className="px-5 py-3.5">
-                          <span className="font-mono text-xs font-semibold text-violet-700">{po.order_number}</span>
+                          <span className="nums text-xs font-semibold text-violet-700 whitespace-nowrap">{po.order_number}</span>
                         </td>
                         <td className="max-w-[200px] px-4 py-3.5">
                           <SupplierText name={po.supplier?.name} fallback={dict.none} />
@@ -191,7 +191,7 @@ export function PurchaseOrdersTab({
                           </span>
                         </td>
                         <td className="px-4 py-3.5 text-right">
-                          <span className="font-mono text-sm font-bold text-slate-900">{formatTHB(po.total_cost)}</span>
+                          <span className="nums text-sm font-bold text-slate-900">{formatTHB(po.total_cost)}</span>
                         </td>
                         <td className="px-4 py-3.5">
                           <ProgressBar
@@ -249,7 +249,7 @@ export function PurchaseOrdersTab({
                   <div key={po.id} className={`p-4 ${po.status === "cancelled" ? "opacity-60" : ""}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-mono text-xs font-semibold text-violet-700">{po.order_number}</p>
+                        <p className="nums text-xs font-semibold text-violet-700">{po.order_number}</p>
                         <p className="truncate text-sm font-medium text-slate-800">{po.supplier?.name ?? dict.none}</p>
                       </div>
                       <PoBadge dict={dict} status={po.status} />
@@ -265,7 +265,7 @@ export function PurchaseOrdersTab({
                     </div>
                     <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
                       <span>{formatDate(locale, po.created_at)}</span>
-                      <span className="font-mono text-sm font-bold text-slate-900">{formatTHB(po.total_cost)}</span>
+                      <span className="nums text-sm font-bold text-slate-900">{formatTHB(po.total_cost)}</span>
                     </div>
                     {actionable ? (
                       <div className="mt-3 flex gap-2">

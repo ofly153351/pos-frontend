@@ -124,15 +124,15 @@ export function PendingReceivingTab({ dict, locale, canOperate, pos, loading, er
                     return (
                       <tr key={po.id} className="transition-colors hover:bg-violet-50/40">
                         <td className="px-5 py-3.5">
-                          <span className="font-mono text-xs font-semibold text-violet-700">{po.order_number}</span>
+                          <span className="nums text-xs font-semibold text-violet-700 whitespace-nowrap">{po.order_number}</span>
                         </td>
                         <td className="max-w-[200px] px-4 py-3.5">
                           <SupplierText name={po.supplier?.name} fallback={dict.none} />
                         </td>
                         <td className="px-4 py-3.5 text-xs text-slate-500">{formatDate(locale, po.created_at)}</td>
-                        <td className="px-4 py-3.5 text-right font-mono text-sm text-slate-700">{prog.ordered}</td>
-                        <td className="px-4 py-3.5 text-right font-mono text-sm text-slate-700">{prog.received}</td>
-                        <td className="px-4 py-3.5 text-right font-mono text-sm font-bold text-amber-700">
+                        <td className="px-4 py-3.5 text-right nums text-sm text-slate-700">{prog.ordered}</td>
+                        <td className="px-4 py-3.5 text-right nums text-sm text-slate-700">{prog.received}</td>
+                        <td className="px-4 py-3.5 text-right nums text-sm font-bold text-amber-700">
                           {prog.outstanding}
                         </td>
                         <td className="px-4 py-3.5">
@@ -170,7 +170,7 @@ export function PendingReceivingTab({ dict, locale, canOperate, pos, loading, er
                   <div key={po.id} className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-mono text-xs font-semibold text-violet-700">{po.order_number}</p>
+                        <p className="nums text-xs font-semibold text-violet-700">{po.order_number}</p>
                         <p className="truncate text-sm font-medium text-slate-800">{po.supplier?.name ?? dict.none}</p>
                       </div>
                       <span className="shrink-0 rounded-lg bg-amber-50 px-2 py-1 text-xs font-bold text-amber-700">

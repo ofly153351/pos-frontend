@@ -167,14 +167,14 @@ export function CompletedTab({ dict, locale, pos, confirmed, loading, error, onR
                         />
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="font-mono text-xs font-semibold text-violet-700">{row.number}</span>
+                        <span className="nums text-xs font-semibold text-violet-700 whitespace-nowrap">{row.number}</span>
                       </td>
                       <td className="max-w-[180px] px-4 py-3.5">
                         <SupplierText name={row.supplier} fallback={dict.none} />
                       </td>
                       <td className="px-4 py-3.5 text-xs text-slate-600">{row.warehouse ?? dict.none}</td>
                       <td className="px-4 py-3.5 text-xs text-slate-500">{formatDate(locale, row.date)}</td>
-                      <td className="px-4 py-3.5 text-right font-mono text-sm font-bold text-slate-900">
+                      <td className="px-4 py-3.5 text-right nums text-sm font-bold text-slate-900">
                         {formatTHB(row.value)}
                       </td>
                       <td className="px-5 py-3.5 text-right">
@@ -207,10 +207,10 @@ export function CompletedTab({ dict, locale, pos, confirmed, loading, error, onR
                           label={row.kind === "po" ? dict.recordPo : dict.recordReceipt}
                         />
                       </div>
-                      <p className="font-mono text-xs font-semibold text-violet-700">{row.number}</p>
+                      <p className="nums text-xs font-semibold text-violet-700">{row.number}</p>
                       <p className="truncate text-sm font-medium text-slate-800">{row.supplier ?? dict.none}</p>
                     </div>
-                    <span className="font-mono text-sm font-bold text-slate-900">{formatTHB(row.value)}</span>
+                    <span className="nums text-sm font-bold text-slate-900">{formatTHB(row.value)}</span>
                   </div>
                   <div className="mt-1.5 flex items-center justify-between">
                     <span className="text-xs text-slate-500">{formatDate(locale, row.date)}</span>

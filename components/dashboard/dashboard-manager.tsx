@@ -9,11 +9,8 @@ import {
   ArrowDownRight,
   BarChart3,
   ClipboardCheck,
-  FileText,
-  Gift,
   Minus,
   Package,
-  RefreshCw,
   ShoppingCart,
   SlidersHorizontal,
   Store,
@@ -22,13 +19,11 @@ import {
   Wallet,
 } from "lucide-react";
 import { Skeleton, SkeletonStatRow, SkeletonChart } from "@/components/ui/skeleton";
+import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import {
   Area,
   AreaChart,
   CartesianGrid,
-  Cell,
-  Pie,
-  PieChart as RechartsPieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -38,6 +33,8 @@ import {
 import { getDashboard } from "@/services/dashboard";
 import { getExpenseSummary } from "@/services/expenses";
 import { useStoreRole } from "@/lib/use-store-role";
+import { useCopilot } from "@/components/copilot/copilot-provider";
+import { DashboardHero, type HeroPeriod } from "@/components/shared/dashboard-hero";
 import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import type {
   DashboardPeriod,
@@ -187,6 +184,8 @@ type DashboardDictionary = {
     lowBadge: string;
     viewAll: string;
     noIssues: string;
+    stockError: string;
+    stockRetry: string;
   };
   recentSales: {
     title: string;
@@ -257,7 +256,7 @@ type DashboardManagerProps = {
   locale: string;
 };
 
-type FilterPeriod = DashboardPeriod | "90d" | "custom";
+type FilterPeriod = HeroPeriod;
 type UserRole = "owner" | "cashier" | "warehouse";
 type ChartMetric = "revenue" | "profit" | "orders";
 
@@ -270,8 +269,8 @@ function toLocaleTag(locale: string) {
 function formatCurrency(value: number, locale: string) {
   return new Intl.NumberFormat(toLocaleTag(locale), {
     currency: "THB",
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
     style: "currency",
   }).format(value);
 }
@@ -383,7 +382,6 @@ function getPreviousPeriodDates(period: FilterPeriod): { from: string; to: strin
   }
 }
 
-const CHART_COLORS = ["#7c3aed", "#10b981", "#f59e0b", "#d946ef", "#8b5cf6", "#ef4444"];
 
 const PAYMENT_BADGE: Record<string, string> = {
   cash: "bg-emerald-100 text-emerald-700",
@@ -391,6 +389,7 @@ const PAYMENT_BADGE: Record<string, string> = {
   credit: "bg-violet-100 text-violet-700",
   transfer: "bg-amber-100 text-amber-700",
   qr: "bg-fuchsia-100 text-fuchsia-700",
+  promptpay: "bg-fuchsia-100 text-fuchsia-700",
 };
 
 function paymentBadgeClass(method: string) {
@@ -405,6 +404,7 @@ function localizePaymentMethod(raw: string, dict: DashboardDictionary["paymentMe
     transfer: dict.transfer,
     qr: dict.qr,
     "qr payment": dict.qr,
+    promptpay: dict.qr,
     credit: dict.credit,
     card: dict.card,
   };
@@ -421,6 +421,54 @@ const SEVERITY_CONFIG = {
 
 // ── Visible sections per role ───────────────────────────────────────────────
 
+function DashboardBriefingCard() {
+  const { data, isLoading, openPanel } = useCopilot();
+  if (isLoading || !data) return null;
+  const { summary: s, decisionEngine: de } = data;
+  if (!de?.topPriority && s.revenue === 0) return null;
+
+  const statusLabel = data.healthScore.overall >= 80
+    ? "ร้านอยู่ในสถานะดี"
+    : data.healthScore.overall >= 60
+      ? "มีบางอย่างต้องดูแล"
+      : "ต้องดูแลหลายจุด";
+
+  const topRisk = data.risks[0];
+  const topAction = de?.topPriority;
+
+  return (
+    <button
+      onClick={openPanel}
+      className="group w-full rounded-2xl border border-violet-200 bg-violet-50/80 p-4 text-left shadow-sm transition-all hover:border-violet-300 hover:shadow-md"
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <svg className="h-4 w-4 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+          </svg>
+          <span className="text-[12px] font-semibold text-violet-700">สรุปวันนี้</span>
+        </div>
+        <span className="text-[11px] text-violet-500 group-hover:text-violet-600">ดูเพิ่มเติม →</span>
+      </div>
+      <p className="mb-2 text-[13px] font-medium text-slate-700">{statusLabel}</p>
+      <div className="space-y-1.5">
+        {topRisk && (
+          <div className="flex items-center gap-2 text-[12px]">
+            <AlertTriangle className="h-3 w-3 shrink-0 text-rose-500" />
+            <span className="truncate text-slate-600">{topRisk.title}</span>
+          </div>
+        )}
+        {topAction && (
+          <div className="flex items-center gap-2 text-[12px]">
+            <ArrowRight className="h-3 w-3 shrink-0 text-violet-500" />
+            <span className="truncate text-slate-600">ทำก่อน: {topAction.action.title}</span>
+          </div>
+        )}
+      </div>
+    </button>
+  );
+}
+
 const ROLE_SECTIONS: Record<UserRole, Set<string>> = {
   owner: new Set(["hero", "quickActions", "kpi", "actionCenter", "salesChart", "paymentChart", "expenseCategories", "bestSellers", "stockAttention", "recentSales"]),
   cashier: new Set(["hero", "quickActions", "kpi", "salesChart", "paymentChart", "recentSales"]),
@@ -435,7 +483,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
   const [period, setPeriod] = useState<FilterPeriod>("today");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [chartMetric, setChartMetric] = useState<ChartMetric>("revenue");
   // Dashboard view is driven by the STORE-scoped role (store_members.role), not
   // the global users.role. Owner/manager get the full view; warehouse and cashier
@@ -490,7 +537,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       const response = await getDashboard(input);
 
       setData(response.data);
-      setIsFilterOpen(false);
 
       // Fetch previous period for trends
       const prevDates = getPreviousPeriodDates(period);
@@ -590,8 +636,8 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
 
   const topProducts = data?.top_products ?? [];
   const lowStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) > 0);
-  const outOfStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) === 0);
-  const negativeStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) < 0);
+  // out-of-stock = ready_stock <= 0 (includes negative — spec §A5)
+  const outOfStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) <= 0);
 
   const revenue = data?.summary.revenue ?? 0;
   const salesCount = data?.summary.sales_count ?? 0;
@@ -611,8 +657,10 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
   // Low stock threshold used in query
   const LOW_STOCK_THRESHOLD = 10;
 
-  // Total action center alert count
-  const totalAlerts = lowStockList.length + outOfStockList.length + negativeStockList.length;
+  // Total action center alert count (negatives subsumed into outOfStockList via <= 0 filter)
+  const totalAlerts = lowStockList.length + outOfStockList.length;
+  // true when the API failed AND we have no data at all — prevents valid-zero false reads (A10)
+  const stockError = !!error && !data;
 
   // ── Render helpers ──────────────────────────────────────────────────────
 
@@ -638,89 +686,37 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
     <div className="space-y-4">
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 1. HERO — compact bar with dynamic date range                     */}
+      {/* 1. HERO — unified dashboard control center                        */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {visible.has("hero") && (
-        <section className="rounded-2xl bg-violet-700 px-5 py-3.5 text-white shadow-md shadow-violet-200/50">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            {/* Left: title + date range */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
-                <Store className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-base font-black tracking-tight">{t.title}</h1>
-                <p className="text-[11px] text-violet-200">
-                  {dateRangeText}
-                </p>
-              </div>
-            </div>
-
-            {/* Center: hero quick stats */}
-            <div className="flex items-center gap-4 text-sm">
-              <div className="text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-300">{t.hero.totalSales}</p>
-                <p className="text-lg font-black tabular-nums">{isLoading ? "—" : compactCurrency(revenue, locale)}</p>
-              </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div className="text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-300">{t.hero.totalOrders}</p>
-                <p className="text-lg font-black tabular-nums">{isLoading ? "—" : salesCount}</p>
-              </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div className="text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-violet-300">{t.hero.totalProfit}</p>
-                <p className="text-lg font-black tabular-nums">{isLoading ? "—" : compactCurrency(netRevenue, locale)}</p>
-              </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div className="flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
-                <span className="text-xs font-semibold text-emerald-300">{t.hero.storeOpen}</span>
-              </div>
-            </div>
-
-            {/* Right: controls */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5 rounded-xl bg-white/10 p-1 backdrop-blur-sm">
-                {([
-                  { label: t.filters.periodToday, value: "today" as const },
-                  { label: t.filters.period7d, value: "7d" as const },
-                  { label: t.filters.period30d, value: "30d" as const },
-                  { label: t.period90d, value: "90d" as const },
-                ]).map((opt) => (
-                  <button
-                    key={opt.value}
-                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${period === opt.value ? "bg-white text-violet-700 shadow-sm" : "text-white/70 hover:text-white"}`}
-                    onClick={() => setPeriod(opt.value)}
-                    type="button"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-
-              <button
-                className={`rounded-xl p-2 transition ${isFilterOpen ? "bg-white text-violet-700" : "bg-white/10 text-white hover:bg-white/20"}`}
-                onClick={() => setIsFilterOpen((c) => !c)}
-                type="button"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-              </button>
-
-              <button
-                className="rounded-xl bg-white/10 p-2 text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-50"
-                disabled={isLoading}
-                onClick={() => void loadDashboard()}
-                type="button"
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-              </button>
-            </div>
-          </div>
-
-          {/* Advanced filter panel */}
-          {isFilterOpen && (
-            <div className="mt-3 grid gap-2 rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm sm:grid-cols-3 lg:grid-cols-6">
+        <DashboardHero
+          icon={Store}
+          title={t.title}
+          subtitle={t.subtitle}
+          rangeLabel={dateRangeText}
+          period={period}
+          onPeriodChange={(p) => setPeriod(p)}
+          periodLabels={{
+            today: t.filters.periodToday,
+            d7: t.filters.period7d,
+            d30: t.filters.period30d,
+            d90: t.period90d,
+            custom: t.filters.periodCustom,
+            from: t.filters.fromLabel,
+            to: t.filters.toLabel,
+            apply: t.filters.apply,
+            refresh: t.filters.refresh,
+          }}
+          customFrom={fromDate}
+          customTo={toDate}
+          onCustomFromChange={setFromDate}
+          onCustomToChange={setToDate}
+          onApplyCustom={() => void loadDashboard()}
+          customValid={!!(fromDate && toDate && fromDate <= toDate)}
+          isLoading={isLoading}
+          onRefresh={() => void loadDashboard()}
+          filterContent={
+            <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
               <label className="flex flex-col gap-1 text-[11px] text-white/90">
                 <span>{t.filters.periodLabel}</span>
                 <select className="rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-xs text-white outline-none" onChange={(e) => setPeriod(e.target.value as FilterPeriod)} value={period}>
@@ -745,8 +741,8 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               )}
               <button className="self-end rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-700 transition hover:bg-violet-50" onClick={() => void loadDashboard()} type="button">{t.filters.apply}</button>
             </div>
-          )}
-        </section>
+          }
+        />
       )}
 
       {error && (
@@ -754,17 +750,20 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 1b. AI BRIEFING CARD                                              */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <DashboardBriefingCard />
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 2. QUICK ACTIONS — 6 cards                                        */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {visible.has("quickActions") && (
-        <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 xl:grid-cols-6">
+        <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
           {([
             { href: `/${locale}/sales`, icon: ShoppingCart, label: t.quickActions.openPos, desc: t.quickActions.openPosDesc, iconBg: "bg-violet-600", hoverColor: "group-hover:text-violet-500" },
             { href: `/${locale}/purchases?tab=goods-receipts`, icon: Package, label: t.quickActions.receiveStock, desc: t.quickActions.receiveStockDesc, iconBg: "bg-emerald-500", hoverColor: "group-hover:text-emerald-500" },
             { href: `/${locale}/inventory/counts`, icon: ClipboardCheck, label: t.quickActions.stockCount, desc: t.quickActions.stockCountDesc, iconBg: "bg-amber-500", hoverColor: "group-hover:text-amber-500" },
             { href: `/${locale}/customers`, icon: Users, label: t.quickActions.customers, desc: t.quickActions.customersDesc, iconBg: "bg-fuchsia-500", hoverColor: "group-hover:text-fuchsia-500" },
-            { href: `/${locale}/documents`, icon: FileText, label: t.quickActions.createQuotation, desc: t.quickActions.createQuotationDesc, iconBg: "bg-indigo-500", hoverColor: "group-hover:text-indigo-500" },
-            { href: `/${locale}/promotions`, icon: Gift, label: t.quickActions.promotions, desc: t.quickActions.promotionsDesc, iconBg: "bg-rose-500", hoverColor: "group-hover:text-rose-500" },
           ]).map((action) => (
             <Link key={action.href} href={action.href} className="group flex items-center gap-3 rounded-2xl border border-violet-100 bg-white p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md">
               <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${action.iconBg} shadow-sm`}>
@@ -790,32 +789,26 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             { label: t.kpi.totalOrders, value: salesCount.toLocaleString(toLocaleTag(locale)), icon: ShoppingCart, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", current: salesCount, previous: prevSalesCount, span: "" },
             { label: t.kpi.totalProfit, value: formatCurrency(netRevenue, locale), icon: Wallet, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", current: netRevenue, previous: prevNetRevenue, span: "" },
             { label: t.kpi.averageBill, value: formatCurrency(averageBill, locale), icon: BarChart3, iconBg: "bg-amber-100", iconColor: "text-amber-600", current: averageBill, previous: prevAverageBill, span: "" },
-            { label: t.kpi.lowStockItems, value: `${lowStockList.length} ${t.kpi.itemsUnit}`, icon: AlertTriangle, iconBg: "bg-orange-100", iconColor: "text-orange-600", current: lowStockList.length, previous: 0, span: "" },
-            { label: t.kpi.outOfStockItems, value: `${outOfStockList.length} ${t.kpi.itemsUnit}`, icon: Package, iconBg: "bg-rose-100", iconColor: "text-rose-600", current: outOfStockList.length, previous: 0, span: "" },
+            { label: t.kpi.lowStockItems, value: stockError ? "—" : `${lowStockList.length} ${t.kpi.itemsUnit}`, icon: AlertTriangle, iconBg: "bg-orange-100", iconColor: "text-orange-600", current: lowStockList.length, previous: 0, span: "" },
+            { label: t.kpi.outOfStockItems, value: stockError ? "—" : `${outOfStockList.length} ${t.kpi.itemsUnit}`, icon: Package, iconBg: "bg-rose-100", iconColor: "text-rose-600", current: outOfStockList.length, previous: 0, span: "" },
             { label: t.kpi.topProduct, value: topProductName, icon: TrendingUp, iconBg: "bg-fuchsia-100", iconColor: "text-fuchsia-600", current: 0, previous: 0, span: "" },
           ]).map(({ label, value, icon: Icon, iconBg, iconColor, current, previous, span }) => (
-            <article key={label} className={`rounded-2xl border border-violet-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${span}`}>
-              <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-                  {isLoading
-                    ? <Skeleton className="mt-2 h-7 w-24 bg-violet-50" />
-                    : <p className="mt-1 truncate text-xl font-black text-slate-900">{value}</p>
-                  }
-                  <div className="mt-1.5 flex items-center gap-2">
-                    {isLoading ? <Skeleton className="h-4 w-16 bg-slate-50" /> : (
-                      <>
-                        <TrendBadge current={current} previous={previous} />
-                        <span className="hidden text-[9px] text-slate-400 xl:inline">{t.kpi.vsPrevious}</span>
-                      </>
-                    )}
-                  </div>
+            <ReportKpiCard
+              key={label}
+              label={label}
+              value={value}
+              icon={<Icon className="h-5 w-5" />}
+              iconBg={iconBg}
+              iconColor={iconColor}
+              className={span}
+              loading={isLoading}
+              footer={
+                <div className="flex items-center gap-2">
+                  <TrendBadge current={current} previous={previous} />
+                  <span className="hidden text-[9px] text-slate-400 xl:inline">{t.kpi.vsPrevious}</span>
                 </div>
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
-                  <Icon className={`h-5 w-5 ${iconColor}`} />
-                </div>
-              </div>
-            </article>
+              }
+            />
           ))}
         </section>
       )}
@@ -845,7 +838,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {([
                 { label: t.actionCenter.outOfStock, count: outOfStockList.length, severity: "critical" as const, href: `/${locale}/inventory` },
-                { label: t.actionCenter.negativeStock, count: negativeStockList.length, severity: "critical" as const, href: `/${locale}/inventory` },
                 { label: t.actionCenter.lowStock, count: lowStockList.length, severity: "warning" as const, href: `/${locale}/inventory` },
                 { label: t.actionCenter.pendingCounts, count: 0, severity: "info" as const, href: `/${locale}/inventory/counts` },
               ]).filter((a) => a.count > 0).map((alert) => {
@@ -864,7 +856,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-2xl font-black tabular-nums ${sv.text}`}>{alert.count}</span>
+                      <span className={`nums text-2xl font-black ${sv.text}`}>{alert.count}</span>
                       <ArrowRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-slate-500" />
                     </div>
                   </Link>
@@ -952,7 +944,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
           </article>
         )}
 
-        {/* Payment breakdown donut — LOCALIZED labels */}
+        {/* Payment breakdown — matches finance summary report format */}
         {visible.has("paymentChart") && (
           <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
             <div className="mb-4">
@@ -963,52 +955,16 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               <div className="space-y-3">{[70, 45, 30].map((w, i) => (
                 <div key={i} className="flex items-center gap-3"><Skeleton className="h-3 w-3 rounded-full bg-violet-100" /><Skeleton className="h-3.5 bg-slate-200" style={{ width: `${w}%` }} /></div>
               ))}</div>
-            ) : paymentBreakdown.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8">
-                <p className="text-sm text-slate-400">{t.emptyStates.noPayments}</p>
-              </div>
             ) : (
-              <div className="flex flex-col items-center gap-4 lg:flex-row">
-                <div className="shrink-0">
-                  <ResponsiveContainer height={160} width={160}>
-                    <RechartsPieChart>
-                      <Pie cx="50%" cy="50%" data={paymentBreakdown} dataKey="amount" endAngle={-270} innerRadius={40} nameKey="localizedName" outerRadius={70} paddingAngle={3} startAngle={90} stroke="none">
-                        {paymentBreakdown.map((_item, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div className="rounded-xl bg-slate-900 px-3 py-2 text-white shadow-lg">
-                            <p className="text-xs font-semibold">{d.localizedName}</p>
-                            <p className="text-sm font-bold">{formatCurrency(d.amount, locale)}</p>
-                            <p className="text-[10px] text-slate-400">{d.ratio.toFixed(1)}%</p>
-                          </div>
-                        );
-                      }} cursor={false} />
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 space-y-2.5">
-                  {paymentBreakdown.map((item, i) => (
-                    <div key={item.payment_method}>
-                      <div className="mb-1 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
-                          <span className="text-xs font-semibold text-slate-700">{item.localizedName}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-bold text-slate-800">{formatCurrency(item.amount, locale)}</span>
-                          <span className="text-[10px] font-semibold text-slate-400">{item.ratio.toFixed(0)}%</span>
-                        </div>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-violet-100/50">
-                        <div className="h-1.5 rounded-full transition-all duration-700" style={{ background: CHART_COLORS[i % CHART_COLORS.length], width: `${Math.max(item.ratio, 3)}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <CategoryValueBars
+                rows={paymentBreakdown.map((item) => ({
+                  name: item.localizedName,
+                  value: item.amount,
+                  percent: item.ratio,
+                }))}
+                currency={(n) => formatCurrency(n, locale)}
+                emptyLabel={t.emptyStates.noPayments}
+              />
             )}
           </article>
         )}
@@ -1048,10 +1004,10 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                 <h2 className="text-sm font-bold text-slate-900">{t.bestSellers.title}</h2>
                 <p className="text-[10px] text-slate-400">{dateRangeText}</p>
               </div>
-              {topProducts.length > 0 && (
-                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
-                  Top {topProducts.length}
-                </span>
+              {topProducts.length > 5 && (
+                <Link href={`/${locale}/reports/summary`} className="text-[11px] font-semibold text-violet-600 transition hover:text-violet-800">
+                  {t.topProductsTable.viewAll}
+                </Link>
               )}
             </div>
             {isLoading ? (
@@ -1076,7 +1032,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               </div>
             ) : (
               <div className="space-y-2.5">
-                {topProducts.slice(0, 10).map((p, i) => {
+                {topProducts.slice(0, 5).map((p, i) => {
                   const pct = maxQtySold > 0 ? (p.quantity_sold / maxQtySold) * 100 : 0;
                   return (
                     <div key={p.product_id} className="flex items-center gap-3">
@@ -1098,7 +1054,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                       </div>
                       {/* Qty sold */}
                       <div className="shrink-0 text-right">
-                        <span className="text-sm font-black tabular-nums text-slate-800">{p.quantity_sold}</span>
+                        <span className="nums text-sm font-black text-slate-800">{p.quantity_sold}</span>
                         <span className="ml-1 text-[10px] text-slate-400">{t.bestSellers.qtySold}</span>
                       </div>
                     </div>
@@ -1120,6 +1076,13 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             </div>
             {isLoading ? (
               <div className="space-y-2">{[1, 2, 3, 4].map((i) => <SkeletonStatRow key={i} className="bg-slate-50/40" />)}</div>
+            ) : stockError ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-8">
+                <p className="text-xs text-rose-500">{t.stockAttention.stockError}</p>
+                <button onClick={() => void loadDashboard()} className="text-xs font-semibold text-violet-600 underline" type="button">
+                  {t.stockAttention.stockRetry}
+                </button>
+              </div>
             ) : outOfStockList.length === 0 && lowStockList.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-8">
                 <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
@@ -1165,6 +1128,9 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                     <div className="space-y-2">
                       {lowStockList.slice(0, 5).map((p) => {
                         const qty = p.total_stock ?? p.quantity;
+                        // Effective reorder point: the product's own min_stock when set, else
+                        // the fallback threshold — matching the backend low-stock policy.
+                        const reorderPoint = (p.min_stock ?? 0) > 0 ? p.min_stock : LOW_STOCK_THRESHOLD;
                         return (
                           <div key={p.product_id} className="flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2.5">
                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100">
@@ -1173,7 +1139,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-xs font-bold text-slate-800">{p.name}</p>
                               <p className="text-[10px] text-slate-500">
-                                {t.stockAttention.remaining} {qty} / {t.stockAttention.reorderPoint} {LOW_STOCK_THRESHOLD} · {t.stockAttention.warehouse}
+                                {t.stockAttention.remaining} {qty} / {t.stockAttention.reorderPoint} {reorderPoint} · {t.stockAttention.warehouse}
                               </p>
                             </div>
                             <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
@@ -1246,7 +1212,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                 ) : (
                   data!.recent_sales.map((sale: DashboardRecentSale) => (
                     <tr key={sale.id} className="border-b border-violet-50/70 transition last:border-0 hover:bg-violet-50/30">
-                      <td className="px-2 py-2.5"><span className="font-mono text-xs font-bold text-slate-900">{sale.sale_number}</span></td>
+                      <td className="px-2 py-2.5"><span className="nums text-xs font-bold text-slate-900 whitespace-nowrap">{sale.sale_number}</span></td>
                       <td className="px-2 py-2.5 text-xs text-slate-600">{sale.customer_name || t.recentOrders.walkIn}</td>
                       <td className="px-2 py-2.5 text-right text-xs font-bold text-slate-800">{formatCurrency(sale.total_amount, locale)}</td>
                       <td className="px-2 py-2.5">

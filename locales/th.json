@@ -1182,7 +1182,13 @@
       "searchLabel": "ค้นหาข้อความ",
       "apply": "นำไปใช้",
       "clearAll": "ล้างทั้งหมด",
-      "cancel": "ปิด"
+      "cancel": "ปิด",
+      "readyToSellStatus": "พร้อมขาย",
+      "locationLabel": "ตำแหน่งจัดเก็บ",
+      "allLocations": "ทุกตำแหน่ง",
+      "noLocationLabel": "ไม่มีตำแหน่งจัดเก็บ",
+      "quickViewLowStock": "สต็อกต่ำ",
+      "quickViewNoLocation": "ไม่มีตำแหน่ง"
     },
     "table": {
       "productDetails": "รายละเอียดสินค้า",
@@ -1227,6 +1233,9 @@
       "barcodeShowBrand": "แบรนด์",
       "barcodeShowLocation": "ตำแหน่งจัดเก็บ",
       "barcodeShowStoreName": "ชื่อร้าน",
+      "barcodeShowSalePrice": "ราคาลด",
+      "barcodeOrigPriceInput": "ราคาเดิม (ขีดทับ)",
+      "barcodeSalePriceInput": "ราคาขายใหม่",
       "barcodeQuantityLabel": "จำนวนพิมพ์",
       "barcodePrinterModeLabel": "โหมดเครื่องพิมพ์",
       "barcodePrinterLabel": "เครื่องพิมพ์ฉลาก",
@@ -1310,7 +1319,18 @@
       "viewAction": "ดู",
       "cardView": "มุมมองการ์ด",
       "tableView": "มุมมองตาราง",
-      "stockReady": "พร้อมขาย"
+      "stockReady": "พร้อมขาย",
+      "summaryAll": "ทั้งหมด",
+      "summaryReady": "พร้อมขาย",
+      "summaryLow": "สต็อกต่ำ",
+      "summaryOut": "สินค้าหมด",
+      "summaryValue": "มูลค่าสต็อก",
+      "bulkEnableLabel": "เปิดใช้งาน",
+      "bulkDisableLabel": "ปิดใช้งาน",
+      "bulkChangeCategoryLabel": "เปลี่ยนหมวดหมู่",
+      "changeCategoryTitle": "เปลี่ยนหมวดหมู่",
+      "changeCategoryApply": "นำไปใช้",
+      "changeCategorySelectPlaceholder": "เลือกหมวดหมู่..."
     },
     "inventoryItems": [
       {
@@ -2362,6 +2382,7 @@
       "payment": "การชำระเงิน",
       "promptpay": "PromptPay",
       "bankAccounts": "บัญชีธนาคาร",
+      "gateway": "Payment Gateway",
       "printer": "เครื่องพิมพ์",
       "display": "การแสดงผล"
     },
@@ -2417,6 +2438,9 @@
       "showAddress": "ที่อยู่",
       "showPhone": "เบอร์โทรศัพท์",
       "showTaxId": "เลขประจำตัวผู้เสียภาษี",
+      "sectionAmountRounding": "การปัดเศษยอดเงิน",
+      "labelRoundAmount": "ปัดเศษยอดสุทธิเป็นจำนวนเต็มบาท",
+      "roundAmountHint": "฿68.11 → ฿68",
       "sectionFooter": "ข้อความท้ายใบเสร็จ (Footer)"
     },
     "payment": {
@@ -2596,9 +2620,10 @@
       "subtitle": "ดูว่างานไหนต้องจัดการก่อน มูลค่าสต็อกเหลือเท่าไร และมีความเคลื่อนไหวอะไรล่าสุดได้ทันทีโดยไม่ต้องเลื่อนหน้ามาก",
       "refresh": "รีเฟรชข้อมูล",
       "actionCenter": {
-        "title": "ศูนย์แจ้งเตือนงานคลัง",
+        "title": "แจ้งเตือนสต็อก",
         "subtitle": "แตะรายการเพื่อเปิดงานค้างที่ต้องดำเนินการ",
         "open": "เปิด",
+        "viewAll": "ดูทั้งหมด",
         "items": {
           "lowStock": "สต็อกต่ำ",
           "outOfStock": "สินค้าหมด",
@@ -2668,7 +2693,8 @@
           "countQty": "จำนวนนับได้",
           "variance": "ผลต่าง"
         },
-        "noData": "ยังไม่พบผลต่างจากรอบตรวจนับล่าสุด"
+        "noData": "ยังไม่พบผลต่างจากรอบตรวจนับล่าสุด",
+        "noDeadStock": "ผลนับตรงกับระบบทุกรายการ — ไม่มีผลต่าง"
       },
       "statusDistribution": {
         "title": "สัดส่วนสถานะสต็อก",
@@ -3528,6 +3554,7 @@
     "loading": "กำลังโหลด...",
     "period": {
       "label": "ช่วงเวลา",
+      "today": "วันนี้",
       "d7": "7 วัน",
       "d30": "30 วัน",
       "d90": "90 วัน",
@@ -3535,6 +3562,7 @@
       "from": "ตั้งแต่วันที่",
       "to": "ถึงวันที่",
       "apply": "ใช้งาน",
+      "refresh": "รีเฟรช",
       "rangeLabel": "{from} – {to}"
     },
     "kpi": {
@@ -3564,11 +3592,28 @@
       "lossBadge": "ขาดทุน"
     },
     "ratios": {
-      "title": "อัตราส่วน",
+      "title": "อัตราส่วนทางการเงิน",
+      "subtitle": "ตัวชี้วัดสุขภาพกำไรของช่วงนี้",
       "grossMargin": "อัตรากำไรขั้นต้น",
       "netMargin": "อัตรากำไรสุทธิ",
       "expenseRatio": "สัดส่วนค่าใช้จ่าย",
       "costRatio": "สัดส่วนต้นทุน"
+    },
+    "flow": {
+      "title": "เส้นทางสู่กำไรสุทธิ",
+      "subtitle": "จากรายได้สุทธิ หักต้นทุนและค่าใช้จ่าย"
+    },
+    "trend": {
+      "title": "แนวโน้มกำไร",
+      "subtitle": "รายได้และกำไรขั้นต้นรายวัน",
+      "revenue": "รายได้",
+      "profit": "กำไรขั้นต้น",
+      "note": "กำไรขั้นต้นรายวัน (ยังไม่หักค่าใช้จ่ายดำเนินงาน)",
+      "empty": "ยังไม่มีข้อมูลในช่วงนี้"
+    },
+    "topExpenses": {
+      "title": "ค่าใช้จ่ายสูงสุด",
+      "subtitle": "หมวดค่าใช้จ่ายเรียงจากมากไปน้อย"
     },
     "lossBanner": {
       "title": "ช่วงนี้ขาดทุน",
@@ -3577,7 +3622,9 @@
     "dataQuality": {
       "title": "ต้นทุนอาจคลาดเคลื่อน",
       "missingCost": "มีรายการขาย {count} รายการที่สินค้าไม่มีราคาทุน ทำให้ต้นทุนต่ำกว่าจริงและกำไรสูงกว่าจริง",
-      "itemsSuffix": "รายการ"
+      "itemsSuffix": "รายการ",
+      "impact": "กำไรสุทธิที่แสดงอาจสูงกว่าความเป็นจริง จนกว่าจะระบุราคาทุนครบ",
+      "cta": "ตรวจสอบสินค้า"
     },
     "rcp": {
       "title": "รายได้ vs ต้นทุน vs กำไร",
@@ -3611,6 +3658,24 @@
       "cheque": "เช็ค",
       "unknown": "อื่นๆ"
     },
+    "insights": {
+      "title": "ข้อมูลเชิงลึกทางธุรกิจ",
+      "subtitle": "สรุปประเด็นสำคัญจากผลประกอบการช่วงนี้",
+      "missingCostTitle": "สินค้าไม่มีราคาทุน",
+      "missingCostDesc": "มี {count} รายการขายที่ขาดราคาทุน กำไรที่แสดงอาจสูงกว่าจริง",
+      "lossTitle": "กำลังขาดทุน",
+      "lossDesc": "ค่าใช้จ่ายและต้นทุนรวมสูงกว่ารายได้สุทธิ ควรทบทวนราคาขายและค่าใช้จ่าย",
+      "lowMarginTitle": "อัตรากำไรสุทธิต่ำ",
+      "lowMarginDesc": "อัตรากำไรสุทธิอยู่ที่ {margin} ถือว่าบาง ควรเพิ่มราคาหรือลดต้นทุน",
+      "healthyMarginTitle": "อัตรากำไรแข็งแรง",
+      "healthyMarginDesc": "อัตรากำไรสุทธิอยู่ที่ {margin} อยู่ในเกณฑ์ดี",
+      "highExpenseTitle": "ค่าใช้จ่ายสูง",
+      "highExpenseDesc": "ค่าใช้จ่ายดำเนินงานคิดเป็น {ratio} ของรายได้สุทธิ ควรควบคุมค่าใช้จ่าย",
+      "topExpenseTitle": "ค่าใช้จ่ายหลัก",
+      "topExpenseDesc": "หมวด {name} สูงสุดที่ {value}",
+      "empty": "ทุกอย่างดูดี",
+      "emptyDesc": "ไม่พบประเด็นที่ต้องระวังในช่วงนี้"
+    },
     "empty": "ยังไม่มีข้อมูลในช่วงนี้"
   },
   "summaryReport": {
@@ -3618,6 +3683,7 @@
     "subtitle": "ภาพรวมยอดขาย กำไร และสินค้าขายดี",
     "loading": "กำลังโหลด...",
     "period": {
+      "today": "วันนี้",
       "d7": "7 วัน",
       "d30": "30 วัน",
       "d90": "90 วัน",
@@ -3625,6 +3691,7 @@
       "from": "ตั้งแต่วันที่",
       "to": "ถึงวันที่",
       "apply": "ใช้งาน",
+      "refresh": "รีเฟรช",
       "rangeLabel": "{from} – {to}"
     },
     "exports": {
@@ -4087,6 +4154,22 @@
     "voidConfirmMsg": "ยกเลิกบิลนี้จะคืนสินค้าเข้าสต็อกทั้งหมด และไม่สามารถยกเลิกได้",
     "returnConfirmTitle": "ยืนยันคืนสินค้า",
     "returnConfirmMsg": "คืนสินค้าจากบิลนี้จะคืนสต็อกทั้งหมด และยกเลิกรายการขาย",
+    "returnModalSubtitle": "เลือกสินค้าและจำนวนที่ต้องการคืน",
+    "returnBillLabel": "บิล",
+    "returnThSold": "ขายไป",
+    "returnThReturnQty": "จำนวนที่คืน",
+    "returnPayMethod": "วิธีคืนเงิน",
+    "returnTotalRefund": "ยอดคืนรวม",
+    "returnReasonLabel": "เหตุผลการคืน",
+    "returnReasonPlaceholder": "เช่น สินค้าชำรุด / ลูกค้าเปลี่ยนใจ (ไม่บังคับ)",
+    "returnConfirmBtn": "ยืนยันรับคืน",
+    "returnNoItemSelected": "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ",
+    "returnFullyDone": "คืนครบแล้ว",
+    "statusPartiallyReturned": "คืนบางส่วน",
+    "statusFullyReturned": "คืนครบแล้ว",
+    "returnsHistoryTitle": "ประวัติการคืนสินค้า",
+    "returnRefundedVia": "คืนเงินผ่าน",
+    "returnedBy": "ดำเนินการโดย",
     "voidReasonLabel": "เหตุผล",
     "voidReasonPlaceholder": "ระบุรายละเอียดเพิ่มเติม...",
     "voidSuccess": "ยกเลิกบิลสำเร็จ",
@@ -4113,6 +4196,7 @@
     "copyOriginal": "ต้นฉบับ",
     "copyCopy": "สำเนา",
     "copyLabel": "สำเนาที่",
+    "copyPrintAll": "พิมพ์ทั้งหมด (3 ฉบับ)",
     "issueDocument": "ออกเอกสาร",
     "docReceipt": "ใบเสร็จรับเงิน",
     "docTaxFull": "ใบกำกับภาษีเต็มรูป",

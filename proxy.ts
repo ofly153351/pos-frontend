@@ -69,10 +69,10 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  // Auth pages – already logged in with store → redirect to stock
+  // Auth pages – already logged in with store → redirect to Dashboard.
   if (isAuthPath(pathname) && accessToken && storeId) {
-    const stockUrl = new URL(`/${locale}/stock`, request.url);
-    const response = NextResponse.redirect(stockUrl);
+    const homeUrl = new URL(`/${locale}/dashboard`, request.url);
+    const response = NextResponse.redirect(homeUrl);
     response.headers.set("Cache-Control", "no-store, must-revalidate");
     return response;
   }

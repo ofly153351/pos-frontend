@@ -1,28 +1,37 @@
-"use client";
+﻿"use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Banknote,
   Check,
   ChevronRight,
+  Copy,
   CreditCard,
+  Eye,
+  EyeOff,
   Loader2,
-  Monitor,
+  Pencil,
+  Plus,
   Printer,
   QrCode,
   ReceiptText,
   Save,
   Smartphone,
+  Star,
+  Trash2,
   Upload,
   Wallet,
+  Zap,
 } from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { getReceiptSettings, updateReceiptSettings, fetchReceiptPreviewHTML } from "@/services/receipt-settings";
-import { getStoreById } from "@/services/stores";
+import { getStoreById, listBankAccounts, createBankAccount, updateBankAccount, deleteBankAccount } from "@/services/stores";
 import { getCurrentStoreId } from "@/lib/store-storage";
+import { useStoreRole, canManageStore } from "@/lib/use-store-role";
 import type { ReceiptSettingsData, UpdateReceiptSettingsInput, PaymentChannelSetting } from "@/types/receipt-settings";
-import type { Store as StoreType } from "@/types/store";
+import type { Store as StoreType, StoreBankAccount, CreateBankAccountInput, UpdateBankAccountInput } from "@/types/store";
 import { SkeletonSettingsPanel } from "@/components/ui/skeleton";
 import th from "@/locales/th.json";
 
@@ -32,7 +41,7 @@ type T = typeof th.receiptSettings;
 type TaxMode = "none" | "inclusive" | "exclusive";
 type PaperSize = "80mm" | "a4";
 type LogoPosition = "top_center" | "top_left" | "top_right";
-type TabKey = "receipt" | "payment" | "promptpay" | "printer" | "display";
+type TabKey = "receipt" | "payment" | "promptpay" | "bankAccounts" | "gateway" | "printer" | "display";
 
 interface PaymentChannel {
   key: string;
@@ -43,12 +52,16 @@ interface PaymentChannel {
 }
 
 const CHANNEL_META: Record<string, { name: string; color: string; icon: React.ReactNode }> = {
-  cash:      { name: "เงินสด (Cash)",            color: "bg-emerald-500", icon: <Wallet     className="h-4 w-4" /> },
-  card:      { name: "บัตรเครดิต / เดบิต",        color: "bg-blue-500",    icon: <CreditCard className="h-4 w-4" /> },
-  qr:        { name: "โอนเงิน / QR Code",          color: "bg-orange-500",  icon: <QrCode     className="h-4 w-4" /> },
-  promptpay: { name: "PromptPay (พร้อมเพย์)",      color: "bg-violet-600",  icon: <Smartphone className="h-4 w-4" /> },
-  truemoney: { name: "TrueMoney Wallet",           color: "bg-orange-400",  icon: <Wallet     className="h-4 w-4" /> },
-  shopeepay: { name: "ShopeePay",                  color: "bg-rose-500",    icon: <Smartphone className="h-4 w-4" /> },
+  cash:        { name: "เงินสด (Cash)",            color: "bg-emerald-500", icon: <Wallet     className="h-4 w-4" /> },
+  credit_card: { name: "บัตรเครดิต",               color: "bg-blue-600",    icon: <CreditCard className="h-4 w-4" /> },
+  debit_card:  { name: "บัตรเดบิต",                color: "bg-teal-500",    icon: <CreditCard className="h-4 w-4" /> },
+  promptpay:   { name: "QR Code / PromptPay (พร้อมเพย์)", color: "bg-violet-600",  icon: <Smartphone className="h-4 w-4" /> },
+  bank_transfer: { name: "โอนเงินธนาคาร",               color: "bg-orange-500",  icon: <QrCode     className="h-4 w-4" /> },
+  qr:          { name: "โอนเงิน",                       color: "bg-orange-400",  icon: <QrCode     className="h-4 w-4" /> },
+  truemoney:   { name: "TrueMoney Wallet",          color: "bg-orange-300",  icon: <Wallet     className="h-4 w-4" /> },
+  shopeepay:   { name: "ShopeePay",                 color: "bg-rose-500",    icon: <Smartphone className="h-4 w-4" /> },
+  // legacy combined-card key (existing stores may have this in their saved channels)
+  card:        { name: "บัตรเครดิต / เดบิต",       color: "bg-blue-500",    icon: <CreditCard className="h-4 w-4" /> },
 };
 
 function toChannels(raw: PaymentChannelSetting[]): PaymentChannel[] {
@@ -65,9 +78,11 @@ function toChannels(raw: PaymentChannelSetting[]): PaymentChannel[] {
 // that have no effect. Re-add them to this array once those features are wired end-to-end.
 function makeTabs(t: T) {
   return [
-    { key: "receipt"   as TabKey, label: t.tabs.receipt,   icon: <ReceiptText className="h-4 w-4" /> },
-    { key: "payment"   as TabKey, label: t.tabs.payment,   icon: <CreditCard  className="h-4 w-4" /> },
-    { key: "promptpay" as TabKey, label: t.tabs.promptpay, icon: <QrCode      className="h-4 w-4" /> },
+    { key: "receipt"      as TabKey, label: t.tabs.receipt,      icon: <ReceiptText className="h-4 w-4" /> },
+    { key: "payment"      as TabKey, label: t.tabs.payment,      icon: <CreditCard  className="h-4 w-4" /> },
+    { key: "promptpay"    as TabKey, label: t.tabs.promptpay,    icon: <QrCode      className="h-4 w-4" /> },
+    { key: "bankAccounts" as TabKey, label: t.tabs.bankAccounts, icon: <Banknote    className="h-4 w-4" /> },
+    { key: "gateway"      as TabKey, label: t.tabs.gateway,      icon: <Zap         className="h-4 w-4" /> },
     // { key: "printer"   as TabKey, label: t.tabs.printer,   icon: <Printer className="h-4 w-4" /> },
     // { key: "display"   as TabKey, label: t.tabs.display,   icon: <Monitor className="h-4 w-4" /> },
   ];
@@ -214,6 +229,17 @@ function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
       </div>
 
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+        <SectionTitle>{r.sectionAmountRounding}</SectionTitle>
+        <label className="flex items-center justify-between gap-4">
+          <div>
+            <span className="text-sm font-medium text-slate-700">{r.labelRoundAmount}</span>
+            <span className="ml-1.5 text-xs text-slate-400">{r.roundAmountHint}</span>
+          </div>
+          <Toggle checked={settings.round_amount} onChange={(v) => onChange({ round_amount: v })} />
+        </label>
+      </div>
+
+      <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
         <SectionTitle>{r.sectionFooter}</SectionTitle>
         <textarea className={`${inputCls} resize-none`} rows={5} maxLength={300}
           value={settings.footer_text} onChange={(e) => onChange({ footer_text: e.target.value })} />
@@ -325,6 +351,233 @@ function PrinterTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
   );
 }
 
+function BankAccountsTab({ storeId, t, canManage }: { storeId: string; t: T; canManage: boolean }) {
+  const p = t.bankAccounts;
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ bank_name: "", account_no: "", account_name: "" });
+
+  const { data: accounts = [], isLoading } = useQuery({
+    queryKey: ["bank-accounts", storeId],
+    queryFn: () => listBankAccounts(storeId).then((r) => r.data ?? []),
+    enabled: !!storeId,
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["bank-accounts", storeId] });
+
+  const createMut = useMutation({
+    mutationFn: (inp: CreateBankAccountInput) => createBankAccount(storeId, inp),
+    onSuccess: () => { invalidate(); setShowForm(false); setForm({ bank_name: "", account_no: "", account_name: "" }); },
+    onError: () => toast.error("เพิ่มบัญชีไม่สำเร็จ"),
+  });
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, ...inp }: { id: string } & UpdateBankAccountInput) =>
+      updateBankAccount(storeId, id, inp),
+    onSuccess: () => { invalidate(); setShowForm(false); setEditingId(null); },
+    onError: () => toast.error("แก้ไขบัญชีไม่สำเร็จ"),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteBankAccount(storeId, id),
+    onSuccess: invalidate,
+    onError: () => toast.error("ลบบัญชีไม่สำเร็จ"),
+  });
+
+  function openAdd() {
+    setEditingId(null);
+    setForm({ bank_name: "", account_no: "", account_name: "" });
+    setShowForm(true);
+  }
+
+  function openEdit(acc: StoreBankAccount) {
+    setEditingId(acc.id);
+    setForm({ bank_name: acc.bank_name, account_no: acc.account_no, account_name: acc.account_name });
+    setShowForm(true);
+  }
+
+  function cancelForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ bank_name: "", account_no: "", account_name: "" });
+  }
+
+  function handleSubmit() {
+    if (!form.bank_name.trim() || !form.account_no.trim() || !form.account_name.trim()) return;
+    if (editingId) {
+      updateMut.mutate({ id: editingId, ...form });
+    } else {
+      createMut.mutate(form);
+    }
+  }
+
+  const isSaving = createMut.isPending || updateMut.isPending;
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <SectionTitle>{p.sectionTitle}</SectionTitle>
+            <p className="mt-1 text-sm text-slate-500">{p.hint}</p>
+          </div>
+          {canManage && !showForm && (
+            <button
+              type="button"
+              onClick={openAdd}
+              className="flex shrink-0 items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700"
+            >
+              <Plus className="h-4 w-4" />{p.addButton}
+            </button>
+          )}
+        </div>
+
+        {isLoading ? (
+          <SkeletonSettingsPanel rows={3} />
+        ) : accounts.length === 0 && !showForm ? (
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-violet-200 bg-violet-50/40 py-10 text-center">
+            <Banknote className="h-8 w-8 text-violet-300" />
+            <p className="text-sm font-semibold text-slate-600">{p.emptyState}</p>
+            <p className="text-xs text-slate-400">{p.emptyHint}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {accounts.map((acc) => (
+              <div
+                key={acc.id}
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition ${
+                  acc.is_default
+                    ? "border-violet-300 bg-violet-50"
+                    : acc.is_active
+                    ? "border-slate-200 bg-white"
+                    : "border-slate-100 bg-slate-50 opacity-60"
+                }`}
+              >
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-slate-800">{acc.bank_name}</span>
+                    {acc.is_default && (
+                      <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                        <Star className="h-2.5 w-2.5" />{p.defaultLabel}
+                      </span>
+                    )}
+                    {!acc.is_active && (
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-400">ปิดใช้งาน</span>
+                    )}
+                  </div>
+                  <span className="text-sm text-slate-600">{acc.account_no}</span>
+                  <span className="text-xs text-slate-500">{acc.account_name}</span>
+                </div>
+                {canManage && (
+                  <div className="flex shrink-0 items-center gap-1">
+                    {!acc.is_default && (
+                      <button
+                        type="button"
+                        title={p.defaultLabel}
+                        onClick={() => updateMut.mutate({ id: acc.id, is_default: true })}
+                        disabled={updateMut.isPending}
+                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40"
+                      >
+                        <Star className="h-4 w-4" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      title={acc.is_active ? "ปิดใช้งาน" : p.activeLabel}
+                      onClick={() => updateMut.mutate({ id: acc.id, is_active: !acc.is_active })}
+                      disabled={updateMut.isPending}
+                      className={`rounded-lg p-1.5 transition disabled:opacity-40 ${
+                        acc.is_active
+                          ? "text-emerald-500 hover:bg-emerald-50"
+                          : "text-slate-400 hover:bg-slate-100"
+                      }`}
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      title={t.save}
+                      onClick={() => openEdit(acc)}
+                      className="rounded-lg p-1.5 text-slate-400 transition hover:bg-violet-50 hover:text-violet-600"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      title={p.deleteButton}
+                      onClick={() => { if (confirm("ต้องการลบบัญชีนี้?")) deleteMut.mutate(acc.id); }}
+                      disabled={deleteMut.isPending}
+                      className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showForm && canManage && (
+          <div className="mt-4 space-y-3 rounded-xl border border-violet-200 bg-violet-50/60 p-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">{p.bankNameLabel}</label>
+                <input
+                  type="text"
+                  value={form.bank_name}
+                  onChange={(e) => setForm((f) => ({ ...f, bank_name: e.target.value }))}
+                  placeholder={p.bankNamePlaceholder}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">{p.accountNoLabel}</label>
+                <input
+                  type="text"
+                  value={form.account_no}
+                  onChange={(e) => setForm((f) => ({ ...f, account_no: e.target.value }))}
+                  placeholder={p.accountNoPlaceholder}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600">{p.accountNameLabel}</label>
+                <input
+                  type="text"
+                  value={form.account_name}
+                  onChange={(e) => setForm((f) => ({ ...f, account_name: e.target.value }))}
+                  placeholder={p.accountNamePlaceholder}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isSaving || !form.bank_name.trim() || !form.account_no.trim() || !form.account_name.trim()}
+                className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {p.saveButton}
+              </button>
+              <button
+                type="button"
+                onClick={cancelForm}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-violet-300 hover:text-violet-700"
+              >
+                {p.cancelButton}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DisplayTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
   const d = t.display;
   return (
@@ -368,9 +621,181 @@ function DisplayTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
   );
 }
 
+// ── Gateway tab ───────────────────────────────────────────────────────────────
+type GatewayProvider = "none" | "omise" | "2c2p";
+type GatewayConfig = {
+  provider: GatewayProvider;
+  omise: { public_key: string; secret_key: string; webhook_secret: string };
+  c2p: { merchant_id: string; secret_key: string };
+};
+const GATEWAY_DEFAULT: GatewayConfig = {
+  provider: "none",
+  omise: { public_key: "", secret_key: "", webhook_secret: "" },
+  c2p: { merchant_id: "", secret_key: "" },
+};
+function loadGatewayConfig(storeId: string): GatewayConfig {
+  try {
+    const raw = localStorage.getItem(`pos_gateway_${storeId}`);
+    if (!raw) return GATEWAY_DEFAULT;
+    return { ...GATEWAY_DEFAULT, ...JSON.parse(raw) };
+  } catch { return GATEWAY_DEFAULT; }
+}
+
+function WebhookUrlField({ url }: { url: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-slate-600">Webhook URL <span className="text-slate-400">(ใส่ใน dashboard ของ gateway / ธนาคาร)</span></label>
+      <div className="flex gap-2">
+        <input readOnly value={url} className={`${inputCls} flex-1 bg-slate-50 font-mono text-xs text-slate-500`} />
+        <button
+          type="button"
+          onClick={() => { navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          className="flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+        >
+          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? "คัดลอก" : "Copy"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function GatewayTab({ storeId }: { storeId: string }) {
+  const [config, setConfig] = useState<GatewayConfig>(() => loadGatewayConfig(storeId));
+  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+  const [saved, setSaved] = useState(false);
+
+  const webhookUrl = `${typeof window !== "undefined" ? window.location.origin : "https://your-domain.com"}/api/webhooks/payment`;
+
+  function toggleSecret(k: string) { setShowSecrets(p => ({ ...p, [k]: !p[k] })); }
+
+  function save() {
+    localStorage.setItem(`pos_gateway_${storeId}`, JSON.stringify(config));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  const PROVIDERS = [
+    { key: "none" as GatewayProvider,  label: "ไม่ใช้ Gateway", desc: "ยืนยันด้วยตนเองผ่านมือถือ",           badge: "bg-slate-500" },
+    { key: "omise" as GatewayProvider, label: "Omise",           desc: "แนะนำ · รองรับทุกธนาคารไทย",        badge: "bg-blue-600"  },
+    { key: "2c2p" as GatewayProvider,  label: "2C2P",            desc: "Payment gateway ยอดนิยมในไทย",      badge: "bg-rose-500"  },
+  ];
+
+  return (
+    <div className="space-y-5">
+      {/* Coming-soon banner */}
+      <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+        <Zap className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+        <div>
+          <p className="font-semibold">ฟีเจอร์นี้กำลังพัฒนา (กำหนดค่าล่วงหน้าได้)</p>
+          <p className="mt-0.5 text-amber-700">ตั้งค่าไว้ได้เลย — เมื่อ backend webhook พร้อม ระบบจะอ่านค่าจากที่นี่ทันที · บันทึกเฉพาะในเครื่องนี้ก่อน</p>
+        </div>
+      </div>
+
+      {/* Provider selector */}
+      <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+        <p className="mb-4 text-sm font-semibold text-slate-700">เลือก Payment Gateway</p>
+        <div className="grid grid-cols-3 gap-3">
+          {PROVIDERS.map(p => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setConfig(prev => ({ ...prev, provider: p.key }))}
+              className={`flex flex-col items-start gap-2 rounded-xl border-2 p-4 text-left transition ${config.provider === p.key ? "border-violet-600 bg-violet-50" : "border-slate-200 hover:border-violet-300"}`}
+            >
+              <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold text-white ${p.badge}`}>{p.label}</span>
+              <span className="text-xs text-slate-500">{p.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Omise credentials */}
+      {config.provider === "omise" && (
+        <div className="space-y-4 rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+          <div>
+            <p className="text-sm font-semibold text-slate-700">Omise — API Credentials</p>
+            <p className="mt-0.5 text-xs text-slate-400">รับ key จาก <span className="font-mono text-violet-600">dashboard.omise.co → Settings → Keys</span></p>
+          </div>
+          {([
+            ["public_key",      "Public Key",      "pkey_test_..."],
+            ["secret_key",      "Secret Key",      "skey_test_..."],
+            ["webhook_secret",  "Webhook Secret",  "whsec_..."],
+          ] as [keyof typeof config.omise, string, string][]).map(([field, label, ph]) => (
+            <div key={field}>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">{label}</label>
+              <div className="relative">
+                <input
+                  type={showSecrets[field] ? "text" : "password"}
+                  value={config.omise[field]}
+                  onChange={e => setConfig(p => ({ ...p, omise: { ...p.omise, [field]: e.target.value } }))}
+                  placeholder={ph}
+                  className={`${inputCls} pr-10 font-mono text-xs`}
+                />
+                <button type="button" onClick={() => toggleSecret(field)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+                  {showSecrets[field] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          ))}
+          <WebhookUrlField url={webhookUrl} />
+        </div>
+      )}
+
+      {/* 2C2P credentials */}
+      {config.provider === "2c2p" && (
+        <div className="space-y-4 rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
+          <div>
+            <p className="text-sm font-semibold text-slate-700">2C2P — Merchant Credentials</p>
+            <p className="mt-0.5 text-xs text-slate-400">รับข้อมูลจาก <span className="font-mono text-violet-600">2C2P Merchant Portal → API Integration</span></p>
+          </div>
+          {([
+            ["merchant_id", "Merchant ID",  "764XXXXXXX"],
+            ["secret_key",  "Secret Key",   "xxxxxxxxxxxxxxxx"],
+          ] as [keyof typeof config.c2p, string, string][]).map(([field, label, ph]) => (
+            <div key={field}>
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">{label}</label>
+              <div className="relative">
+                <input
+                  type={showSecrets[field] ? "text" : "password"}
+                  value={config.c2p[field]}
+                  onChange={e => setConfig(p => ({ ...p, c2p: { ...p.c2p, [field]: e.target.value } }))}
+                  placeholder={ph}
+                  className={`${inputCls} pr-10 font-mono text-xs`}
+                />
+                <button type="button" onClick={() => toggleSecret(field)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700">
+                  {showSecrets[field] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          ))}
+          <WebhookUrlField url={webhookUrl} />
+        </div>
+      )}
+
+      {/* None */}
+      {config.provider === "none" && (
+        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 text-sm text-slate-500">
+          แคชเชียร์ตรวจสอบยอดชำระเงินผ่านมือถือแล้วกด <strong className="text-slate-700">ตกลง</strong> เอง — เหมาะกับร้านขนาดเล็กที่รับ PromptPay แบบ manual
+        </div>
+      )}
+
+      <div className="flex justify-end">
+        <button type="button" onClick={save} className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">
+          {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+          {saved ? "บันทึกแล้ว" : "บันทึก"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export function ReceiptPaymentSettings({ t }: { t: T }) {
   const queryClient = useQueryClient();
+  const { role } = useStoreRole();
+  const canManage = canManageStore(role);
   const [storeId, setStoreId] = useState("");
 
   useEffect(() => {
@@ -530,11 +955,13 @@ export function ReceiptPaymentSettings({ t }: { t: T }) {
   const channels = toChannels(localSettings.payment_channels);
 
   const panelContent: Record<TabKey, React.ReactNode> = {
-    receipt:   <ReceiptTab   settings={localSettings} onChange={update}        t={t} />,
-    payment:   <PaymentTab   channels={channels}       onChange={updateChannel} t={t} />,
-    promptpay: <PromptPayTab settings={localSettings} store={storeData ?? null} onChange={update} t={t} />,
-    printer:   <PrinterTab   settings={localSettings} onChange={update}        t={t} />,
-    display:   <DisplayTab   settings={localSettings} onChange={update}        t={t} />,
+    receipt:      <ReceiptTab      settings={localSettings} onChange={update}        t={t} />,
+    payment:      <PaymentTab      channels={channels}       onChange={updateChannel} t={t} />,
+    promptpay:    <PromptPayTab    settings={localSettings} store={storeData ?? null} onChange={update} t={t} />,
+    bankAccounts: <BankAccountsTab storeId={storeId}         t={t}                   canManage={canManage} />,
+    gateway:      <GatewayTab     storeId={storeId} />,
+    printer:      <PrinterTab      settings={localSettings} onChange={update}        t={t} />,
+    display:      <DisplayTab      settings={localSettings} onChange={update}        t={t} />,
   };
 
   const isSaving = saveMutation.isPending;

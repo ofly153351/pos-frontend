@@ -56,16 +56,20 @@ export function pageCount(mode: PrinterMode, layout: A4LayoutId, total: number):
 // line box is taller than the tallest stacked glyph. (Same root cause as the
 // product-card vowel fix.) Latin-only fields (price, barcode number) can stay tighter.
 export const LABEL_CSS = `
-.bclbl{box-sizing:border-box;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.4mm;padding:1mm;overflow:hidden;background:#fff;font-family:'Sarabun',system-ui,sans-serif;text-align:center;color:#0f172a;}
+.bclbl{box-sizing:border-box;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.3mm;padding:1mm;overflow:hidden;background:#fff;font-family:'Sarabun',system-ui,sans-serif;text-align:center;color:#0f172a;}
 .bclbl-store{font-size:6pt;font-weight:700;color:#6d28d9;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bclbl-name{font-size:8pt;font-weight:700;line-height:1.6;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bclbl-sku,.bclbl-cat,.bclbl-brand{font-family:'JetBrains Mono',monospace;font-size:6.5pt;color:#475569;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bclbl-name{font-size:8pt;font-weight:700;line-height:1.6;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;}
+.bclbl-pair{display:flex;align-items:center;justify-content:center;gap:2mm;max-width:100%;}
+.bclbl-half{max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bclbl-sku,.bclbl-cat,.bclbl-brand,.bclbl-loc{font-size:6pt;color:#475569;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .bclbl-cat{color:#6d28d9;}
 .bclbl-price{font-size:12pt;font-weight:800;line-height:1.3;}
-.bclbl-loc{font-size:6.5pt;color:#475569;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bclbl-bc{display:flex;align-items:center;justify-content:center;max-width:100%;max-height:58%;overflow:hidden;}
+.bclbl-price-wrap{display:flex;align-items:baseline;justify-content:center;gap:1.5mm;}
+.bclbl-price-orig{font-size:7pt;font-weight:600;color:#94a3b8;text-decoration:line-through;line-height:1.3;}
+.bclbl-price-sale{font-size:12pt;font-weight:800;color:#dc2626;line-height:1.3;}
+.bclbl-bc{display:flex;align-items:center;justify-content:center;max-width:100%;max-height:56%;overflow:hidden;}
 .bclbl-bc svg{display:block;max-width:100%;max-height:100%;width:auto;height:auto;}
-.bclbl-num{font-family:'JetBrains Mono',monospace;font-size:7pt;letter-spacing:0.5px;line-height:1.3;}
+.bclbl-num{font-size:7pt;font-variant-numeric:tabular-nums;letter-spacing:0.5px;line-height:1.3;}
 `.trim();
 
 // ── Label data ────────────────────────────────────────────────────────────────
@@ -75,6 +79,8 @@ export type LabelData = {
   sku: string | null;
   barcode: string | null;
   price?: number | null;
+  /** When set alongside showSalePrice flag, the original price shows crossed-out. */
+  salePrice?: number | null;
   location?: string | null;
   category?: string | null;
   brand?: string | null;
@@ -112,25 +118,52 @@ export function buildLabelHtml(data: LabelData, flags: LabelContentFlags): strin
   const code = labelCodeText(data);
   const parts: string[] = [];
 
-  if (flags.showStoreName && data.storeName) parts.push(`<div class="bclbl-store">${escapeHtml(data.storeName)}</div>`);
-  if (flags.showName && data.name) parts.push(`<div class="bclbl-name">${escapeHtml(data.name)}</div>`);
-  if (flags.showSku && data.sku) parts.push(`<div class="bclbl-sku">${escapeHtml(data.sku)}</div>`);
-  if (flags.showCategory && data.category) parts.push(`<div class="bclbl-cat">${escapeHtml(data.category)}</div>`);
-  if (flags.showBrand && data.brand) parts.push(`<div class="bclbl-brand">${escapeHtml(data.brand)}</div>`);
-  if (flags.showPrice && data.price != null) parts.push(`<div class="bclbl-price">${escapeHtml(fmtPrice(data.price))}</div>`);
-  if (flags.showLocation && data.location) parts.push(`<div class="bclbl-loc">📍 ${escapeHtml(data.location)}</div>`);
+  // Store — full width, violet, small
+  if (flags.showStoreName && data.storeName)
+    parts.push(`<div class="bclbl-store">${escapeHtml(data.storeName)}</div>`);
 
+  // Name — bold, wraps to 2 lines
+  if (flags.showName && data.name)
+    parts.push(`<div class="bclbl-name">${escapeHtml(data.name)}</div>`);
+
+  // Pair 1: SKU + Category on one row (saves vertical space when both enabled)
+  const skuHtml  = flags.showSku      && data.sku      ? `<span class="bclbl-sku bclbl-half">${escapeHtml(data.sku)}</span>`      : "";
+  const catHtml  = flags.showCategory && data.category ? `<span class="bclbl-cat bclbl-half">${escapeHtml(data.category)}</span>` : "";
+  if (skuHtml && catHtml)   parts.push(`<div class="bclbl-pair">${skuHtml}${catHtml}</div>`);
+  else if (skuHtml)         parts.push(`<div class="bclbl-sku">${escapeHtml(data.sku!)}</div>`);
+  else if (catHtml)         parts.push(`<div class="bclbl-cat">${escapeHtml(data.category!)}</div>`);
+
+  // Price — regular or sale (crossed-out original + new price)
+  if (flags.showPrice && data.price != null) {
+    if (flags.showSalePrice && data.salePrice != null) {
+      parts.push(
+        `<div class="bclbl-price-wrap">` +
+        `<span class="bclbl-price-orig">${escapeHtml(fmtPrice(data.price))}</span>` +
+        `<span class="bclbl-price-sale">${escapeHtml(fmtPrice(data.salePrice))}</span>` +
+        `</div>`
+      );
+    } else {
+      parts.push(`<div class="bclbl-price">${escapeHtml(fmtPrice(data.price))}</div>`);
+    }
+  }
+
+  // Pair 2: Brand + Location on one row (saves vertical space when both enabled)
+  const brandHtml = flags.showBrand    && data.brand    ? `<span class="bclbl-brand bclbl-half">${escapeHtml(data.brand)}</span>`       : "";
+  const locHtml   = flags.showLocation && data.location ? `<span class="bclbl-loc bclbl-half">📍 ${escapeHtml(data.location)}</span>` : "";
+  if (brandHtml && locHtml)  parts.push(`<div class="bclbl-pair">${brandHtml}${locHtml}</div>`);
+  else if (brandHtml)        parts.push(`<div class="bclbl-brand">${escapeHtml(data.brand!)}</div>`);
+  else if (locHtml)          parts.push(`<div class="bclbl-loc">📍 ${escapeHtml(data.location!)}</div>`);
+
+  // Barcode graphic (inline SVG — not <img> — so canvas rasterization stays untainted)
   if (data.barcodeSvg) {
-    // Inline the SVG directly (not as a data: <img>) so canvas rasterization for
-    // PNG/PDF export does not taint, and so the graphic stays crisp at any scale.
     parts.push(`<div class="bclbl-bc">${data.barcodeSvg}</div>`);
   } else {
     parts.push(`<div class="bclbl-num">${escapeHtml(code)}</div>`);
   }
 
-  if (flags.showBarcodeNumber && code && data.barcodeSvg) {
+  // Barcode number below graphic
+  if (flags.showBarcodeNumber && code && data.barcodeSvg)
     parts.push(`<div class="bclbl-num">${escapeHtml(code)}</div>`);
-  }
 
   return `<div class="bclbl">${parts.join("")}</div>`;
 }

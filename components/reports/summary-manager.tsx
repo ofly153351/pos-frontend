@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ArrowDownRight,
   ArrowUpRight,
-  CalendarRange,
+  BarChart3,
   Clock3,
   Coins,
   CreditCard,
@@ -32,17 +32,12 @@ import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/c
 import { CategoryDonutChart, type DonutDatum } from "@/components/reports/category-donut-chart";
 import { RevenueProfitLineChart, type RevenueProfitDatum } from "@/components/reports/revenue-profit-line-chart";
 import { SalesByHourChart } from "@/components/reports/sales-by-hour-chart";
+import { DashboardHero, type HeroPeriod } from "@/components/shared/dashboard-hero";
 import type { SummaryDictionary } from "@/components/reports/summary-types";
 
 type Props = { dictionary: SummaryDictionary; locale: string };
 
-type Tab = PnlPeriod | "custom";
-
-const PERIOD_TABS: Array<{ key: PnlPeriod; labelKey: "d7" | "d30" | "d90" }> = [
-  { key: "7d", labelKey: "d7" },
-  { key: "30d", labelKey: "d30" },
-  { key: "90d", labelKey: "d90" },
-];
+type Tab = HeroPeriod;
 
 const DAY_MS = 86_400_000;
 const TOP_RANKED = 5;
@@ -104,8 +99,8 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
     const nf = new Intl.NumberFormat(locale === "th" ? "th-TH" : "en-US", {
       style: "currency",
       currency: "THB",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     });
     return (n: number) => nf.format(n);
   }, [locale]);
@@ -175,9 +170,16 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
   }, [data, days]);
 
   // ── Filter actions ──
-  function selectPeriod(p: PnlPeriod) {
+  function selectPeriod(p: HeroPeriod) {
     setTab(p);
-    setApplied({ period: p });
+    if (p === "today") {
+      const today = new Date().toISOString().slice(0, 10);
+      setApplied({ from: today, to: today });
+    } else if (p === "custom") {
+      // wait for user to set dates + click apply
+    } else {
+      setApplied({ period: p });
+    }
   }
   const customValid = customFrom !== "" && customTo !== "" && customFrom <= customTo;
   function applyCustom() {
@@ -254,9 +256,6 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
     );
   };
 
-  const pillClass = (active: boolean) =>
-    `px-3 py-1.5 text-xs font-semibold transition ${active ? "bg-white text-violet-700 shadow" : "text-violet-100 hover:bg-violet-500/60 hover:text-white"}`;
-
   if (summaryQuery.isError) {
     return (
       <div className="w-full xl:px-2 2xl:px-4">
@@ -268,44 +267,44 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
   return (
     <div className="w-full xl:px-2 2xl:px-4">
       {/* Hero banner */}
-      <div className="my-4 rounded-2xl bg-violet-600 px-5 py-5 shadow-sm sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h2 className="text-xl font-black text-white">{t.title}</h2>
-            <p className="text-sm text-violet-100">
-              {t.subtitle}
-              {rangeLabel ? <span className="text-violet-200"> · {rangeLabel}</span> : null}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex overflow-hidden rounded-xl bg-violet-700/50">
-              {PERIOD_TABS.map((p) => (
-                <button key={p.key} type="button" onClick={() => selectPeriod(p.key)} className={pillClass(tab === p.key)}>
-                  {t.period[p.labelKey]}
-                </button>
-              ))}
-              <button type="button" onClick={() => setTab("custom")} className={`inline-flex items-center gap-1 ${pillClass(tab === "custom")}`}>
-                <CalendarRange className="h-3.5 w-3.5" /> {t.period.custom}
+      <div className="my-4">
+        <DashboardHero
+          icon={BarChart3}
+          title={t.title}
+          subtitle={t.subtitle}
+          rangeLabel={rangeLabel}
+          period={tab}
+          onPeriodChange={selectPeriod}
+          periodLabels={{
+            today: t.period.today,
+            d7: t.period.d7,
+            d30: t.period.d30,
+            d90: t.period.d90,
+            custom: t.period.custom,
+            from: t.period.from,
+            to: t.period.to,
+            apply: t.period.apply,
+            refresh: t.period.refresh,
+          }}
+          customFrom={customFrom}
+          customTo={customTo}
+          onCustomFromChange={setCustomFrom}
+          onCustomToChange={setCustomTo}
+          onApplyCustom={applyCustom}
+          customValid={customValid}
+          isLoading={isLoading}
+          onRefresh={() => summaryQuery.refetch()}
+          actions={
+            <>
+              <button type="button" onClick={handlePrint} className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10">
+                <Printer className="h-3.5 w-3.5" /> {t.exports.print}
               </button>
-            </div>
-            <button type="button" onClick={handlePrint} className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10">
-              <Printer className="h-3.5 w-3.5" /> {t.exports.print}
-            </button>
-            <button type="button" onClick={exportCsv} disabled={!data} className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-50">
-              <Download className="h-3.5 w-3.5" /> {t.exports.csv}
-            </button>
-          </div>
-        </div>
-        {tab === "custom" ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-white p-2">
-            <input type="date" value={customFrom} max={customTo || undefined} onChange={(e) => setCustomFrom(e.target.value)} aria-label={t.period.from} className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700 focus:border-violet-400 focus:outline-none" />
-            <span className="text-xs text-slate-400">–</span>
-            <input type="date" value={customTo} min={customFrom || undefined} onChange={(e) => setCustomTo(e.target.value)} aria-label={t.period.to} className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-700 focus:border-violet-400 focus:outline-none" />
-            <button type="button" onClick={applyCustom} disabled={!customValid} className="rounded-lg bg-violet-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50">
-              {t.period.apply}
-            </button>
-          </div>
-        ) : null}
+              <button type="button" onClick={exportCsv} disabled={!data} className="inline-flex items-center gap-1.5 rounded-xl border border-white/30 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-50">
+                <Download className="h-3.5 w-3.5" /> {t.exports.csv}
+              </button>
+            </>
+          }
+        />
       </div>
 
       {/* KPI row — 6 sales metrics */}

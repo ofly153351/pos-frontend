@@ -1,5 +1,10 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest } from "@/services/api";
+import type {
+  DeletionAssessment,
+  DeletionOutcome,
+  DeletionSuggestedAction,
+} from "@/types/lifecycle";
 
 export type Location = {
   id: string;
@@ -17,6 +22,9 @@ export type Location = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // deleted_at is the archive timestamp (migration 047). Present only on archived rows, so
+  // `!!deleted_at` partitions Archived from Active/Inactive and drives the "Archived" badge.
+  deleted_at?: string | null;
 };
 
 export type PaginatedLocations = {
@@ -77,6 +85,9 @@ export type ListLocationsOptions = {
   search?: string;
   page?: number;
   limit?: number;
+  // includeArchived asks the backend to also return soft-deleted (archived) rows. Default
+  // (false) returns live rows only — operational selectors rely on this default exclusion.
+  includeArchived?: boolean;
 };
 
 export function listLocations(options?: ListLocationsOptions) {
@@ -88,9 +99,20 @@ export function listLocations(options?: ListLocationsOptions) {
   if (options?.search)      params.set("search",        options.search);
   if (options?.page)        params.set("page",          String(options.page));
   if (options?.limit)       params.set("limit",         String(options.limit));
+  if (options?.includeArchived) params.set("include_archived", "true");
   const qs = params.toString();
   return authorizedApiRequest<PaginatedLocations>(
     `/api/stores/${storeId}/locations${qs ? `?${qs}` : ""}`,
+  );
+}
+
+// getLocationDeletionAssessment is the read-only pre-check driving the adaptive
+// delete/archive modal: whether the location can be hard-deleted, archived, or is blocked
+// (remaining stock, product-default, open operations, system-protected).
+export function getLocationDeletionAssessment(locationId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<DeletionAssessment>(
+    `/api/stores/${storeId}/locations/${locationId}/deletion-assessment`,
   );
 }
 
@@ -130,9 +152,14 @@ export function updateLocation(locationId: string, input: UpdateLocationInput) {
   });
 }
 
-export function deleteLocation(locationId: string) {
+// deleteLocation runs the smart delete: the backend resolves the safe action (archive vs
+// permanent delete) under a row lock and returns { action, assessment }. `expected` is the
+// action confirmed against the pre-check; a mismatch or hard blocker returns 409 with the
+// blocker code + fresh assessment in ApiError.details so the caller can re-confirm.
+export function deleteLocation(locationId: string, expected?: DeletionSuggestedAction) {
   const storeId = ensureStoreId();
-  return authorizedApiRequest<Record<string, never>>(`/api/stores/${storeId}/locations/${locationId}`, {
+  const qs = expected ? `?expected=${encodeURIComponent(expected)}` : "";
+  return authorizedApiRequest<DeletionOutcome>(`/api/stores/${storeId}/locations/${locationId}${qs}`, {
     allowEmptyData: true,
     method: "DELETE",
   });

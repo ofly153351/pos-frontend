@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { Barcode, FileText, Loader2, Printer, X } from "lucide-react";
@@ -200,7 +200,7 @@ export function BarcodeBatchModal({ products, labels, storeName, onClose }: Barc
                       }`}
                     >
                       <span>{labels[labelKey] as string}</span>
-                      <span className={`mt-0.5 font-mono text-[10px] ${template === key ? "text-violet-100" : "text-slate-400"}`}>{d.w}×{d.h} mm</span>
+                      <span className={`mt-0.5 text-[10px] ${template === key ? "text-violet-100" : "text-slate-400"}`}>{d.w}×{d.h} mm</span>
                     </button>
                   );
                 })}

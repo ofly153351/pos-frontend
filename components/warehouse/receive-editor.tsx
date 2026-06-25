@@ -63,7 +63,6 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   const [headerForm, setHeaderForm] = useState<HeaderForm | null>(null);
   const [itemRows, setItemRows] = useState<Record<string, ReceiveItemRow>>({});
   const [search, setSearch] = useState("");
-  const [scanCode, setScanCode] = useState("");
   const [scanFeedback, setScanFeedback] = useState<{ tone: "error" | "success"; value: string } | null>(null);
   const [headerErrors, setHeaderErrors] = useState<Partial<Record<keyof HeaderForm, string>>>({});
   const [error, setError] = useState("");
@@ -468,14 +467,22 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
     setItemRows((cur) => { const copy = { ...cur }; delete copy[key]; return copy; });
   }
 
-  function handleScanSubmit() {
-    const keyword = scanCode.trim().toLowerCase();
-    if (!keyword) return;
+  // Shared exact-match lookup used by both the physical-scanner text field and the
+  // mobile camera scanner. Matches on SKU or barcode; reports success/error feedback.
+  function lookupAndAddByCode(rawCode: string): boolean {
+    const keyword = rawCode.trim().toLowerCase();
+    if (!keyword) return false;
     const matched = products.find((p) => (p.sku ?? "").trim().toLowerCase() === keyword || (p.barcode ?? "").trim().toLowerCase() === keyword);
-    if (!matched) { setScanFeedback({ tone: "error", value: t.stateNoMatchingProduct }); return; }
+    if (!matched) { setScanFeedback({ tone: "error", value: t.stateNoMatchingProduct }); return false; }
     addProduct(matched);
-    setScanCode("");
     setScanFeedback({ tone: "success", value: t.stateScanMatched });
+    return true;
+  }
+
+  // The unified search field (on Enter) and the camera scanner both funnel their code
+  // through the same exact-match lookup, which adds the product and sets scan feedback.
+  function handleCameraScan(barcode: string) {
+    lookupAndAddByCode(barcode);
   }
 
   async function persistAll() {
@@ -654,40 +661,35 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
         onPurchaseOrderChange={handlePurchaseOrderChange}
       />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="flex flex-col gap-5">
-          <ReceiveItemsTable
-            dictionary={t}
-            rows={editorRows}
-            hasPo={hasPo}
-            editable={editable}
-            locationOptions={locationOptions}
-            onQtyChange={setRowQty}
-            onQtyBlur={normalizeRowQty}
-            onStep={stepRow}
-            onUnitCostChange={setRowUnitCost}
-            onLocationChange={setRowLocation}
-            onRemove={removeRow}
-          />
-          <ReceiveInspectionSummary dictionary={t} hasPo={hasPo} counts={inspection.counts} mismatches={inspection.mismatches} hasOver={inspection.hasOver} />
-        </div>
-
+      <div className="flex flex-col gap-5">
         {editable ? (
           <ReceiveProductSearch
             dictionary={t}
             products={products}
             search={search}
-            scanCode={scanCode}
             scanFeedback={scanFeedback}
             qtyByProduct={qtyByProduct}
             disabled={!editable}
-            onSearchChange={setSearch}
-            onScanChange={(v) => { setScanCode(v); setScanFeedback(null); }}
-            onScanSubmit={handleScanSubmit}
+            onSearchChange={(v) => { setSearch(v); setScanFeedback(null); }}
+            onScanDetected={handleCameraScan}
             onAdd={addProduct}
             onStep={stepProduct}
           />
         ) : null}
+        <ReceiveItemsTable
+          dictionary={t}
+          rows={editorRows}
+          hasPo={hasPo}
+          editable={editable}
+          locationOptions={locationOptions}
+          onQtyChange={setRowQty}
+          onQtyBlur={normalizeRowQty}
+          onStep={stepRow}
+          onUnitCostChange={setRowUnitCost}
+          onLocationChange={setRowLocation}
+          onRemove={removeRow}
+        />
+        <ReceiveInspectionSummary dictionary={t} hasPo={hasPo} counts={inspection.counts} mismatches={inspection.mismatches} hasOver={inspection.hasOver} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">

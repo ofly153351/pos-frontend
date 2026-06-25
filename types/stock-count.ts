@@ -51,6 +51,10 @@ export type CountItem = {
 export type CountSession = {
   id: string;
   name: string;
+  // The single storage location this session counts. Required for new sessions; null only
+  // for legacy sessions created before location-scoping (which the backend refuses to apply).
+  locationId: string | null;
+  locationName: string | null;
   warehouseName: string | null;
   zone: string | null;
   categoryId: string | null;

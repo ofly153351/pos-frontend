@@ -1182,7 +1182,13 @@
       "searchLabel": "Search text",
       "apply": "Apply",
       "clearAll": "Clear all",
-      "cancel": "Close"
+      "cancel": "Close",
+      "readyToSellStatus": "Ready to Sell",
+      "locationLabel": "Storage Location",
+      "allLocations": "All Locations",
+      "noLocationLabel": "No storage location",
+      "quickViewLowStock": "Low Stock",
+      "quickViewNoLocation": "No Location"
     },
     "table": {
       "productDetails": "Product Details",
@@ -1227,6 +1233,9 @@
       "barcodeShowBrand": "Brand",
       "barcodeShowLocation": "Storage location",
       "barcodeShowStoreName": "Store name",
+      "barcodeShowSalePrice": "Sale price",
+      "barcodeOrigPriceInput": "Original price (crossed out)",
+      "barcodeSalePriceInput": "New sale price",
       "barcodeQuantityLabel": "Print quantity",
       "barcodePrinterModeLabel": "Printer mode",
       "barcodePrinterLabel": "Label printer",
@@ -1310,7 +1319,18 @@
       "viewAction": "View",
       "cardView": "Card view",
       "tableView": "Table view",
-      "stockReady": "Ready for sale"
+      "stockReady": "Ready for sale",
+      "summaryAll": "Total",
+      "summaryReady": "Ready to Sell",
+      "summaryLow": "Low Stock",
+      "summaryOut": "Out of Stock",
+      "summaryValue": "Inventory Value",
+      "bulkEnableLabel": "Enable",
+      "bulkDisableLabel": "Disable",
+      "bulkChangeCategoryLabel": "Change Category",
+      "changeCategoryTitle": "Change Category",
+      "changeCategoryApply": "Apply",
+      "changeCategorySelectPlaceholder": "Select category..."
     },
     "inventoryItems": [
       {
@@ -2362,6 +2382,7 @@
       "payment": "Payment",
       "promptpay": "PromptPay",
       "bankAccounts": "Bank Accounts",
+      "gateway": "Payment Gateway",
       "printer": "Printer",
       "display": "Display"
     },
@@ -2417,6 +2438,9 @@
       "showAddress": "Address",
       "showPhone": "Phone number",
       "showTaxId": "Tax ID",
+      "sectionAmountRounding": "Amount Rounding",
+      "labelRoundAmount": "Round grand total to whole baht",
+      "roundAmountHint": "฿68.11 → ฿68",
       "sectionFooter": "Footer text"
     },
     "payment": {
@@ -2596,9 +2620,10 @@
       "subtitle": "See what needs attention, how much stock value is on hand, and what changed recently without extra scrolling.",
       "refresh": "Refresh data",
       "actionCenter": {
-        "title": "Action Center",
+        "title": "Inventory Alerts",
         "subtitle": "Tap an item to open pending warehouse work.",
         "open": "Open",
+        "viewAll": "View all",
         "items": {
           "lowStock": "Low Stock",
           "outOfStock": "Out of Stock",
@@ -2668,7 +2693,8 @@
           "countQty": "Count Qty",
           "variance": "Variance"
         },
-        "noData": "No variance found from recent count sessions."
+        "noData": "No variance found from recent count sessions.",
+        "noDeadStock": "All stock counts match — no variance found"
       },
       "statusDistribution": {
         "title": "Stock Status Distribution",
@@ -3528,6 +3554,7 @@
     "loading": "Loading...",
     "period": {
       "label": "Period",
+      "today": "Today",
       "d7": "7 Days",
       "d30": "30 Days",
       "d90": "90 Days",
@@ -3535,6 +3562,7 @@
       "from": "From date",
       "to": "To date",
       "apply": "Apply",
+      "refresh": "Refresh",
       "rangeLabel": "{from} – {to}"
     },
     "kpi": {
@@ -3564,11 +3592,28 @@
       "lossBadge": "Loss"
     },
     "ratios": {
-      "title": "Ratios",
+      "title": "Financial Ratios",
+      "subtitle": "Profit-health indicators for this period",
       "grossMargin": "Gross Margin",
       "netMargin": "Net Margin",
       "expenseRatio": "Expense Ratio",
       "costRatio": "Cost Ratio"
+    },
+    "flow": {
+      "title": "Path to Net Profit",
+      "subtitle": "From net revenue, less cost and expenses"
+    },
+    "trend": {
+      "title": "Profit Trend",
+      "subtitle": "Daily revenue and gross profit",
+      "revenue": "Revenue",
+      "profit": "Gross Profit",
+      "note": "Daily gross profit (before operating expenses)",
+      "empty": "No data for this period"
+    },
+    "topExpenses": {
+      "title": "Top Expenses",
+      "subtitle": "Expense categories, largest first"
     },
     "lossBanner": {
       "title": "Operating at a loss",
@@ -3577,7 +3622,9 @@
     "dataQuality": {
       "title": "Cost may be understated",
       "missingCost": "{count} sold line(s) have products with no cost price, which understates COGS and overstates profit.",
-      "itemsSuffix": "items"
+      "itemsSuffix": "items",
+      "impact": "Reported net profit may be higher than reality until all cost prices are set.",
+      "cta": "Review products"
     },
     "rcp": {
       "title": "Revenue vs Cost vs Profit",
@@ -3611,6 +3658,24 @@
       "cheque": "Cheque",
       "unknown": "Other"
     },
+    "insights": {
+      "title": "Business Insights",
+      "subtitle": "Key takeaways from this period's performance",
+      "missingCostTitle": "Products missing cost",
+      "missingCostDesc": "{count} sold line(s) lack a cost price — reported profit may be overstated.",
+      "lossTitle": "Operating at a loss",
+      "lossDesc": "Combined cost and expenses exceed net revenue. Review pricing and spending.",
+      "lowMarginTitle": "Thin net margin",
+      "lowMarginDesc": "Net margin is {margin}, which is slim. Consider raising prices or cutting cost.",
+      "healthyMarginTitle": "Healthy margin",
+      "healthyMarginDesc": "Net margin is {margin}, which is in good shape.",
+      "highExpenseTitle": "High expenses",
+      "highExpenseDesc": "Operating expenses are {ratio} of net revenue. Keep spending in check.",
+      "topExpenseTitle": "Largest expense",
+      "topExpenseDesc": "{name} is the highest category at {value}.",
+      "empty": "Everything looks good",
+      "emptyDesc": "No concerns detected for this period."
+    },
     "empty": "No data for this period"
   },
   "summaryReport": {
@@ -3618,6 +3683,7 @@
     "subtitle": "Overview of sales, profit and best sellers",
     "loading": "Loading...",
     "period": {
+      "today": "Today",
       "d7": "7 Days",
       "d30": "30 Days",
       "d90": "90 Days",
@@ -3625,6 +3691,7 @@
       "from": "From date",
       "to": "To date",
       "apply": "Apply",
+      "refresh": "Refresh",
       "rangeLabel": "{from} – {to}"
     },
     "exports": {
@@ -4087,6 +4154,22 @@
     "voidConfirmMsg": "Voiding this bill will restore all items to stock. This cannot be undone.",
     "returnConfirmTitle": "Confirm Return",
     "returnConfirmMsg": "Returning items from this bill will restore stock and void the sale.",
+    "returnModalSubtitle": "Select items and quantities to return",
+    "returnBillLabel": "Bill",
+    "returnThSold": "Sold",
+    "returnThReturnQty": "Return Qty",
+    "returnPayMethod": "Refund Method",
+    "returnTotalRefund": "Total Refund",
+    "returnReasonLabel": "Return Reason",
+    "returnReasonPlaceholder": "e.g. Defective item / Customer changed mind (optional)",
+    "returnConfirmBtn": "Confirm Return",
+    "returnNoItemSelected": "Please select at least 1 item to return",
+    "returnFullyDone": "Fully returned",
+    "statusPartiallyReturned": "Partially Returned",
+    "statusFullyReturned": "Fully Returned",
+    "returnsHistoryTitle": "Return History",
+    "returnRefundedVia": "Refunded via",
+    "returnedBy": "Processed by",
     "voidReasonLabel": "Reason",
     "voidReasonPlaceholder": "Add more details...",
     "voidSuccess": "Bill voided successfully",
@@ -4113,6 +4196,7 @@
     "copyOriginal": "Original",
     "copyCopy": "Copy",
     "copyLabel": "Copy No.",
+    "copyPrintAll": "Print All (3 copies)",
     "issueDocument": "Issue Document",
     "docReceipt": "Receipt",
     "docTaxFull": "Full Tax Invoice",

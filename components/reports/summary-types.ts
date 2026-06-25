@@ -7,6 +7,7 @@ export type SummaryDictionary = {
   subtitle: string;
   loading: string;
   period: {
+    today: string;
     d7: string;
     d30: string;
     d90: string;
@@ -14,6 +15,7 @@ export type SummaryDictionary = {
     from: string;
     to: string;
     apply: string;
+    refresh: string;
     rangeLabel: string; // {from} {to}
   };
   exports: {
@@ -58,7 +60,7 @@ export type SummaryDictionary = {
     subtitle: string;
     empty: string;
   };
-  method: { cash: string; transfer: string; qr: string; credit: string; card: string; unknown: string };
+  method: { cash: string; transfer: string; qr: string; promptpay: string; bank_transfer: string; credit: string; card: string; credit_card: string; debit_card: string; cheque: string; unknown: string };
   salesByHour: {
     title: string;
     subtitle: string;

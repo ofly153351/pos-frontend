@@ -1,6 +1,11 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest } from "@/services/api";
 import type {
+  DeletionAssessment,
+  DeletionOutcome,
+  DeletionSuggestedAction,
+} from "@/types/lifecycle";
+import type {
   AddWarehouseProductInput,
   CreateWarehouseInput,
   UpdateWarehouseInput,
@@ -20,10 +25,26 @@ function ensureStoreId() {
   return storeId;
 }
 
-export function listWarehouses() {
+// listWarehouses defaults to live rows only (the backend excludes archived unless asked).
+// Pass { includeArchived: true } for the management "Archived" filter — archived rows carry
+// a deleted_at timestamp so the caller can partition them.
+export function listWarehouses(options?: { includeArchived?: boolean }) {
   const storeId = ensureStoreId();
+  const qs = options?.includeArchived ? "?include_archived=true" : "";
   return authorizedApiRequest<Warehouse[]>(
-    `/api/stores/${storeId}/warehouses`,
+    `/api/stores/${storeId}/warehouses${qs}`,
+    {},
+    { requireToken: true },
+  );
+}
+
+// getWarehouseDeletionAssessment is the read-only pre-check that drives the adaptive
+// delete/archive modal: it reports whether the warehouse can be hard-deleted, archived, or is
+// blocked (and by what), aggregated across all of its child locations.
+export function getWarehouseDeletionAssessment(warehouseId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<DeletionAssessment>(
+    `/api/stores/${storeId}/warehouses/${warehouseId}/deletion-assessment`,
     {},
     { requireToken: true },
   );
@@ -70,12 +91,17 @@ export function updateWarehouse(warehouseId: string, input: UpdateWarehouseInput
   );
 }
 
-export function deleteWarehouse(warehouseId: string) {
+// deleteWarehouse runs the smart delete: the backend resolves the safe action (archive vs
+// permanent delete) under a row lock and returns { action, assessment }. `expected` is the
+// action the user confirmed against the pre-check assessment; if the locked re-assessment
+// disagrees the backend returns 409 ENTITY_STATE_CHANGED (carried in ApiError.details) so the
+// caller can re-confirm against fresh state. A hard blocker likewise returns 409 with the
+// blocker code + assessment in details.
+export function deleteWarehouse(warehouseId: string, expected?: DeletionSuggestedAction) {
   const storeId = ensureStoreId();
-  // DELETE returns { success, message } with no data payload, so allow empty data —
-  // otherwise the client throws on a successful delete (showing a misleading error).
-  return authorizedApiRequest<Warehouse>(
-    `/api/stores/${storeId}/warehouses/${warehouseId}`,
+  const qs = expected ? `?expected=${encodeURIComponent(expected)}` : "";
+  return authorizedApiRequest<DeletionOutcome>(
+    `/api/stores/${storeId}/warehouses/${warehouseId}${qs}`,
     { method: "DELETE", allowEmptyData: true },
     { requireToken: true },
   );

@@ -479,6 +479,7 @@ export function WarehouseInventoryManager({ dictionary: dict, transferDict, adju
         selectedWarehouseId={selectedWarehouseId}
         statsByWarehouse={statsByWarehouse}
         dict={dict}
+        locale={locale}
         onClose={() => setManageOpen(false)}
         onSelect={setWh}
         onCreate={() => setFormState({ mode: "create", warehouse: null })}
@@ -522,6 +523,7 @@ export function WarehouseInventoryManager({ dictionary: dict, transferDict, adju
 
       <StockAdjustDrawer
         product={adjustProduct}
+        warehouseId={selectedWarehouseId}
         dict={adjustDict}
         onClose={() => setAdjustProduct(null)}
         onSuccess={() => {

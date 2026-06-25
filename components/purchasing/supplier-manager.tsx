@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -318,7 +318,7 @@ function SupplierCard({
             {supplier.phone && (
               <span className="flex items-center gap-1 text-xs text-slate-400">
                 <Phone className="h-3 w-3 shrink-0" />
-                <span className="font-mono">{supplier.phone}</span>
+                <span className="">{supplier.phone}</span>
               </span>
             )}
             <span className="inline-flex items-center rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600 ring-1 ring-violet-100">
@@ -459,7 +459,7 @@ function SupplierDetail({
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <h2 className="truncate text-xl font-bold text-white leading-normal">{supplier.name}</h2>
-                <p className="mt-0.5 font-mono text-sm text-violet-200">
+                <p className="mt-0.5 text-sm text-violet-200">
                   #{supplier.id.substring(0, 8).toUpperCase()}
                 </p>
               </div>

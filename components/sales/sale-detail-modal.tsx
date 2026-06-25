@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,10 +22,11 @@ import { toast } from "@/components/ui/toast";
 import { getAuthSession } from "@/lib/auth-storage";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
 import { createDocument } from "@/services/documents";
-import { getSaleById, voidSale } from "@/services/sales";
+import { createSaleReturn, getSaleById, voidSale, type CreateReturnInput } from "@/services/sales";
 import type { DocumentType } from "@/types/document";
 import type { Sale } from "@/types/sale";
 
+import { ReturnModal } from "./return-modal";
 import { SaleDocumentPreviewModal } from "./sale-document-preview-modal";
 import {
   SALE_DOCUMENT_TEMPLATES,
@@ -95,7 +96,8 @@ export function SaleDetailModal({
   const [isClosing, setIsClosing] = useState(false);
   const [docMenuOpen, setDocMenuOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<SaleDocumentTemplate | null>(null);
-  const [voidDialog, setVoidDialog] = useState<"void" | "return" | null>(null);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [voidDialog, setVoidDialog] = useState<"void" | null>(null);
   const [voidReasonKey, setVoidReasonKey] = useState("");
   const [voidNote, setVoidNote] = useState("");
   const [voidLoading, setVoidLoading] = useState(false);
@@ -150,14 +152,13 @@ export function SaleDetailModal({
 
   async function handleVoidConfirm() {
     if (!voidDialog || !voidReasonKey) return;
-    // Compose the persisted reason: preset label + optional free-text note.
     const presetLabel =
       voidReasonKey === OTHER_REASON ? "" : dict[voidReasonKey as keyof SalesHistoryDict];
     const reason = [presetLabel, voidNote.trim()].filter(Boolean).join(" — ");
     setVoidLoading(true);
     try {
-      await voidSale(saleId, { reason: reason || undefined, type: voidDialog });
-      toast.success(voidDialog === "void" ? dict.voidSuccess : dict.returnSuccess);
+      await voidSale(saleId, { reason: reason || undefined, type: "void" });
+      toast.success(dict.voidSuccess);
       resetVoidDialog();
       queryClient.invalidateQueries({ queryKey: ["sale-detail", saleId] });
       queryClient.invalidateQueries({ queryKey: ["sales"] });
@@ -165,6 +166,18 @@ export function SaleDetailModal({
       toast.error(dict.voidError);
     } finally {
       setVoidLoading(false);
+    }
+  }
+
+  async function handleReturnConfirm(input: CreateReturnInput) {
+    try {
+      await createSaleReturn(saleId, input);
+      toast.success(dict.returnSuccess);
+      setShowReturnModal(false);
+      queryClient.invalidateQueries({ queryKey: ["sale-detail", saleId] });
+      queryClient.invalidateQueries({ queryKey: ["sales"] });
+    } catch {
+      toast.error(dict.voidError);
     }
   }
 
@@ -212,6 +225,13 @@ export function SaleDetailModal({
   const pieces = sale?.total_items ?? items.reduce((s, i) => s + (i.quantity ?? 0), 0);
   const discountTotal = (sale?.discount_amount ?? 0) + (sale?.bill_discount_amount ?? 0);
   const isVoided = sale?.status === "voided";
+  const isFullyReturned = sale?.status === "fully_returned";
+  const isPartiallyReturned = sale?.status === "partially_returned";
+  const returns = sale?.returns ?? [];
+  // Returnable while not voided and at least one line still has units left.
+  const anyReturnable = items.some(
+    (i) => (i.quantity ?? 0) - (i.returned_quantity ?? 0) > 0,
+  );
   const cellClass = "px-3 py-2.5 align-top";
 
   return (
@@ -239,7 +259,7 @@ export function SaleDetailModal({
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-lg font-bold leading-tight">{dict.detailTitle}</h2>
-              <p className="truncate font-mono text-sm text-violet-100">
+              <p className="truncate text-sm text-violet-100">
                 {sale?.sale_number ?? saleId.slice(0, 8).toUpperCase()}
               </p>
             </div>
@@ -281,10 +301,22 @@ export function SaleDetailModal({
                 />
                 <span
                   className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${
-                    isVoided ? "bg-red-50 text-red-600" : "bg-emerald-100 text-emerald-700"
+                    isVoided
+                      ? "bg-red-50 text-red-600"
+                      : isFullyReturned
+                        ? "bg-amber-100 text-amber-700"
+                        : isPartiallyReturned
+                          ? "bg-violet-100 text-violet-700"
+                          : "bg-emerald-100 text-emerald-700"
                   }`}
                 >
-                  {isVoided ? dict.statusVoided : dict.statusCompleted}
+                  {isVoided
+                    ? dict.statusVoided
+                    : isFullyReturned
+                      ? dict.statusFullyReturned
+                      : isPartiallyReturned
+                        ? dict.statusPartiallyReturned
+                        : dict.statusCompleted}
                 </span>
               </div>
 
@@ -300,6 +332,41 @@ export function SaleDetailModal({
                         {sale.void_reason ? ` — ${sale.void_reason}` : ""}
                       </p>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Returns history */}
+              {returns.length > 0 && (
+                <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3.5">
+                  <div className="mb-2 flex items-center gap-2">
+                    <Undo2 className="h-4 w-4 text-violet-500" />
+                    <p className="text-sm font-semibold text-violet-800">{dict.returnsHistoryTitle}</p>
+                  </div>
+                  <div className="space-y-2.5">
+                    {returns.map((ret) => (
+                      <div key={ret.id} className="rounded-lg border border-violet-100 bg-white p-2.5 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-slate-500">{ret.return_number}</span>
+                          <span className="nums font-semibold text-violet-700">−{baht(ret.refund_amount)}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-slate-500">
+                          <span>{fmtDateTime(ret.created_at)}</span>
+                          <span>· {dict.returnRefundedVia} {paymentLabel(ret.refund_method)}</span>
+                          {ret.created_by_name && <span>· {dict.returnedBy} {ret.created_by_name}</span>}
+                        </div>
+                        {(ret.items ?? []).length > 0 && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {(ret.items ?? []).map((ri) => (
+                              <span key={ri.id} className="nums rounded-md bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                                {ri.product_name} ×{ri.quantity}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {ret.reason && <p className="mt-1 text-xs text-slate-500">{ret.reason}</p>}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -366,7 +433,7 @@ export function SaleDetailModal({
                                 {name}
                               </span>
                               {item.sku && (
-                                <span className="font-mono text-xs leading-normal text-slate-400">
+                                <span className="text-xs leading-normal text-slate-400">
                                   {item.sku}
                                 </span>
                               )}
@@ -442,18 +509,24 @@ export function SaleDetailModal({
             />
             {canManage && !isVoided && (
               <>
-                <ActionButton
-                  icon={<Undo2 className="h-4 w-4" />}
-                  label={dict.actReturn}
-                  onClick={() => setVoidDialog("return")}
-                  muted
-                />
-                <ActionButton
-                  icon={<Ban className="h-4 w-4" />}
-                  label={dict.actVoid}
-                  onClick={() => setVoidDialog("void")}
-                  danger
-                />
+                {anyReturnable && (
+                  <ActionButton
+                    icon={<Undo2 className="h-4 w-4" />}
+                    label={dict.actReturn}
+                    onClick={() => setShowReturnModal(true)}
+                    muted
+                  />
+                )}
+                {/* Void cancels the WHOLE bill — only allowed on a pristine completed
+                    sale; once items are returned, the per-line restock owns the stock. */}
+                {sale.status === "completed" && (
+                  <ActionButton
+                    icon={<Ban className="h-4 w-4" />}
+                    label={dict.actVoid}
+                    onClick={() => setVoidDialog("void")}
+                    danger
+                  />
+                )}
               </>
             )}
 
@@ -519,7 +592,17 @@ export function SaleDetailModal({
       />
     )}
 
-    {/* Void / Return confirmation dialog */}
+    {/* Return modal — per-item quantity selector */}
+    {showReturnModal && sale && (
+      <ReturnModal
+        sale={sale}
+        dict={dict}
+        onClose={() => setShowReturnModal(false)}
+        onConfirm={handleReturnConfirm}
+      />
+    )}
+
+    {/* Void confirmation dialog */}
     {voidDialog && (
       <div
         className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 p-3 backdrop-blur-sm smooth-fade"
@@ -530,18 +613,12 @@ export function SaleDetailModal({
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-4 flex items-center gap-3">
-            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-              voidDialog === "void" ? "bg-red-100" : "bg-amber-100"
-            }`}>
-              <AlertTriangle className={`h-5 w-5 ${voidDialog === "void" ? "text-red-600" : "text-amber-600"}`} />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
-                {voidDialog === "void" ? dict.voidConfirmTitle : dict.returnConfirmTitle}
-              </h3>
-              <p className="text-sm text-slate-500">
-                {voidDialog === "void" ? dict.voidConfirmMsg : dict.returnConfirmMsg}
-              </p>
+              <h3 className="text-lg font-bold text-slate-900">{dict.voidConfirmTitle}</h3>
+              <p className="text-sm text-slate-500">{dict.voidConfirmMsg}</p>
             </div>
           </div>
 
@@ -551,7 +628,7 @@ export function SaleDetailModal({
               {dict.reasonSelectLabel} <span className="text-red-500">*</span>
             </label>
             <div className="grid grid-cols-1 gap-1.5">
-              {(voidDialog === "void" ? VOID_REASON_KEYS : RETURN_REASON_KEYS).map((k) => {
+              {VOID_REASON_KEYS.map((k) => {
                 const selected = voidReasonKey === k;
                 return (
                   <button
@@ -628,11 +705,7 @@ export function SaleDetailModal({
                 !voidReasonKey ||
                 (voidReasonKey === OTHER_REASON && !voidNote.trim())
               }
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition ${
-                voidDialog === "void"
-                  ? "bg-red-600 hover:bg-red-700"
-                  : "bg-amber-600 hover:bg-amber-700"
-              } disabled:opacity-50`}
+              className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
             >
               {voidLoading && <Loader2 className="h-4 w-4 animate-spin" />}
               {dict.confirmBtn}

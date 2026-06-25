@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as XLSX from "xlsx";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -1299,7 +1299,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                     </div>
                   </td>
                   <td className="px-6 py-4.5 text-sm md:text-[15px] text-slate-500">
-                    <span className="block truncate font-mono" title={wp.product_barcode || "-"}>
+                    <span className="block truncate" title={wp.product_barcode || "-"}>
                       {wp.product_barcode || "-"}
                     </span>
                   </td>
@@ -1791,7 +1791,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                       <div className="col-span-2 sm:col-span-1">
                         <label className="mb-1 block text-xs font-medium text-slate-600">{dictionary.locationCodeLabel}</label>
                         <input
-                          className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm font-mono outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                          className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                           onChange={(e) => setLocationForm((f) => ({ ...f, code: e.target.value }))}
                           value={locationForm.code}
                         />
@@ -1880,7 +1880,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                               <span className="text-sm font-medium text-slate-900">{loc.name}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-mono text-sm text-slate-600">{loc.code ?? "—"}</td>
+                          <td className="px-4 py-3 text-sm text-slate-600">{loc.code ?? "—"}</td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                               loc.is_sale_point ? "bg-amber-100 text-amber-700" : "bg-violet-100 text-violet-700"
@@ -1968,7 +1968,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                             <span className="truncate text-sm font-medium text-slate-900">{warehouse.name}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm font-mono text-slate-600">{warehouse.code ?? "—"}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600">{warehouse.code ?? "—"}</td>
                         <td className="px-4 py-3 text-sm text-slate-600">{warehouse.phone ?? "—"}</td>
                         <td className="px-4 py-3 text-sm text-slate-600">{warehouse.contact_name ?? "—"}</td>
                         <td className="px-4 py-3 text-center">

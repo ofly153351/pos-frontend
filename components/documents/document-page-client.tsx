@@ -135,7 +135,28 @@ type DocumentDict = {
   printAll: string;
   printError: string;
   productSearch: string;
+  scanWithCamera: string;
   productNotFound: string;
+  // Row actions + bulk (Phase 1)
+  duplicate: string;
+  duplicateSuccess: string;
+  duplicateError: string;
+  printPreview: string;
+  convertTo: string;
+  recordPayment: string;
+  paySuccess: string;
+  payError: string;
+  cancelDocument: string;
+  cancelSuccess: string;
+  cancelError: string;
+  confirmCancelDoc: string;
+  confirmDeleteDoc: string;
+  convertSuccess: string;
+  convertError: string;
+  pdfError: string;
+  comingSoon: string;
+  email: string;
+  share: string;
 };
 
 type Props = { dictionary: DocumentDict };
@@ -148,6 +169,40 @@ function fmtCurrency(n: number) {
 }
 function fmtDateTime(s: string) {
   return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" }).format(new Date(s));
+}
+function fmtDateShort(s: string) {
+  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(s));
+}
+
+// Localised label maps for the document type / status / payment enums — shared by
+// the CSV export and the printable report so both speak the user's language.
+function buildDocLabelMaps(d: DocumentDict) {
+  const typeLabel: Record<string, string> = {
+    INVOICE: d.typeInvoice,
+    RECEIPT: d.typeReceipt,
+    TAX_INVOICE: d.typeTaxInvoice,
+    QUOTATION: d.typeQuotation,
+    BILL: d.typeBill,
+    CREDIT_NOTE: d.typeCreditNote,
+    DELIVERY_ORDER: d.typeDeliveryOrder ?? "ใบส่งของ",
+  };
+  const statusLabel: Record<string, string> = {
+    DRAFT: d.statusDraft,
+    PENDING: d.statusPending,
+    OVERDUE: d.statusOverdue,
+    COMPLETED: d.statusCompleted,
+    CANCELLED: d.statusCancelled,
+  };
+  const payLabel: Record<string, string> = {
+    UNPAID: d.paymentUnpaid,
+    PARTIAL: d.paymentPartial,
+    PAID: d.paymentPaid,
+  };
+  return { typeLabel, statusLabel, payLabel };
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
 export function DocumentPageClient({ dictionary: d }: Props) {
@@ -285,15 +340,26 @@ export function DocumentPageClient({ dictionary: d }: Props) {
             customer_phone: sale.customer_phone ?? "",
           }),
           document_date: today,
-          vat_rate: sale.vat_included ? (sale.vat_percent ?? 7) : 0,
-          items: (sale.items ?? []).map((item) => ({
-            product_id: item.product_id ?? undefined,
-            description: item.product_name ?? "",
-            quantity: item.quantity,
-            unit_price: item.unit_price ?? 0,
-            discount_type: "" as const,
-            discount_value: 0,
-          })),
+          // vat_percent is the tax rate regardless of vat_included.
+          // vat_included=false → prices are pre-tax, add VAT on top (common case).
+          // vat_included=true  → prices already embed VAT; extract pre-tax base so
+          //   the document service doesn't double-count (subtotal * rate = vat again).
+          vat_rate: sale.vat_percent ?? 0,
+          items: (sale.items ?? []).map((item) => {
+            const rate = sale.vat_percent ?? 0;
+            const rawPrice = item.unit_price ?? 0;
+            const unitPrice = (sale.vat_included && rate > 0)
+              ? Math.round((rawPrice / (1 + rate / 100)) * 100) / 100
+              : rawPrice;
+            return {
+              product_id: item.product_id ?? undefined,
+              description: item.product_name ?? "",
+              quantity: item.quantity,
+              unit_price: unitPrice,
+              discount_type: (item.line_discount_total ?? 0) > 0 ? ("AMOUNT" as const) : ("" as const),
+              discount_value: item.line_discount_total ?? 0,
+            };
+          }),
           notes: sale.note ?? undefined,
         });
         toast.success("สร้างใบกำกับภาษีสำเร็จ");
@@ -389,6 +455,121 @@ export function DocumentPageClient({ dictionary: d }: Props) {
     queryClient.invalidateQueries({ queryKey: ["documents"] });
   }
 
+  // Pull every document matching the CURRENT filter across all pages. The list
+  // endpoint caps page size at 200, so walk pages until we have them all.
+  async function fetchAllDocuments() {
+    const PAGE = 200;
+    const first = await getDocuments({ ...query, page: 1, limit: PAGE });
+    const all = [...first.items];
+    const grandTotal = first.total ?? all.length;
+    let page = 2;
+    while (all.length < grandTotal) {
+      const next = await getDocuments({ ...query, page, limit: PAGE });
+      if (!next.items.length) break;
+      all.push(...next.items);
+      page += 1;
+    }
+    return all;
+  }
+
+  // Export every document matching the CURRENT filter (not just the visible page)
+  // to a UTF-8 CSV that Excel opens cleanly.
+  async function exportDocumentsCSV() {
+    try {
+      const allItems = await fetchAllDocuments();
+      const { typeLabel, statusLabel, payLabel } = buildDocLabelMaps(d);
+      const rows = [
+        [d.colDocumentNo, d.colType, d.colCustomer, d.colDate, d.colDueDate, d.colAmount, d.colStatus, d.colPaymentStatus],
+        ...allItems.map((doc) => [
+          doc.document_no_full || doc.document_no,
+          typeLabel[doc.type] ?? doc.type,
+          doc.customer_name || d.allCustomers,
+          fmtDateShort(doc.document_date),
+          doc.due_date ? fmtDateShort(doc.due_date) : "-",
+          String(doc.total_amount ?? 0),
+          statusLabel[doc.status] ?? doc.status,
+          payLabel[doc.payment_status] ?? doc.payment_status,
+        ]),
+      ];
+      const csv = "﻿" + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `documents-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(d.requestFailed);
+    }
+  }
+
+  // Build a clean A4 report of the filtered documents and print it.
+  // Open the popup window synchronously (inside the user-gesture handler) so
+  // Chrome doesn't block it as a popup, then populate it after the async fetch.
+  async function printDocumentsReport() {
+    const win = window.open("about:blank", "_blank");
+    if (!win) {
+      toast.error(d.printError);
+      return;
+    }
+    try {
+      const allItems = await fetchAllDocuments();
+      const { typeLabel, statusLabel, payLabel } = buildDocLabelMaps(d);
+      const totalSum = allItems.reduce((s, doc) => s + (doc.total_amount ?? 0), 0);
+      const body = allItems
+        .map(
+          (doc, i) => `<tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(doc.document_no_full || doc.document_no)}</td>
+            <td>${escapeHtml(typeLabel[doc.type] ?? doc.type)}</td>
+            <td>${escapeHtml(doc.customer_name || d.allCustomers)}</td>
+            <td>${escapeHtml(fmtDateShort(doc.document_date))}</td>
+            <td class="r">${escapeHtml(fmtCurrency(doc.total_amount ?? 0))}</td>
+            <td>${escapeHtml(statusLabel[doc.status] ?? doc.status)}</td>
+            <td>${escapeHtml(payLabel[doc.payment_status] ?? doc.payment_status)}</td>
+          </tr>`,
+        )
+        .join("");
+      const html = `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"><title>${escapeHtml(d.title)}</title>
+        <style>
+          *{font-family:'Sarabun','Noto Sans Thai',sans-serif;box-sizing:border-box}
+          body{margin:24px;color:#1e293b}
+          h1{font-size:18px;margin:0 0 2px}
+          .meta{font-size:12px;color:#64748b;margin-bottom:16px}
+          table{width:100%;border-collapse:collapse;font-size:12px}
+          th,td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left;vertical-align:top}
+          th{background:#f5f3ff;color:#6d28d9;font-weight:600}
+          td.r,th.r{text-align:right}
+          tfoot td{font-weight:bold;background:#faf5ff}
+          @media print{body{margin:0}}
+        </style></head>
+        <body>
+          <h1>${escapeHtml(d.title)}</h1>
+          <div class="meta">${escapeHtml(d.showing)} ${allItems.length} ${escapeHtml(d.records)} · ${escapeHtml(new Date().toLocaleString("th-TH"))}</div>
+          <table>
+            <thead><tr>
+              <th>#</th><th>${escapeHtml(d.colDocumentNo)}</th><th>${escapeHtml(d.colType)}</th><th>${escapeHtml(d.colCustomer)}</th>
+              <th>${escapeHtml(d.colDate)}</th><th class="r">${escapeHtml(d.colAmount)}</th><th>${escapeHtml(d.colStatus)}</th><th>${escapeHtml(d.colPaymentStatus)}</th>
+            </tr></thead>
+            <tbody>${body}</tbody>
+            <tfoot><tr><td colspan="5" class="r">${escapeHtml(d.total)}</td><td class="r">${escapeHtml(fmtCurrency(totalSum))}</td><td colspan="2"></td></tr></tfoot>
+          </table>
+        </body></html>`;
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 400);
+    } catch {
+      win.close();
+      toast.error(d.printError);
+    }
+  }
+
   return (
     <>
       <div className="flex h-full flex-col overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
@@ -482,8 +663,8 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                   dict={d}
                   stats={stats}
                   defaultCreateType={(query.type as DocumentType) || "INVOICE"}
-                  onExport={() => toast.info(d.exportExcel)}
-                  onPrint={() => window.print()}
+                  onExport={exportDocumentsCSV}
+                  onPrint={printDocumentsReport}
                   onCreateDocument={(type) => setCreateModalType(type)}
                 />
               </>
@@ -524,6 +705,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
               sourceDocumentId={documents.find((doc) => doc.id === selectedDocId)?.source_document_id}
               dict={d}
               onClose={() => setSelectedDocId(null)}
+              onNavigate={(id) => setSelectedDocId(id)}
             />
           )}
         </div>}
@@ -630,7 +812,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                     </div>
                     <div>
                       <p className="text-xs text-violet-100">{d.receiptStatsTotal}</p>
-                      <p className="tabular-nums text-xl font-bold text-white">{filtered.length}</p>
+                      <p className="nums text-xl font-bold text-white">{filtered.length}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
@@ -639,7 +821,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                     </div>
                     <div>
                       <p className="text-xs text-slate-500">{d.receiptStatsPaid}</p>
-                      <p className="tabular-nums text-xl font-bold text-emerald-600">{filtered.length}</p>
+                      <p className="nums text-xl font-bold text-emerald-600">{filtered.length}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-white px-4 py-3 shadow-sm">
@@ -648,7 +830,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                     </div>
                     <div>
                       <p className="text-xs text-slate-500">{d.receiptStatsAmount}</p>
-                      <p className="tabular-nums text-xl font-bold text-violet-700">{fmtCurrency(totalFiltered)}</p>
+                      <p className="nums text-xl font-bold text-violet-700">{fmtCurrency(totalFiltered)}</p>
                     </div>
                   </div>
                 </div>
@@ -710,7 +892,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
                               <td className="px-4 py-3 text-slate-600">{sale.payment_method}</td>
                               <td className="px-4 py-3 text-slate-700">{sale.customer_name?.trim() || "ลูกค้าทั่วไป"}</td>
                               <td className="px-4 py-3 text-xs text-slate-500">{fmtDateTime(sale.created_at)}</td>
-                              <td className="px-4 py-3 text-right font-mono text-sm font-medium tabular-nums text-slate-800">
+                              <td className="px-4 py-3 text-right nums text-sm font-medium text-slate-800">
                                 {fmtCurrency(sale.total_amount ?? 0)}
                               </td>
                               <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>

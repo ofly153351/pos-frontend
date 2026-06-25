@@ -251,6 +251,17 @@ export type PromotionDictionary = {
     tagPlaceholder: string;
     tagHint: string;
     noneSelected: string;
+    // Picker UI
+    searchProducts: string;
+    searchCategories: string;
+    searchBrands: string;
+    scanWithCamera: string;
+    /** Must contain the literal string "{count}" */
+    selectedCount: string;
+    clearAll: string;
+    noResults: string;
+    loading: string;
+    loadMore: string;
   };
 
   conditionsStep: {

@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import * as XLSX from "xlsx";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -19,14 +19,15 @@ import {
   Search,
   Trash2,
   Users,
-  Warehouse,
 } from "lucide-react";
 
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
+import { ScanButton } from "@/components/shared/scan-button";
 import { toast } from "@/components/ui/toast";
 import type { CountDictionary } from "@/components/stock/inventory-types";
 import { listProducts, listProductTypes } from "@/services/products";
 import { listWarehouses } from "@/services/warehouses";
+import { listLocations, listLocationProducts } from "@/services/locations";
 import { applyCountSession, deleteCountSession, listCountSessions, saveCountSession } from "@/services/stock-count";
 import type {
   CountAuditEntry,
@@ -165,6 +166,8 @@ function normalizeSession(s: Partial<CountSession> & { id: string; name: string;
   return {
     id: s.id,
     name: s.name,
+    locationId: s.locationId ?? null,
+    locationName: s.locationName ?? null,
     warehouseName: s.warehouseName ?? null,
     zone: s.zone ?? null,
     categoryId: s.categoryId ?? null,
@@ -234,6 +237,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
   const [fName, setFName] = useState("");
   const [fWarehouse, setFWarehouse] = useState("");
+  const [fLocation, setFLocation] = useState(""); // session location id (required to start)
   const [fZone, setFZone] = useState("");
   const [fCategory, setFCategory] = useState("");
   const [fStaff, setFStaff] = useState("");
@@ -274,6 +278,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     queryKey: ["count", "sessions"],
     queryFn: async () => (await listCountSessions()).data,
   });
+  const queryClient = useQueryClient();
   const seededRef = useRef(false);
   // Seed local state once from the server, then treat it as the working copy that
   // persist() keeps in sync. Every terminal loads the same server-side sessions.
@@ -331,6 +336,32 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   const categoriesQuery = useQuery({
     queryKey: ["count", "categories"],
     queryFn: async () => (await listProductTypes()).data,
+  });
+  // Active storage locations (a count session targets exactly one). Scoped to the chosen
+  // warehouse by name when one is selected.
+  const locationsQuery = useQuery({
+    queryKey: ["count", "locations"],
+    queryFn: async () => (await listLocations({ limit: 500 })).data.items,
+  });
+  const activeLocations = useMemo(
+    () => (locationsQuery.data ?? []).filter((l) => l.is_active && (!fWarehouse || (l.warehouse_name ?? "") === fWarehouse)),
+    [locationsQuery.data, fWarehouse],
+  );
+  const selectedLocation = useMemo(
+    () => (locationsQuery.data ?? []).find((l) => l.id === fLocation) ?? null,
+    [locationsQuery.data, fLocation],
+  );
+  // Per-location on-hand for THIS session's location → the authoritative system quantity for
+  // each counted product (NOT the store-wide aggregate).
+  const locationQtyQuery = useQuery({
+    enabled: Boolean(fLocation),
+    queryKey: ["count", "location-qty", fLocation],
+    queryFn: async () => {
+      const items = (await listLocationProducts(fLocation, { limit: 5000 })).data.items;
+      const map = new Map<string, number>();
+      for (const it of items) map.set(it.product_id, it.quantity);
+      return map;
+    },
   });
 
   const active = sessions.find((s) => s.id === activeId) ?? null;
@@ -454,6 +485,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   function openNewWizard() {
     setFName("");
     setFWarehouse("");
+    setFLocation("");
     setFZone("");
     setFCategory("");
     setFStaff("");
@@ -483,13 +515,16 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
   function startCounting() {
     const chosen = candidates.filter((product) => selectedIds.has(product.id));
-    if (chosen.length === 0) return;
+    if (chosen.length === 0 || !fLocation || !selectedLocation) return;
+    // Authoritative system quantity is this session LOCATION's on-hand per product (0 if the
+    // product has no stock row there) — never the store-wide aggregate.
+    const locQty = locationQtyQuery.data ?? new Map<string, number>();
     const items: CountItem[] = chosen.map((product) => ({
       productId: product.id,
       name: product.name,
       sku: product.sku ?? "",
       barcode: product.barcode ?? "",
-      systemQty: product.total_stock ?? 0,
+      systemQty: locQty.get(product.id) ?? 0,
       minStock: product.min_stock ?? 0,
       location: product.storage_location?.trim() ?? "",
       counted: null,
@@ -505,10 +540,13 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
       adjustedBy: "",
     }));
     const categoryName = fCategory ? (categoriesQuery.data ?? []).find((category) => category.id === fCategory)?.name ?? null : null;
+    const locName = `${selectedLocation.warehouse_name ? `${selectedLocation.warehouse_name} › ` : ""}${selectedLocation.zone_name ? `${selectedLocation.zone_name} › ` : ""}${selectedLocation.name}`;
     const session: CountSession = {
       id: newId(),
       name: fName.trim() || t.create.title,
-      warehouseName: fWarehouse || null,
+      locationId: fLocation,
+      locationName: locName,
+      warehouseName: fWarehouse || selectedLocation.warehouse_name || null,
       zone: fZone || null,
       categoryId: fCategory || null,
       categoryName,
@@ -653,6 +691,19 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     }
     setCounted(item.productId, (item.counted ?? 0) + 1);
     setScan("");
+  }
+
+  // Camera scan (mobile): same as the quick-scan bar's Enter path — a matched
+  // code bumps that item's counted qty by one; an unknown code shows the same
+  // "not found" toast.
+  function handleCameraScan(code: string) {
+    if (!active) return;
+    const item = findCountItemByCode(active, code);
+    if (!item) {
+      toast.error(t.scanNotFound);
+      return;
+    }
+    setCounted(item.productId, (item.counted ?? 0) + 1);
   }
 
   function openQuickFound() {
@@ -930,6 +981,13 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
   async function applyCorrection() {
     if (!active || isPending || applyTargets.length === 0 || missingReasons > 0 || reviewBlocked) return;
+    // Legacy containment: a session without a storage location cannot be applied safely (its
+    // system quantities are aggregates). Surface the localized reason instead of attempting it
+    // (the backend also rejects this — this just avoids a round-trip and is clearer).
+    if (!active.locationId) {
+      toast.error(t.review.legacyNoLocation);
+      return;
+    }
     setConfirmApply(false);
     startTransition(async () => {
       const now = new Date().toISOString();
@@ -942,9 +1000,19 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
         // ONE atomic backend transaction: every correction commits together or none
         // does. No partial application, and the session completes only on success.
         await applyCountSession(active.id, items);
-      } catch {
-        toast.error(t.review.applyError);
-        return; // session stays in review — nothing was applied
+      } catch (e) {
+        // Surface the backend's specific domain message when present — in particular the
+        // location-aware stale-count conflict (a counted total that cannot be written to a
+        // single location, or stock that moved after counting). Falls back to the generic
+        // apply error. Session stays in review; nothing was applied.
+        toast.error(e instanceof Error && e.message ? e.message : t.review.applyError);
+        return;
+      }
+      // A successful apply mutated real stock at the session location → refresh every inventory
+      // surface (Inventory page, Warehouse page, per-location cache, Inventory Value report) so
+      // no stale KPI lingers, without refetching unrelated app data.
+      for (const key of [["inventory"], ["wh-inv"], ["stock-adjust", "by-location"], ["reports", "inventory-value"]]) {
+        queryClient.invalidateQueries({ queryKey: key });
       }
       const auditTrail: CountAuditEntry[] = applyTargets.map((item) => ({
         id: newId("audit"),
@@ -1220,15 +1288,27 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label={t.create.warehouse}>
-                <select value={fWarehouse} onChange={(e) => setFWarehouse(e.target.value)} className={inputCls}>
+                <select value={fWarehouse} onChange={(e) => { setFWarehouse(e.target.value); setFLocation(""); }} className={inputCls}>
                   <option value="">{t.create.allWarehouses}</option>
                   {(warehousesQuery.data ?? []).map((warehouse) => <option key={warehouse.id} value={warehouse.name}>{warehouse.name}</option>)}
                 </select>
               </Field>
-              <Field label={t.create.zone}>
-                <input value={fZone} onChange={(e) => setFZone(e.target.value)} placeholder={t.create.zonePlaceholder} className={inputCls} />
+              <Field label={t.create.location}>
+                <select value={fLocation} onChange={(e) => setFLocation(e.target.value)} className={inputCls}>
+                  <option value="">{t.create.selectLocation}</option>
+                  {activeLocations.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.warehouse_name ? `${l.warehouse_name} › ` : ""}{l.zone_name ? `${l.zone_name} › ` : ""}{l.name}{l.is_sale_point ? ` · ${t.create.salePoint}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-slate-400">{t.create.locationHelp}</p>
               </Field>
             </div>
+
+            <Field label={t.create.zone}>
+              <input value={fZone} onChange={(e) => setFZone(e.target.value)} placeholder={t.create.zonePlaceholder} className={inputCls} />
+            </Field>
 
             {fCountType === "cycle" ? (
               <Field label={t.create.cycleRule}>
@@ -1257,7 +1337,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
             <div className="flex gap-2 pt-1">
               <button type="button" onClick={backToList} className="h-11 flex-1 rounded-xl border border-violet-200 text-sm font-semibold text-slate-600 transition hover:bg-violet-50">{t.create.cancel}</button>
-              <button type="button" disabled={!fName.trim() || productsQuery.isPending} onClick={goToSelect} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-violet-600 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40">
+              <button type="button" disabled={!fName.trim() || !fLocation || productsQuery.isPending} onClick={goToSelect} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-violet-600 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40">
                 {t.create.continueToItems}
                 <ArrowRight className="h-4 w-4" />
               </button>
@@ -1358,8 +1438,8 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                             return next;
                           })} className="h-5 w-5 rounded border-violet-300 text-violet-600 focus:ring-violet-400" />
                         </td>
-                        <td className="px-3 py-2.5"><p className="truncate text-sm font-semibold text-slate-800" title={product.name}>{product.name}</p><p className="truncate font-mono text-[11px] text-slate-400">{product.sku || "-"}</p></td>
-                        <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{product.barcode || "—"}</td>
+                        <td className="px-3 py-2.5"><p className="truncate text-sm font-semibold text-slate-800" title={product.name}>{product.name}</p><p className="truncate text-[11px] text-slate-400">{product.sku || "-"}</p></td>
+                        <td className="px-3 py-2.5 text-xs text-slate-500">{product.barcode || "—"}</td>
                         <td className="px-3 py-2.5 text-right text-sm font-bold text-slate-700 tabular-nums">{product.total_stock ?? 0}</td>
                         <td className="px-3 py-2.5"><span className="flex items-center gap-1 truncate text-xs leading-normal text-slate-500"><MapPin className="h-3 w-3 shrink-0 text-slate-400" />{product.storage_location?.trim() || t.select.unassigned}</span></td>
                         <td className="px-3 py-2.5"><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${HEALTH_BADGE[health]}`}>{label}</span></td>
@@ -1424,8 +1504,8 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                 </div>
                 <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                   <div className="flex items-center gap-2 text-slate-500">
-                    <Warehouse className="h-4 w-4 shrink-0 text-violet-400" />
-                    <span className="truncate">{active.warehouseName || t.create.allWarehouses}{active.zone ? ` · ${active.zone}` : ""}</span>
+                    <MapPin className="h-4 w-4 shrink-0 text-violet-400" />
+                    <span className="truncate font-medium text-slate-700">{active.locationName || active.warehouseName || t.create.allWarehouses}{active.zone && !active.locationName ? ` · ${active.zone}` : ""}</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-500">
                     <Users className="h-4 w-4 shrink-0 text-violet-400" />
@@ -1492,9 +1572,16 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                 <>
                   {/* ── Full-width quick scan bar ─────────────────────── */}
                   {!done ? (
-                    <div className="relative">
-                      <ScanLine className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-violet-400" />
-                      <input value={scan} autoFocus onChange={(e) => setScan(e.target.value)} onKeyDown={handleScan} placeholder={t.scanPlaceholder} aria-label={t.scanPlaceholder} className="h-14 w-full rounded-2xl border-2 border-violet-200 bg-white pl-12 pr-4 text-base font-semibold text-slate-800 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100" />
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <ScanLine className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-violet-400" />
+                        <input value={scan} autoFocus onChange={(e) => setScan(e.target.value)} onKeyDown={handleScan} placeholder={t.scanPlaceholder} aria-label={t.scanPlaceholder} className="h-14 w-full rounded-2xl border-2 border-violet-200 bg-white pl-12 pr-4 text-base font-semibold text-slate-800 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100" />
+                      </div>
+                      <ScanButton
+                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border-2 border-violet-200 bg-white text-violet-600 transition hover:border-violet-400 hover:bg-violet-50"
+                        onScan={handleCameraScan}
+                        title={t.scanWithCamera}
+                      />
                     </div>
                   ) : null}
 
@@ -1550,8 +1637,8 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                                 <td className="px-4 py-2.5">
                                   <p className="line-clamp-2 text-sm font-semibold leading-snug text-slate-800" title={item.name}>{item.name}</p>
                                 </td>
-                                <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{item.sku || "—"}</td>
-                                <td className="px-3 py-2.5 font-mono text-xs text-slate-500">{item.barcode || "—"}</td>
+                                <td className="px-3 py-2.5 text-xs text-slate-500">{item.sku || "—"}</td>
+                                <td className="px-3 py-2.5 text-xs text-slate-500">{item.barcode || "—"}</td>
                                 <td className="px-3 py-2.5 text-xs text-slate-500">{item.location || t.select.unassigned}</td>
                                 <td className="px-3 py-2.5 text-right text-sm font-bold text-slate-700 tabular-nums">{hideSystemDuringCount ? t.counting.hidden : item.systemQty}</td>
                                 <td className="px-3 py-2.5">
@@ -1627,7 +1714,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{t.quickScan.productFound}</p>
                         <div className="mt-3 rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
                           <p className="text-lg font-bold text-slate-900">{quickFound.name}</p>
-                          <p className="mt-1 font-mono text-xs text-slate-500">{quickFound.sku || "-"} · {quickFound.barcode || "—"}</p>
+                          <p className="mt-1 text-xs text-slate-500">{quickFound.sku || "-"} · {quickFound.barcode || "—"}</p>
                           <p className="mt-2 flex items-center gap-1 text-xs text-slate-500"><MapPin className="h-3.5 w-3.5" />{quickFound.location || t.select.unassigned}</p>
                           <div className="mt-4 grid grid-cols-2 gap-3">
                             <div className="rounded-xl border border-violet-100 bg-white p-3">
@@ -1881,7 +1968,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                         <tr key={item.productId} className={`${ROW_STATUS_BG[status]} transition-colors`}>
                           <td className="px-4 py-2.5">
                             <p className="line-clamp-2 text-sm font-semibold leading-snug text-slate-800" title={item.name}>{item.name}</p>
-                            <p className="truncate font-mono text-[11px] text-slate-400">{item.sku || "-"}</p>
+                            <p className="truncate text-[11px] text-slate-400">{item.sku || "-"}</p>
                           </td>
                           <td className="px-3 py-2.5 text-right text-sm font-bold text-slate-700 tabular-nums">{item.systemQty}</td>
                           <td className="px-3 py-2.5 text-right text-sm font-bold text-slate-700 tabular-nums">{item.counted ?? "—"}</td>

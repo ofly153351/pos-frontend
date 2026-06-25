@@ -61,3 +61,11 @@ export function getCreditStatementUrl(creditSaleId: string): string {
   const storeId = ensureStoreId();
   return `/api/stores/${storeId}/credit-sales/${creditSaleId}/statement`;
 }
+
+// Same-origin BFF URL for the credit-sale billing notice (ใบวางบิล) rendered as
+// HTML by the shared document template. Loaded into a modal iframe for in-place
+// preview + print (no new tab); the auth cookie rides along to the BFF.
+export function getCreditSaleBillUrl(creditSaleId: string): string {
+  const storeId = ensureStoreId();
+  return `/api/stores/${storeId}/credit-sales/${creditSaleId}/bill`;
+}

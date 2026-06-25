@@ -17,6 +17,7 @@ import {
   upsertCustomerLevelDiscount,
 } from "@/services/customers";
 import { getStatementPDFUrl } from "@/services/documents";
+import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { friendlyMessage } from "@/lib/form-errors";
 import type { Customer, CustomerLevelDiscount, ShippingAddress } from "@/types/customer";
 import type { Locale } from "@/lib/locale-config";
@@ -533,66 +534,49 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
       ) : null}
 
       {/* ── KPI cards ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100">
-            <Users className="h-5 w-5 text-violet-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.total}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiTotal}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100">
-            <Award className="h-5 w-5 text-blue-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.silver}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiSilver}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100">
-            <Award className="h-5 w-5 text-amber-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.gold}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiGold}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-100">
-            <Crown className="h-5 w-5 text-purple-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.platinum}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiPlatinum}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-pink-100">
-            <Crown className="h-5 w-5 text-pink-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.vip}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiVip}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100">
-            <Star className="h-5 w-5 text-rose-500" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.totalPoints.toLocaleString()}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiPoints}</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+        <ReportKpiCard
+          label={dictionary.kpiTotal}
+          value={String(kpi.total)}
+          icon={<Users className="h-5 w-5" />}
+          iconBg="bg-violet-100"
+          iconColor="text-violet-600"
+        />
+        <ReportKpiCard
+          label={dictionary.kpiSilver}
+          value={String(kpi.silver)}
+          icon={<Award className="h-5 w-5" />}
+          iconBg="bg-blue-100"
+          iconColor="text-blue-600"
+        />
+        <ReportKpiCard
+          label={dictionary.kpiGold}
+          value={String(kpi.gold)}
+          icon={<Award className="h-5 w-5" />}
+          iconBg="bg-amber-100"
+          iconColor="text-amber-600"
+        />
+        <ReportKpiCard
+          label={dictionary.kpiPlatinum}
+          value={String(kpi.platinum)}
+          icon={<Crown className="h-5 w-5" />}
+          iconBg="bg-purple-100"
+          iconColor="text-purple-600"
+        />
+        <ReportKpiCard
+          label={dictionary.kpiVip}
+          value={String(kpi.vip)}
+          icon={<Crown className="h-5 w-5" />}
+          iconBg="bg-pink-100"
+          iconColor="text-pink-600"
+        />
+        <ReportKpiCard
+          label={dictionary.kpiPoints}
+          value={kpi.totalPoints.toLocaleString()}
+          icon={<Star className="h-5 w-5" />}
+          iconBg="bg-rose-100"
+          iconColor="text-rose-500"
+        />
       </div>
 
       {/* ── Customer table card ── */}

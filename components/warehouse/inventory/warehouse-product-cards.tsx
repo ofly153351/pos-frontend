@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { ArrowLeftRight, MapPin } from "lucide-react";
 
@@ -30,7 +30,7 @@ export function WarehouseProductCards({ dict, items, onViewLocations, onTransfer
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold text-slate-800">{item.product_name}</p>
-              <p className="truncate font-mono text-xs text-slate-400">{item.sku || dict.noBarcode}</p>
+              <p className="truncate text-xs text-slate-400">{item.sku || dict.noBarcode}</p>
             </div>
             <StatusChip dict={dict} status={item.status} />
           </div>

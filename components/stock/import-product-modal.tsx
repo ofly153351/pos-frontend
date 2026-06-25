@@ -168,14 +168,41 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
   const [progress, setProgress]   = useState({ done: 0, total: 0 });
 
   function downloadTemplate() {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1 — the data the user fills in.
     const ws = XLSX.utils.json_to_sheet(TEMPLATE_ROWS);
     ws["!cols"] = [
       { wch: 25 }, { wch: 14 }, { wch: 16 }, { wch: 18 }, { wch: 18 },
       { wch: 14 }, { wch: 18 }, { wch: 12 }, { wch: 16 }, { wch: 14 },
       { wch: 22 },
     ];
-    const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Products");
+
+    // Sheet 2 — column guide, so the file is self-explanatory offline.
+    const guide = [
+      ["คอลัมน์ (Column)", "จำเป็น (Required)", "คำอธิบาย (Description)"],
+      [COL_NAME, "ใช่ / Yes", "ชื่อสินค้าที่แสดงในระบบ"],
+      [COL_SKU, "ไม่ / No", "รหัสสินค้า เว้นว่างได้ ระบบสร้างให้อัตโนมัติ"],
+      [COL_BARCODE, "ไม่ / No", "บาร์โค้ด เว้นว่างได้ ระบบสร้างให้อัตโนมัติ"],
+      [COL_PRICE, "ใช่ / Yes", "ราคาขาย (ตัวเลข) เช่น 35"],
+      [COL_COST, "ไม่ / No", "ราคาทุน (ตัวเลข) ใช้คำนวณกำไรและมูลค่าสต็อก"],
+      [COL_STOCK, "ไม่ / No", "จำนวนเริ่มต้น ระบบลงสต็อกให้ที่ตำแหน่ง 'หน้าร้าน' (จุดขาย)"],
+      [COL_MIN, "ไม่ / No", "จุดแจ้งเตือนเมื่อสต็อกหน้าร้านต่ำกว่าหรือเท่ากับค่านี้"],
+      [COL_UNIT, "ไม่ / No", "หน่วยนับ เช่น ชิ้น/กล่อง ถ้ายังไม่มีระบบสร้างให้"],
+      [COL_CATEGORY, "ไม่ / No", "หมวดหมู่สินค้า ถ้ายังไม่มีระบบสร้างให้"],
+      [COL_BRAND, "ไม่ / No", "แบรนด์ ถ้ายังไม่มีระบบสร้างให้"],
+      [COL_DESC, "ไม่ / No", "รายละเอียดเพิ่มเติม"],
+      [],
+      ["หมายเหตุ (Notes)", "", ""],
+      ["• ห้ามแก้ชื่อหัวคอลัมน์ในชีต Products", "", ""],
+      ["• ลบแถวตัวอย่าง 2 แถวออกก่อนกรอกข้อมูลจริง", "", ""],
+      ["• สต็อกที่กรอกจะถูกบันทึกเป็นยอดยกมา (Opening Balance) ที่ตำแหน่งหน้าร้าน", "", ""],
+    ];
+    const wsGuide = XLSX.utils.aoa_to_sheet(guide);
+    wsGuide["!cols"] = [{ wch: 26 }, { wch: 16 }, { wch: 58 }];
+    XLSX.utils.book_append_sheet(wb, wsGuide, "วิธีใช้ (Guide)");
+
     XLSX.writeFile(wb, "product-import-template.xlsx");
   }
 
@@ -230,6 +257,8 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
           base_price:      g(COL_PRICE)    || "0",
           cost_price:      g(COL_COST)     || undefined,
           min_stock:       g(COL_MIN)      || "0",
+          // Opening-balance stock → seeded at the default sale-point (หน้าร้าน) location.
+          initial_stock:   g(COL_STOCK)    || undefined,
           description:     g(COL_DESC)     || undefined,
           product_type_id: typeId          || undefined,
           unit_id:         unitId          || undefined,
@@ -301,8 +330,11 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
             <div className="space-y-4 p-6">
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">ขั้นตอนที่ 1 — ดาวน์โหลด Template</p>
-                <p className="mb-3 text-xs text-slate-400">
+                <p className="mb-1 text-xs text-slate-400">
                   มีคอลัมน์: ชื่อสินค้า, SKU, Barcode, ราคาขาย, ราคาทุน, สต็อก, สต็อกขั้นต่ำ, หน่วย, หมวดหมู่, แบรนด์, คำอธิบาย
+                </p>
+                <p className="mb-3 text-xs text-slate-400">
+                  ดูคำอธิบายแต่ละคอลัมน์ได้ในชีต “วิธีใช้” · จำนวน “สต็อก” จะถูกบันทึกเป็นยอดยกมาที่ตำแหน่ง <span className="font-semibold text-slate-500">หน้าร้าน</span>
                 </p>
                 <button onClick={downloadTemplate} type="button"
                   className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50">

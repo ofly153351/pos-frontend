@@ -7,6 +7,7 @@ export type PnlDictionary = {
   loading: string;
   period: {
     label: string;
+    today: string;
     d7: string;
     d30: string;
     d90: string;
@@ -14,6 +15,7 @@ export type PnlDictionary = {
     from: string;
     to: string;
     apply: string;
+    refresh: string;
     rangeLabel: string; // uses {from} and {to}
   };
   kpi: {
@@ -44,10 +46,27 @@ export type PnlDictionary = {
   };
   ratios: {
     title: string;
+    subtitle: string;
     grossMargin: string;
     netMargin: string;
     expenseRatio: string;
     costRatio: string;
+  };
+  flow: {
+    title: string;
+    subtitle: string;
+  };
+  trend: {
+    title: string;
+    subtitle: string;
+    revenue: string;
+    profit: string;
+    note: string;
+    empty: string;
+  };
+  topExpenses: {
+    title: string;
+    subtitle: string;
   };
   lossBanner: {
     title: string;
@@ -57,6 +76,26 @@ export type PnlDictionary = {
     title: string;
     missingCost: string; // uses {count}
     itemsSuffix: string;
+    impact: string;
+    cta: string;
+  };
+  insights: {
+    title: string;
+    subtitle: string;
+    missingCostTitle: string;
+    missingCostDesc: string; // uses {count}
+    lossTitle: string;
+    lossDesc: string;
+    lowMarginTitle: string;
+    lowMarginDesc: string; // uses {margin}
+    healthyMarginTitle: string;
+    healthyMarginDesc: string; // uses {margin}
+    highExpenseTitle: string;
+    highExpenseDesc: string; // uses {ratio}
+    topExpenseTitle: string;
+    topExpenseDesc: string; // uses {name} and {value}
+    empty: string;
+    emptyDesc: string;
   };
   rcp: {
     title: string;

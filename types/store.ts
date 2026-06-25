@@ -62,14 +62,25 @@ export type StoreBankAccount = {
   bank_name: string;
   account_no: string;
   account_name: string;
+  is_active: boolean;
+  is_default: boolean;
   created_at?: string;
+  updated_at?: string;
 };
 
 export type CreateBankAccountInput = {
-  bank_code: string;
+  bank_code?: string;
   bank_name: string;
   account_no: string;
   account_name: string;
+};
+
+export type UpdateBankAccountInput = {
+  bank_name?: string;
+  account_no?: string;
+  account_name?: string;
+  is_active?: boolean;
+  is_default?: boolean;
 };
 
 export type StoreSubscription = {

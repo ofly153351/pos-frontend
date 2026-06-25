@@ -30,6 +30,7 @@ import {
 } from "@/services/credit-sales";
 import { ApiError } from "@/services/api";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import type { Customer } from "@/types/customer";
 import type { Product } from "@/types/product";
 import type {
@@ -489,43 +490,35 @@ export function CreditSalesManager({
       ) : null}
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100">
-            <HandCoins className="h-5 w-5 text-rose-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl font-bold text-slate-900">{fmtBaht(kpi.totalPending)}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiTotalPending}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.overdue}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiOverdue}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100">
-            <BookOpen className="h-5 w-5 text-indigo-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.loanItems}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiLoanItems}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100">
-            <TrendingUp className="h-5 w-5 text-violet-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold text-slate-900">{kpi.thisMonth}</p>
-            <p className="truncate text-xs text-slate-500">{dictionary.kpiThisMonth}</p>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <ReportKpiCard
+          label={dictionary.kpiTotalPending}
+          value={fmtBaht(kpi.totalPending)}
+          icon={<HandCoins className="h-5 w-5" />}
+          iconBg="bg-rose-100"
+          iconColor="text-rose-600"
+        />
+        <ReportKpiCard
+          label={dictionary.kpiOverdue}
+          value={String(kpi.overdue)}
+          icon={<AlertTriangle className="h-5 w-5" />}
+          iconBg="bg-amber-100"
+          iconColor="text-amber-600"
+        />
+        <ReportKpiCard
+          label={dictionary.kpiLoanItems}
+          value={String(kpi.loanItems)}
+          icon={<BookOpen className="h-5 w-5" />}
+          iconBg="bg-indigo-100"
+          iconColor="text-indigo-600"
+        />
+        <ReportKpiCard
+          label={dictionary.kpiThisMonth}
+          value={String(kpi.thisMonth)}
+          icon={<TrendingUp className="h-5 w-5" />}
+          iconBg="bg-violet-100"
+          iconColor="text-violet-600"
+        />
       </div>
 
       {/* Table card */}

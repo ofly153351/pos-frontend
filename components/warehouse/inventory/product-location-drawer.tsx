@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeftRight, History, MapPin, SlidersHorizontal, Store } from "lucide-react";
@@ -72,12 +72,12 @@ export function ProductLocationDrawer({
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
               {product.sku ? (
                 <span>
-                  {dict.drawerSku} <span className="font-mono text-slate-700">{product.sku}</span>
+                  {dict.drawerSku} <span className="text-slate-700">{product.sku}</span>
                 </span>
               ) : null}
               {product.barcode ? (
                 <span>
-                  {dict.drawerBarcode} <span className="font-mono text-slate-700">{product.barcode}</span>
+                  {dict.drawerBarcode} <span className="text-slate-700">{product.barcode}</span>
                 </span>
               ) : null}
               {product.category_name ? (
@@ -183,7 +183,7 @@ function LocationGroup({
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-semibold text-slate-800">{loc.code || loc.name}</span>
+                    <span className="text-sm font-semibold text-slate-800">{loc.code || loc.name}</span>
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                         loc.is_sale_point ? "bg-emerald-50 text-emerald-700" : "bg-violet-50 text-violet-700"

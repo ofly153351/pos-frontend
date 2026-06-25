@@ -3,6 +3,7 @@
 import * as XLSX from "xlsx";
 import { LayoutGrid, List } from "lucide-react";
 import { ProductsTable } from "@/components/stock/products-table";
+import { ScanButton } from "@/components/shared/scan-button";
 import { ProductCardGrid } from "@/components/stock/product-card-grid";
 import { BarcodeModal, type BarcodeModalLabels } from "@/components/stock/barcode-modal";
 import { BarcodeBatchModal } from "@/components/stock/barcode-batch-modal";
@@ -15,6 +16,7 @@ import type {
   StockManagerDictionary,
 } from "@/components/stock/types";
 import type { Product, ProductBrand, ProductType, ProductUnit } from "@/types/product";
+import type { Location } from "@/services/locations";
 
 type ProductStockStatus =
   | "all"
@@ -28,6 +30,8 @@ type StockLevelsSectionProps = {
   /** Stock mode (Inventory page): show stock-mutating actions and force table view.
    * Default false = Product master-data list (read-only stock, card/table toggle). */
   allowStockActions?: boolean;
+  /** When set, auto-opens the ProductDetailView for the product with this ID once products load. */
+  initialDetailProductId?: string;
   emptyState: string;
   error: string;
   filteredProducts: Product[];
@@ -60,23 +64,42 @@ type StockLevelsSectionProps = {
   productUnits: ProductUnit[];
   search: string;
   stockStatusFilter: ProductStockStatus;
+  statusCounts: { all: number; active: number; low_stock: number; out_of_stock: number; inactive: number };
+  locations: Location[];
+  locationFilter: string;
+  noLocationFilter: boolean;
+  onLocationFilterChange: (id: string) => void;
+  onNoLocationFilterChange: (v: boolean) => void;
+  summaryStats: { total: number; ready: number; low: number; out: number; value: number };
+  onBulkEnable: (ids: string[]) => void;
+  onBulkDisable: (ids: string[]) => void;
+  onBulkCategoryChange: (ids: string[], categoryId: string) => void;
 };
 
 export function StockLevelsSection({
   dictionary,
   allowStockActions = false,
+  initialDetailProductId,
   emptyState,
   error,
   filteredProducts,
   isPending,
   loadingLabel,
+  locations,
+  locationFilter,
+  noLocationFilter,
   managementDictionary,
+  onBulkEnable,
+  onBulkDisable,
+  onBulkCategoryChange,
   onPageChange,
   onPageSizeChange,
   onDelete,
   onDeleteMany,
   onEdit,
   onAdjustStock,
+  onLocationFilterChange,
+  onNoLocationFilterChange,
   onOpenCreateModal,
   onProductBrandFilterChange,
   onProductTypeFilterChange,
@@ -97,6 +120,8 @@ export function StockLevelsSection({
   productUnits,
   search,
   stockStatusFilter,
+  statusCounts,
+  summaryStats,
 }: StockLevelsSectionProps) {
   const startPage = Math.max(paginationCurrentPage - 2, 1);
   const endPage = Math.min(startPage + 4, paginationTotalPages);
@@ -114,9 +139,18 @@ export function StockLevelsSection({
   const [draftProductUnitFilter, setDraftProductUnitFilter] = useState(productUnitFilter);
   const [draftProductBrandFilter, setDraftProductBrandFilter] = useState(productBrandFilter);
   const [draftStockStatusFilter, setDraftStockStatusFilter] = useState<ProductStockStatus>(stockStatusFilter);
+  const [draftLocationFilter, setDraftLocationFilter] = useState(locationFilter);
+  const [draftNoLocationFilter, setDraftNoLocationFilter] = useState(noLocationFilter);
   const [optionSearch, setOptionSearch] = useState("");
   const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const importFileRef = useRef<HTMLInputElement>(null);
+
+  // Auto-open detail view when navigated here with ?product=<id> (e.g. from inventory table).
+  useEffect(() => {
+    if (!initialDetailProductId || filteredProducts.length === 0) return;
+    const target = filteredProducts.find((p) => p.id === initialDetailProductId);
+    if (target) setDetailProduct(target);
+  }, [initialDetailProductId, filteredProducts]);
 
   const barcodeLabels: BarcodeModalLabels = {
     title:               dictionary.table.barcodePreviewTitle,
@@ -149,6 +183,9 @@ export function StockLevelsSection({
     showBrand:           dictionary.table.barcodeShowBrand,
     showLocation:        dictionary.table.barcodeShowLocation,
     showStoreName:       dictionary.table.barcodeShowStoreName,
+    showSalePrice:       dictionary.table.barcodeShowSalePrice,
+    origPriceInput:      dictionary.table.barcodeOrigPriceInput,
+    salePriceInput:      dictionary.table.barcodeSalePriceInput,
     quantityLabel:       dictionary.table.barcodeQuantityLabel,
     printerModeLabel:    dictionary.table.barcodePrinterModeLabel,
     printerLabel:        dictionary.table.barcodePrinterLabel,
@@ -236,7 +273,9 @@ export function StockLevelsSection({
     setDraftProductUnitFilter(productUnitFilter);
     setDraftProductBrandFilter(productBrandFilter);
     setDraftStockStatusFilter(stockStatusFilter);
-  }, [isFilterPanelOpen, productBrandFilter, productTypeFilter, productUnitFilter, stockStatusFilter]);
+    setDraftLocationFilter(locationFilter);
+    setDraftNoLocationFilter(noLocationFilter);
+  }, [isFilterPanelOpen, productBrandFilter, productTypeFilter, productUnitFilter, stockStatusFilter, locationFilter, noLocationFilter]);
 
   const normalizedOptionSearch = optionSearch.trim().toLowerCase();
   const visibleTypes = useMemo(
@@ -264,6 +303,8 @@ export function StockLevelsSection({
     productBrandFilter,
     stockStatusFilter !== "all" ? stockStatusFilter : "",
     search.trim(),
+    locationFilter,
+    noLocationFilter ? "1" : "",
   ].filter(Boolean).length;
 
   function clearDraftFilters() {
@@ -271,6 +312,8 @@ export function StockLevelsSection({
     setDraftProductUnitFilter("");
     setDraftProductBrandFilter("");
     setDraftStockStatusFilter("all");
+    setDraftLocationFilter("");
+    setDraftNoLocationFilter(false);
     setOptionSearch("");
   }
 
@@ -279,6 +322,8 @@ export function StockLevelsSection({
     onProductUnitFilterChange(draftProductUnitFilter);
     onProductBrandFilterChange(draftProductBrandFilter);
     onStockStatusFilterChange(draftStockStatusFilter);
+    onLocationFilterChange(draftLocationFilter);
+    onNoLocationFilterChange(draftNoLocationFilter);
     setIsFilterPanelOpen(false);
   }
 
@@ -301,6 +346,12 @@ export function StockLevelsSection({
               value={search}
             />
           </div>
+
+          <ScanButton
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white text-violet-600 transition hover:border-violet-400 hover:bg-violet-50"
+            onScan={(code) => onSearchChange(code)}
+            title={dictionary.scanWithCamera}
+          />
 
           {/* Sort selector */}
           <select
@@ -436,6 +487,56 @@ export function StockLevelsSection({
                     ))}
                   </div>
                 </div>
+
+                {/* Phase 2: Location filter */}
+                {locations.length > 0 ? (
+                  <div className="rounded-lg border border-violet-100 p-2">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">{dictionary.filters.locationLabel ?? "ตำแหน่งจัดเก็บ"}</p>
+                    <div className="space-y-1">
+                      <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-slate-700 hover:bg-violet-50">
+                        <input
+                          checked={draftLocationFilter === ""}
+                          className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-400"
+                          onChange={() => { setDraftLocationFilter(""); setDraftNoLocationFilter(false); }}
+                          type="radio"
+                          name="locationFilter"
+                        />
+                        {dictionary.filters.allLocations ?? "ทุกตำแหน่ง"}
+                      </label>
+                      {locations.map((loc) => (
+                        <label key={loc.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-slate-700 hover:bg-violet-50">
+                          <input
+                            checked={draftLocationFilter === loc.id}
+                            className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-400"
+                            onChange={() => { setDraftLocationFilter(loc.id); setDraftNoLocationFilter(false); }}
+                            type="radio"
+                            name="locationFilter"
+                          />
+                          {loc.name}
+                          {loc.zone_name ? <span className="text-xs text-slate-400">{loc.zone_name}</span> : null}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Phase 3: No location filter */}
+                <div className="rounded-lg border border-violet-100 p-2">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">ตัวกรองพิเศษ</p>
+                  <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-slate-700 hover:bg-violet-50">
+                    <input
+                      checked={draftNoLocationFilter}
+                      className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-400"
+                      onChange={() => {
+                        const next = !draftNoLocationFilter;
+                        setDraftNoLocationFilter(next);
+                        if (next) setDraftLocationFilter("");
+                      }}
+                      type="checkbox"
+                    />
+                    {dictionary.filters.noLocationLabel ?? "ไม่มีตำแหน่งจัดเก็บ"}
+                  </label>
+                </div>
               </div>
 
               <div className="mt-4 flex items-center justify-end gap-2 border-t border-violet-100 pt-3">
@@ -538,6 +639,79 @@ export function StockLevelsSection({
         </div>
       </section>
 
+      {/* ── Phase 5: Summary bar ───────────────────────────────────────────── */}
+      <div className="my-2 flex flex-wrap gap-2 overflow-x-auto pb-1">
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm">
+          <span className="font-semibold text-slate-500">{dictionary.table.summaryAll ?? "ทั้งหมด"}</span>
+          <span className="font-bold text-slate-900">{summaryStats.total.toLocaleString()}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-2 text-sm">
+          <span className="font-semibold text-emerald-600">{dictionary.table.summaryReady ?? "พร้อมขาย"}</span>
+          <span className="font-bold text-emerald-700">{summaryStats.ready.toLocaleString()}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-amber-100 bg-amber-50 px-3.5 py-2 text-sm">
+          <span className="font-semibold text-amber-600">{dictionary.table.summaryLow ?? "สต็อกต่ำ"}</span>
+          <span className="font-bold text-amber-700">{summaryStats.low.toLocaleString()}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 px-3.5 py-2 text-sm">
+          <span className="font-semibold text-rose-500">{dictionary.table.summaryOut ?? "สินค้าหมด"}</span>
+          <span className="font-bold text-rose-700">{summaryStats.out.toLocaleString()}</span>
+        </div>
+        {summaryStats.value > 0 ? (
+          <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-violet-100 bg-violet-50 px-3.5 py-2 text-sm">
+            <span className="font-semibold text-violet-600">{dictionary.table.summaryValue ?? "มูลค่าสต็อก"}</span>
+            <span className="font-bold text-violet-700">
+              {new Intl.NumberFormat("th-TH", { currency: "THB", maximumFractionDigits: 0, minimumFractionDigits: 0, style: "currency" }).format(summaryStats.value)}
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* ── Phase 1: Quick status chips + Phase 6: Quick view buttons ─────── */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {(
+          [
+            { value: "all" as const, label: dictionary.filters.allStatuses, count: statusCounts.all },
+            { value: "active" as const, label: dictionary.filters.readyToSellStatus ?? dictionary.filters.activeStatus, count: statusCounts.active },
+            { value: "low_stock" as const, label: dictionary.filters.lowStockStatus, count: statusCounts.low_stock },
+            { value: "out_of_stock" as const, label: dictionary.filters.outOfStockStatus, count: statusCounts.out_of_stock },
+            { value: "inactive" as const, label: dictionary.filters.inactiveStatus, count: statusCounts.inactive },
+          ] as const
+        ).map((chip) => (
+          <button
+            key={chip.value}
+            type="button"
+            onClick={() => onStockStatusFilterChange(chip.value)}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+              stockStatusFilter === chip.value
+                ? "bg-violet-600 text-white shadow-sm"
+                : "border border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700"
+            }`}
+          >
+            {chip.label}
+            <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${stockStatusFilter === chip.value ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+              {chip.count}
+            </span>
+          </button>
+        ))}
+
+        {/* Phase 6: No Location quick view */}
+        <button
+          type="button"
+          onClick={() => {
+            onNoLocationFilterChange(!noLocationFilter);
+            if (!noLocationFilter) onLocationFilterChange("");
+          }}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+            noLocationFilter
+              ? "bg-violet-600 text-white shadow-sm"
+              : "border border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700"
+          }`}
+        >
+          {dictionary.filters.quickViewNoLocation ?? "ไม่มีตำแหน่ง"}
+        </button>
+      </div>
+
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
@@ -607,6 +781,10 @@ export function StockLevelsSection({
         lowStockLabel={dictionary.filters.lowStockStatus}
         outOfStockLabel={dictionary.filters.outOfStockStatus}
         products={filteredProducts}
+        productTypes={productTypes}
+        onBulkEnable={onBulkEnable}
+        onBulkDisable={onBulkDisable}
+        onBulkCategoryChange={onBulkCategoryChange}
         receiveDictionary={{
           receiveStockTitle: dictionary.receive?.receiveStockTitle ?? dictionary.form.titleCreate,
           receiveStock: dictionary.receive?.receiveStock ?? dictionary.table.importLabel,

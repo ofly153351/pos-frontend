@@ -29,9 +29,10 @@ type Props = {
 };
 
 export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE", onExport, onPrint, onCreateDocument }: Props) {
+  // RECEIPT is intentionally excluded — receipts are issued from POS sales, not
+  // hand-authored here. The Receipts tab surfaces them from sales history instead.
   const docTypes: { type: DocumentType; label: string }[] = [
     { type: "INVOICE",     label: dict.typeInvoice },
-    { type: "RECEIPT",     label: dict.typeReceipt },
     { type: "TAX_INVOICE", label: dict.typeTaxInvoice },
     { type: "QUOTATION",   label: dict.typeQuotation },
     { type: "BILL",        label: dict.typeBill },

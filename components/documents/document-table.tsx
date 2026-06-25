@@ -1,9 +1,13 @@
 "use client";
 
-import { Copy, Loader2, MoreVertical, Package, Printer, Send, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Package, Printer, Send, Trash2, X } from "lucide-react";
 import type { DocumentListItem, DocumentStatus } from "@/types/document";
+import { getDocumentPrintHtml } from "@/services/documents";
+import { toast } from "@/components/ui/toast";
 import { DocumentTypeBadge } from "./document-type-badge";
 import { DocumentStatusBadge, PaymentStatusBadge } from "./document-status-badge";
+import { DocumentRowActions } from "./document-row-actions";
 import { SkeletonDocumentRow } from "@/components/ui/skeleton";
 
 type Dict = {
@@ -46,7 +50,31 @@ type Dict = {
   typeQuotation: string;
   typeBill: string;
   typeCreditNote: string;
+  typeDeliveryOrder?: string;
   createDocument: string;
+  // Row actions + bulk
+  duplicate: string;
+  duplicateSuccess: string;
+  duplicateError: string;
+  printPreview: string;
+  downloadPDF: string;
+  convertTo: string;
+  recordPayment: string;
+  paySuccess: string;
+  payError: string;
+  cancelDocument: string;
+  cancelSuccess: string;
+  cancelError: string;
+  confirmCancelDoc: string;
+  deleteSuccess: string;
+  deleteError: string;
+  confirmDeleteDoc: string;
+  convertSuccess: string;
+  convertError: string;
+  pdfError: string;
+  comingSoon: string;
+  printAll: string;
+  printError: string;
 };
 
 type Props = {
@@ -88,9 +116,42 @@ export function DocumentTable({
   onBulkDelete, onBulkStatus, onClearSelection, onCreateDocument,
   isBulkPending,
 }: Props) {
+  const [bulkPrinting, setBulkPrinting] = useState(false);
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const allChecked = documents.length > 0 && documents.every((d) => selectedIds.has(d.id));
   const someChecked = documents.some((d) => selectedIds.has(d.id));
+
+  // Print every selected document. Each one renders through the shared backend
+  // template into a hidden iframe, then opens its own print dialog in sequence.
+  async function bulkPrint() {
+    if (bulkPrinting) return;
+    setBulkPrinting(true);
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      try {
+        const html = await getDocumentPrintHtml(id);
+        await new Promise<void>((resolve) => {
+          const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+          const blobUrl = URL.createObjectURL(blob);
+          const frame = document.createElement("iframe");
+          frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
+          document.body.appendChild(frame);
+          frame.src = blobUrl;
+          frame.onload = () => {
+            setTimeout(() => {
+              frame.contentWindow?.focus();
+              frame.contentWindow?.print();
+              setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); resolve(); }, 1500);
+            }, 150);
+          };
+        });
+        await new Promise((r) => setTimeout(r, 800));
+      } catch {
+        /* skip docs that fail to render */
+      }
+    }
+    setBulkPrinting(false);
+  }
 
   const from = (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
@@ -110,15 +171,17 @@ export function DocumentTable({
           </span>
           <div className="ml-2 flex items-center gap-2">
             <button
-              className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50"
-              onClick={() => window.print()}
+              className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-50"
+              disabled={bulkPrinting}
+              onClick={bulkPrint}
               type="button"
             >
-              <Printer className="h-3.5 w-3.5" />
-              {d.print}
+              {bulkPrinting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
+              {bulkPrinting ? d.loading : d.printAll}
             </button>
             <button
               className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50"
+              onClick={() => toast.info(d.comingSoon)}
               type="button"
             >
               <Send className="h-3.5 w-3.5" />
@@ -215,7 +278,7 @@ export function DocumentTable({
                     />
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs font-semibold text-violet-700">{doc.document_no}</span>
+                    <span className="nums text-xs font-semibold text-violet-700 whitespace-nowrap">{doc.document_no}</span>
                   </td>
                   <td className="px-4 py-3">
                     <DocumentTypeBadge type={doc.type} dict={d} />
@@ -228,7 +291,7 @@ export function DocumentTable({
                     {doc.due_date ? fmtDate(doc.due_date) : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <span className={`font-mono text-sm font-medium tabular-nums ${doc.total_amount < 0 ? "text-red-600" : "text-slate-800"}`}>
+                    <span className={`nums text-sm font-medium ${doc.total_amount < 0 ? "text-red-600" : "text-slate-800"}`}>
                       {doc.total_amount < 0
                         ? `-${fmt(Math.abs(doc.total_amount))}`
                         : fmt(doc.total_amount)}
@@ -241,17 +304,11 @@ export function DocumentTable({
                     <PaymentStatusBadge status={doc.payment_status} dict={d} />
                   </td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-0.5">
-                      <button title={d.copy} className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600" type="button">
-                        <Copy className="h-4 w-4" />
-                      </button>
-                      <button title={d.print} className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600" type="button">
-                        <Printer className="h-4 w-4" />
-                      </button>
-                      <button title={d.moreOptions} className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600" type="button">
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <DocumentRowActions
+                      doc={doc}
+                      dict={d}
+                      onPreview={() => onSelectDoc(doc.id)}
+                    />
                   </td>
                 </tr>
               ))}

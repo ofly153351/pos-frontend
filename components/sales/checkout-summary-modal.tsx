@@ -1,9 +1,22 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Banknote, ChevronDown, FileText, Loader2, Search, ShoppingCart, Ticket, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Banknote,
+  ChevronDown,
+  CreditCard,
+  FileText,
+  Loader2,
+  QrCode,
+  Search,
+  ShoppingCart,
+  Smartphone,
+  Ticket,
+  X,
+} from "lucide-react";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
-import { formatCurrency, formatAmount, parsePaidAmountAsCeilInt } from "./utils/sales-calculations";
+import { formatCurrency, formatAmount } from "./utils/sales-calculations";
 
 type Dict = {
   checkoutSectionTitle: string;
@@ -30,6 +43,7 @@ type Dict = {
   customerSettlementInvoice: string;
   paymentMethodLabel: string;
   paymentMethodCashLabel: string;
+  paymentMethodCard: string;
   paymentMethodPromptPay: string;
   paymentMethodQrLabel: string;
   paymentMethodBankTransferLabel: string;
@@ -121,7 +135,7 @@ function CustomerCombobox({ customers, customerLevelDiscounts, value, onChange, 
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between rounded-lg border border-violet-200 bg-white px-4 py-3 text-sm text-left outline-none transition hover:border-violet-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+        className="flex w-full items-center justify-between rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-sm text-left outline-none transition hover:border-violet-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
       >
         {selected ? (
           <span className="flex items-center gap-2 min-w-0">
@@ -149,7 +163,6 @@ function CustomerCombobox({ customers, customerLevelDiscounts, value, onChange, 
 
       {open && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-violet-100 bg-white shadow-xl">
-          {/* Search */}
           <div className="flex items-center gap-2 border-b border-violet-50 px-3 py-2">
             <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
             <input
@@ -161,7 +174,6 @@ function CustomerCombobox({ customers, customerLevelDiscounts, value, onChange, 
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          {/* List */}
           <div className="max-h-48 overflow-y-auto">
             {filtered.length === 0 ? (
               <div className="px-4 py-3 text-sm text-slate-400">ไม่พบลูกค้า</div>
@@ -190,7 +202,6 @@ const dueDatePresetDays = [7, 14, 30, 45];
 function getDueDatePresetValue(days: number) {
   const target = new Date();
   target.setDate(target.getDate() + days);
-
   return target.toISOString().split("T")[0];
 }
 
@@ -239,7 +250,6 @@ type Props = {
   customerDiscountPercent: number;
   promoDiscountAmount: number;
   promoNames?: string[];
-  effectivePaidAmount: number;
   changeAmount: number;
   isPending: boolean;
   isCreatingQuotation: boolean;
@@ -249,8 +259,6 @@ type Props = {
   setQuotationValidUntil: (v: string) => void;
   quickCashOptions: QuickCashOption[];
   lastQuickCashAmount: number | null;
-  isNetworkCustomerSelected: boolean;
-  isInvoiceSettlement: boolean;
   customerTypeLabel: string;
   cartLength: number;
   enabledPaymentChannels?: string[];
@@ -258,7 +266,7 @@ type Props = {
   onSubmit: () => void;
   onCreateQuotation: () => void;
   onApplyQuickCash: (amount: number, isExact?: boolean) => void;
-  onOpenAmountNumpad: (field: "bill_discount" | "paid_amount") => void;
+  onPaidAmountChange: (v: string) => void;
   dictionary: Dict;
 };
 
@@ -291,7 +299,6 @@ export function CheckoutSummaryModal({
   customerDiscountPercent,
   promoDiscountAmount,
   promoNames,
-  effectivePaidAmount,
   changeAmount,
   isPending,
   isCreatingQuotation,
@@ -301,8 +308,6 @@ export function CheckoutSummaryModal({
   setQuotationValidUntil,
   quickCashOptions,
   lastQuickCashAmount,
-  isNetworkCustomerSelected,
-  isInvoiceSettlement,
   customerTypeLabel,
   cartLength,
   enabledPaymentChannels,
@@ -310,246 +315,222 @@ export function CheckoutSummaryModal({
   onSubmit,
   onCreateQuotation,
   onApplyQuickCash,
-  onOpenAmountNumpad,
+  onPaidAmountChange,
   dictionary,
 }: Props) {
   const [dueDatePresetOptions] = useState(() => getDueDatePresetOptions());
 
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", handleEsc, true);
+    return () => document.removeEventListener("keydown", handleEsc, true);
+  }, [isOpen, onClose]);
 
-  if (!isOpen) {
-    return null;
-  }
+  const amountInputRef = useRef<HTMLInputElement>(null);
+
+  if (!isOpen) return null;
+
+  const isCashNow = !quotationMode && customerSettlementMode === "cash_now";
+  const isInvoiceMode = !quotationMode && customerSettlementMode === "invoice";
+
+  const paymentOptions = [
+    { label: dictionary.paymentMethodCashLabel, value: "cash", always: true },
+    { label: dictionary.paymentMethodQrLabel, value: "promptpay", always: true },
+    { label: dictionary.paymentMethodBankTransferLabel, value: "bank_transfer", always: true },
+    { label: dictionary.paymentMethodCard, value: "card", always: false },
+    { label: dictionary.paymentMethodCreditCardLabel, value: "credit_card", always: false },
+    { label: dictionary.paymentMethodDebitCardLabel, value: "debit_card", always: false },
+  ].filter((o) => o.always || (enabledPaymentChannels ?? []).includes(o.value));
+
+  const numpadDigits = (digit: string) => {
+    const el = amountInputRef.current;
+    if (!el) { onPaidAmountChange(paidAmount + digit); return; }
+    const start = el.selectionStart ?? paidAmount.length;
+    const end = el.selectionEnd ?? paidAmount.length;
+    const next = paidAmount.slice(0, start) + digit + paidAmount.slice(end);
+    onPaidAmountChange(next);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start + 1, start + 1); });
+  };
+
+  const numpadClear = () => { onPaidAmountChange(""); amountInputRef.current?.focus(); };
+
+  const numpadBackspace = () => {
+    const el = amountInputRef.current;
+    if (!el) { onPaidAmountChange(paidAmount.slice(0, -1)); return; }
+    const start = el.selectionStart ?? paidAmount.length;
+    const end = el.selectionEnd ?? paidAmount.length;
+    let next: string;
+    let cursor: number;
+    if (start !== end) {
+      next = paidAmount.slice(0, start) + paidAmount.slice(end);
+      cursor = start;
+    } else if (start > 0) {
+      next = paidAmount.slice(0, start - 1) + paidAmount.slice(start);
+      cursor = start - 1;
+    } else {
+      return;
+    }
+    onPaidAmountChange(next);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(cursor, cursor); });
+  };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/40 px-4 py-6 smooth-fade">
-      <div className="w-full max-w-4xl rounded-[1.5rem] border border-violet-100 bg-white p-5 shadow-2xl smooth-fade-up">
-        {/* ── Header: 3-mode toggle + close ── */}
-        <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="fixed inset-0 z-40 flex bg-white">
+
+      {/* ══════════════════ LEFT PANEL: Summary ══════════════════ */}
+      <div className="flex w-[40%] min-w-0 flex-col border-r border-slate-200">
+
+        {/* Header row */}
+        <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            กลับไปหน้าขาย
+          </button>
+
+          {/* Compact mode toggle */}
           <div
             aria-label={dictionary.saleModeAriaLabel}
-            className="grid gap-1.5 rounded-2xl border border-violet-100 bg-violet-50/70 p-1 shadow-inner shadow-violet-100/60 sm:grid-cols-3"
+            className="flex gap-0.5 rounded-xl border border-violet-100 bg-violet-50/70 p-0.5"
             role="group"
           >
             {[
               {
                 active: !quotationMode && customerSettlementMode === "cash_now",
-                description: dictionary.saleModeCashDescription,
                 icon: ShoppingCart,
                 label: dictionary.saleModeCashLabel,
-                onClick: () => { setQuotationMode(false); setQuotationValidUntil(""); setCustomerSettlementMode("cash_now"); setSelectedCustomerId(""); },
+                onClick: () => { setQuotationMode(false); setCustomerSettlementMode("cash_now"); setSelectedCustomerId(""); },
               },
               {
                 active: !quotationMode && customerSettlementMode === "invoice",
-                description: dictionary.saleModeInvoiceDescription,
                 icon: Banknote,
                 label: dictionary.saleModeInvoiceLabel,
-                onClick: () => { setQuotationMode(false); setQuotationValidUntil(""); setCustomerSettlementMode("invoice"); },
+                onClick: () => { setQuotationMode(false); setCustomerSettlementMode("invoice"); },
               },
               {
                 active: quotationMode,
-                description: dictionary.saleModeQuotationDescription,
                 icon: FileText,
                 label: dictionary.saleModeQuotationLabel,
-                onClick: () => { setQuotationMode(true); setQuotationValidUntil(""); setCustomerSettlementMode("cash_now"); },
+                onClick: () => { setQuotationMode(true); setCustomerSettlementMode("cash_now"); },
               },
-            ].map((option) => {
-              const Icon = option.icon;
+            ].map((m) => {
+              const Icon = m.icon;
               return (
                 <button
-                  key={option.label}
+                  key={m.label}
                   type="button"
-                  aria-pressed={option.active}
-                  onClick={option.onClick}
-                  className={`flex min-w-[8.5rem] items-center gap-2 rounded-xl px-3 py-2.5 text-left transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-violet-300 ${
-                    option.active
-                      ? "bg-white text-violet-800 shadow-sm ring-1 ring-violet-200 scale-[1.02]"
-                      : "text-slate-500 hover:bg-white/70 hover:text-violet-700 scale-100"
+                  aria-pressed={m.active}
+                  onClick={m.onClick}
+                  className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                    m.active
+                      ? "bg-white text-violet-800 shadow-sm ring-1 ring-violet-200"
+                      : "text-slate-500 hover:bg-white/70 hover:text-violet-600"
                   }`}
                 >
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200 ease-in-out ${
-                    option.active
-                      ? "bg-violet-600 text-white shadow-md shadow-violet-300/50"
-                      : "bg-white text-violet-400 ring-1 ring-violet-100"
-                  }`}>
-                    <Icon className={`h-4 w-4 transition-transform duration-200 ${option.active ? "scale-110" : "scale-100"}`} aria-hidden="true" />
-                  </span>
-                  <span className="leading-tight">
-                    <span className={`block text-sm font-bold transition-colors duration-200 ${option.active ? "text-violet-800" : "text-slate-500"}`}>{option.label}</span>
-                    <span className="block text-[11px] font-medium text-slate-400">{option.description}</span>
-                  </span>
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden sm:inline">{m.label}</span>
                 </button>
               );
             })}
           </div>
-
-          <button
-            className="self-start rounded-lg border border-violet-200 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
-            onClick={onClose}
-            type="button"
-          >
-            {dictionary.closeReceiptButton}
-          </button>
         </div>
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="space-y-3">
-            {/* Customer select */}
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-violet-800">
-                {dictionary.customerLabel}
-                {!quotationMode && customerSettlementMode === "cash_now" && (
-                  <span className="ml-1.5 text-[11px] font-normal text-slate-400">
-                    (เพื่อออกใบกำกับภาษี — ไม่บังคับ)
-                  </span>
-                )}
-              </label>
-              {customerSettlementMode === "invoice" ? (
-                <CustomerCombobox
-                  customers={customers}
-                  customerLevelDiscounts={customerLevelDiscounts}
-                  value={selectedCustomerId}
-                  onChange={setSelectedCustomerId}
-                  placeholder="เลือกลูกค้า..."
-                />
-              ) : quotationMode ? (
-                <select
-                  className="w-full rounded-lg border border-violet-200 bg-violet-50/30 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                  onChange={(event) => setSelectedCustomerId(event.target.value)}
-                  value={selectedCustomerId}
-                >
-                  <option value="">{dictionary.customerPlaceholder}</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.full_name} (L{customer.level ?? 1} •{" "}
-                      {customerLevelDiscounts.find(
-                        (rule) => rule.level === Number(customer.level ?? 1),
-                      )?.discount_percent ?? 0}
-                      %)
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                /* cash_now — optional customer for tax invoice */
-                <CustomerCombobox
-                  customers={customers}
-                  customerLevelDiscounts={customerLevelDiscounts}
-                  value={selectedCustomerId}
-                  onChange={setSelectedCustomerId}
-                  placeholder={dictionary.customerPlaceholder}
-                />
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+
+          {/* Customer selector */}
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-violet-800">
+              {dictionary.customerLabel}
+              {isCashNow && (
+                <span className="ml-1.5 font-normal text-slate-400">(ไม่บังคับ)</span>
               )}
-              <p className="mt-2 text-xs font-medium text-slate-600">
-                {dictionary.customerTypeLabel}: {customerTypeLabel}
-              </p>
-            </div>
-
-            {/* Quotation mode fields */}
-            {quotationMode && (
-              <>
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-violet-800">{dictionary.quoteValidUntilLabel}</label>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {dueDatePresetOptions.map((option) => (
-                      <button
-                        key={option.days}
-                        type="button"
-                        onClick={() =>
-                          setQuotationValidUntil(
-                            quotationValidUntil === option.value ? "" : option.value,
-                          )
-                        }
-                        className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
-                          quotationValidUntil === option.value
-                            ? "border-violet-600 bg-violet-600 text-white"
-                            : "border-violet-200 bg-white text-slate-600 hover:border-violet-400 hover:text-violet-700"
-                        }`}
-                      >
-                        {option.days} {dictionary.dayUnitLabel}
-                      </button>
-                    ))}
-                    <input
-                      type="date"
-                      className="ml-auto rounded-lg border border-violet-200 px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                      value={quotationValidUntil}
-                      onChange={(e) => setQuotationValidUntil(e.target.value)}
-                    />
-                  </div>
-                  {quotationValidUntil && (
-                    <p className="mt-1.5 text-xs text-slate-400">
-                      {dictionary.quotationValidUntilPrefix} {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(quotationValidUntil))}
-                      <button type="button" onClick={() => setQuotationValidUntil("")} className="ml-2 underline hover:text-slate-600">{dictionary.clearDateButton}</button>
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-violet-800">{dictionary.noteLabel}</label>
-                  <textarea
-                    rows={2}
-                    className="w-full resize-none rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                    placeholder={dictionary.notePlaceholder}
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                  />
-                </div>
-              </>
+            </label>
+            {customerSettlementMode === "invoice" ? (
+              <CustomerCombobox
+                customers={customers}
+                customerLevelDiscounts={customerLevelDiscounts}
+                value={selectedCustomerId}
+                onChange={setSelectedCustomerId}
+                placeholder="เลือกลูกค้า..."
+              />
+            ) : quotationMode ? (
+              <select
+                className="w-full rounded-lg border border-violet-200 bg-violet-50/30 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                value={selectedCustomerId}
+              >
+                <option value="">{dictionary.customerPlaceholder}</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.full_name} (L{c.level ?? 1} •{" "}
+                    {customerLevelDiscounts.find((r) => r.level === Number(c.level ?? 1))?.discount_percent ?? 0}%)
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <CustomerCombobox
+                customers={customers}
+                customerLevelDiscounts={customerLevelDiscounts}
+                value={selectedCustomerId}
+                onChange={setSelectedCustomerId}
+                placeholder={dictionary.customerPlaceholder}
+              />
             )}
+            <p className="mt-1.5 text-xs text-slate-500">
+              {dictionary.customerTypeLabel}: {customerTypeLabel}
+            </p>
+          </div>
 
-
-            {/* Invoice due date */}
-            {!quotationMode && customerSettlementMode === "invoice" ? (
+          {/* Quotation: valid-until */}
+          {quotationMode && (
+            <>
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-violet-800">
-                  {dictionary.invoiceDueDateLabel}
-                </label>
-                <div className="flex items-center gap-2">
-                  {dueDatePresetOptions.map((option) => {
-                    const active = invoiceDueDate === option.value;
-
-                    return (
-                      <button
-                        key={option.days}
-                        type="button"
-                        onClick={() =>
-                          setInvoiceDueDate(active ? "" : option.value)
-                        }
-                        className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition ${
-                          active
-                            ? "border-violet-600 bg-violet-600 text-white"
-                            : "border-violet-200 bg-white text-slate-600 hover:border-violet-400 hover:text-violet-700"
-                        }`}
-                      >
-                        {option.days} {dictionary.dayUnitLabel}
-                      </button>
-                    );
-                  })}
+                <label className="mb-1.5 block text-xs font-semibold text-violet-800">{dictionary.quoteValidUntilLabel}</label>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {dueDatePresetOptions.map((o) => (
+                    <button
+                      key={o.days}
+                      type="button"
+                      onClick={() => setQuotationValidUntil(quotationValidUntil === o.value ? "" : o.value)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                        quotationValidUntil === o.value
+                          ? "border-violet-600 bg-violet-600 text-white"
+                          : "border-violet-200 bg-white text-slate-600 hover:border-violet-400 hover:text-violet-700"
+                      }`}
+                    >
+                      {o.days} {dictionary.dayUnitLabel}
+                    </button>
+                  ))}
                   <input
                     type="date"
-                    value={invoiceDueDate}
-                    onChange={(e) => setInvoiceDueDate(e.target.value)}
-                    className="ml-auto rounded-lg border border-violet-200 px-3 py-1.5 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    className="ml-auto rounded-lg border border-violet-200 px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    value={quotationValidUntil}
+                    onChange={(e) => setQuotationValidUntil(e.target.value)}
                   />
                 </div>
-                {invoiceDueDate && (
-                  <p className="mt-1.5 text-xs text-slate-400">
-                    {dictionary.invoiceDueDatePrefix} {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(invoiceDueDate))}
-                    <button
-                      type="button"
-                      onClick={() => setInvoiceDueDate("")}
-                      className="ml-2 text-slate-400 underline hover:text-slate-600"
-                    >
+                {quotationValidUntil && (
+                  <p className="mt-1 text-xs text-slate-400">
+                    {dictionary.quotationValidUntilPrefix}{" "}
+                    {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(quotationValidUntil))}
+                    <button type="button" onClick={() => setQuotationValidUntil("")} className="ml-2 underline hover:text-slate-600">
                       {dictionary.clearDateButton}
                     </button>
                   </p>
                 )}
               </div>
-            ) : null}
-
-            {/* Note for invoice settlement */}
-            {!quotationMode && customerSettlementMode === "invoice" ? (
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-violet-800">
-                  {dictionary.noteLabel}
-                </label>
+                <label className="mb-1.5 block text-xs font-semibold text-violet-800">{dictionary.noteLabel}</label>
                 <textarea
                   rows={2}
                   className="w-full resize-none rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
@@ -558,250 +539,365 @@ export function CheckoutSummaryModal({
                   onChange={(e) => setNote(e.target.value)}
                 />
               </div>
-            ) : null}
+            </>
+          )}
 
-            {/* Payment method */}
-            {!quotationMode && customerSettlementMode === "cash_now" ? (
+          {/* Invoice: due date + note */}
+          {isInvoiceMode && (
+            <>
               <div>
-                <label className="mb-2 block text-sm font-semibold text-violet-800">
-                  {dictionary.paymentMethodLabel}
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { label: dictionary.paymentMethodCashLabel, value: "cash", always: true },
-                    { label: dictionary.paymentMethodQrLabel, value: "promptpay", always: true },
-                    { label: dictionary.paymentMethodBankTransferLabel, value: "bank_transfer", always: true },
-                    { label: dictionary.paymentMethodCreditCardLabel, value: "credit_card", always: false },
-                    { label: dictionary.paymentMethodDebitCardLabel, value: "debit_card", always: false },
-                  ]
-                    .filter((o) => o.always || (enabledPaymentChannels ?? []).includes(o.value))
-                    .map((option) => (
-                    <button
-                      key={option.value}
-                      className={`rounded-lg border px-3 py-3 text-sm font-semibold transition ${
-                        paymentMethod === option.value
-                          ? "border-violet-600 bg-violet-600 text-white"
-                          : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                      }`}
-                      onClick={() => setPaymentMethod(option.value)}
-                      type="button"
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                <label className="mb-1.5 block text-xs font-semibold text-violet-800">{dictionary.invoiceDueDateLabel}</label>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {dueDatePresetOptions.map((o) => {
+                    const active = invoiceDueDate === o.value;
+                    return (
+                      <button
+                        key={o.days}
+                        type="button"
+                        onClick={() => setInvoiceDueDate(active ? "" : o.value)}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                          active
+                            ? "border-violet-600 bg-violet-600 text-white"
+                            : "border-violet-200 bg-white text-slate-600 hover:border-violet-400 hover:text-violet-700"
+                        }`}
+                      >
+                        {o.days} {dictionary.dayUnitLabel}
+                      </button>
+                    );
+                  })}
+                  <input
+                    type="date"
+                    value={invoiceDueDate}
+                    onChange={(e) => setInvoiceDueDate(e.target.value)}
+                    className="ml-auto rounded-lg border border-violet-200 px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  />
                 </div>
-
-                {/* Bank transfer account selector */}
-                {paymentMethod === "bank_transfer" && (
-                  <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/60 p-3">
-                    {bankAccounts.filter((a) => a.is_active).length === 0 ? (
-                      <p className="text-xs text-amber-600">{dictionary.bankAccountNone}</p>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold text-violet-700">{dictionary.bankTransferInstructions}</p>
-                        {bankAccounts.filter((a) => a.is_active).map((acc) => (
-                          <button
-                            key={acc.id}
-                            type="button"
-                            onClick={() => setSelectedBankAccountId(acc.id)}
-                            className={`w-full rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-                              selectedBankAccountId === acc.id
-                                ? "border-violet-600 bg-white ring-1 ring-violet-600"
-                                : "border-violet-200 bg-white hover:border-violet-400"
-                            }`}
-                          >
-                            <div className="font-semibold text-slate-800">{acc.bank_name}</div>
-                            <div className="mt-0.5 font-mono text-xs text-slate-600">{acc.account_no}</div>
-                            <div className="text-xs text-slate-500">{acc.account_name}</div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                {invoiceDueDate && (
+                  <p className="mt-1 text-xs text-slate-400">
+                    {dictionary.invoiceDueDatePrefix}{" "}
+                    {new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(invoiceDueDate))}
+                    <button type="button" onClick={() => setInvoiceDueDate("")} className="ml-2 underline hover:text-slate-600">
+                      {dictionary.clearDateButton}
+                    </button>
+                  </p>
                 )}
               </div>
-            ) : null}
-
-            {/* Paid amount + quick cash (only for cash) */}
-            {!quotationMode && customerSettlementMode === "cash_now" && paymentMethod === "cash" ? (
-              <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-violet-800">
-                      {dictionary.customerPaymentLabel}
-                    </label>
-                    <input
-                      className="w-full rounded-lg border border-violet-200 bg-white px-3 py-2.5 text-right text-xs text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                      inputMode="numeric"
-                      min="0"
-                      onClick={() => onOpenAmountNumpad("paid_amount")}
-                      onFocus={(event) => event.target.blur()}
-                      placeholder="0"
-                      readOnly
-                      value={
-                        paidAmount
-                          ? `฿${formatAmount(parsePaidAmountAsCeilInt(paidAmount))}`
-                          : ""
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-violet-800">
-                      {dictionary.changeLabel}
-                    </label>
-                    <input
-                      className="w-full rounded-lg border border-violet-100 bg-violet-50 px-3 py-2.5 text-right text-xs font-semibold text-slate-700 outline-none"
-                      readOnly
-                      value={formatCurrency(Math.max(changeAmount, 0))}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                    {dictionary.quickCashLabel}
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {quickCashOptions.map((option) => (
-                      <button
-                        key={option.isExact ? `exact-${option.amount}` : option.amount}
-                        className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition ${
-                          lastQuickCashAmount === option.amount
-                            ? "border-violet-600 bg-violet-600 text-white"
-                            : "border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                        }`}
-                        onClick={() => onApplyQuickCash(option.amount, option.isExact)}
-                        type="button"
-                      >
-                        {option.isExact
-                          ? dictionary.quickCashExactAmountLabel
-                          : `+฿${option.amount}`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-violet-800">{dictionary.noteLabel}</label>
+                <textarea
+                  rows={2}
+                  className="w-full resize-none rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  placeholder={dictionary.notePlaceholder}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
               </div>
-            ) : null}
-          </div>
+            </>
+          )}
 
-          {/* Right: summary */}
-          <div className="flex flex-col-reverse lg:flex-col">
-            <div className="space-y-1.5 border-t border-violet-100 pt-3 lg:border-l lg:border-t-0 lg:pl-4 lg:pt-0">
-              <div className="flex items-center justify-between text-sm text-slate-400">
-                <span>{dictionary.summary.subtotalLabel}</span>
-                <span>{formatCurrency(cartSummary.subtotal)}</span>
-              </div>
-              <div
-                className={`flex items-center justify-between text-sm ${cartSummary.discountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
-              >
+          {/* Divider */}
+          <div className="border-t border-dashed border-slate-200" />
+
+          {/* Summary breakdown */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm text-slate-500">
+              <span>{dictionary.summary.subtotalLabel}</span>
+              <span>{formatCurrency(cartSummary.subtotal)}</span>
+            </div>
+
+            {cartSummary.discountAmount > 0 && (
+              <div className="flex items-center justify-between text-sm text-emerald-600">
                 <span>{dictionary.summary.discountLabel}</span>
-                <span>
-                  {cartSummary.discountAmount > 0
-                    ? `-${formatCurrency(cartSummary.discountAmount)}`
-                    : formatCurrency(0)}
-                </span>
+                <span>-{formatCurrency(cartSummary.discountAmount)}</span>
               </div>
-              <div
-                className={`flex items-center justify-between text-sm ${billDiscountAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
-              >
+            )}
+
+            {billDiscountAmount > 0 && (
+              <div className="flex items-center justify-between text-sm text-emerald-600">
                 <span>
                   {dictionary.discountBillLabel}
-                  {billDiscountType === "percent" && billDiscountPercent > 0
-                    ? ` (${billDiscountPercent}%)`
-                    : ""}
+                  {billDiscountType === "percent" && billDiscountPercent > 0 ? ` (${billDiscountPercent}%)` : ""}
                 </span>
+                <span>-{formatCurrency(billDiscountAmount)}</span>
+              </div>
+            )}
+
+            {promoDiscountAmount > 0 && (
+              <div className="flex items-center justify-between text-sm text-amber-600">
+                <span className="flex items-center gap-1">
+                  <Ticket className="h-3.5 w-3.5 shrink-0" />
+                  {dictionary.promo?.tab ?? "โปรโมชั่น"}
+                  {promoNames && promoNames.length > 0 ? ` ×${promoNames.length}` : ""}
+                </span>
+                <span>-{formatCurrency(promoDiscountAmount)}</span>
+              </div>
+            )}
+
+            {selectedCustomerId && customerDiscountAmount > 0 && (
+              <div className="flex items-center justify-between text-sm text-emerald-600">
                 <span>
-                  {billDiscountAmount > 0
-                    ? `-${formatCurrency(billDiscountAmount)}`
-                    : formatCurrency(0)}
+                  {dictionary.customerDiscountLabel} ({customerDiscountPercent}%)
                 </span>
+                <span>-{formatCurrency(customerDiscountAmount)}</span>
               </div>
-              {promoDiscountAmount > 0 ? (
-                <div className="flex items-center justify-between text-sm text-amber-600">
-                  <span className="flex items-center gap-1">
-                    <Ticket className="h-3.5 w-3.5 shrink-0" />
-                    {dictionary.promo?.tab ?? "โปรโมชั่น"}
-                    {promoNames && promoNames.length > 0
-                      ? ` ×${promoNames.length}`
-                      : ""}
-                  </span>
-                  <span>-{formatCurrency(promoDiscountAmount)}</span>
-                </div>
-              ) : null}
-              <div className="flex items-center justify-between text-sm text-slate-400">
-                <span>{dictionary.customerTypeLabel}</span>
-                <span className="font-medium text-slate-600">
-                  {customerTypeLabel}
-                </span>
-              </div>
-              {selectedCustomerId && customerDiscountAmount > 0 ? (
-                <div className="flex items-center justify-between text-sm text-emerald-600">
-                  <span>
-                    {dictionary.customerDiscountLabel} (
-                    {customerDiscountPercent}%)
-                  </span>
-                  <span>-{formatCurrency(customerDiscountAmount)}</span>
-                </div>
-              ) : null}
-              {applyVat && (
-                <div className="flex items-center justify-between text-sm text-slate-400">
-                  <span>{dictionary.vatAmountLabel}</span>
-                  <span>{formatCurrency(vatAmount)}</span>
-                </div>
-              )}
+            )}
 
-              <div className="my-1.5 border-t border-dashed border-violet-100" />
+            {applyVat && (
+              <div className="flex items-center justify-between text-sm text-slate-500">
+                <span>{dictionary.vatAmountLabel}</span>
+                <span>{formatCurrency(vatAmount)}</span>
+              </div>
+            )}
 
-              {/* Net total */}
-              <div className="flex items-center justify-between">
-                <span className="text-base font-semibold text-slate-700">
-                  {dictionary.summary.totalLabel}
-                </span>
-                <span className="text-xl font-bold text-violet-700">
-                  {formatCurrency(settlementTotal)}
-                </span>
-              </div>
-
-              {/* Paid & change — cash_now only */}
-              {!quotationMode && customerSettlementMode === "cash_now" && (<>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">
-                  {dictionary.totalPaidLabel}
-                </span>
-                <span className="text-sm font-semibold text-slate-800">
-                  {formatCurrency(effectivePaidAmount)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500">
-                  {dictionary.changeLabel}
-                </span>
-                <span
-                  className={`text-sm font-bold ${changeAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}
-                >
-                  {formatCurrency(Math.max(changeAmount, 0))}
-                </span>
-              </div>
-              </>)}
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>{dictionary.customerTypeLabel}</span>
+              <span className="font-medium text-slate-600">{customerTypeLabel}</span>
             </div>
           </div>
         </div>
 
-        <button
-          className="mt-5 w-full rounded-lg bg-violet-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
-          disabled={cartLength === 0 || isPending || isCreatingQuotation}
-          onClick={() => {
-            if (quotationMode) {
-              onCreateQuotation();
-            } else {
-              onSubmit();
-            }
-          }}
-          type="button"
-        >
-          {isCreatingQuotation && <Loader2 className="h-4 w-4 animate-spin" />}
-          {quotationMode ? dictionary.createQuotationButton : dictionary.confirmPaymentButton}
-        </button>
+        {/* Sticky total */}
+        <div className="border-t-2 border-violet-200 bg-white px-5 py-5">
+          <div className="flex items-center justify-between">
+            <span className="text-base font-bold text-slate-700">{dictionary.summary.totalLabel}</span>
+            <span className="text-4xl font-bold tabular-nums text-violet-700">{formatCurrency(settlementTotal)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════ RIGHT PANEL: Payment ══════════════════ */}
+      <div className="flex flex-1 flex-col bg-slate-50/50">
+
+        {/* Cash-now: full payment UI */}
+        {isCashNow && (
+          <>
+            {/* Payment method tabs */}
+            <div className="border-b border-slate-200 bg-white px-8 py-4">
+              <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {dictionary.paymentMethodLabel}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {paymentOptions.map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => setPaymentMethod(o.value)}
+                    className={`rounded-xl border px-5 py-2.5 text-sm font-semibold transition ${
+                      paymentMethod === o.value
+                        ? "border-violet-600 bg-violet-600 text-white shadow-sm"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:bg-violet-50"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cash: amount display + quick presets + numpad */}
+            {paymentMethod === "cash" && (
+              <div className="flex flex-1 flex-col gap-3 px-8 py-5">
+                {/* Amount + Change side by side */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* จำนวนเงินที่รับ */}
+                  <div>
+                    <p className="mb-1.5 text-xs font-semibold text-slate-500">{dictionary.customerPaymentLabel}</p>
+                    <input
+                      ref={amountInputRef}
+                      type="text"
+                      inputMode="numeric"
+                      value={paidAmount}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/\D/g, "");
+                        onPaidAmountChange(v);
+                      }}
+                      placeholder="0"
+                      className="w-full rounded-xl border-2 border-violet-400 bg-violet-50 px-4 py-3 text-center text-3xl font-bold tabular-nums text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                    />
+                  </div>
+                  {/* เงินทอน */}
+                  <div>
+                    <p className="mb-1.5 text-xs font-semibold text-slate-500">{dictionary.changeLabel}</p>
+                    <div className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-center">
+                      <span className={`text-3xl font-bold tabular-nums ${changeAmount > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                        {formatCurrency(Math.max(changeAmount, 0))}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick cash presets */}
+                <div>
+                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    {dictionary.quickCashLabel}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {/* Always show exact-amount button */}
+                    <button
+                      type="button"
+                      onClick={() => onApplyQuickCash(settlementTotal, true)}
+                      className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                        lastQuickCashAmount === settlementTotal
+                          ? "border-violet-600 bg-violet-600 text-white"
+                          : "border-violet-300 bg-violet-50 text-violet-700 hover:bg-violet-100"
+                      }`}
+                    >
+                      {dictionary.quickCashExactAmountLabel}
+                    </button>
+                    {/* Base presets (non-exact only) */}
+                    {quickCashOptions.filter((o) => !o.isExact).map((o) => (
+                      <button
+                        key={o.amount}
+                        type="button"
+                        onClick={() => onApplyQuickCash(o.amount, false)}
+                        className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                          lastQuickCashAmount === o.amount
+                            ? "border-violet-600 bg-violet-600 text-white"
+                            : "border-slate-200 bg-white text-slate-700 hover:border-violet-300 hover:bg-violet-50"
+                        }`}
+                      >
+                        +฿{formatAmount(o.amount)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Inline numpad */}
+                <div className="grid flex-1 grid-cols-3 gap-2">
+                  {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => numpadDigits(d)}
+                      className="flex min-h-[3.75rem] items-center justify-center rounded-xl border border-slate-200 bg-white text-2xl font-semibold text-slate-800 transition hover:border-violet-300 hover:bg-violet-50 active:scale-95"
+                    >
+                      {d}
+                    </button>
+                  ))}
+                  {/* Bottom row: C, 0, ⌫ */}
+                  <button
+                    type="button"
+                    onClick={numpadClear}
+                    className="flex min-h-[3.75rem] items-center justify-center rounded-xl border border-slate-200 bg-white text-base font-bold text-rose-500 transition hover:border-rose-200 hover:bg-rose-50 active:scale-95"
+                  >
+                    C
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => numpadDigits("0")}
+                    className="flex min-h-[3.75rem] items-center justify-center rounded-xl border border-slate-200 bg-white text-2xl font-semibold text-slate-800 transition hover:border-violet-300 hover:bg-violet-50 active:scale-95"
+                  >
+                    0
+                  </button>
+                  <button
+                    type="button"
+                    onClick={numpadBackspace}
+                    className="flex min-h-[3.75rem] items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 active:scale-95"
+                  >
+                    ⌫
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Bank transfer: account picker */}
+            {paymentMethod === "bank_transfer" && (
+              <div className="flex-1 px-8 py-6">
+                {bankAccounts.filter((a) => a.is_active).length === 0 ? (
+                  <p className="text-sm text-amber-600">{dictionary.bankAccountNone}</p>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-violet-700">{dictionary.bankTransferInstructions}</p>
+                    {bankAccounts.filter((a) => a.is_active).map((acc) => (
+                      <button
+                        key={acc.id}
+                        type="button"
+                        onClick={() => setSelectedBankAccountId(acc.id)}
+                        className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
+                          selectedBankAccountId === acc.id
+                            ? "border-violet-600 bg-white ring-1 ring-violet-600"
+                            : "border-slate-200 bg-white hover:border-violet-300"
+                        }`}
+                      >
+                        <div className="font-semibold text-slate-800">{acc.bank_name}</div>
+                        <div className="mt-0.5 text-xs text-slate-600">{acc.account_no}</div>
+                        <div className="text-xs text-slate-500">{acc.account_name}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PromptPay / QR */}
+            {paymentMethod === "promptpay" && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-5 px-8 text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-violet-100">
+                  <QrCode className="h-10 w-10 text-violet-600" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-slate-700">QR Code แสดงบนจอลูกค้าแล้ว</p>
+                  <p className="mt-2 text-3xl font-bold tabular-nums text-violet-700">{formatCurrency(settlementTotal)}</p>
+                </div>
+                <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-left text-sm text-amber-800">
+                  <Smartphone className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>ตรวจสอบยอดเงินที่แอปธนาคาร<br />แล้วกด <strong>ตกลง</strong> เพื่อยืนยัน</span>
+                </div>
+              </div>
+            )}
+
+            {/* Card (combined / credit / debit) */}
+            {(paymentMethod === "card" || paymentMethod === "credit_card" || paymentMethod === "debit_card") && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-5 px-8 text-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-blue-100">
+                  <CreditCard className="h-10 w-10 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-slate-700">บัตรเครดิต / เดบิต</p>
+                  <p className="mt-2 text-3xl font-bold tabular-nums text-violet-700">{formatCurrency(settlementTotal)}</p>
+                </div>
+                <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-left text-sm text-slate-700">
+                  <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+                  <span>รูดหรือแตะบัตรที่เครื่อง EDC<br />รอการอนุมัติจากธนาคาร แล้วกด <strong>ตกลง</strong></span>
+                </div>
+              </div>
+            )}
+
+            {/* Other e-wallet (TrueMoney / ShopeePay / etc.) */}
+            {paymentMethod !== "cash" && paymentMethod !== "bank_transfer" && paymentMethod !== "promptpay" && paymentMethod !== "card" && paymentMethod !== "credit_card" && paymentMethod !== "debit_card" && (
+              <div className="flex flex-1 items-center justify-center px-8 text-center">
+                <p className="text-sm text-slate-400">ดำเนินการชำระเงิน แล้วกด <strong>ตกลง</strong> เพื่อยืนยัน</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Invoice / Quotation: info + spacer */}
+        {!isCashNow && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
+            {quotationMode ? (
+              <FileText className="h-12 w-12 text-violet-300" />
+            ) : (
+              <Banknote className="h-12 w-12 text-violet-300" />
+            )}
+            <p className="text-sm font-medium text-slate-500">
+              {quotationMode ? dictionary.saleModeQuotationDescription : dictionary.saleModeInvoiceDescription}
+            </p>
+          </div>
+        )}
+
+        {/* Sticky confirm button */}
+        <div className="border-t border-slate-200 bg-white px-8 py-5">
+          <button
+            type="button"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-4 text-base font-semibold text-white transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={cartLength === 0 || isPending || isCreatingQuotation}
+            onClick={() => { if (quotationMode) onCreateQuotation(); else onSubmit(); }}
+          >
+            {(isPending || isCreatingQuotation) && <Loader2 className="h-4 w-4 animate-spin" />}
+            {quotationMode ? dictionary.createQuotationButton : dictionary.confirmPaymentButton}
+          </button>
+        </div>
       </div>
     </div>
   );

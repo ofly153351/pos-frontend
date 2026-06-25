@@ -8,6 +8,7 @@ import {
   ArrowLeftRight,
   ArrowUpFromLine,
   Boxes,
+  CheckCircle2,
   ClipboardCheck,
   Clock3,
   DollarSign,
@@ -34,6 +35,8 @@ import {
 import { type Locale } from "@/lib/locale-config";
 import { listCountSessions } from "@/services/stock-count";
 import { getWarehouseDashboard } from "@/services/warehouse-dashboard";
+import { DashboardHero } from "@/components/shared/dashboard-hero";
+import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import type {
   LowStockAlert,
   RecentActivity,
@@ -51,6 +54,7 @@ type WarehouseDashboardDictionary = {
     title: string;
     subtitle: string;
     open: string;
+    viewAll?: string;
     items: {
       lowStock: string;
       outOfStock: string;
@@ -121,6 +125,7 @@ type WarehouseDashboardDictionary = {
       variance: string;
     };
     noData: string;
+    noDeadStock?: string;
   };
   statusDistribution: {
     title: string;
@@ -315,38 +320,16 @@ function normalizeSessions(raw: unknown): LocalCountSession[] {
     .filter((session): session is LocalCountSession => Boolean(session));
 }
 
-function toneClasses(tone: ActionCenterItem["tone"]) {
-  if (tone === "critical") {
-    return {
-      wrapper: "border-rose-200 bg-rose-50/80 text-rose-700 hover:border-rose-300 hover:bg-rose-100/80",
-      icon: "bg-rose-100 text-rose-600",
-      badge: "bg-rose-100 text-rose-700",
-    };
-  }
-  if (tone === "warning") {
-    return {
-      wrapper: "border-amber-200 bg-amber-50/80 text-amber-700 hover:border-amber-300 hover:bg-amber-100/80",
-      icon: "bg-amber-100 text-amber-600",
-      badge: "bg-amber-100 text-amber-700",
-    };
-  }
-  return {
-    wrapper: "border-violet-200 bg-violet-50/80 text-violet-700 hover:border-violet-300 hover:bg-violet-100/80",
-    icon: "bg-violet-100 text-violet-600",
-    badge: "bg-violet-100 text-violet-700",
-  };
-}
-
-function SectionCard({ title, action, children }: { title: ReactNode; action?: ReactNode; children: ReactNode }) {
+function SectionCard({ title, action, children, compact }: { title: ReactNode; action?: ReactNode; children: ReactNode; compact?: boolean }) {
   return (
     <section className="rounded-2xl border border-violet-100 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-violet-50 px-5 py-4 md:px-6">
+      <div className={`flex items-center justify-between gap-3 border-b border-violet-50 ${compact ? "px-4 py-3 md:px-5" : "px-5 py-4 md:px-6"}`}>
         <div>
-          <div className="text-lg font-semibold text-slate-800">{title}</div>
+          <div className={`font-semibold text-slate-800 ${compact ? "text-sm" : "text-lg"}`}>{title}</div>
         </div>
         {action ? <div className="shrink-0 text-sm font-semibold text-violet-600">{action}</div> : null}
       </div>
-      <div className="p-5 md:p-6">{children}</div>
+      <div className={compact ? "p-4 md:p-5" : "p-5 md:p-6"}>{children}</div>
     </section>
   );
 }
@@ -375,67 +358,45 @@ function DashboardSkeleton() {
 function CompactActionCenter({
   items,
   title,
-  subtitle,
-  openLabel,
+  viewAllLabel,
   locale,
 }: {
   items: ActionCenterItem[];
   title: string;
-  subtitle: string;
-  openLabel: string;
+  viewAllLabel?: string;
   locale: Locale;
 }) {
   return (
-    <section className="rounded-2xl border border-violet-100 bg-white px-4 py-4 shadow-sm md:px-5 md:py-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-slate-900">
-            <ShieldAlert className="h-4.5 w-4.5 text-violet-600" />
-            <h2 className="text-base font-semibold">{title}</h2>
-          </div>
-          <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+    <section className="rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-sm md:px-5">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5">
+          <ShieldAlert className="h-4 w-4 text-amber-500" />
+          <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
         </div>
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          {items.map((item) => {
-            const tone = toneClasses(item.tone);
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                className={`flex min-h-11 shrink-0 items-center gap-3 rounded-xl border px-3 py-2 transition ${tone.wrapper}`}
-              >
-                <span className={`inline-flex h-8 w-8 items-center justify-center rounded-lg ${tone.icon}`}>{item.icon}</span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-800">{item.label}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${tone.badge}`}>{formatNumber(item.value, locale)}</span>
-                  </div>
-                  <div className="text-xs text-slate-500">{item.helper}</div>
-                </div>
-                <span className="ml-1 text-xs font-semibold text-violet-600">{openLabel}</span>
-              </Link>
-            );
-          })}
-        </div>
+        {viewAllLabel ? (
+          <Link href={`/${locale}/inventory`} className="text-xs font-semibold text-violet-600 hover:underline">
+            {viewAllLabel}
+          </Link>
+        ) : null}
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-0 sm:grid-cols-3 lg:grid-cols-5">
+        {items.map((item) => {
+          const isUrgent = (item.tone === "critical" || item.tone === "warning") && item.value > 0;
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 transition hover:bg-violet-50"
+            >
+              <span className="min-w-0 truncate text-sm text-slate-600">{item.label}</span>
+              <span className={`shrink-0 text-sm font-bold tabular-nums ${isUrgent ? "text-rose-600" : "text-slate-400"}`}>
+                {formatNumber(item.value, locale)}
+              </span>
+            </Link>
+          );
+        })}
       </div>
     </section>
-  );
-}
-
-function KpiCard({ icon, label, value, helper, iconTone }: { icon: ReactNode; label: string; value: string; helper: string; iconTone: string }) {
-  return (
-    <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm md:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconTone}`}>{icon}</span>
-        <div className="text-right">
-          <div className="text-2xl font-black leading-tight tracking-tight text-slate-900 md:text-[1.75rem]">{value}</div>
-        </div>
-      </div>
-      <div className="mt-3">
-        <div className="text-sm font-semibold text-slate-800 md:text-base">{label}</div>
-        <div className="mt-1 text-xs leading-5 text-slate-500 md:text-sm">{helper}</div>
-      </div>
-    </div>
   );
 }
 
@@ -467,34 +428,34 @@ function AlertsSection({
 
   return (
     <SectionCard
+      compact
       title={t.title}
-      action={<Link href={`/${locale}/inventory`} className="text-sm font-semibold text-violet-600">{t.viewAll}</Link>}
+      action={<Link href={`/${locale}/inventory`} className="text-xs font-semibold text-violet-600">{t.viewAll}</Link>}
     >
-      <div className="space-y-4">
-        <p className="text-sm text-slate-500">{t.subtitle}</p>
-        <div className="grid grid-cols-3 gap-2">
+      <div className="space-y-2">
+        <div className="grid grid-cols-3 gap-1.5">
           {[
             { label: t.critical, value: criticalCount, tone: "bg-rose-50 text-rose-700" },
             { label: t.warning, value: warningCount, tone: "bg-amber-50 text-amber-700" },
             { label: t.info, value: infoCount, tone: "bg-violet-50 text-violet-700" },
           ].map((item) => (
-            <div key={item.label} className={`rounded-xl px-3 py-2 ${item.tone}`}>
-              <div className="text-xs font-semibold uppercase tracking-wide">{item.label}</div>
-              <div className="mt-1 text-xl font-black">{formatNumber(item.value, locale)}</div>
+            <div key={item.label} className={`rounded-xl px-2 py-1.5 ${item.tone}`}>
+              <div className="text-[10px] font-semibold uppercase tracking-wide">{item.label}</div>
+              <div className="mt-0.5 text-base font-bold">{formatNumber(item.value, locale)}</div>
             </div>
           ))}
         </div>
 
         {topAlerts.length ? (
-          <div className="space-y-2.5">
+          <div className="space-y-1.5">
             {topAlerts.map((alert) => (
-              <Link key={alert.id} href={alert.href} className="block rounded-xl border border-violet-100 px-3 py-3 transition hover:bg-violet-50">
+              <Link key={alert.id} href={alert.href} className="block rounded-xl border border-violet-100 px-3 py-2 transition hover:bg-violet-50">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-slate-800">{alert.title}</div>
-                    <div className="mt-1 text-xs leading-5 text-slate-500">{alert.detail}</div>
+                    <div className="truncate text-xs font-semibold text-slate-800">{alert.title}</div>
+                    <div className="mt-0.5 text-[11px] leading-4 text-slate-500">{alert.detail}</div>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${severityBadge(alert.severity)}`}>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${severityBadge(alert.severity)}`}>
                     {severityLabel(alert.severity)}
                   </span>
                 </div>
@@ -502,7 +463,7 @@ function AlertsSection({
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-5 text-sm text-slate-500">
+          <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-3 py-3 text-xs text-slate-500">
             {t.noAlerts}
           </div>
         )}
@@ -513,28 +474,28 @@ function AlertsSection({
 
 function VarianceSection({ rows, locale, t }: { rows: VarianceRow[]; locale: Locale; t: WarehouseDashboardDictionary["variance"] }) {
   return (
-    <SectionCard title={t.title} action={<Link href={`/${locale}/inventory/counts`} className="text-sm font-semibold text-violet-600">{t.viewCount}</Link>}>
+    <SectionCard compact title={t.title} action={<Link href={`/${locale}/inventory/counts`} className="text-xs font-semibold text-violet-600">{t.viewCount}</Link>}>
       {rows.length ? (
         <div className="overflow-hidden rounded-xl border border-violet-100">
           <table className="min-w-full divide-y divide-violet-100 text-sm">
             <thead className="bg-violet-50/70 text-slate-600">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">{t.headers.product}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.headers.systemQty}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.headers.countQty}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.headers.variance}</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold">{t.headers.product}</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold">{t.headers.systemQty}</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold">{t.headers.countQty}</th>
+                <th className="px-3 py-2 text-right text-xs font-semibold">{t.headers.variance}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-violet-50 bg-white">
               {rows.map((row) => (
                 <tr key={row.key}>
-                  <td className="px-4 py-3">
-                    <div className="font-semibold text-slate-800">{row.product}</div>
-                    <div className="text-xs text-slate-500">{row.sessionName}</div>
+                  <td className="px-3 py-2">
+                    <div className="text-xs font-semibold text-slate-800">{row.product}</div>
+                    <div className="text-[11px] text-slate-500">{row.sessionName}</div>
                   </td>
-                  <td className="px-4 py-3 text-right text-slate-600">{formatNumber(row.systemQty, locale)}</td>
-                  <td className="px-4 py-3 text-right text-slate-600">{formatNumber(row.countQty, locale)}</td>
-                  <td className={`px-4 py-3 text-right font-bold ${row.variance < 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                  <td className="px-3 py-2 text-right text-xs text-slate-600">{formatNumber(row.systemQty, locale)}</td>
+                  <td className="px-3 py-2 text-right text-xs text-slate-600">{formatNumber(row.countQty, locale)}</td>
+                  <td className={`px-3 py-2 text-right text-xs font-bold ${row.variance < 0 ? "text-rose-600" : "text-emerald-600"}`}>
                     {row.variance > 0 ? "+" : ""}
                     {formatNumber(row.variance, locale)}
                   </td>
@@ -544,8 +505,9 @@ function VarianceSection({ rows, locale, t }: { rows: VarianceRow[]; locale: Loc
           </table>
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 py-5 text-sm text-slate-500">
-          {t.noData}
+        <div className="flex max-h-[120px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/60 px-4 py-4 text-center">
+          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+          <div className="text-sm font-semibold text-emerald-700">{t.noDeadStock ?? t.noData}</div>
         </div>
       )}
     </SectionCard>
@@ -586,17 +548,17 @@ function StatusDistributionSection({ rows, locale, t }: { rows: StatusRow[]; loc
 function RecentActivitySection({ rows, locale, t }: { rows: TimelineRow[]; locale: Locale; t: WarehouseDashboardDictionary["recentActivity"] }) {
   return (
     <SectionCard title={t.title}>
-      <div className="space-y-4">
+      <div className="space-y-3">
         <p className="text-sm text-slate-500">{t.subtitle}</p>
         {rows.length ? (
-          <div className="space-y-4">
+          <div className="space-y-2.5">
             {rows.map((row, index) => (
               <div key={row.id} className="relative flex gap-3">
-                {index !== rows.length - 1 ? <div className="absolute left-[18px] top-10 h-[calc(100%-12px)] w-px bg-violet-100" /> : null}
+                {index !== rows.length - 1 ? <div className="absolute left-[18px] top-9 h-[calc(100%-8px)] w-px bg-violet-100" /> : null}
                 <div className={`relative z-10 mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${row.tone}`}>
                   {row.icon}
                 </div>
-                <div className="min-w-0 flex-1 rounded-xl border border-violet-100 px-4 py-3">
+                <div className="min-w-0 flex-1 rounded-xl border border-violet-100 px-3 py-2.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold text-slate-800">{row.title}</div>
@@ -815,7 +777,7 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardPro
     [countSessionsQuery.data],
   );
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ["warehouse-dashboard", period],
     queryFn: async () => {
       const response = await getWarehouseDashboard(period);
@@ -943,62 +905,10 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardPro
     [data?.low_stock_alerts, derived.pendingApprovalSessions, derived.pendingCountSessions, locale, pendingTransfers, t.alerts],
   );
 
-  const statusRows: StatusRow[] = [
-    {
-      key: "available",
-      label: t.statusDistribution.labels.available,
-      value: availableStock,
-      helper: t.statusDistribution.helpers.available,
-      tone: "text-emerald-700",
-      bar: "bg-emerald-500",
-    },
-    {
-      key: "reserved",
-      label: t.statusDistribution.labels.reserved,
-      value: reservedStock,
-      helper: t.statusDistribution.helpers.reserved,
-      tone: "text-amber-700",
-      bar: "bg-amber-500",
-    },
-    {
-      key: "damaged",
-      label: t.statusDistribution.labels.damaged,
-      value: derived.damagedQty,
-      helper: t.statusDistribution.helpers.damaged,
-      tone: "text-rose-700",
-      bar: "bg-rose-500",
-    },
-    {
-      key: "in-transit",
-      label: t.statusDistribution.labels.inTransit,
-      value: inTransitStock,
-      helper: t.statusDistribution.helpers.inTransit,
-      tone: "text-sky-700",
-      bar: "bg-sky-500",
-    },
-    {
-      key: "counting",
-      label: t.statusDistribution.labels.counting,
-      value: derived.countingItems,
-      helper: t.statusDistribution.helpers.counting,
-      tone: "text-violet-700",
-      bar: "bg-violet-500",
-    },
-  ];
-
   const timelineRows = useMemo(
     () => buildTimelineRows(data?.recent_activity ?? [], countSessions, locale, t.recentActivity),
     [countSessions, data?.recent_activity, locale, t.recentActivity],
   );
-
-  const summaryItems = [
-    { label: t.summary.inventoryValue, value: formatCurrency(inventoryValue, locale) },
-    { label: t.summary.availableStock, value: availableStock },
-    { label: t.summary.reservedStock, value: reservedStock },
-    { label: t.summary.damagedStock, value: derived.damagedQty },
-    { label: t.summary.inTransitStock, value: inTransitStock },
-    { label: t.summary.activeAlerts, value: actionItems.reduce((sum, item) => sum + item.value, 0) },
-  ];
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -1025,91 +935,74 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardPro
 
   return (
     <div className="space-y-5 pb-6">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900">{t.title}</h1>
-          <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-500 md:text-base">{t.subtitle}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 shadow-sm transition hover:bg-violet-50"
-        >
-          <RefreshCw className="h-4 w-4" />
-          {t.refresh}
-        </button>
-      </div>
+      <DashboardHero<WarehousePeriod>
+        icon={Boxes}
+        title={t.title}
+        subtitle={t.subtitle}
+        period={period}
+        onPeriodChange={setPeriod}
+        periodOptions={[
+          { value: "7d", label: t.movement.periods.sevenDays },
+          { value: "30d", label: t.movement.periods.thirtyDays },
+          { value: "3m", label: t.movement.periods.threeMonths },
+        ]}
+        periodLabels={{ today: "", d7: "", d30: "", d90: "", custom: "", from: "", to: "", apply: "", refresh: t.refresh }}
+        isLoading={isFetching}
+        onRefresh={() => void refetch()}
+      />
 
       <CompactActionCenter
         items={actionItems}
         title={t.actionCenter.title}
-        subtitle={t.actionCenter.subtitle}
-        openLabel={t.actionCenter.open}
+        viewAllLabel={t.actionCenter.viewAll}
         locale={locale}
       />
 
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
-        <KpiCard
-          icon={<DollarSign className="h-5 w-5 text-violet-600" />}
-          iconTone="bg-violet-100"
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <ReportKpiCard
+          icon={<DollarSign className="h-5 w-5" />}
+          iconBg="bg-violet-100"
+          iconColor="text-violet-600"
           label={t.kpi.inventoryValue}
           value={formatCurrency(inventoryValue, locale)}
-          helper={t.kpi.helpers.inventoryValue}
+          hint={t.kpi.helpers.inventoryValue}
         />
-        <KpiCard
-          icon={<PackageCheck className="h-5 w-5 text-emerald-600" />}
-          iconTone="bg-emerald-100"
+        <ReportKpiCard
+          icon={<PackageCheck className="h-5 w-5" />}
+          iconBg="bg-emerald-100"
+          iconColor="text-emerald-600"
           label={t.kpi.availableStock}
           value={formatNumber(availableStock, locale)}
-          helper={t.kpi.helpers.availableStock}
+          hint={t.kpi.helpers.availableStock}
         />
-        <KpiCard
-          icon={<Clock3 className="h-5 w-5 text-amber-600" />}
-          iconTone="bg-amber-100"
+        <ReportKpiCard
+          icon={<Clock3 className="h-5 w-5" />}
+          iconBg="bg-amber-100"
+          iconColor="text-amber-600"
           label={t.kpi.reservedStock}
           value={formatNumber(reservedStock, locale)}
-          helper={t.kpi.helpers.reservedStock}
+          hint={t.kpi.helpers.reservedStock}
         />
-        <KpiCard
-          icon={<AlertTriangle className="h-5 w-5 text-rose-600" />}
-          iconTone="bg-rose-100"
+        <ReportKpiCard
+          icon={<AlertTriangle className="h-5 w-5" />}
+          iconBg="bg-rose-100"
+          iconColor="text-rose-600"
           label={t.kpi.damagedStock}
           value={formatNumber(derived.damagedQty, locale)}
-          helper={t.kpi.helpers.damagedStock}
+          hint={t.kpi.helpers.damagedStock}
         />
-        <KpiCard
-          icon={<ArrowLeftRight className="h-5 w-5 text-sky-600" />}
-          iconTone="bg-sky-100"
+        <ReportKpiCard
+          icon={<ArrowLeftRight className="h-5 w-5" />}
+          iconBg="bg-sky-100"
+          iconColor="text-sky-600"
           label={t.kpi.inTransitStock}
           value={formatNumber(inTransitStock, locale)}
-          helper={t.kpi.helpers.inTransitStock}
+          hint={t.kpi.helpers.inTransitStock}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-        <SectionCard
-          title={t.movement.title}
-          action={
-            <div className="flex items-center gap-2">
-              {[
-                { value: "7d" as WarehousePeriod, label: t.movement.periods.sevenDays },
-                { value: "30d" as WarehousePeriod, label: t.movement.periods.thirtyDays },
-                { value: "3m" as WarehousePeriod, label: t.movement.periods.threeMonths },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setPeriod(option.value)}
-                  className={`min-h-10 rounded-xl px-3 py-2 text-xs font-semibold transition md:text-sm ${
-                    period === option.value ? "bg-violet-600 text-white shadow-sm" : "bg-violet-50 text-violet-700 hover:bg-violet-100"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          }
-        >
+        <SectionCard title={t.movement.title}>
           <div className="h-[260px] md:h-[280px]">
             {movementIsEmpty ? (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 text-center text-sm text-slate-500">
@@ -1140,19 +1033,10 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardPro
         <AlertsSection alerts={alertRows} locale={locale} t={t.alerts} />
       </div>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
-        <div className="xl:col-span-5">
-          <VarianceSection rows={derived.varianceRows} locale={locale} t={t.variance} />
-        </div>
-        <div className="xl:col-span-3">
-          <StatusDistributionSection rows={statusRows} locale={locale} t={t.statusDistribution} />
-        </div>
-        <div className="xl:col-span-4">
-          <RecentActivitySection rows={timelineRows} locale={locale} t={t.recentActivity} />
-        </div>
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <RecentActivitySection rows={timelineRows} locale={locale} t={t.recentActivity} />
+        <VarianceSection rows={derived.varianceRows} locale={locale} t={t.variance} />
       </div>
-
-      <SummaryFooter items={summaryItems} locale={locale} />
     </div>
   );
 }

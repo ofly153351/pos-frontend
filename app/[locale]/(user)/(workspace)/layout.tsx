@@ -50,6 +50,7 @@ export default async function WorkspaceLayout({
         financeExpenses: dictionary.stock.shell.financeExpenses,
         financePnl: dictionary.stock.shell.financePnl,
         register: dictionary.stock.shell.register,
+        salesHistory: dictionary.stock.shell.salesHistory,
         searchPlaceholder: dictionary.stock.shell.searchPlaceholder,
         settings: dictionary.stock.shell.settings,
         storageLocations: dictionary.stock.shell.storageLocations,

@@ -87,11 +87,11 @@ export function PendingApprovalTab({ dict, locale, items, loading, error, onRetr
                   {visible.map((r) => (
                     <tr key={r.id} className="transition-colors hover:bg-amber-50/40">
                       <td className="px-5 py-3.5">
-                        <span className="font-mono text-xs font-semibold text-violet-700">{r.document_no}</span>
+                        <span className="nums text-xs font-semibold text-violet-700 whitespace-nowrap">{r.document_no}</span>
                       </td>
                       <td className="px-4 py-3.5 text-xs text-slate-500">
                         {r.purchase_order_no ? (
-                          <span className="font-mono">{r.purchase_order_no}</span>
+                          <span className="nums whitespace-nowrap">{r.purchase_order_no}</span>
                         ) : (
                           <span className="text-slate-400">{dict.none}</span>
                         )}
@@ -102,7 +102,7 @@ export function PendingApprovalTab({ dict, locale, items, loading, error, onRetr
                       <td className="px-4 py-3.5 text-xs text-slate-600">{r.warehouse_name ?? dict.none}</td>
                       <td className="px-4 py-3.5 text-xs text-slate-600">{r.created_by_name ?? dict.none}</td>
                       <td className="px-4 py-3.5 text-xs text-slate-500">{formatDate(locale, r.received_at)}</td>
-                      <td className="px-4 py-3.5 text-center font-mono text-sm text-slate-700">{r.total_items}</td>
+                      <td className="px-4 py-3.5 text-center nums text-sm text-slate-700">{r.total_items}</td>
                       <td className="px-5 py-3.5 text-right">
                         <button
                           type="button"
@@ -124,7 +124,7 @@ export function PendingApprovalTab({ dict, locale, items, loading, error, onRetr
                 <div key={r.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="font-mono text-xs font-semibold text-violet-700">{r.document_no}</p>
+                      <p className="nums text-xs font-semibold text-violet-700">{r.document_no}</p>
                       <p className="truncate text-sm font-medium text-slate-800">{r.supplier_name ?? dict.none}</p>
                     </div>
                     <span className="shrink-0 text-xs text-slate-500">{r.total_items} {dict.itemsUnit}</span>

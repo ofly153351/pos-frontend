@@ -1640,14 +1640,14 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
             customer_phone: sale.customer_phone ?? "",
           }),
           document_date: today,
-          vat_rate: sale.vat_included ? (sale.vat_percent ?? 7) : 0,
+          vat_rate: sale.vat_percent ?? 7,
           items: (sale.items ?? []).map((item) => ({
             product_id: item.product_id ?? undefined,
             description: item.product_name ?? "",
             quantity: item.quantity,
             unit_price: item.unit_price ?? 0,
-            discount_type: "" as const,
-            discount_value: 0,
+            discount_type: (item.line_discount_total ?? 0) > 0 ? ("AMOUNT" as const) : ("" as const),
+            discount_value: item.line_discount_total ?? 0,
           })),
           notes: sale.note ?? undefined,
         });
@@ -2006,7 +2006,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         customerDiscountPercent={customerDiscountPercent}
         promoDiscountAmount={appliedPromoDiscount}
         promoNames={appliedPromoNames}
-        effectivePaidAmount={effectivePaidAmount}
         changeAmount={changeAmount}
         isPending={isPending}
         isCreatingQuotation={isCreatingQuotation}
@@ -2016,8 +2015,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         setQuotationValidUntil={setQuotationValidUntil}
         quickCashOptions={quickCashOptions}
         lastQuickCashAmount={lastQuickCashAmount}
-        isNetworkCustomerSelected={isNetworkCustomerSelected}
-        isInvoiceSettlement={isInvoiceSettlement}
         customerTypeLabel={customerTypeLabel}
         cartLength={cart.length}
         enabledPaymentChannels={enabledPaymentChannels}
@@ -2025,7 +2022,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         onSubmit={() => { setIsCheckoutSummaryOpen(false); submitSale(); }}
         onCreateQuotation={handleCreateQuotation}
         onApplyQuickCash={applyQuickCash}
-        onOpenAmountNumpad={openAmountNumpad}
+        onPaidAmountChange={(v) => { setPaidAmount(v); setIsPaidAmountTouched(true); }}
         dictionary={dictionary}
       />
 

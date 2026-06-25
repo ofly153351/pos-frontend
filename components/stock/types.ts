@@ -28,6 +28,12 @@ export type StockManagerDictionary = {
     searchLabel: string;
     statusLabel: string;
     typeLabel: string;
+    readyToSellStatus?: string;
+    locationLabel?: string;
+    allLocations?: string;
+    noLocationLabel?: string;
+    quickViewLowStock?: string;
+    quickViewNoLocation?: string;
   };
   form: {
     activeLabel: string;
@@ -166,6 +172,7 @@ export type StockManagerDictionary = {
     title: string;
   };
   searchPlaceholder: string;
+  scanWithCamera: string;
   stats: {
     categoriesLabel: string;
     highStockListLabel: string;
@@ -205,6 +212,9 @@ export type StockManagerDictionary = {
     barcodeShowBrand: string;
     barcodeShowLocation: string;
     barcodeShowStoreName: string;
+    barcodeShowSalePrice: string;
+    barcodeOrigPriceInput: string;
+    barcodeSalePriceInput: string;
     barcodeQuantityLabel: string;
     barcodePrinterModeLabel: string;
     barcodePrinterLabel: string;
@@ -300,6 +310,17 @@ export type StockManagerDictionary = {
     cardView: string;
     tableView: string;
     stockReady: string;
+    summaryAll?: string;
+    summaryReady?: string;
+    summaryLow?: string;
+    summaryOut?: string;
+    summaryValue?: string;
+    bulkEnableLabel?: string;
+    bulkDisableLabel?: string;
+    bulkChangeCategoryLabel?: string;
+    changeCategoryTitle?: string;
+    changeCategoryApply?: string;
+    changeCategorySelectPlaceholder?: string;
   };
   receive?: {
     receiveStockTitle?: string;

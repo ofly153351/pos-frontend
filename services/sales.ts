@@ -79,6 +79,45 @@ export function getSaleReceiptPreviewHtml(saleId: string) {
   );
 }
 
+// Renders a sale through a shared document template (the same forms the Documents
+// module prints). docType: TAX_INVOICE | QUOTATION | DELIVERY_ORDER | INVOICE | BILL …
+export function getSaleDocumentHtml(saleId: string, docType: string) {
+  const currentStoreId = ensureStoreId();
+  return authorizedRawRequest<string>(
+    `/api/stores/${currentStoreId}/sales/${saleId}/document?type=${encodeURIComponent(docType)}`,
+    {
+      method: "GET",
+      responseType: "text",
+    },
+  );
+}
+
+export function voidSale(saleId: string, input: { reason?: string; type: "void" | "return" }) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales/${saleId}/void`, {
+    body: input,
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export type CreateReturnInput = {
+  refund_method: string;
+  reason?: string;
+  items: { sale_item_id?: string; product_id?: string; quantity: number }[];
+};
+
+// Partial return — records a return WITHOUT voiding the sale. Returns the
+// refreshed sale (updated status + returns history).
+export function createSaleReturn(saleId: string, input: CreateReturnInput) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales/${saleId}/returns`, {
+    body: input,
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
 // --- Parked Bills (Hold Bill) ---
 
 export type ParkedBillItem = {

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -79,7 +79,7 @@ function InfoCard({ label, value, mono }: { label: string; value: ReactNode; mon
   return (
     <div className="rounded-xl border border-slate-100 bg-white p-3.5">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className={`mt-0.5 text-sm leading-[1.5] text-slate-800 ${mono ? "font-mono" : ""}`}>
+      <p className={`mt-0.5 text-sm leading-[1.5] text-slate-800 ${mono ? "" : ""}`}>
         {value ?? <span className="text-slate-300">—</span>}
       </p>
     </div>
@@ -219,8 +219,8 @@ export function ProductDetailView({ product, dictionary, onClose, onEdit, onDele
                   </span>
                 </div>
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-slate-400">
-                  {product.sku ? <span className="font-mono">{t.sku}: <span className="text-slate-600">{product.sku}</span></span> : null}
-                  {code ? <span className="font-mono">{t.barcode}: <span className="text-slate-600">{code}</span></span> : null}
+                  {product.sku ? <span className="">{t.sku}: <span className="text-slate-600">{product.sku}</span></span> : null}
+                  {code ? <span className="">{t.barcode}: <span className="text-slate-600">{code}</span></span> : null}
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   {categoryName ? <span className="rounded-md bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">{categoryName}</span> : null}
@@ -287,7 +287,7 @@ export function ProductDetailView({ product, dictionary, onClose, onEdit, onDele
               {barcodeSvg ? (
                 <>
                   <img alt={code} className="max-h-40 max-w-full" src={`data:image/svg+xml;utf8,${encodeURIComponent(barcodeSvg)}`} />
-                  <p className="font-mono text-sm font-semibold text-violet-700">{code}</p>
+                  <p className="text-sm font-semibold text-violet-700">{code}</p>
                   <button type="button" onClick={() => onBarcode(product)}
                     className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700">
                     <BarcodeIcon className="h-4 w-4" /> {t.barcodePreviewTitle}
@@ -347,7 +347,7 @@ export function ProductDetailView({ product, dictionary, onClose, onEdit, onDele
                       <span className="self-center text-slate-300">›</span>
                       <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
                         <MapPin className="h-4 w-4 text-violet-500" />
-                        <span className="flex flex-col"><span className="text-[10px] font-semibold uppercase text-slate-400">{t.location}</span><span className="font-mono text-sm font-bold text-slate-800">{storage.location}</span></span>
+                        <span className="flex flex-col"><span className="text-[10px] font-semibold uppercase text-slate-400">{t.location}</span><span className="text-sm font-bold text-slate-800">{storage.location}</span></span>
                       </div>
                     </>
                   ) : null}

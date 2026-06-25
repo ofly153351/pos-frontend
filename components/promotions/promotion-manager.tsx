@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -32,6 +32,7 @@ import {
 
 import { toast } from "@/components/ui/toast";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import type { Locale } from "@/lib/locale-config";
 import { evaluatePromotion } from "./promotion-engine";
@@ -275,13 +276,13 @@ function TypeBadge({ type, dict }: { type: PromotionType; dict: PromotionDiction
 
 function KpiCard({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-slate-500">{label}</p>
-        <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-violet-50 text-violet-600">{icon}</span>
-      </div>
-      <p className="text-2xl font-bold text-slate-900 tabular-nums">{value}</p>
-    </div>
+    <ReportKpiCard
+      label={label}
+      value={String(value)}
+      icon={icon}
+      iconBg="bg-violet-100"
+      iconColor="text-violet-600"
+    />
   );
 }
 
@@ -319,7 +320,7 @@ function TextInput({ value, onChange, placeholder, mono }: { value?: string; onC
   return (
     <input
       type="text"
-      className={`h-9 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 ${mono ? "font-mono uppercase tracking-wide" : ""}`}
+      className={`h-9 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100 ${mono ? "uppercase tracking-wide" : ""}`}
       value={value ?? ""}
       onChange={(e) => onChange(mono ? e.target.value.toUpperCase() : e.target.value)}
       placeholder={placeholder}
@@ -1428,13 +1429,13 @@ export function PromotionManager({ dictionary: dict, locale }: PromotionManagerP
 
       {/* KPI */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-        <KpiCard label={dict.kpi.active}           value={kpi.active}                       icon={<Zap className="h-4 w-4" />} />
-        <KpiCard label={dict.kpi.scheduled}        value={kpi.scheduled}                    icon={<Clock className="h-4 w-4" />} />
-        <KpiCard label={dict.kpi.expired}          value={kpi.expired}                      icon={<X className="h-4 w-4" />} />
-        <KpiCard label={dict.kpi.totalUses}        value={kpi.totalUses.toLocaleString()}    icon={<TrendingUp className="h-4 w-4" />} />
-        <KpiCard label={dict.kpi.revenueGenerated} value={fmtBaht(kpi.revenue)}             icon={<Tag className="h-4 w-4" />} />
-        <KpiCard label={dict.kpi.discountGiven}    value={fmtBaht(kpi.discount)}            icon={<Percent className="h-4 w-4" />} />
-        <KpiCard label={dict.kpi.usagesToday}      value={kpi.usagesToday.toLocaleString()}  icon={<Star className="h-4 w-4" />} />
+        <KpiCard label={dict.kpi.active}           value={kpi.active}                       icon={<Zap className="h-5 w-5" />} />
+        <KpiCard label={dict.kpi.scheduled}        value={kpi.scheduled}                    icon={<Clock className="h-5 w-5" />} />
+        <KpiCard label={dict.kpi.expired}          value={kpi.expired}                      icon={<X className="h-5 w-5" />} />
+        <KpiCard label={dict.kpi.totalUses}        value={kpi.totalUses.toLocaleString()}    icon={<TrendingUp className="h-5 w-5" />} />
+        <KpiCard label={dict.kpi.revenueGenerated} value={fmtBaht(kpi.revenue)}             icon={<Tag className="h-5 w-5" />} />
+        <KpiCard label={dict.kpi.discountGiven}    value={fmtBaht(kpi.discount)}            icon={<Percent className="h-5 w-5" />} />
+        <KpiCard label={dict.kpi.usagesToday}      value={kpi.usagesToday.toLocaleString()}  icon={<Star className="h-5 w-5" />} />
       </div>
 
       {/* Toolbar */}

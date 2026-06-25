@@ -11,6 +11,7 @@ import {
 import { ReceiveModal } from "@/components/purchasing/receive-modal";
 import { cancelPurchaseOrder, listPurchaseOrders, type PurchaseOrder } from "@/services/purchases";
 import { toast } from "@/components/ui/toast";
+import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 
 type StatusFilter = "all" | "pending" | "partial" | "completed" | "cancelled";
 
@@ -113,15 +114,13 @@ function formatDate(dateStr: string) {
 type KpiCardProps = { icon: React.ReactNode; label: string; value: string; accent?: string };
 function KpiCard({ icon, label, value, accent }: KpiCardProps) {
   return (
-    <div className="flex flex-1 items-center gap-3 rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accent ?? "bg-violet-100 text-violet-600"}`}>
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-xs font-medium text-slate-500">{label}</p>
-        <p className="nums text-lg font-bold leading-tight text-slate-900">{value}</p>
-      </div>
-    </div>
+    <ReportKpiCard
+      label={label}
+      value={value}
+      icon={icon}
+      iconBg={accent ?? "bg-violet-100 text-violet-600"}
+      iconColor=""
+    />
   );
 }
 
@@ -200,7 +199,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
       <div className="space-y-4 pb-20 md:pb-0">
 
         {/* ── KPI row: 2×2 on mobile, single row on desktop ── */}
-        <div className="grid grid-cols-2 gap-3 md:flex md:gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard
             accent="bg-violet-600 text-white"
             icon={<FileText className="h-5 w-5" />}
