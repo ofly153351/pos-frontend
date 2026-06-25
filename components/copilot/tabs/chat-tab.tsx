@@ -571,7 +571,63 @@ function buildSakuResponse(
     }
   }
 
-  // ── 6. Today's priorities ──
+  // ── 6. Profit / finance (check BEFORE priorities so "กำไรวันนี้" doesn't match วันนี้) ──
+  if (q.includes('profit') || q.includes('finance') || q.includes('margin') || q.includes('expense') ||
+      q.includes('กำไร') || q.includes('การเงิน') || q.includes('ขาดทุน') || q.includes('ค่าใช้จ่าย')) {
+    const sections: SakuSection[] = [
+      sec('💰', lang === 'en' ? 'P&L (7d)' : 'กำไรขาดทุน 7 วัน',
+        `${lang === 'en' ? 'Revenue' : 'ยอดขาย'}: ${fmtMoney(money.revenue)}`,
+        `${lang === 'en' ? 'COGS' : 'ต้นทุน'}: ${fmtMoney(money.cogs)} | ${lang === 'en' ? 'Gross' : 'ขั้นต้น'}: ${fmtMoney(money.grossProfit)} (${money.grossMargin.toFixed(1)}%)`,
+        money.operatingExpenses > 0 ? `${lang === 'en' ? 'Expenses' : 'ค่าใช้จ่าย'}: ${fmtMoney(money.operatingExpenses)}` : '',
+        `${lang === 'en' ? 'Net' : 'สุทธิ'}: ${fmtMoney(money.netProfit)} (${money.netMargin.toFixed(1)}%)`,
+      ),
+    ]
+
+    if (q.includes('วันนี้') || q.includes('today')) {
+      sections.unshift(sec('📊', lang === 'en' ? 'Today' : 'วันนี้',
+        `${lang === 'en' ? 'Revenue' : 'ขาย'}: ${fmtMoney(s.revenueToday)}`,
+        `${lang === 'en' ? 'Profit' : 'กำไร'}: ${fmtMoney(s.profitToday)}`,
+      ))
+    }
+
+    if (money.netProfit >= 0) {
+      sections.push(sec('✅', '', lang === 'en' ? 'Currently profitable' : 'ช่วงนี้มีกำไร'))
+    } else {
+      sections.push(sec('⚠️', '', lang === 'en' ? 'Currently at a loss — review expenses and pricing' : 'กำลังขาดทุน — ควรดูรายจ่ายและปรับราคา'))
+    }
+
+    if (money.dataQualityNotes.length > 0) {
+      sections.push(sec('📝', lang === 'en' ? 'Note' : 'หมายเหตุ', ...money.dataQualityNotes))
+    }
+
+    return {
+      sections,
+      followUps: generateFollowUps('profit', data, lang),
+      context: { lastTopic: 'profit', lastItems: [], lastItemType: null },
+    }
+  }
+
+  // ── 7. Sales (check before priorities so "ยอดขายวันนี้" works) ──
+  if (q.includes('sales') || q.includes('revenue') || q.includes('ยอดขาย') ||
+      (q.includes('ขาย') && !q.includes('ขาดทุน') && !q.includes('จัดซื้อ'))) {
+    const sections: SakuSection[] = [
+      sec('📊', lang === 'en' ? 'Sales (7d)' : 'ยอดขาย 7 วัน',
+        `${lang === 'en' ? 'Revenue' : 'ยอด'}: ${fmtMoney(s.revenue)} (${pctStr(s.revenueChange)})`,
+        `${lang === 'en' ? 'Orders' : 'บิล'}: ${s.orders.toLocaleString()} | AOV: ${fmtMoney(s.averageOrderValue)}`,
+      ),
+      sec('💰', lang === 'en' ? 'Today' : 'วันนี้',
+        `${lang === 'en' ? 'Revenue' : 'ขาย'}: ${fmtMoney(s.revenueToday)}`,
+        `${lang === 'en' ? 'Profit' : 'กำไร'}: ${fmtMoney(s.profitToday)}`,
+      ),
+    ]
+    return {
+      sections,
+      followUps: generateFollowUps('sales', data, lang),
+      context: { lastTopic: 'sales', lastItems: [], lastItemType: null },
+    }
+  }
+
+  // ── 8. Today's priorities ──
   if (q.includes('ทำอะไร') || q.includes('ทำอะไรก่อน') || q.includes('ควรทำ') ||
       q.includes('วันนี้') || q.includes('สำคัญ') ||
       q.includes('what should') || q.includes('to do') || q.includes('today') ||
@@ -695,54 +751,7 @@ function buildSakuResponse(
     }
   }
 
-  // ── 9. Sales ──
-  if (q.includes('sales') || q.includes('revenue') || q.includes('ยอดขาย') || q.includes('ขาย')) {
-    return {
-      sections: [
-        sec('📊', lang === 'en' ? 'Sales (7d)' : 'ยอดขาย 7 วัน',
-          `${lang === 'en' ? 'Revenue' : 'ยอด'}: ${fmtMoney(s.revenue)} (${pctStr(s.revenueChange)})`,
-          `${lang === 'en' ? 'Orders' : 'บิล'}: ${s.orders.toLocaleString()} | AOV: ${fmtMoney(s.averageOrderValue)}`,
-        ),
-        sec('💰', lang === 'en' ? 'Today' : 'วันนี้',
-          `${lang === 'en' ? 'Revenue' : 'ขาย'}: ${fmtMoney(s.revenueToday)}`,
-          `${lang === 'en' ? 'Profit' : 'กำไร'}: ${fmtMoney(s.profitToday)}`,
-        ),
-      ],
-      followUps: generateFollowUps('sales', data, lang),
-      context: { lastTopic: 'sales', lastItems: [], lastItemType: null },
-    }
-  }
-
-  // ── 10. Profit / finance ──
-  if (q.includes('profit') || q.includes('finance') || q.includes('margin') || q.includes('expense') ||
-      q.includes('กำไร') || q.includes('การเงิน') || q.includes('ขาดทุน') || q.includes('ค่าใช้จ่าย')) {
-    const sections: SakuSection[] = [
-      sec('💰', lang === 'en' ? 'P&L (7d)' : 'กำไรขาดทุน 7 วัน',
-        `${lang === 'en' ? 'Revenue' : 'ยอดขาย'}: ${fmtMoney(money.revenue)}`,
-        `${lang === 'en' ? 'COGS' : 'ต้นทุน'}: ${fmtMoney(money.cogs)} | ${lang === 'en' ? 'Gross' : 'ขั้นต้น'}: ${fmtMoney(money.grossProfit)} (${money.grossMargin.toFixed(1)}%)`,
-        money.operatingExpenses > 0 ? `${lang === 'en' ? 'Expenses' : 'ค่าใช้จ่าย'}: ${fmtMoney(money.operatingExpenses)}` : '',
-        `${lang === 'en' ? 'Net' : 'สุทธิ'}: ${fmtMoney(money.netProfit)} (${money.netMargin.toFixed(1)}%)`,
-      ),
-    ]
-
-    if (money.netProfit >= 0) {
-      sections.push(sec('✅', '', lang === 'en' ? 'Currently profitable' : 'ช่วงนี้มีกำไร'))
-    } else {
-      sections.push(sec('⚠️', '', lang === 'en' ? 'Currently at a loss — review expenses and pricing' : 'กำลังขาดทุน — ควรดูรายจ่ายและปรับราคา'))
-    }
-
-    if (money.dataQualityNotes.length > 0) {
-      sections.push(sec('📝', lang === 'en' ? 'Note' : 'หมายเหตุ', ...money.dataQualityNotes))
-    }
-
-    return {
-      sections,
-      followUps: generateFollowUps('profit', data, lang),
-      context: { lastTopic: 'profit', lastItems: [], lastItemType: null },
-    }
-  }
-
-  // ── 11. Debtors / aging ──
+  // ── 9. Debtors / aging ──
   if (q.includes('ลูกหนี้') || q.includes('ค้างชำระ') || q.includes('เก็บเงิน') || q.includes('เชื่อ') ||
       q.includes('debtor') || q.includes('overdue') || q.includes('collect') || q.includes('credit') || q.includes('aging')) {
     if (money.totalOutstanding === 0 && money.totalOverdue === 0) {
