@@ -574,23 +574,32 @@ function buildSakuResponse(
   // ── 6. Profit / finance (check BEFORE priorities so "กำไรวันนี้" doesn't match วันนี้) ──
   if (q.includes('profit') || q.includes('finance') || q.includes('margin') || q.includes('expense') ||
       q.includes('กำไร') || q.includes('การเงิน') || q.includes('ขาดทุน') || q.includes('ค่าใช้จ่าย')) {
-    const sections: SakuSection[] = [
-      sec('💰', lang === 'en' ? 'P&L (7d)' : 'กำไรขาดทุน 7 วัน',
-        `${lang === 'en' ? 'Revenue' : 'ยอดขาย'}: ${fmtMoney(money.revenue)}`,
-        `${lang === 'en' ? 'COGS' : 'ต้นทุน'}: ${fmtMoney(money.cogs)} | ${lang === 'en' ? 'Gross' : 'ขั้นต้น'}: ${fmtMoney(money.grossProfit)} (${money.grossMargin.toFixed(1)}%)`,
-        money.operatingExpenses > 0 ? `${lang === 'en' ? 'Expenses' : 'ค่าใช้จ่าย'}: ${fmtMoney(money.operatingExpenses)}` : '',
-        `${lang === 'en' ? 'Net' : 'สุทธิ'}: ${fmtMoney(money.netProfit)} (${money.netMargin.toFixed(1)}%)`,
-      ),
-    ]
+    const askingToday = q.includes('วันนี้') || q.includes('today')
+    const sections: SakuSection[] = []
 
-    if (q.includes('วันนี้') || q.includes('today')) {
-      sections.unshift(sec('📊', lang === 'en' ? 'Today' : 'วันนี้',
+    if (askingToday) {
+      // Show today's snapshot first — use today's profit for the status, not 7-day
+      const todayProfitLabel = s.profitToday >= 0
+        ? (lang === 'en' ? 'Profit' : 'กำไร')
+        : (lang === 'en' ? 'Loss' : 'ขาดทุน')
+      const todayProfitValue = Math.abs(s.profitToday)
+      const todayIcon = s.profitToday >= 0 ? '💰' : '⚠️'
+      sections.push(sec(todayIcon, lang === 'en' ? 'Today' : 'วันนี้',
         `${lang === 'en' ? 'Revenue' : 'ขาย'}: ${fmtMoney(s.revenueToday)}`,
-        `${lang === 'en' ? 'Profit' : 'กำไร'}: ${fmtMoney(s.profitToday)}`,
+        `${todayProfitLabel}: ${fmtMoney(todayProfitValue)}`,
       ))
     }
 
-    if (money.netProfit >= 0) {
+    sections.push(sec('💰', lang === 'en' ? 'P&L (7d)' : 'กำไรขาดทุน 7 วัน',
+      `${lang === 'en' ? 'Revenue' : 'ยอดขาย'}: ${fmtMoney(money.revenue)}`,
+      `${lang === 'en' ? 'COGS' : 'ต้นทุน'}: ${fmtMoney(money.cogs)} | ${lang === 'en' ? 'Gross' : 'ขั้นต้น'}: ${fmtMoney(money.grossProfit)} (${money.grossMargin.toFixed(1)}%)`,
+      money.operatingExpenses > 0 ? `${lang === 'en' ? 'Expenses' : 'ค่าใช้จ่าย'}: ${fmtMoney(money.operatingExpenses)}` : '',
+      `${lang === 'en' ? 'Net' : 'สุทธิ'}: ${fmtMoney(money.netProfit)} (${money.netMargin.toFixed(1)}%)`,
+    ))
+
+    // Status badge: use today's profit when asking about today, else 7-day
+    const profitForStatus = askingToday ? s.profitToday : money.netProfit
+    if (profitForStatus >= 0) {
       sections.push(sec('✅', '', lang === 'en' ? 'Currently profitable' : 'ช่วงนี้มีกำไร'))
     } else {
       sections.push(sec('⚠️', '', lang === 'en' ? 'Currently at a loss — review expenses and pricing' : 'กำลังขาดทุน — ควรดูรายจ่ายและปรับราคา'))
@@ -615,11 +624,18 @@ function buildSakuResponse(
         `${lang === 'en' ? 'Revenue' : 'ยอด'}: ${fmtMoney(s.revenue)} (${pctStr(s.revenueChange)})`,
         `${lang === 'en' ? 'Orders' : 'บิล'}: ${s.orders.toLocaleString()} | AOV: ${fmtMoney(s.averageOrderValue)}`,
       ),
-      sec('💰', lang === 'en' ? 'Today' : 'วันนี้',
-        `${lang === 'en' ? 'Revenue' : 'ขาย'}: ${fmtMoney(s.revenueToday)}`,
-        `${lang === 'en' ? 'Profit' : 'กำไร'}: ${fmtMoney(s.profitToday)}`,
-      ),
     ]
+    const profitLabel = s.profitToday >= 0
+      ? (lang === 'en' ? 'Profit' : 'กำไร')
+      : (lang === 'en' ? 'Loss' : 'ขาดทุน')
+    const profitValue = s.profitToday >= 0 ? s.profitToday : Math.abs(s.profitToday)
+    const profitIcon = s.profitToday >= 0 ? '💰' : '⚠️'
+
+    sections.push(sec(profitIcon, lang === 'en' ? 'Today' : 'วันนี้',
+      `${lang === 'en' ? 'Revenue' : 'ขาย'}: ${fmtMoney(s.revenueToday)}`,
+      `${profitLabel}: ${fmtMoney(profitValue)}`,
+    ))
+
     return {
       sections,
       followUps: generateFollowUps('sales', data, lang),
