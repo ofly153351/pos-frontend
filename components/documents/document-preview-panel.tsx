@@ -28,6 +28,12 @@ type Dict = {
   typeBill: string;
   typeCreditNote: string;
   typeDeliveryOrder?: string;
+  cancel: string;
+  confirm: string;
+  cancelDocument: string;
+  confirmCancelDoc: string;
+  cancelSuccess: string;
+  cancelError: string;
 };
 
 type Props = {
@@ -181,11 +187,11 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
     startCancelTransition(async () => {
       try {
         await cancelDocument(documentId);
-        toast.success("ยกเลิกเอกสารแล้ว");
+        toast.success(dict.cancelSuccess);
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
       } catch {
-        toast.error("ไม่สามารถยกเลิกเอกสารได้");
+        toast.error(dict.cancelError);
       } finally {
         setConfirmCancel(false);
       }
@@ -337,10 +343,10 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                 <ConfirmModal
                   open
                   tone="danger"
-                  title="ยกเลิกเอกสาร"
-                  message="ยืนยันการยกเลิกเอกสารนี้? เอกสารจะถูกทำเครื่องหมายว่ายกเลิก"
-                  confirmLabel="ยืนยันยกเลิก"
-                  cancelLabel="ไม่ใช่"
+                  title={dict.cancelDocument}
+                  message={dict.confirmCancelDoc}
+                  confirmLabel={dict.confirm}
+                  cancelLabel={dict.cancel}
                   loading={isCancelling}
                   onConfirm={runCancel}
                   onClose={() => setConfirmCancel(false)}
