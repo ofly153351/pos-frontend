@@ -152,6 +152,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   // discount can never be silently applied as 0% (see submitSale).
   const [discountsError, setDiscountsError] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
+  // Product id of the most recently added / edited cart line. Drives a persistent
+  // "ล่าสุด" highlight in the cart so the cashier always sees the last item touched.
+  const [recentProductId, setRecentProductId] = useState<string | null>(null);
 
   // Notify parent when cart items change (for cashier modal close confirmation)
   useEffect(() => {
@@ -777,7 +780,9 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     if (isCheckoutSummaryOpen && !quotationMode) {
       let active = true;
       const total = roundCurrency(settlementTotal);
-      const isQrMethod = ["promptpay", "transfer", "qr"].includes(paymentMethod);
+      // QR display is for PromptPay only (qr = legacy alias). Bank transfer shows account
+      // info instead (handled below) — it is no longer treated as a QR method.
+      const isQrMethod = ["promptpay", "qr"].includes(paymentMethod);
       if (isQrMethod) {
         publishDisplayState({ phase: "payment", storeName: storeName || undefined, storeLogoUrl, total, method: paymentMethod }); // immediate (QR loading)
         fetchPromptPayQR(total)
@@ -1006,6 +1011,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
   function clearCart() {
     setCart([]);
+    setRecentProductId(null);
     setSelectedCustomerId("");
     setCustomerSettlementMode("cash_now");
     setBillDiscount("");
@@ -1064,6 +1070,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
   function addToCart(product: Product) {
     setError("");
+    setRecentProductId(product.id);
     setCart((currentCart) => {
       const existingItem = currentCart.find(
         (item) => item.product.id === product.id,
@@ -1185,6 +1192,12 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   }
 
   function updateCartQuantity(productId: string, nextQuantity: number) {
+    // Removing the highlighted line drops the highlight; any other change re-marks it latest.
+    if (nextQuantity <= 0) {
+      setRecentProductId((cur) => (cur === productId ? null : cur));
+    } else {
+      setRecentProductId(productId);
+    }
     setCart((currentCart) => {
       if (nextQuantity <= 0) {
         if (discountEditorProductId === productId) {
@@ -1704,6 +1717,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       })
       .filter((line: CartItem) => line.quantity > 0);
     setCart(items);
+    setRecentProductId(null);
     if (restoreReduced) {
       toast.info(dictionary.saleLocationCartAdjusted);
     }
@@ -1923,6 +1937,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         {/* ── Right: Cart panel ── */}
         <CartPanel
           cart={cart}
+          recentProductId={recentProductId}
           cartSummary={cartSummary}
           settlementTotal={settlementTotal}
           vatAmount={vatAmount}

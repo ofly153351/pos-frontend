@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import { ChevronDown, Trash2, Ticket } from "lucide-react";
 import type { SaleDiscountType } from "@/types/sale";
 import type { Product } from "@/types/product";
@@ -35,10 +34,12 @@ type Dict = {
   discountBadgePerUnit: string;
   removeItemButton: string;
   checkoutButton: string;
+  latestItemBadge: string;
 };
 
 type Props = {
   cart: CartItem[];
+  recentProductId: string | null;
   cartSummary: CartSummary;
   settlementTotal: number;
   vatAmount: number;
@@ -74,6 +75,7 @@ type Props = {
 
 export function CartPanel({
   cart,
+  recentProductId,
   cartSummary,
   settlementTotal,
   vatAmount,
@@ -282,10 +284,15 @@ export function CartPanel({
             <div className="space-y-2">
               {cart.map((item) => {
                 const line = getCartLine(item);
+                const isRecent = item.product.id === recentProductId;
                 return (
                   <div
                     key={item.product.id}
-                    className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3.5 shadow-sm select-none"
+                    className={`relative flex items-center gap-3 rounded-2xl border px-4 py-3.5 shadow-sm transition-colors duration-300 select-none ${
+                      isRecent
+                        ? "border-violet-400 bg-violet-50 ring-2 ring-violet-300"
+                        : "border-violet-100 bg-white"
+                    }`}
                     onPointerDown={() => onLongPressStart(item.product)}
                     onPointerUp={onLongPressEnd}
                     onPointerLeave={onLongPressEnd}
@@ -308,9 +315,17 @@ export function CartPanel({
 
                     {/* Name + unit price */}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900">
-                        {item.product.name}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {item.product.name}
+                        </p>
+                        {isRecent && (
+                          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-violet-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white motion-safe:animate-pulse" />
+                            {dictionary.latestItemBadge}
+                          </span>
+                        )}
+                      </div>
                       <p className="nums text-xs text-slate-400">
                         ฿{formatAmount(line.unitPrice)}/{item.product.product_unit_name ?? item.product.unit_type ?? "หน่วย"}
                       </p>
@@ -328,7 +343,7 @@ export function CartPanel({
                           {item.discountType === "percent"
                             ? `${item.discountValue}%`
                             : item.discountScope === "unit"
-                              ? `฿${formatAmount(Math.min(Number(item.discountValue || 0), line.unitPrice))}${dictionary.discountBadgePerUnit}`
+                              ? `฿${formatAmount(line.discountPerUnit)}${dictionary.discountBadgePerUnit}`
                               : `-฿${formatAmount(line.lineDiscount)}`}
                         </span>
                       ) : (

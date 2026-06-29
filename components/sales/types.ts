@@ -60,6 +60,7 @@ export type SalesDictionary = {
   discountPreviewAfterDiscountLabel: string;
   discountBadgePerUnit: string;
   emptyCart: string;
+  latestItemBadge: string;
   emptyHistory: string;
   emptyProducts: string;
   historyTitle: string;

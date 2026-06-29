@@ -6,6 +6,7 @@ export type SalesHistoryDict = {
   filterToday: string;
   filter7d: string;
   filter30d: string;
+  filterCustom: string;
   filterAll: string;
   searchPlaceholder: string;
   searchFull: string;

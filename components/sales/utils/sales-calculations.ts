@@ -182,19 +182,24 @@ export function getCartLine(item: CartItem) {
     lineDiscount = roundCurrency((lineSubtotal * Math.min(Math.max(discountValue, 0), 100)) / 100);
   } else if (item.discountScope === "line") {
     // Whole-line fixed amount: deduct once from the line subtotal, cap at subtotal.
-    lineDiscount = Math.min(Math.max(discountValue, 0), lineSubtotal);
+    // Rounded like the other branches so the discount sums are consistent to 2dp.
+    lineDiscount = roundCurrency(Math.min(Math.max(discountValue, 0), lineSubtotal));
   } else {
     // Per-unit fixed amount: cap per unit then scale by quantity.
-    const discountPerUnit = Math.min(Math.max(discountValue, 0), unitPrice);
-    lineDiscount = roundCurrency(discountPerUnit * item.quantity);
+    const perUnit = Math.min(Math.max(discountValue, 0), unitPrice);
+    lineDiscount = roundCurrency(perUnit * item.quantity);
   }
 
   const lineTotal = roundCurrency(Math.max(lineSubtotal - lineDiscount, 0));
+  // Capped per-unit discount — canonical source for the "per-unit" discount badge
+  // so the UI never re-applies the cap inline (single source of truth).
+  const discountPerUnit = Math.min(Math.max(discountValue, 0), unitPrice);
 
   return {
     lineDiscount,
     lineSubtotal,
     lineTotal,
     unitPrice,
+    discountPerUnit,
   };
 }

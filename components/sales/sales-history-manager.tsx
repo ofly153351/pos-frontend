@@ -12,21 +12,7 @@ import type { Sale } from "@/types/sale";
 import { SaleDetailModal } from "./sale-detail-modal";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import type { SalesHistoryDict } from "./sales-history-dict";
-
-type DateFilter = "today" | "7d" | "30d" | "all";
-
-function startOfToday(): number {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-
-function cutoffMs(filter: DateFilter): number {
-  if (filter === "all") return 0;
-  if (filter === "today") return startOfToday();
-  const days = filter === "7d" ? 7 : 30;
-  return Date.now() - days * 24 * 60 * 60 * 1000;
-}
+import { DateRangeFilter, type DateFilterValue, resolveDateQuery } from "@/components/shared/date-range-filter";
 
 function baht(n: number | undefined | null): string {
   const v = n ?? 0;
@@ -57,7 +43,7 @@ function statusMeta(status: string, dict: SalesHistoryDict): { label: string; cl
 export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHistoryDict; embedded?: boolean }) {
   const params = useParams();
   const locale = (params?.locale as string) ?? "th";
-  const [dateFilter, setDateFilter] = useState<DateFilter>("today");
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({ preset: "today" });
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -67,9 +53,15 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
   const [showMore, setShowMore] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const salesQuery = resolveDateQuery(dateFilter);
+
   const { data: sales, isLoading, isError } = useQuery({
-    queryKey: ["sales-history"],
-    queryFn: async () => (await listSales()).data,
+    queryKey: ["sales-history", dateFilter.preset, dateFilter.custom?.from ?? "", dateFilter.custom?.to ?? ""],
+    queryFn: async () =>
+      (await listSales({
+        dateFrom: salesQuery.date_from,
+        dateTo: salesQuery.date_to,
+      })).data,
     staleTime: 30_000,
   });
 
@@ -91,12 +83,10 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
 
   const filtered = useMemo<Sale[]>(() => {
     if (!sales) return [];
-    const cutoff = cutoffMs(dateFilter);
     const q = search.toLowerCase().trim();
     const min = amountMin ? parseFloat(amountMin) : null;
     const max = amountMax ? parseFloat(amountMax) : null;
     return sales
-      .filter((s) => new Date(s.created_at).getTime() >= cutoff)
       .filter((s) => {
         if (!q) return true;
         return (
@@ -111,11 +101,18 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
       .filter((s) => min === null || (s.total_amount ?? 0) >= min)
       .filter((s) => max === null || (s.total_amount ?? 0) <= max)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [sales, dateFilter, search, paymentFilter, statusFilter, cashierFilter, amountMin, amountMax]);
+  }, [sales, search, paymentFilter, statusFilter, cashierFilter, amountMin, amountMax]);
 
-  const totalRevenue = useMemo(
-    () => filtered.reduce((sum, s) => sum + (s.total_amount ?? 0), 0),
+  // Voided sales stay in the table (audit trail, and "voided" is a status filter) but are
+  // excluded from the KPIs so รายได้/จำนวนบิล match the finance reports, which filter
+  // status <> 'voided'. Loans are already dropped server-side by sale.ListByStore.
+  const kpiSales = useMemo(
+    () => filtered.filter((s) => (s.status ?? "completed") !== "voided"),
     [filtered],
+  );
+  const totalRevenue = useMemo(
+    () => kpiSales.reduce((sum, s) => sum + (s.total_amount ?? 0), 0),
+    [kpiSales],
   );
 
   const hasActiveFilters =
@@ -129,13 +126,6 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
     setAmountMin("");
     setAmountMax("");
   }
-
-  const filterTabs: { key: DateFilter; label: string }[] = [
-    { key: "today", label: dict.filterToday },
-    { key: "7d", label: dict.filter7d },
-    { key: "30d", label: dict.filter30d },
-    { key: "all", label: dict.filterAll },
-  ];
 
   const selectClass =
     "rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100";
@@ -154,7 +144,7 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <ReportKpiCard
           label={dict.kpiTotalBills}
-          value={String(filtered.length)}
+          value={String(kpiSales.length)}
           icon={<Receipt className="h-5 w-5" />}
           iconBg="bg-violet-100"
           iconColor="text-violet-600"
@@ -171,22 +161,23 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
       {/* Filter bar */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-            {filterTabs.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setDateFilter(tab.key)}
-                className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
-                  dateFilter === tab.key
-                    ? "bg-violet-600 text-white shadow-sm"
-                    : "text-slate-600 hover:text-violet-700"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <DateRangeFilter
+            value={dateFilter}
+            onChange={setDateFilter}
+            labels={{
+              today: dict.filterToday,
+              sevenDays: dict.filter7d,
+              thirtyDays: dict.filter30d,
+              all: dict.filterAll,
+              custom: dict.filterCustom,
+              startDate: dict.dateFrom,
+              endDate: dict.dateTo,
+              cancel: dict.cancelBtn,
+              apply: dict.confirmBtn,
+            }}
+            locale={locale}
+            className="shrink-0"
+          />
           <div className="relative min-w-[200px] flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input

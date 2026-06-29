@@ -17,9 +17,18 @@ function ensureStoreId() {
   return storeId;
 }
 
-export function listSales() {
+export type ListSalesParams = {
+  dateFrom?: string; // YYYY-MM-DD
+  dateTo?: string;   // YYYY-MM-DD
+};
+
+export function listSales(params?: ListSalesParams) {
   const currentStoreId = ensureStoreId();
-  return authorizedApiRequest<Sale[]>(`/api/stores/${currentStoreId}/sales`);
+  const qs = new URLSearchParams();
+  if (params?.dateFrom) qs.set("date_from", params.dateFrom);
+  if (params?.dateTo) qs.set("date_to", params.dateTo);
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return authorizedApiRequest<Sale[]>(`/api/stores/${currentStoreId}/sales${query}`);
 }
 
 export function getSaleById(saleId: string) {
