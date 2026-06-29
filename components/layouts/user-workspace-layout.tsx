@@ -108,6 +108,10 @@ export function UserWorkspaceLayout({
   titles,
 }: UserWorkspaceLayoutProps) {
   const pathname = usePathname();
+  // POS (/sales) is a self-contained full-height layout — leave it untouched.
+  // Every other workspace page gets extra bottom padding so page-bottom content
+  // (pagination, action bars) clears the fixed CopilotFAB at bottom-right.
+  const isPosPage = pathname.endsWith("/sales");
   const [collapsed, setCollapsed] = useState(false);
   const [isCashierOpen, setIsCashierOpen] = useState(false);
 
@@ -281,7 +285,7 @@ export function UserWorkspaceLayout({
           sidebarCollapsed={collapsed}
           title={title}
         />
-        <main className="flex-1 min-h-0 overflow-auto p-6 lg:p-8 pretty-scroll">{children}</main>
+        <main className={`flex-1 min-h-0 overflow-auto pretty-scroll ${isPosPage ? "p-6 lg:p-8" : "p-6 lg:p-8 pb-24 lg:pb-28"}`}>{children}</main>
       </div>
 
       {isCashierOpen ? (
