@@ -198,3 +198,20 @@ Tones: `"success" | "error" | "info" | "warning"` — all match the violet/purpl
 - Always integrate with backend API properly
 - Use `toast` / `<Alert>` for all notifications — never write inline `border-rose-200 bg-rose-50` divs
 <!-- END:nextjs-agent-rules -->
+
+## Activity Center (`components/activity-logs/`)
+
+The `/settings/activity-logs` page is a business **Activity Center** (timeline
+cards + detail drawer + before/after diff + deterministic insights + forward-only
+restore). Key pieces:
+- `insight-provider.ts` — the `InsightProvider` seam. The deterministic provider is
+  the production impl (numbers + prose derived from the data). **Honest business
+  language only — never label output "AI-generated".** A future LLM implements the
+  same interface; it enhances narration, never owns the calculation.
+- `restore-activity.ts` — forward-only restore re-applies `changes.before` through
+  the **existing** module update endpoints. Product/store updates are form-data with
+  destructive clear-flags, so restore builds its own minimal FormData (only the
+  changed fields) — do NOT reuse `buildProductFormData`/`buildStoreUpdateFormData`.
+- Reuses `DrawerShell`, `ReportKpiCard`, `ConfirmModal` — don't rebuild them.
+- All strings come from `dictionary.activityLogs` (th + en). Server pagination is
+  the scale mechanism (no client virtual scroll).
