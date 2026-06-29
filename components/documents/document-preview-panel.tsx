@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { DocumentType } from "@/types/document";
 
 import { DocumentTimeline } from "./document-timeline";
@@ -53,6 +54,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
   const [isCancelling, startCancelTransition] = useTransition();
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
 
   const isPaid = paymentStatus === "PAID";
@@ -172,7 +174,10 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   }
 
   function handleCancel() {
-    if (!window.confirm("ยืนยันการยกเลิกเอกสารนี้?")) return;
+    setConfirmCancel(true);
+  }
+
+  function runCancel() {
     startCancelTransition(async () => {
       try {
         await cancelDocument(documentId);
@@ -181,6 +186,8 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
         onClose();
       } catch {
         toast.error("ไม่สามารถยกเลิกเอกสารได้");
+      } finally {
+        setConfirmCancel(false);
       }
     });
   }
@@ -325,6 +332,19 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   {isCancelling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
                   ยกเลิก
                 </button>
+              )}
+              {confirmCancel && (
+                <ConfirmModal
+                  open
+                  tone="danger"
+                  title="ยกเลิกเอกสาร"
+                  message="ยืนยันการยกเลิกเอกสารนี้? เอกสารจะถูกทำเครื่องหมายว่ายกเลิก"
+                  confirmLabel="ยืนยันยกเลิก"
+                  cancelLabel="ไม่ใช่"
+                  loading={isCancelling}
+                  onConfirm={runCancel}
+                  onClose={() => setConfirmCancel(false)}
+                />
               )}
               <button
                 type="button"

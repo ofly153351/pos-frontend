@@ -30,6 +30,7 @@ import {
   payInvoice,
 } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { DocumentListItem, DocumentType } from "@/types/document";
 
 // Labels consumed by the row action menu. A structural subset of the documents dict.
@@ -51,6 +52,8 @@ type RowActionsDict = {
   recordPayment: string;
   paySuccess: string;
   payError: string;
+  cancel: string;
+  confirm: string;
   cancelDocument: string;
   cancelSuccess: string;
   cancelError: string;
@@ -93,6 +96,7 @@ function convertTargetsFor(type: DocumentType): DocumentType[] {
 export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [confirmKind, setConfirmKind] = useState<null | "cancel" | "delete">(null);
   const [isPending, startTransition] = useTransition();
   const wrapRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -216,9 +220,19 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
     });
   }
 
+  // Cancel / Delete open a themed confirmation modal (see render below) instead of
+  // window.confirm; the actual mutation runs from the modal's onConfirm.
   function handleCancel() {
     close();
-    if (!window.confirm(d.confirmCancelDoc)) return;
+    setConfirmKind("cancel");
+  }
+
+  function handleDelete() {
+    close();
+    setConfirmKind("delete");
+  }
+
+  function runCancel() {
     startTransition(async () => {
       try {
         await cancelDocument(doc.id);
@@ -226,13 +240,13 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
         toast.success(d.cancelSuccess);
       } catch {
         toast.error(d.cancelError);
+      } finally {
+        setConfirmKind(null);
       }
     });
   }
 
-  function handleDelete() {
-    close();
-    if (!window.confirm(d.confirmDeleteDoc)) return;
+  function runDelete() {
     startTransition(async () => {
       try {
         await deleteDocument(doc.id);
@@ -240,6 +254,8 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
         toast.success(d.deleteSuccess);
       } catch {
         toast.error(d.deleteError);
+      } finally {
+        setConfirmKind(null);
       }
     });
   }
@@ -340,6 +356,20 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
           </div>
         </>,
         document.body,
+      )}
+
+      {confirmKind && (
+        <ConfirmModal
+          open
+          tone="danger"
+          title={confirmKind === "cancel" ? d.cancelDocument : d.delete}
+          message={confirmKind === "cancel" ? d.confirmCancelDoc : d.confirmDeleteDoc}
+          confirmLabel={d.confirm}
+          cancelLabel={d.cancel}
+          loading={isPending}
+          onConfirm={confirmKind === "cancel" ? runCancel : runDelete}
+          onClose={() => setConfirmKind(null)}
+        />
       )}
     </div>
   );
