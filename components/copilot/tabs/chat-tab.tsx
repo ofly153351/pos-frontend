@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { Send, MessageSquare } from "lucide-react"
 import { useCopilot } from "../copilot-provider"
+import { getActivityLogs, type ActivityLogEntry } from "@/services/activity-logs"
 import type {
   CopilotOverview,
   CopilotAction,
@@ -914,10 +915,149 @@ function buildSakuResponse(
       lang === 'en' ? '📊 Store overview • 🎯 Priorities' : '📊 ภาพรวมร้าน • 🎯 ทำอะไรก่อน',
       lang === 'en' ? '📦 Stock • 💰 Profit • 🛒 Purchasing' : '📦 สต็อก • 💰 กำไร • 🛒 จัดซื้อ',
       lang === 'en' ? '👤 Debtors • ⚠️ Issues • 💡 Opportunities' : '👤 ลูกหนี้ • ⚠️ ปัญหา • 💡 โอกาส',
+      lang === 'en' ? '📝 Activity — who changed what' : '📝 กิจกรรม — ใครแก้อะไรวันนี้',
     )],
     followUps: generateFollowUps('', data, lang),
     context: emptyContext(),
   }
+}
+
+// ── Activity Center Q&A (spec §12) ──
+// Lets the Copilot answer "who changed prices today / what changed / who deleted"
+// from the same activity log that powers the Activity Center. Deterministic and
+// rule-based — consistent with the rest of this engine.
+
+const ACT_FIELD: Record<string, { th: string; en: string }> = {
+  base_price: { th: 'ราคาขาย', en: 'price' },
+  cost_price: { th: 'ราคาทุน', en: 'cost' },
+  special_price: { th: 'ราคาพิเศษ', en: 'special price' },
+  name: { th: 'ชื่อ', en: 'name' },
+  status: { th: 'สถานะ', en: 'status' },
+  role: { th: 'บทบาท', en: 'role' },
+  vat_rate: { th: 'อัตรา VAT', en: 'VAT rate' },
+  min_stock: { th: 'สต็อกขั้นต่ำ', en: 'min stock' },
+  barcode: { th: 'บาร์โค้ด', en: 'barcode' },
+}
+const ACT_ACTION: Record<string, { th: string; en: string }> = {
+  create: { th: 'สร้าง', en: 'created' }, update: { th: 'แก้ไข', en: 'edited' },
+  delete: { th: 'ลบ', en: 'deleted' }, void: { th: 'ยกเลิก', en: 'voided' },
+  cancel: { th: 'ยกเลิก', en: 'cancelled' }, adjust: { th: 'ปรับสต็อก', en: 'adjusted stock' },
+  pay: { th: 'ชำระเงิน', en: 'paid' }, receive: { th: 'รับสินค้า', en: 'received' },
+  transfer: { th: 'โอนย้าย', en: 'transferred' }, convert: { th: 'แปลงเอกสาร', en: 'converted' },
+}
+const ACT_MODULE: Record<string, { th: string; en: string }> = {
+  product: { th: 'สินค้า', en: 'product' }, sale: { th: 'การขาย', en: 'sale' },
+  stock: { th: 'สต็อก', en: 'stock' }, promotion: { th: 'โปรโมชั่น', en: 'promotion' },
+  settings: { th: 'ตั้งค่า', en: 'settings' }, customer: { th: 'ลูกค้า', en: 'customer' },
+  purchasing: { th: 'จัดซื้อ', en: 'purchasing' }, document: { th: 'เอกสาร', en: 'document' },
+  invoice: { th: 'ใบแจ้งหนี้', en: 'invoice' }, warehouse: { th: 'คลังสินค้า', en: 'warehouse' },
+}
+
+function actLabel(map: Record<string, { th: string; en: string }>, key: string, lang: Lang): string {
+  return map[key] ? (lang === 'en' ? map[key].en : map[key].th) : key
+}
+
+function isActivityIntent(q: string): boolean {
+  return /ใครแก้|ใครเปลี่ยน|ใครลบ|ใครทำ|ใครสร้าง|ใครปรับ|เปลี่ยนอะไร|แก้อะไร|มีอะไรเปลี่ยน|เปลี่ยนแปลงอะไร|กิจกรรม|ใครเป็นคน|who (changed|edited|deleted|made|created|adjusted)|what.*(chang|happen|edit)|recent (change|activit)|change ?log|activity log/i.test(q)
+}
+
+function fmtVal(v: unknown): string {
+  if (v === null || v === undefined || v === '') return '—'
+  if (typeof v === 'boolean') return v ? '✓' : '✗'
+  return String(v)
+}
+
+// Builds "field A→B, field2 C→D" for the scalar changes of one entry (top 2).
+function changeSummary(entry: ActivityLogEntry, lang: Lang): string {
+  const f = entry.changes?.fields
+  if (!f) return ''
+  const keys = Object.keys(f).filter(k => k !== 'data' && (f[k].before === null || ['string', 'number', 'boolean'].includes(typeof f[k].before) || ['string', 'number', 'boolean'].includes(typeof f[k].after)))
+  return keys.slice(0, 2).map(k => `${actLabel(ACT_FIELD, k, lang)} ${fmtVal(f[k].before)}→${fmtVal(f[k].after)}`).join(', ')
+}
+
+function entryLine(e: ActivityLogEntry, lang: Lang): string {
+  const who = e.user_name || (lang === 'en' ? 'someone' : 'ใครบางคน')
+  const act = actLabel(ACT_ACTION, e.action, lang)
+  const mod = actLabel(ACT_MODULE, e.module, lang)
+  const chg = changeSummary(e, lang)
+  return chg ? `${who} — ${act} ${mod} (${chg})` : `${who} — ${act} ${mod}`
+}
+
+async function fetchActivities(q: string): Promise<ActivityLogEntry[]> {
+  const week = /สัปดาห์|week|7 ?วัน|7 ?day/i.test(q)
+  const from = new Date()
+  from.setHours(0, 0, 0, 0)
+  if (week) from.setTime(from.getTime() - 6 * 86400000)
+  const res = await getActivityLogs({ date_from: from.toISOString(), limit: 200 })
+  return res.items
+}
+
+function activityFollowUps(lang: Lang): CopilotFollowUp[] {
+  return [
+    { label: lang === 'en' ? '💰 Who changed prices' : '💰 ใครแก้ราคา', query: lang === 'en' ? 'who changed prices today' : 'ใครแก้ราคาวันนี้' },
+    { label: lang === 'en' ? '🗑 Deletions' : '🗑 ลบอะไรบ้าง', query: lang === 'en' ? 'what was deleted today' : 'วันนี้ลบอะไรบ้าง' },
+    { label: lang === 'en' ? '🔍 Needs review' : '🔍 ต้องตรวจสอบ', query: lang === 'en' ? 'what should I review' : 'ควรตรวจสอบอะไรวันนี้' },
+  ]
+}
+
+function buildActivityResponse(q: string, acts: ActivityLogEntry[], lang: Lang): SakuResponse {
+  const period = /สัปดาห์|week|7 ?วัน|7 ?day/i.test(q)
+    ? (lang === 'en' ? 'last 7 days' : '7 วันล่าสุด')
+    : (lang === 'en' ? 'today' : 'วันนี้')
+
+  if (acts.length === 0) {
+    return {
+      sections: [sec('✅', '', lang === 'en' ? `No activity ${period}.` : `ไม่มีกิจกรรม${period}`)],
+      followUps: activityFollowUps(lang),
+      context: emptyContext(),
+    }
+  }
+
+  const priceIntent = /ราคา|ต้นทุน|price|cost/i.test(q)
+  const deleteIntent = /ลบ|ยกเลิก|delete|void|cancel|remove/i.test(q)
+  const reviewIntent = /ตรวจสอบ|ผิดปกติ|น่าสงสัย|review|suspicious|check|unusual/i.test(q)
+
+  const sections: SakuSection[] = []
+
+  if (priceIntent) {
+    const priced = acts.filter(e => e.action === 'update' && e.changes?.fields &&
+      ['base_price', 'cost_price', 'special_price'].some(k => k in e.changes!.fields))
+    if (priced.length === 0) {
+      sections.push(sec('💰', lang === 'en' ? 'Price changes' : 'การแก้ราคา', lang === 'en' ? `No price changes ${period}.` : `ไม่มีการแก้ราคา${period}`))
+    } else {
+      sections.push(sec('💰', lang === 'en' ? `Price changes ${period} (${priced.length})` : `แก้ราคา${period} (${priced.length})`,
+        ...priced.slice(0, 6).map((e, i) => `${i + 1}. ${entryLine(e, lang)}`)))
+    }
+  } else if (deleteIntent) {
+    const dels = acts.filter(e => ['delete', 'void', 'cancel'].includes(e.action))
+    sections.push(sec(dels.length ? '🗑' : '✅', lang === 'en' ? `Deletions ${period} (${dels.length})` : `การลบ/ยกเลิก${period} (${dels.length})`,
+      ...(dels.length ? dels.slice(0, 6).map((e, i) => `${i + 1}. ${entryLine(e, lang)}`) : [lang === 'en' ? 'None — nothing was deleted.' : 'ไม่มี — ไม่มีการลบ'])))
+  } else if (reviewIntent) {
+    const review = acts.filter(e => e.severity === 'critical' || e.severity === 'high')
+    if (review.length === 0) {
+      sections.push(sec('✅', '', lang === 'en' ? `Nothing unusual ${period}. Activity looks healthy.` : `ไม่พบสิ่งผิดปกติ${period} กิจกรรมอยู่ในเกณฑ์ปกติ`))
+    } else {
+      sections.push(sec('🔍', lang === 'en' ? `Worth a check (${review.length})` : `ควรตรวจสอบ (${review.length})`,
+        ...review.slice(0, 6).map((e, i) => `${i + 1}. ${entryLine(e, lang)}`)))
+    }
+  } else {
+    // General "what changed" — counts + the notable ones.
+    const byAction: Record<string, number> = {}
+    for (const e of acts) byAction[e.action] = (byAction[e.action] ?? 0) + 1
+    const countLine = Object.entries(byAction)
+      .sort((a, b) => b[1] - a[1])
+      .map(([a, n]) => `${actLabel(ACT_ACTION, a, lang)} ${n}`)
+      .join(' · ')
+    sections.push(sec('📊', lang === 'en' ? `Activity ${period} (${acts.length})` : `กิจกรรม${period} (${acts.length})`, countLine))
+
+    const notable = acts.filter(e => e.severity === 'critical' || e.severity === 'high').slice(0, 5)
+    if (notable.length > 0) {
+      sections.push(sec('🔍', lang === 'en' ? 'Notable' : 'ที่ควรดู',
+        ...notable.map((e, i) => `${i + 1}. ${entryLine(e, lang)}`)))
+    }
+  }
+
+  return { sections, followUps: activityFollowUps(lang), context: { lastTopic: 'activity', lastItems: [], lastItemType: null } }
 }
 
 // ── Message Type ──
@@ -985,6 +1125,7 @@ export function ChatTab() {
       followUps: [
         { label: '📊 ภาพรวมร้าน', query: 'ภาพรวมร้าน' },
         { label: '🎯 ทำอะไรก่อน', query: 'วันนี้ทำอะไรก่อน' },
+        { label: '📝 ใครแก้อะไรวันนี้', query: 'วันนี้เปลี่ยนอะไรบ้าง' },
         { label: '📦 สต็อก', query: 'สินค้าใกล้หมด' },
         { label: '💰 กำไร', query: 'กำไรเท่าไหร่' },
       ],
@@ -1006,15 +1147,44 @@ export function ChatTab() {
     const lang = detectLang(q)
     setSessionLang(lang)
 
-    const response = buildSakuResponse(q, data, lang, convCtx)
-    setConvCtx(response.context)
-
     const userMsg: Message = {
       id: `msg-${++msgId.current}-u`,
       role: 'user',
       content: q,
       timestamp: new Date(),
     }
+
+    // Activity Center questions (spec §12) need the activity log, fetched on demand.
+    if (isActivityIntent(q)) {
+      const thinkingId = `msg-${++msgId.current}-a`
+      const thinking: Message = {
+        id: thinkingId,
+        role: 'assistant',
+        content: '',
+        sections: [sec('⏳', '', lang === 'en' ? 'Checking activity…' : 'กำลังดูบันทึกกิจกรรม…')],
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, userMsg, thinking])
+      setInput('')
+      void (async () => {
+        try {
+          const acts = await fetchActivities(q)
+          const response = buildActivityResponse(q, acts, lang)
+          setConvCtx(response.context)
+          setMessages(prev => prev.map(m => (m.id === thinkingId
+            ? { ...m, sections: response.sections, followUps: response.followUps }
+            : m)))
+        } catch {
+          setMessages(prev => prev.map(m => (m.id === thinkingId
+            ? { ...m, sections: [sec('⚠️', '', lang === 'en' ? 'Could not load activity.' : 'โหลดบันทึกกิจกรรมไม่ได้')] }
+            : m)))
+        }
+      })()
+      return
+    }
+
+    const response = buildSakuResponse(q, data, lang, convCtx)
+    setConvCtx(response.context)
     const assistantMsg: Message = {
       id: `msg-${++msgId.current}-a`,
       role: 'assistant',
