@@ -14,7 +14,8 @@ import {
   listCustomerLevelDiscounts,
   listCustomers,
 } from "@/services/customers";
-import { convertToDeliveryOrder, createDocument } from "@/services/documents";
+import { createDocument } from "@/services/documents";
+import { createCreditSale } from "@/services/credit-sales";
 import { toast } from "@/components/ui/toast";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { listProducts } from "@/services/products";
@@ -62,7 +63,6 @@ import {
 } from "./utils/sales-calculations";
 import { CheckoutSummaryModal } from "./checkout-summary-modal";
 import { ReceiptPreviewModal, type ReceiptPreviewStatus } from "./receipt-preview-modal";
-import { PostInvoiceModal } from "./post-invoice-modal";
 import { ActionsMenuModal } from "./actions-menu-modal";
 import { ParkedBillsDrawer } from "./parked-bills-drawer";
 import { HoldBillModal } from "./hold-bill-modal";
@@ -176,8 +176,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
   const [invoiceDueDate, setInvoiceDueDate] = useState("");
-  const [postInvoiceDocId, setPostInvoiceDocId] = useState<string | null>(null);
-  const [isPostInvoicePending, startPostInvoiceTransition] = useTransition();
   const [isCreatingQuotation, startQuotationTransition] = useTransition();
   const [quotationMode, setQuotationMode] = useState(false);
   const [quotationValidUntil, setQuotationValidUntil] = useState("");
@@ -1402,20 +1400,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     });
   }
 
-  function handlePostInvoiceConfirm() {
-    if (!postInvoiceDocId) return;
-    startPostInvoiceTransition(async () => {
-      try {
-        await convertToDeliveryOrder(postInvoiceDocId);
-        toast.success("สร้างใบส่งของสำเร็จ");
-      } catch {
-        toast.error("ไม่สามารถสร้างใบส่งของได้");
-      } finally {
-        setPostInvoiceDocId(null);
-      }
-    });
-  }
-
   function submitSale() {
     setError("");
 
@@ -1450,42 +1434,71 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           const discountValue = Number(item.discountValue || 0);
           // Convert line-scope amount discounts to per-unit for the backend API
           // (backend contract: discount_value is always per-unit × qty = line total).
-          const apiDiscountValue = discountValue > 0 ? getApiDiscountPerUnit(item) : undefined;
+          const perUnit = discountValue > 0 ? getApiDiscountPerUnit(item) : undefined;
+          // Send the type/value pair together-or-not-at-all. A resolved per-unit of 0
+          // (e.g. a ฿0-priced line) must NOT serialize as {discount_value:0} with no
+          // discount_type — the backend rejects that with ErrInvalidDiscountType.
+          const hasDisc = typeof perUnit === "number" && perUnit > 0;
 
           return {
-            discount_type: apiDiscountValue ? item.discountType : undefined,
-            discount_value: apiDiscountValue,
+            discount_type: hasDisc ? item.discountType : undefined,
+            discount_value: hasDisc ? perUnit : undefined,
             product_id: item.product.id,
             quantity: item.quantity,
           };
         });
 
         if (isInvoiceSettlement) {
-          const today = new Date().toISOString().split("T")[0];
-          const newDoc = await createDocument({
-            type: "INVOICE",
-            customer_id: selectedCustomerId,
-            document_date: today,
-            items: cart.map((item) => ({
-              product_id: item.product.id,
-              description: item.product.name,
-              quantity: item.quantity,
-              unit_price: item.product.effective_price ?? item.product.base_price,
-              discount_type: Number(item.discountValue || 0) > 0
-                ? (item.discountType === "percent" ? "PERCENT" : "AMOUNT")
-                : "" as const,
-              discount_value: Number(item.discountValue || 0),
-            })),
-            vat_rate: applyVat ? 7 : 0,
-            due_date: invoiceDueDate || undefined,
-            notes: note.trim() || undefined,
+          // Unified credit flow: "open credit bill" mints a REAL credit sale (stock
+          // deducted, revenue + receivable recorded) — NOT a standalone INVOICE document
+          // that touched nothing financial. Payments are collected from the ขายเชื่อ/ยืม
+          // menu, keeping the money trail intact.
+          //
+          // Idempotency: same mechanism as the cash path — a retried/double submit of the
+          // same credit bill reuses the key so the backend returns the original receivable
+          // instead of double-deducting stock + double-booking AR.
+          const creditIntentSig = JSON.stringify({
+            kind: "credit",
+            customer: selectedCustomerId,
+            due: invoiceDueDate,
+            note: note.trim(),
+            manual: billDiscountAmount,
+            promo: appliedPromoDiscount,
+            promotionIds: appliedPromotionIds,
+            vat: applyVat,
+            location: selectedSaleLocationId,
+            items: mappedItems,
           });
+          if (saleIntentSigRef.current !== creditIntentSig || !saleIdempotencyKeyRef.current) {
+            saleIntentSigRef.current = creditIntentSig;
+            saleIdempotencyKeyRef.current =
+              typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : `credit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          }
+
+          await createCreditSale(
+            {
+              type: "credit",
+              customer_id: selectedCustomerId,
+              due_date: invoiceDueDate || "",
+              note: note.trim() || undefined,
+              down_payment: 0,
+              items: mappedItems,
+              bill_discount: billDiscountAmount > 0 ? billDiscountAmount : undefined,
+              promo_discount: appliedPromoDiscount > 0 ? appliedPromoDiscount : undefined,
+              promotion_ids: appliedPromotionIds.length > 0 ? appliedPromotionIds : undefined,
+              vat_percent: applyVat ? 7 : 0,
+              vat_included: false,
+              location_id: selectedSaleLocationId || undefined,
+            },
+            saleIdempotencyKeyRef.current,
+          );
 
           setIsCheckoutSummaryOpen(false);
           clearCart();
           toast.success(dictionary.checkoutSuccess);
           await reloadData();
-          setPostInvoiceDocId(newDoc.id);
           return;
         }
 
@@ -2024,14 +2037,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         onApplyQuickCash={applyQuickCash}
         onPaidAmountChange={(v) => { setPaidAmount(v); setIsPaidAmountTouched(true); }}
         dictionary={dictionary}
-      />
-
-      {/* ── Post invoice modal ── */}
-      <PostInvoiceModal
-        docId={postInvoiceDocId}
-        isPending={isPostInvoicePending}
-        onConfirm={handlePostInvoiceConfirm}
-        onClose={() => setPostInvoiceDocId(null)}
       />
 
       {/* ── Discount editor ── */}
