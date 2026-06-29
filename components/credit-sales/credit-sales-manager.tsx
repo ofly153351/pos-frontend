@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -15,18 +15,23 @@ import {
   Pencil,
   Plus,
   Receipt,
+  Search,
   ShoppingCart,
+  Trash2,
   TrendingUp,
+  Undo2,
+  Wallet,
   X,
 } from "lucide-react";
 
-import { listCustomers } from "@/services/customers";
+import { listCustomers, listCustomerLevelDiscounts } from "@/services/customers";
 import { listProducts } from "@/services/products";
 import {
   addCreditPayment,
   cancelCreditSale,
   createCreditSale,
   listCreditSales,
+  returnCreditGoods,
 } from "@/services/credit-sales";
 import { ApiError } from "@/services/api";
 import { QueryErrorState } from "@/components/ui/query-error-state";
@@ -127,6 +132,16 @@ type CreditSalesDictionary = {
   printBillBtn: string;
   cancelSaleBtn: string;
   receivePaymentBtn: string;
+  returnGoodsBtn: string;
+  returnTitle: string;
+  returnSubtitle: string;
+  returnColReturnable: string;
+  returnColReturnQty: string;
+  returnSubmitBtn: string;
+  returnSaving: string;
+  returnSuccess: string;
+  returnNothingError: string;
+  paymentMethodReturn: string;
   cancelConfirm: string;
   paymentTitle: string;
   paymentOutstandingLabel: string;
@@ -156,6 +171,34 @@ type CreditSalesDictionary = {
   errProductNotFound: string;
   errOverpayment: string;
   errSaveFailed: string;
+  errDiscountCap: string;
+  colDiscount: string;
+  discountUnitAmount: string;
+  discountUnitPercent: string;
+  billDiscountLabel: string;
+  billDiscountPlaceholder: string;
+  vatSectionTitle: string;
+  vatToggleLabel: string;
+  vatRateLabel: string;
+  vatIncludedLabel: string;
+  vatExclusiveLabel: string;
+  sumSubtotal: string;
+  sumLineDiscount: string;
+  sumLevelDiscount: string;
+  sumBillDiscount: string;
+  sumAfterDiscount: string;
+  sumVat: string;
+  sumGrandTotal: string;
+  listSearchPlaceholder: string;
+  filterDateFrom: string;
+  filterDateTo: string;
+  filterClear: string;
+  rowCancelTitle: string;
+  dashTitle: string;
+  dashTotalValue: string;
+  dashCollected: string;
+  dashCollectionRate: string;
+  dashThisMonthValue: string;
 };
 
 // Subset of the `creditStatement` i18n section consumed by the bill preview modal.
@@ -206,6 +249,9 @@ function mapCreditError(err: unknown, d: CreditSalesDictionary): string {
   if (raw.includes("customer")) return d.noCustomerError;
   if (raw.includes("positive quantity") || raw.includes("product_id")) return d.errInvalidItem;
   if (raw.includes("not found")) return d.errProductNotFound;
+  // Role-based bill-discount cap (e.g. cashier > 20% of subtotal). Must precede the
+  // generic "exceeds" check below, whose text also contains "exceeds".
+  if (raw.includes("allowed cap") || raw.includes("manual discount")) return d.errDiscountCap;
   if (raw.includes("exceeds") || raw.includes("overpay")) return d.errOverpayment;
   if (raw.includes("amount must") || raw.includes("greater than zero")) return d.paymentAmountError;
   return d.errSaveFailed;
@@ -229,6 +275,62 @@ function fmtDate(iso: string): string {
   return d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" });
 }
 
+// Money with 2 decimals — used for VAT/breakdown lines where rounding matters.
+function fmtBaht2(n: number): string {
+  return `฿${n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+// ─── Draft line item (create form) ────────────────────────────────────────
+// Carries an optional per-line discount. Mirrors the backend sale contract:
+//   percent → discount_value is a % (≤100) applied per unit
+//   amount  → user enters baht-off-the-whole-line; we convert to a per-unit amount
+//             (capped at the unit price) on submit, exactly as POS does.
+type DraftItem = {
+  id: string;
+  product_id: string;
+  product_name: string;
+  unit?: string;
+  price: number;
+  quantity: number;
+  discountType: "amount" | "percent";
+  discountValue: number;
+};
+
+function perUnitDiscount(it: DraftItem): number {
+  if (!it.discountValue || it.discountValue <= 0 || it.quantity <= 0) return 0;
+  if (it.discountType === "percent") {
+    return (it.price * Math.min(100, it.discountValue)) / 100;
+  }
+  // amount = baht off the whole line → per-unit, never more than the unit price
+  return Math.min(it.price, it.discountValue / it.quantity);
+}
+
+function lineDiscountAmount(it: DraftItem): number {
+  return perUnitDiscount(it) * it.quantity;
+}
+
+function lineNet(it: DraftItem): number {
+  return Math.max(0, it.price * it.quantity - lineDiscountAmount(it));
+}
+
+// Translate a draft line into the API item shape (discount sent only when > 0).
+function toApiItem(it: DraftItem): {
+  product_id: string;
+  quantity: number;
+  discount_type?: "amount" | "percent";
+  discount_value?: number;
+} {
+  const base = { product_id: it.product_id, quantity: it.quantity };
+  // Send the type/value pair together-or-not-at-all. A resolved per-unit of 0 (e.g. a
+  // ฿0-priced line, or a percent on a ฿0 price) must NOT serialize with a value but no
+  // type — the backend rejects that with ErrInvalidDiscountType.
+  if (!it.discountValue || it.discountValue <= 0 || perUnitDiscount(it) <= 0) return base;
+  if (it.discountType === "percent") {
+    return { ...base, discount_type: "percent", discount_value: Math.min(100, it.discountValue) };
+  }
+  return { ...base, discount_type: "amount", discount_value: perUnitDiscount(it) };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────
 export function CreditSalesManager({
   dictionary,
@@ -244,9 +346,13 @@ export function CreditSalesManager({
   const salesQuery = useQuery({ queryKey: ["credit-sales"], queryFn: async () => (await listCreditSales()).data });
   const customersQuery = useQuery({ queryKey: ["credit", "customers"], queryFn: async () => (await listCustomers()).data });
   const productsQuery = useQuery({ queryKey: ["credit", "products"], queryFn: async () => (await listProducts({ limit: 9999, page: 1 })).data });
+  // Customer level (network) discounts — the backend applies these automatically on every
+  // credit sale (customer_id is required), so the form preview must mirror them too.
+  const levelDiscountsQuery = useQuery({ queryKey: ["credit", "level-discounts"], queryFn: async () => (await listCustomerLevelDiscounts()).data });
   const sales = useMemo<CreditSale[]>(() => salesQuery.data ?? [], [salesQuery.data]);
   const customers = useMemo<Customer[]>(() => customersQuery.data ?? [], [customersQuery.data]);
   const products = useMemo<Product[]>(() => productsQuery.data?.items ?? [], [productsQuery.data]);
+  const levelDiscounts = useMemo(() => levelDiscountsQuery.data ?? [], [levelDiscountsQuery.data]);
   const isLoading =
     salesQuery.isPending || customersQuery.isPending || productsQuery.isPending;
   const hasLoadError =
@@ -260,16 +366,29 @@ export function CreditSalesManager({
   // ── Filters
   const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "loan">("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchText, setSearchText] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   // ── Create modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createType, setCreateType] = useState<CreditSaleType>("credit");
   const [createCustomerId, setCreateCustomerId] = useState("");
   const [createDueDate, setCreateDueDate] = useState("");
-  const [createItems, setCreateItems] = useState<CreditSaleItem[]>([]);
+  const [createItems, setCreateItems] = useState<DraftItem[]>([]);
   const [createNote, setCreateNote] = useState("");
+  // Bill-level discount + VAT (default: VAT 7% exclusive — preserves prior behaviour
+  // where credit sales silently inherited the store's 7% rate, now editable).
+  const [createBillDiscount, setCreateBillDiscount] = useState("");
+  const [vatEnabled, setVatEnabled] = useState(true);
+  const [vatRate, setVatRate] = useState("7");
+  const [vatIncluded, setVatIncluded] = useState(false);
   const [createError, setCreateError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  // Idempotency: a retried/double-submit of the same draft reuses this key so the backend
+  // returns the original receivable instead of minting a second real sale + AR. Reset on
+  // confirmed success (and on opening a fresh form).
+  const createIdemKeyRef = useRef("");
 
   // ── Detail modal
   const [viewSale, setViewSale] = useState<CreditSale | null>(null);
@@ -284,6 +403,12 @@ export function CreditSalesManager({
   const [payNote, setPayNote] = useState("");
   const [payError, setPayError] = useState("");
   const [isPaySaving, setIsPaySaving] = useState(false);
+
+  // ── Return-goods modal (loan only)
+  const [returningSale, setReturningSale] = useState<CreditSale | null>(null);
+  const [returnQtys, setReturnQtys] = useState<Record<string, number>>({});
+  const [returnError, setReturnError] = useState("");
+  const [isReturnSaving, setIsReturnSaving] = useState(false);
 
   // ─── Pre-fill customer from URL params
   useEffect(() => {
@@ -309,17 +434,92 @@ export function CreditSalesManager({
     return { totalPending, overdue, loanItems, thisMonth };
   }, [sales]);
 
+  // ─── Sales-value dashboard (distinct from the operational KPIs above): how much
+  // has been sold on credit, how much collected, and the collection rate.
+  const dash = useMemo(() => {
+    // Credit sales only — loans are tracked by piece count (kpiLoanItems), not as
+    // monetary receivables, so folding their value in would distort the collection rate.
+    const active = sales.filter((s) => s.type === "credit" && computeStatus(s) !== "cancelled");
+    const totalValue = active.reduce((sum, s) => sum + s.total_amount, 0);
+    const collected = active.reduce((sum, s) => sum + s.paid_amount, 0);
+    const now = new Date();
+    const thisMonthValue = active
+      .filter((s) => {
+        const d = new Date(s.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((sum, s) => sum + s.total_amount, 0);
+    const rate = totalValue > 0 ? Math.round((collected / totalValue) * 100) : 0;
+    return { totalValue, collected, thisMonthValue, rate };
+  }, [sales]);
+
+  // ─── Create-form running totals (subtotal → discounts → VAT → grand total).
+  // Mirrors the backend money math so the previewed grand total matches the
+  // receivable the server will record.
+  const createTotals = useMemo(() => {
+    const subtotal = createItems.reduce((s, it) => s + it.price * it.quantity, 0);
+    const lineDiscount = createItems.reduce((s, it) => s + lineDiscountAmount(it), 0);
+    const afterLine = Math.max(0, subtotal - lineDiscount);
+    // Customer level (network) discount — backend applies it per-unit on the
+    // after-line-discount base, so afterLine × pct/100 mirrors it.
+    const cust = customers.find((c) => c.id === createCustomerId);
+    const levelPct = cust
+      ? Number(levelDiscounts.find((r) => r.level === Number(cust.level ?? 1))?.discount_percent ?? 0)
+      : 0;
+    const networkDiscount = Math.max(0, afterLine * Math.min(100, Math.max(0, levelPct)) / 100);
+    const afterNetwork = Math.max(0, afterLine - networkDiscount);
+    const billDiscount = Math.min(afterNetwork, Math.max(0, Number(createBillDiscount) || 0));
+    const afterDiscount = Math.max(0, afterNetwork - billDiscount);
+    const rate = vatEnabled ? Math.max(0, Number(vatRate) || 0) : 0;
+    let vat = 0;
+    let grandTotal = afterDiscount;
+    if (rate > 0) {
+      if (vatIncluded) {
+        vat = afterDiscount - afterDiscount / (1 + rate / 100);
+      } else {
+        vat = afterDiscount * (rate / 100);
+        grandTotal = afterDiscount + vat;
+      }
+    }
+    // Backend stores the receivable total rounded to whole baht (math.Round) — mirror
+    // that so the previewed grand total equals the saved receivable.
+    grandTotal = Math.round(grandTotal);
+    return { subtotal, lineDiscount, networkDiscount, levelPct, afterLine, billDiscount, afterDiscount, rate, vat, grandTotal };
+  }, [createItems, createBillDiscount, vatEnabled, vatRate, vatIncluded, createCustomerId, customers, levelDiscounts]);
+
   // ─── Filtered list
   const filtered = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    const from = dateFrom ? new Date(dateFrom + "T00:00:00") : null;
+    const to = dateTo ? new Date(dateTo + "T23:59:59") : null;
     return sales
       .map((s) => ({ ...s, _status: computeStatus(s) }))
       .filter((s) => {
         if (typeFilter !== "all" && s.type !== typeFilter) return false;
         if (statusFilter !== "all" && s._status !== statusFilter) return false;
+        if (q) {
+          const hay = `${s.document_number} ${s.customer_name} ${s.customer_phone ?? ""}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        if (from || to) {
+          const created = new Date(s.created_at);
+          if (from && created < from) return false;
+          if (to && created > to) return false;
+        }
         return true;
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [sales, typeFilter, statusFilter]);
+  }, [sales, typeFilter, statusFilter, searchText, dateFrom, dateTo]);
+
+  const filtersActive =
+    typeFilter !== "all" || statusFilter !== "all" || Boolean(searchText.trim()) || Boolean(dateFrom) || Boolean(dateTo);
+  function clearFilters() {
+    setTypeFilter("all");
+    setStatusFilter("all");
+    setSearchText("");
+    setDateFrom("");
+    setDateTo("");
+  }
 
   // ─── Status label helper
   function statusLabel(status: CreditSaleStatus) {
@@ -339,11 +539,16 @@ export function CreditSalesManager({
 
   // ─── Open create modal (fresh)
   function openCreate() {
+    createIdemKeyRef.current = "";
     setCreateType("credit");
     setCreateCustomerId(prefilledCustomerId ?? "");
     setCreateDueDate("");
     setCreateItems([]);
     setCreateNote("");
+    setCreateBillDiscount("");
+    setVatEnabled(true);
+    setVatRate("7");
+    setVatIncluded(false);
     setCreateError("");
     setIsCreateOpen(true);
   }
@@ -357,14 +562,27 @@ export function CreditSalesManager({
 
     setIsSaving(true);
     try {
-      await createCreditSale({
-        type: createType,
-        customer_id: createCustomerId,
-        due_date: createDueDate,
-        note: createNote.trim() || undefined,
-        down_payment: 0,
-        items: createItems.map((i) => ({ product_id: i.product_id ?? "", quantity: i.quantity })),
-      });
+      if (!createIdemKeyRef.current) {
+        createIdemKeyRef.current =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `credit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      }
+      await createCreditSale(
+        {
+          type: createType,
+          customer_id: createCustomerId,
+          due_date: createDueDate,
+          note: createNote.trim() || undefined,
+          down_payment: 0,
+          items: createItems.map(toApiItem),
+          bill_discount: createTotals.billDiscount > 0 ? createTotals.billDiscount : undefined,
+          vat_percent: vatEnabled ? createTotals.rate : 0,
+          vat_included: vatIncluded,
+        },
+        createIdemKeyRef.current,
+      );
+      createIdemKeyRef.current = ""; // confirmed success → next create gets a fresh key
       await queryClient.invalidateQueries({ queryKey: ["credit-sales"] });
       setIsCreateOpen(false);
       setSuccess(dictionary.createdSuccess);
@@ -384,9 +602,28 @@ export function CreditSalesManager({
         const stock =
           products.find((p) => p.id === it.product_id)?.total_stock ?? Number.MAX_SAFE_INTEGER;
         const q = Math.min(Math.max(1, Math.floor(nextQty) || 1), Math.max(1, stock));
-        return { ...it, quantity: q, total: it.price * q };
+        // A whole-line "amount" discount is entered against the line subtotal at the time
+        // it was set; re-clamp it to the new subtotal so lowering qty can't silently turn
+        // it into a 100%-off (zero) line.
+        let discountValue = it.discountValue;
+        if (it.discountType === "amount" && discountValue > q * it.price) {
+          discountValue = q * it.price;
+        }
+        return { ...it, quantity: q, discountValue };
       }),
     );
+  }
+
+  function updateCreateItemDiscount(id: string, type: "amount" | "percent", value: number) {
+    setCreateItems((prev) =>
+      prev.map((it) =>
+        it.id === id ? { ...it, discountType: type, discountValue: Math.max(0, value) } : it,
+      ),
+    );
+  }
+
+  function removeCreateItem(id: string) {
+    setCreateItems((prev) => prev.filter((i) => i.id !== id));
   }
 
   // ─── Save payment (POST → updates the receivable + payment-history timeline)
@@ -443,6 +680,45 @@ export function CreditSalesManager({
     setPayNote("");
     setPayError("");
     setPayingSale(sale);
+  }
+
+  // ─── Return goods (loan): prefill each line's full returnable quantity
+  function returnableOf(item: CreditSaleItem): number {
+    return Math.max(0, item.quantity - (item.returned_qty ?? 0));
+  }
+  function openReturn(sale: CreditSale) {
+    const prefill: Record<string, number> = {};
+    sale.items.forEach((it) => {
+      const key = it.product_id ?? it.id;
+      prefill[key] = returnableOf(it);
+    });
+    setReturnQtys(prefill);
+    setReturnError("");
+    setReturningSale(sale);
+  }
+  async function handleReturn() {
+    if (!returningSale) return;
+    setReturnError("");
+    const items = returningSale.items
+      .map((it) => ({ product_id: it.product_id ?? "", quantity: returnQtys[it.product_id ?? it.id] ?? 0 }))
+      .filter((x) => x.product_id && x.quantity > 0);
+    if (items.length === 0) {
+      setReturnError(dictionary.returnNothingError);
+      return;
+    }
+    setIsReturnSaving(true);
+    try {
+      const res = await returnCreditGoods(returningSale.id, { items });
+      await queryClient.invalidateQueries({ queryKey: ["credit-sales"] });
+      if (viewSale && viewSale.id === returningSale.id) setViewSale(res.data);
+      setReturningSale(null);
+      setSuccess(dictionary.returnSuccess);
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (err) {
+      setReturnError(mapCreditError(err, dictionary));
+    } finally {
+      setIsReturnSaving(false);
+    }
   }
 
   // ─── Loading
@@ -521,6 +797,37 @@ export function CreditSalesManager({
         />
       </div>
 
+      {/* Sales-value dashboard */}
+      <div className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
+            <Wallet className="h-4 w-4" />
+          </span>
+          <h2 className="text-sm font-bold text-slate-800">{dictionary.dashTitle}</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div>
+            <p className="text-xs text-slate-500">{dictionary.dashTotalValue}</p>
+            <p className="mt-1 text-xl font-bold text-slate-900">{fmtBaht(dash.totalValue)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">{dictionary.dashCollected}</p>
+            <p className="mt-1 text-xl font-bold text-emerald-600">{fmtBaht(dash.collected)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">{dictionary.dashThisMonthValue}</p>
+            <p className="mt-1 text-xl font-bold text-violet-700">{fmtBaht(dash.thisMonthValue)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-500">{dictionary.dashCollectionRate}</p>
+            <p className="mt-1 text-xl font-bold text-slate-900">{dash.rate}%</p>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${dash.rate}%` }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Table card */}
       <div className="rounded-2xl bg-white shadow-sm">
         {/* Filter bar */}
@@ -556,6 +863,44 @@ export function CreditSalesManager({
             <option value="completed">{dictionary.statusCompleted}</option>
             <option value="cancelled">{dictionary.statusCancelled}</option>
           </select>
+          {/* Search */}
+          <div className="relative min-w-[200px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-violet-500"
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder={dictionary.listSearchPlaceholder}
+              value={searchText}
+            />
+          </div>
+          {/* Date range */}
+          <div className="flex items-center gap-1.5">
+            <input
+              aria-label={dictionary.filterDateFrom}
+              className="rounded-lg border border-slate-200 px-2.5 py-2 text-sm outline-none focus:border-violet-500"
+              onChange={(e) => setDateFrom(e.target.value)}
+              type="date"
+              value={dateFrom}
+            />
+            <span className="text-slate-400">–</span>
+            <input
+              aria-label={dictionary.filterDateTo}
+              className="rounded-lg border border-slate-200 px-2.5 py-2 text-sm outline-none focus:border-violet-500"
+              onChange={(e) => setDateTo(e.target.value)}
+              type="date"
+              value={dateTo}
+            />
+          </div>
+          {filtersActive ? (
+            <button
+              className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+              onClick={clearFilters}
+              type="button"
+            >
+              <X className="h-3.5 w-3.5" />
+              {dictionary.filterClear}
+            </button>
+          ) : null}
         </div>
 
         {/* Table */}
@@ -635,16 +980,29 @@ export function CreditSalesManager({
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                          onClick={() => {
-                            setActionError("");
-                            setViewSale(sale);
-                          }}
-                          type="button"
-                        >
-                          {dictionary.viewBtn}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                            onClick={() => {
+                              setActionError("");
+                              setViewSale(sale);
+                            }}
+                            type="button"
+                          >
+                            {dictionary.viewBtn}
+                          </button>
+                          {liveStatus !== "cancelled" && liveStatus !== "completed" ? (
+                            <button
+                              className="rounded-lg border border-slate-200 p-1.5 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                              onClick={() => handleCancelSale(sale.id)}
+                              title={dictionary.rowCancelTitle}
+                              type="button"
+                              aria-label={dictionary.rowCancelTitle}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -794,7 +1152,7 @@ export function CreditSalesManager({
                           );
                           return prev.map((it) =>
                             it.product_id === pick.product_id
-                              ? { ...it, quantity: nextQty, total: it.price * nextQty }
+                              ? { ...it, quantity: nextQty }
                               : it,
                           );
                         }
@@ -808,7 +1166,8 @@ export function CreditSalesManager({
                             unit: pick.unit,
                             price: pick.price,
                             quantity: qty,
-                            total: pick.price * qty,
+                            discountType: "amount" as const,
+                            discountValue: 0,
                           },
                         ];
                       })
@@ -824,6 +1183,7 @@ export function CreditSalesManager({
                         <th className="px-3 py-2.5">{dictionary.colName}</th>
                         <th className="px-3 py-2.5 text-right">{dictionary.colPrice}</th>
                         <th className="px-3 py-2.5 text-right">{dictionary.colQty}</th>
+                        <th className="px-3 py-2.5 text-right">{dictionary.colDiscount}</th>
                         <th className="px-3 py-2.5 text-right">{dictionary.colTotal}</th>
                         <th className="px-3 py-2.5 text-center">{dictionary.colRemove}</th>
                       </tr>
@@ -831,7 +1191,7 @@ export function CreditSalesManager({
                     <tbody className="divide-y divide-slate-100 bg-white">
                       {createItems.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-3 py-10 text-center">
+                          <td colSpan={6} className="px-3 py-10 text-center">
                             <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-500">
                               <ShoppingCart className="h-6 w-6" />
                             </span>
@@ -844,10 +1204,11 @@ export function CreditSalesManager({
                           const stock =
                             products.find((p) => p.id === item.product_id)?.total_stock ??
                             Number.MAX_SAFE_INTEGER;
+                          const discAmt = lineDiscountAmount(item);
                           return (
                             <tr key={item.id}>
                               <td className="px-3 py-2 text-slate-900">
-                                <span className="block max-w-[180px] truncate" title={item.product_name}>{item.product_name}</span>
+                                <span className="block max-w-[160px] truncate" title={item.product_name}>{item.product_name}</span>
                               </td>
                               <td className="px-3 py-2 text-right text-slate-600">{fmtBaht(item.price)}</td>
                               <td className="px-3 py-2">
@@ -878,14 +1239,51 @@ export function CreditSalesManager({
                                   </button>
                                 </div>
                               </td>
-                              <td className="px-3 py-2 text-right font-medium text-slate-800">{fmtBaht(item.total)}</td>
+                              {/* Per-line discount: value + amount/percent toggle */}
+                              <td className="px-3 py-2">
+                                <div className="flex items-center justify-end gap-1">
+                                  <input
+                                    className="h-7 w-16 rounded-md border border-slate-200 px-2 text-right text-sm outline-none focus:border-violet-500"
+                                    inputMode="decimal"
+                                    min="0"
+                                    onChange={(e) =>
+                                      updateCreateItemDiscount(item.id, item.discountType, Number(e.target.value) || 0)
+                                    }
+                                    value={item.discountValue || ""}
+                                    placeholder="0"
+                                  />
+                                  <div className="flex overflow-hidden rounded-md border border-slate-200 text-xs">
+                                    {(["amount", "percent"] as const).map((dt) => (
+                                      <button
+                                        key={dt}
+                                        type="button"
+                                        className={`px-1.5 py-1 font-semibold transition ${
+                                          item.discountType === dt
+                                            ? "bg-violet-600 text-white"
+                                            : "bg-white text-slate-500 hover:bg-slate-50"
+                                        }`}
+                                        onClick={() => updateCreateItemDiscount(item.id, dt, item.discountValue)}
+                                      >
+                                        {dt === "amount" ? dictionary.discountUnitAmount : dictionary.discountUnitPercent}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </td>
                               <td className="px-3 py-2 text-right">
+                                {discAmt > 0 ? (
+                                  <span className="block text-[11px] text-slate-400 line-through">{fmtBaht(item.price * item.quantity)}</span>
+                                ) : null}
+                                <span className="font-medium text-slate-800">{fmtBaht(lineNet(item))}</span>
+                              </td>
+                              <td className="px-3 py-2 text-center">
                                 <button
                                   className="rounded p-1 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
-                                  onClick={() => setCreateItems((prev) => prev.filter((i) => i.id !== item.id))}
+                                  onClick={() => removeCreateItem(item.id)}
                                   type="button"
+                                  aria-label="remove"
                                 >
-                                  <X className="h-3.5 w-3.5" />
+                                  <Trash2 className="h-4 w-4" />
                                 </button>
                               </td>
                             </tr>
@@ -897,36 +1295,105 @@ export function CreditSalesManager({
                 </div>
               </div>
 
-              {/* Note + totals */}
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div className="flex-1">
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">{dictionary.noteLabel}</label>
-                  <input
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500"
-                    onChange={(e) => setCreateNote(e.target.value)}
-                    placeholder={dictionary.notePlaceholder}
-                    value={createNote}
-                  />
+              {/* Note */}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">{dictionary.noteLabel}</label>
+                <input
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-500"
+                  onChange={(e) => setCreateNote(e.target.value)}
+                  placeholder={dictionary.notePlaceholder}
+                  value={createNote}
+                />
+              </div>
+
+              {/* Bill discount + VAT controls */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">{dictionary.billDiscountLabel}</label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">฿</span>
+                    <input
+                      className="w-full rounded-lg border border-slate-200 py-2.5 pl-7 pr-3 text-sm outline-none focus:border-violet-500"
+                      inputMode="decimal"
+                      min="0"
+                      onChange={(e) => setCreateBillDiscount(e.target.value)}
+                      placeholder={dictionary.billDiscountPlaceholder}
+                      value={createBillDiscount}
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-3">
-                  <div className="rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2.5 text-center sm:min-w-[6rem]">
-                    <p className="text-[11px] text-slate-500">{dictionary.summaryItemsLabel}</p>
-                    <p className="mt-0.5 text-base font-bold text-violet-700">
-                      {createItems.length} {dictionary.itemsUnit}
-                    </p>
+                <div className="rounded-xl border border-slate-200 p-3">
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <input
+                      checked={vatEnabled}
+                      className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                      onChange={(e) => setVatEnabled(e.target.checked)}
+                      type="checkbox"
+                    />
+                    {dictionary.vatSectionTitle}
+                  </label>
+                  {vatEnabled ? (
+                    <div className="mt-2.5 flex items-center gap-2">
+                      <div className="relative">
+                        <input
+                          className="h-9 w-20 rounded-md border border-slate-200 px-2 text-right text-sm outline-none focus:border-violet-500"
+                          inputMode="decimal"
+                          min="0"
+                          max="100"
+                          onChange={(e) => setVatRate(e.target.value)}
+                          value={vatRate}
+                          aria-label={dictionary.vatRateLabel}
+                        />
+                        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-400">%</span>
+                      </div>
+                      <select
+                        className="h-9 flex-1 rounded-md border border-slate-200 px-2 text-sm outline-none focus:border-violet-500"
+                        onChange={(e) => setVatIncluded(e.target.value === "included")}
+                        value={vatIncluded ? "included" : "exclusive"}
+                      >
+                        <option value="exclusive">{dictionary.vatExclusiveLabel}</option>
+                        <option value="included">{dictionary.vatIncludedLabel}</option>
+                      </select>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Totals breakdown */}
+              <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-4 text-sm">
+                <div className="flex items-center justify-between py-0.5 text-slate-600">
+                  <span>{dictionary.sumSubtotal}</span>
+                  <span className="nums">{fmtBaht2(createTotals.subtotal)}</span>
+                </div>
+                {createTotals.lineDiscount > 0 ? (
+                  <div className="flex items-center justify-between py-0.5 text-rose-600">
+                    <span>{dictionary.sumLineDiscount}</span>
+                    <span className="nums">−{fmtBaht2(createTotals.lineDiscount)}</span>
                   </div>
-                  <div className="rounded-xl border border-violet-100 bg-violet-50/60 px-3 py-2.5 text-center sm:min-w-[6rem]">
-                    <p className="text-[11px] text-slate-500">{dictionary.summaryQtyLabel}</p>
-                    <p className="mt-0.5 text-base font-bold text-violet-700">
-                      {createItems.reduce((n, i) => n + i.quantity, 0)} {dictionary.pieces}
-                    </p>
+                ) : null}
+                {createTotals.networkDiscount > 0 ? (
+                  <div className="flex items-center justify-between py-0.5 text-rose-600">
+                    <span>{dictionary.sumLevelDiscount} ({createTotals.levelPct}%)</span>
+                    <span className="nums">−{fmtBaht2(createTotals.networkDiscount)}</span>
                   </div>
-                  <div className="rounded-xl border border-violet-200 bg-violet-100/60 px-3 py-2.5 text-center sm:min-w-[6rem]">
-                    <p className="text-[11px] text-slate-500">{dictionary.summaryAmountLabel}</p>
-                    <p className="mt-0.5 text-base font-bold text-violet-800">
-                      {fmtBaht(createItems.reduce((n, i) => n + i.total, 0))}
-                    </p>
+                ) : null}
+                {createTotals.billDiscount > 0 ? (
+                  <div className="flex items-center justify-between py-0.5 text-rose-600">
+                    <span>{dictionary.sumBillDiscount}</span>
+                    <span className="nums">−{fmtBaht2(createTotals.billDiscount)}</span>
                   </div>
+                ) : null}
+                {createTotals.rate > 0 ? (
+                  <div className="flex items-center justify-between py-0.5 text-slate-600">
+                    <span>
+                      {dictionary.sumVat} ({createTotals.rate}% · {vatIncluded ? dictionary.vatIncludedLabel : dictionary.vatExclusiveLabel})
+                    </span>
+                    <span className="nums">{fmtBaht2(createTotals.vat)}</span>
+                  </div>
+                ) : null}
+                <div className="mt-2 flex items-center justify-between border-t border-violet-200 pt-2.5">
+                  <span className="font-semibold text-slate-700">{dictionary.sumGrandTotal}</span>
+                  <span className="nums text-lg font-bold text-violet-800">{fmtBaht(createTotals.grandTotal)}</span>
                 </div>
               </div>
 
@@ -1059,7 +1526,11 @@ export function CreditSalesManager({
                         <div>
                           <p className="text-sm font-medium text-slate-900">{fmtBaht(pay.amount)}</p>
                           <p className="text-xs text-slate-500">
-                            {pay.method === "cash" ? dictionary.paymentMethodCash : dictionary.paymentMethodTransfer}
+                            {pay.method === "cash"
+                              ? dictionary.paymentMethodCash
+                              : pay.method === "return"
+                                ? dictionary.paymentMethodReturn
+                                : dictionary.paymentMethodTransfer}
                             {pay.note ? ` · ${pay.note}` : ""}
                           </p>
                         </div>
@@ -1108,6 +1579,21 @@ export function CreditSalesManager({
                     {dictionary.printBillBtn}
                   </span>
                 </button>
+                {viewSale.type === "loan" &&
+                computeStatus(viewSale) !== "cancelled" &&
+                computeStatus(viewSale) !== "completed" &&
+                viewSale.items.some((it) => returnableOf(it) > 0) ? (
+                  <button
+                    className="rounded-lg border border-violet-200 px-4 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                    onClick={() => openReturn(viewSale)}
+                    type="button"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Undo2 className="h-4 w-4" />
+                      {dictionary.returnGoodsBtn}
+                    </span>
+                  </button>
+                ) : null}
                 {computeStatus(viewSale) !== "cancelled" && computeStatus(viewSale) !== "completed" ? (
                   <button
                     className="rounded-lg bg-violet-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-800"
@@ -1233,6 +1719,102 @@ export function CreditSalesManager({
                   type="button"
                 >
                   {dictionary.paymentConfirmBtn}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* ── Return-goods modal (loan only) ─────────────────────────────────────── */}
+      {returningSale ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-[2px]"
+          onClick={() => setReturningSale(null)}
+        >
+          <div
+            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Undo2 className="h-5 w-5 text-white" />
+                <div>
+                  <h3 className="text-lg font-bold text-white">{dictionary.returnTitle}</h3>
+                  <p className="text-xs text-violet-100">{dictionary.returnSubtitle}</p>
+                </div>
+              </div>
+              <button
+                className="rounded-lg p-1 text-white/70 transition hover:bg-white/10"
+                onClick={() => setReturningSale(null)}
+                type="button"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] space-y-4 overflow-y-auto p-6">
+              {returnError ? (
+                <div className="rounded-lg bg-rose-50 px-4 py-3 text-sm text-rose-600">{returnError}</div>
+              ) : null}
+
+              <div className="overflow-hidden rounded-xl border border-slate-100">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50">
+                    <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="px-3 py-2">{dictionary.colName}</th>
+                      <th className="px-3 py-2 text-right">{dictionary.returnColReturnable}</th>
+                      <th className="px-3 py-2 text-right">{dictionary.returnColReturnQty}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {returningSale.items.map((it) => {
+                      const key = it.product_id ?? it.id;
+                      const returnable = returnableOf(it);
+                      return (
+                        <tr key={key}>
+                          <td className="px-3 py-2 text-slate-900">
+                            <span className="block max-w-[220px] truncate" title={it.product_name}>{it.product_name}</span>
+                          </td>
+                          <td className="px-3 py-2 text-right text-slate-600">
+                            {returnable} / {it.quantity}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <input
+                              className="h-8 w-16 rounded-md border border-slate-200 px-2 text-right text-sm outline-none focus:border-violet-500 disabled:bg-slate-50"
+                              disabled={returnable <= 0}
+                              inputMode="numeric"
+                              max={returnable}
+                              min={0}
+                              onChange={(e) => {
+                                const v = Math.max(0, Math.min(returnable, Math.floor(Number(e.target.value) || 0)));
+                                setReturnQtys((prev) => ({ ...prev, [key]: v }));
+                              }}
+                              value={returnQtys[key] ?? 0}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-1">
+                <button
+                  className="rounded-lg border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  onClick={() => setReturningSale(null)}
+                  type="button"
+                >
+                  {dictionary.cancelBtn}
+                </button>
+                <button
+                  className="flex items-center gap-1.5 rounded-lg bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:opacity-50"
+                  disabled={isReturnSaving}
+                  onClick={handleReturn}
+                  type="button"
+                >
+                  <Undo2 className="h-4 w-4" /> {isReturnSaving ? dictionary.returnSaving : dictionary.returnSubmitBtn}
                 </button>
               </div>
             </div>

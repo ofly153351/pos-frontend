@@ -15,12 +15,14 @@ export type CreditSaleItem = {
   price: number;
   quantity: number;
   total: number;
+  // Units already returned to stock (loan returns). returnable = quantity - returned_qty.
+  returned_qty?: number;
 };
 
 export type CreditSalePayment = {
   id: string;
   amount: number;
-  method: "cash" | "transfer";
+  method: "cash" | "transfer" | "return";
   note?: string;
   paid_at: string;
 };
@@ -61,11 +63,25 @@ export type CreateCreditSaleInput = {
   note?: string;
   down_payment: number;
   items: CreateCreditItemInput[];
+  // Optional pricing controls (mirror the backend CreateCreditSaleRequest). Let the
+  // credit-sales form and POS "open credit bill" carry the same discount/VAT/location
+  // intent as a normal sale so the receivable total matches the cashier's screen.
+  bill_discount?: number;
+  vat_percent?: number;
+  vat_included?: boolean;
+  location_id?: string;
+  promo_discount?: number;
+  promotion_ids?: string[];
 };
 
 export type AddCreditPaymentInput = {
   amount: number;
   method: "cash" | "transfer";
+  note?: string;
+};
+
+export type ReturnCreditGoodsInput = {
+  items: { product_id: string; quantity: number }[];
   note?: string;
 };
 

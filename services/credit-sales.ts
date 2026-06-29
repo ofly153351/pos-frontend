@@ -5,6 +5,7 @@ import type {
   CreateCreditSaleInput,
   CreditDebtSummary,
   CreditSale,
+  ReturnCreditGoodsInput,
 } from "@/types/credit-sale";
 
 function ensureStoreId() {
@@ -30,11 +31,16 @@ export function getCreditSale(creditSaleId: string) {
   return authorizedApiRequest<CreditSale>(`/api/stores/${storeId}/credit-sales/${creditSaleId}`);
 }
 
-export function createCreditSale(input: CreateCreditSaleInput) {
+// The optional idempotency key makes a network-retried / double-submitted credit sale
+// safe — the backend returns the original receivable instead of minting a second real
+// (stock-deducting) sale + second AR for one cart.
+export function createCreditSale(input: CreateCreditSaleInput, idempotencyKey?: string) {
   const storeId = ensureStoreId();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
   return authorizedApiRequest<CreditSale>(`/api/stores/${storeId}/credit-sales`, {
     body: input,
-    headers: { "Content-Type": "application/json" },
+    headers,
     method: "POST",
   });
 }
@@ -43,6 +49,15 @@ export function addCreditPayment(creditSaleId: string, input: AddCreditPaymentIn
   const storeId = ensureStoreId();
   return authorizedApiRequest<CreditSale>(
     `/api/stores/${storeId}/credit-sales/${creditSaleId}/payments`,
+    { body: input, headers: { "Content-Type": "application/json" }, method: "POST" },
+  );
+}
+
+// Loan return: restock the listed borrowed goods and settle the receivable by their value.
+export function returnCreditGoods(creditSaleId: string, input: ReturnCreditGoodsInput) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<CreditSale>(
+    `/api/stores/${storeId}/credit-sales/${creditSaleId}/returns`,
     { body: input, headers: { "Content-Type": "application/json" }, method: "POST" },
   );
 }
