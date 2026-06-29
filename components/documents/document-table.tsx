@@ -75,6 +75,8 @@ type Dict = {
   comingSoon: string;
   printAll: string;
   printError: string;
+  cancel: string;
+  confirm: string;
 };
 
 type Props = {
