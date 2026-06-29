@@ -5,14 +5,10 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowRight,
-  ArrowUpRight,
-  ArrowDownRight,
   BarChart3,
   ClipboardCheck,
-  Minus,
   Package,
   ShoppingCart,
-  SlidersHorizontal,
   Store,
   TrendingUp,
   Users,
@@ -31,19 +27,15 @@ import {
 } from "recharts";
 
 import { getDashboard } from "@/services/dashboard";
-import { getExpenseSummary } from "@/services/expenses";
 import { useStoreRole } from "@/lib/use-store-role";
-import { resolvePaymentLabel, canonicalPaymentKey, outstandingNote } from "@/lib/payment-method";
+import { resolvePaymentLabel } from "@/lib/payment-method";
 import { useCopilot } from "@/components/copilot/copilot-provider";
 import { DashboardHero, type HeroPeriod } from "@/components/shared/dashboard-hero";
-import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import type {
-  DashboardPeriod,
   DashboardQueryInput,
   DashboardRecentSale,
   StoreDashboard,
 } from "@/types/dashboard";
-import type { ExpenseSummary } from "@/types/expense";
 
 // ── Dictionary type ─────────────────────────────────────────────────────────
 
@@ -294,12 +286,6 @@ function compactCurrency(value: number, locale: string) {
   }).format(value);
 }
 
-function trendPercent(current: number, previous: number): number | null {
-  if (previous === 0 && current === 0) return null;
-  if (previous === 0) return 100;
-  return ((current - previous) / previous) * 100;
-}
-
 // Store timezone offset (Asia/Bangkok = UTC+7, no DST). Buckets a sale instant into
 // the same Bangkok calendar day the backend uses (`AT TIME ZONE 'Asia/Bangkok'`), so
 // near-midnight sales land on the same business day across Dashboard, P&L and Summary.
@@ -347,42 +333,6 @@ function formatDateRange(locale: string, period: FilterPeriod, fromDate?: string
       return "";
   }
 }
-
-function getPreviousPeriodDates(period: FilterPeriod): { from: string; to: string } | null {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  switch (period) {
-    case "today": {
-      const prev = new Date(today);
-      prev.setDate(prev.getDate() - 1);
-      return { from: prev.toISOString().slice(0, 10), to: prev.toISOString().slice(0, 10) };
-    }
-    case "7d": {
-      const end = new Date(today);
-      end.setDate(end.getDate() - 7);
-      const start = new Date(end);
-      start.setDate(start.getDate() - 7);
-      return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
-    }
-    case "30d": {
-      const end = new Date(today);
-      end.setDate(end.getDate() - 30);
-      const start = new Date(end);
-      start.setDate(start.getDate() - 30);
-      return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
-    }
-    case "90d": {
-      const end = new Date(today);
-      end.setDate(end.getDate() - 90);
-      const start = new Date(end);
-      start.setDate(start.getDate() - 90);
-      return { from: start.toISOString().slice(0, 10), to: end.toISOString().slice(0, 10) };
-    }
-    default:
-      return null;
-  }
-}
-
 
 const PAYMENT_BADGE: Record<string, string> = {
   cash: "bg-emerald-100 text-emerald-700",
@@ -459,9 +409,9 @@ function DashboardBriefingCard() {
 }
 
 const ROLE_SECTIONS: Record<UserRole, Set<string>> = {
-  owner: new Set(["hero", "quickActions", "kpi", "actionCenter", "salesChart", "paymentChart", "expenseCategories", "bestSellers", "stockAttention", "recentSales"]),
-  cashier: new Set(["hero", "quickActions", "kpi", "salesChart", "paymentChart", "recentSales"]),
-  warehouse: new Set(["hero", "quickActions", "kpi", "actionCenter", "bestSellers", "stockAttention"]),
+  owner: new Set(["hero", "quickActions", "kpi", "actionCenter", "salesChart", "stockAttention", "recentSales"]),
+  cashier: new Set(["hero", "quickActions", "kpi", "salesChart", "recentSales"]),
+  warehouse: new Set(["hero", "quickActions", "kpi", "actionCenter", "stockAttention"]),
 };
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -485,10 +435,8 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
         : "cashier";
 
   const [data, setData] = useState<StoreDashboard | null>(null);
-  const [prevData, setPrevData] = useState<StoreDashboard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [expenseSummary, setExpenseSummary] = useState<ExpenseSummary | null>(null);
 
   const visible = ROLE_SECTIONS[role];
 
@@ -526,24 +474,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       const response = await getDashboard(input);
 
       setData(response.data);
-
-      // Fetch previous period for trends
-      const prevDates = getPreviousPeriodDates(period);
-      if (prevDates) {
-        try {
-          const prevResponse = await getDashboard({
-            ...input,
-            period: undefined,
-            from: prevDates.from,
-            to: prevDates.to,
-          });
-          setPrevData(prevResponse.data);
-        } catch {
-          setPrevData(null);
-        }
-      } else {
-        setPrevData(null);
-      }
     } catch (e) {
       setError(e instanceof Error ? e.message : t.requestFailedLabel);
     } finally {
@@ -553,30 +483,9 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
 
   useEffect(() => { void loadDashboard(); }, [loadDashboard]);
 
-  // Top expense categories (current month) — owner-only widget.
-  useEffect(() => {
-    if (!visible.has("expenseCategories")) return;
-    let active = true;
-    (async () => {
-      try {
-        const res = await getExpenseSummary();
-        if (active) setExpenseSummary(res.data);
-      } catch {
-        if (active) setExpenseSummary(null);
-      }
-    })();
-    return () => { active = false; };
-  }, [visible]);
-
   // ── Computed values ─────────────────────────────────────────────────────
 
   const dateRangeText = formatDateRange(locale, period, fromDate, toDate);
-
-  const expenseCategoryRows = useMemo<CategoryValueRow[]>(() => {
-    if (!expenseSummary) return [];
-    const denom = expenseSummary.monthly_total || 1;
-    return expenseSummary.by_category.slice(0, 5).map((c) => ({ name: c.name || "—", value: c.total, percent: (c.total / denom) * 100 }));
-  }, [expenseSummary]);
 
   const chartData = useMemo(() => {
     const sales = data?.recent_sales ?? [];
@@ -614,16 +523,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       }));
   }, [data?.recent_sales, data?.summary.revenue, data?.summary.discount_amount, locale]);
 
-  const paymentBreakdown = useMemo(() => {
-    const total = (data?.payment_breakdown ?? []).reduce((s, i) => s + i.amount, 0);
-    return (data?.payment_breakdown ?? []).map((item) => ({
-      ...item,
-      localizedName: resolvePaymentLabel(item.payment_method, locale),
-      ratio: total > 0 ? (item.amount / total) * 100 : 0,
-    }));
-  }, [data?.payment_breakdown, locale]);
-
-  const topProducts = data?.top_products ?? [];
   const lowStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) > 0);
   // out-of-stock = ready_stock <= 0 (includes negative — spec §A5)
   const outOfStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) <= 0);
@@ -633,16 +532,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
   const netRevenue = revenue - (data?.summary.discount_amount ?? 0);
   const averageBill = data?.summary.average_ticket ?? 0;
 
-  const prevRevenue = prevData?.summary.revenue ?? 0;
-  const prevSalesCount = prevData?.summary.sales_count ?? 0;
-  const prevNetRevenue = prevRevenue - (prevData?.summary.discount_amount ?? 0);
-  const prevAverageBill = prevData?.summary.average_ticket ?? 0;
-
-  const topProductName = topProducts.length > 0 ? topProducts[0].product_name : t.kpi.noSalesYet;
-
-  // Best sellers — max qty for progress bar scaling
-  const maxQtySold = topProducts.length > 0 ? topProducts[0].quantity_sold : 1;
-
   // Low stock threshold used in query
   const LOW_STOCK_THRESHOLD = 10;
 
@@ -651,23 +540,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
   // true when the API failed AND we have no data at all — prevents valid-zero false reads (A10)
   const stockError = !!error && !data;
 
-  // ── Render helpers ──────────────────────────────────────────────────────
-
-  function TrendBadge({ current, previous }: { current: number; previous: number }) {
-    const pct = trendPercent(current, previous);
-    if (pct === null || !prevData) return <span className="text-[10px] text-slate-400">{t.kpi.noChange}</span>;
-    const isUp = pct > 0;
-    const isDown = pct < 0;
-    const Icon = isUp ? ArrowUpRight : isDown ? ArrowDownRight : Minus;
-    const color = isUp ? "text-emerald-600" : isDown ? "text-rose-600" : "text-slate-500";
-    const bg = isUp ? "bg-emerald-50" : isDown ? "bg-rose-50" : "bg-slate-50";
-    return (
-      <span className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${color} ${bg}`}>
-        <Icon className="h-3 w-3" />
-        {Math.abs(pct).toFixed(1)}%
-      </span>
-    );
-  }
 
   // ── Render ──────────────────────────────────────────────────────────────
 
@@ -772,16 +644,15 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       {/* 3. KPI CARDS — dynamic labels + date range underneath             */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {visible.has("kpi") && (
-        <section className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+        <section className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           {([
-            { label: t.kpi.totalSales, value: formatCurrency(revenue, locale), icon: TrendingUp, iconBg: "bg-violet-100", iconColor: "text-violet-600", current: revenue, previous: prevRevenue, span: "xl:col-span-2" },
-            { label: t.kpi.totalOrders, value: salesCount.toLocaleString(toLocaleTag(locale)), icon: ShoppingCart, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", current: salesCount, previous: prevSalesCount, span: "" },
-            { label: t.kpi.totalProfit, value: formatCurrency(netRevenue, locale), icon: Wallet, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", current: netRevenue, previous: prevNetRevenue, span: "" },
-            { label: t.kpi.averageBill, value: formatCurrency(averageBill, locale), icon: BarChart3, iconBg: "bg-amber-100", iconColor: "text-amber-600", current: averageBill, previous: prevAverageBill, span: "" },
-            { label: t.kpi.lowStockItems, value: stockError ? "—" : `${lowStockList.length} ${t.kpi.itemsUnit}`, icon: AlertTriangle, iconBg: "bg-orange-100", iconColor: "text-orange-600", current: lowStockList.length, previous: 0, span: "" },
-            { label: t.kpi.outOfStockItems, value: stockError ? "—" : `${outOfStockList.length} ${t.kpi.itemsUnit}`, icon: Package, iconBg: "bg-rose-100", iconColor: "text-rose-600", current: outOfStockList.length, previous: 0, span: "" },
-            { label: t.kpi.topProduct, value: topProductName, icon: TrendingUp, iconBg: "bg-fuchsia-100", iconColor: "text-fuchsia-600", current: 0, previous: 0, span: "" },
-          ]).map(({ label, value, icon: Icon, iconBg, iconColor, current, previous, span }) => (
+            { label: t.kpi.totalSales, value: formatCurrency(revenue, locale), icon: TrendingUp, iconBg: "bg-violet-100", iconColor: "text-violet-600", span: "xl:col-span-2" },
+            { label: t.kpi.totalOrders, value: salesCount.toLocaleString(toLocaleTag(locale)), icon: ShoppingCart, iconBg: "bg-emerald-100", iconColor: "text-emerald-600", span: "" },
+            { label: t.kpi.totalProfit, value: formatCurrency(netRevenue, locale), icon: Wallet, iconBg: "bg-indigo-100", iconColor: "text-indigo-600", span: "" },
+            { label: t.kpi.averageBill, value: formatCurrency(averageBill, locale), icon: BarChart3, iconBg: "bg-amber-100", iconColor: "text-amber-600", span: "" },
+            { label: t.kpi.lowStockItems, value: stockError ? "—" : `${lowStockList.length} ${t.kpi.itemsUnit}`, icon: AlertTriangle, iconBg: "bg-orange-100", iconColor: "text-orange-600", span: "" },
+            { label: t.kpi.outOfStockItems, value: stockError ? "—" : `${outOfStockList.length} ${t.kpi.itemsUnit}`, icon: Package, iconBg: "bg-rose-100", iconColor: "text-rose-600", span: "" },
+          ]).map(({ label, value, icon: Icon, iconBg, iconColor, span }) => (
             <ReportKpiCard
               key={label}
               label={label}
@@ -791,12 +662,6 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               iconColor={iconColor}
               className={span}
               loading={isLoading}
-              footer={
-                <div className="flex items-center gap-2">
-                  <TrendBadge current={current} previous={previous} />
-                  <span className="hidden text-[9px] text-slate-400 xl:inline">{t.kpi.vsPrevious}</span>
-                </div>
-              }
             />
           ))}
         </section>
@@ -857,12 +722,11 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 5. SALES TREND + PAYMENT BREAKDOWN                                */}
+      {/* 5. SALES TREND — full width                                       */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="grid gap-3 xl:grid-cols-[7fr_3fr]">
-        {/* Sales trend area chart with metric switching */}
-        {visible.has("salesChart") && (
-          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+      {/* Sales trend area chart with metric switching */}
+      {visible.has("salesChart") && (
+        <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-sm font-bold text-slate-900">{t.salesTrend.title}</h2>
@@ -931,134 +795,13 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               )}
             </div>
           </article>
-        )}
-
-        {/* Payment breakdown — matches finance summary report format */}
-        {visible.has("paymentChart") && (
-          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
-            <div className="mb-4">
-              <h2 className="text-sm font-bold text-slate-900">{t.sections.paymentBreakdown}</h2>
-              <p className="text-[10px] text-slate-400">{dateRangeText}</p>
-            </div>
-            {isLoading ? (
-              <div className="space-y-3">{[70, 45, 30].map((w, i) => (
-                <div key={i} className="flex items-center gap-3"><Skeleton className="h-3 w-3 rounded-full bg-violet-100" /><Skeleton className="h-3.5 bg-slate-200" style={{ width: `${w}%` }} /></div>
-              ))}</div>
-            ) : (
-              <CategoryValueBars
-                rows={paymentBreakdown.map((item) => ({
-                  name: item.localizedName,
-                  value: item.amount,
-                  percent: item.ratio,
-                  ...(canonicalPaymentKey(item.payment_method) === "credit"
-                    ? { accent: "outstanding" as const, note: outstandingNote(locale) }
-                    : {}),
-                }))}
-                currency={(n) => formatCurrency(n, locale)}
-                emptyLabel={t.emptyStates.noPayments}
-              />
-            )}
-          </article>
-        )}
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* TOP EXPENSE CATEGORIES (this month) — owner only                  */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {visible.has("expenseCategories") && (
-        <section className="mb-4">
-          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-100 text-rose-600"><Wallet className="h-4 w-4" /></span>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">{t.expenseCategories.title}</h2>
-                <p className="text-[10px] text-slate-400">{t.expenseCategories.subtitle}</p>
-              </div>
-            </div>
-            {isLoading && !expenseSummary ? (
-              <div className="space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-lg bg-slate-100" />)}</div>
-            ) : (
-              <CategoryValueBars rows={expenseCategoryRows} currency={(n) => formatCurrency(n, locale)} emptyLabel={t.expenseCategories.empty} />
-            )}
-          </article>
-        </section>
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 6. BEST SELLERS (65%) + STOCK ATTENTION (35%)                     */}
+      {/* 6. STOCK ATTENTION — full width                                   */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="grid gap-3 xl:grid-cols-[1.65fr_0.85fr]">
-        {/* ── Best Sellers — progress bar design ──────────────────────── */}
-        {visible.has("bestSellers") && (
-          <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">{t.bestSellers.title}</h2>
-                <p className="text-[10px] text-slate-400">{dateRangeText}</p>
-              </div>
-              {topProducts.length > 5 && (
-                <Link href={`/${locale}/reports/summary`} className="text-[11px] font-semibold text-violet-600 transition hover:text-violet-800">
-                  {t.topProductsTable.viewAll}
-                </Link>
-              )}
-            </div>
-            {isLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <Skeleton className="h-7 w-7 shrink-0 rounded-lg bg-violet-50" />
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-3.5 w-32 bg-slate-100" />
-                      <Skeleton className="h-2 w-full rounded-full bg-violet-50" />
-                    </div>
-                    <Skeleton className="h-4 w-12 bg-slate-100" />
-                  </div>
-                ))}
-              </div>
-            ) : topProducts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8">
-                <p className="text-sm text-slate-400">{t.bestSellers.noBestSellers}</p>
-                <Link href={`/${locale}/sales`} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-violet-700">
-                  {t.bestSellers.openPos}
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {topProducts.slice(0, 5).map((p, i) => {
-                  const pct = maxQtySold > 0 ? (p.quantity_sold / maxQtySold) * 100 : 0;
-                  return (
-                    <div key={p.product_id} className="flex items-center gap-3">
-                      {/* Rank badge */}
-                      <span className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[10px] font-black ${i < 3 ? "bg-violet-100 text-violet-700" : "bg-slate-50 text-slate-400"}`}>
-                        {i + 1}
-                      </span>
-                      {/* Name + progress bar */}
-                      <div className="min-w-0 flex-1">
-                        <p className="mb-1 truncate text-xs font-semibold text-slate-800" title={p.product_name}>
-                          {p.product_name}
-                        </p>
-                        <div className="h-2 overflow-hidden rounded-full bg-violet-100/50">
-                          <div
-                            className="h-2 rounded-full bg-violet-500 transition-all duration-700"
-                            style={{ width: `${Math.max(pct, 3)}%` }}
-                          />
-                        </div>
-                      </div>
-                      {/* Qty sold */}
-                      <div className="shrink-0 text-right">
-                        <span className="nums text-sm font-black text-slate-800">{p.quantity_sold}</span>
-                        <span className="ml-1 text-[10px] text-slate-400">{t.bestSellers.qtySold}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </article>
-        )}
-
-        {/* ── Stock Attention — unified out-of-stock + low stock ──────── */}
-        {visible.has("stockAttention") && (
+      {/* ── Stock Attention — unified out-of-stock + low stock ──────── */}
+      {visible.has("stockAttention") && (
           <article className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-900">{t.stockAttention.title}</h2>
@@ -1083,7 +826,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                 <p className="text-xs text-slate-400">{t.stockAttention.noIssues}</p>
               </div>
             ) : (
-              <div className="max-h-[420px] space-y-4 overflow-auto">
+              <div className="grid gap-4 lg:grid-cols-2">
                 {/* Out of Stock section */}
                 {outOfStockList.length > 0 && (
                   <div>
@@ -1146,8 +889,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
               </div>
             )}
           </article>
-        )}
-      </section>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 7. RECENT SALES — full width (100%)                               */}
