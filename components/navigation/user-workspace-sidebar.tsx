@@ -456,7 +456,7 @@ export function UserWorkspaceSidebar({
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 flex h-screen flex-col bg-indigo-950 px-4 py-6 transition-all duration-300 ${
+      className={`fixed left-0 top-0 z-40 flex h-screen flex-col bg-indigo-950 px-2 py-6 transition-all duration-300 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
@@ -466,7 +466,7 @@ export function UserWorkspaceSidebar({
         </p>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto space-y-1 pb-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-700/40">
+      <nav className="min-h-0 flex-1 overflow-y-auto space-y-1 pb-2 pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-700/40">
         {/* Section A — Sales & Customers */}
         {sectionAItems.map((item) => {
           const isActive = item.key === "documents" ? isDocumentsRoute : pathname === item.href;

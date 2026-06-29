@@ -188,9 +188,6 @@ export function InvoiceA4({ sale, dict, invoiceNo }: Props) {
                 <td style={{ padding: "2mm 3mm", textAlign: "center", color: "#64748b" }}>{i + 1}</td>
                 <td style={{ padding: "2mm 3mm" }}>
                   <div style={{ fontWeight: 500 }}>{item.product_name ?? ""}</div>
-                  {item.sku && (
-                    <div style={{ fontSize: "7pt", color: "#94a3b8" }}>SKU: {item.sku}</div>
-                  )}
                 </td>
                 <td style={{ padding: "2mm 3mm", textAlign: "center", color: "#64748b" }}>
                   {item.unit_type ?? "ชิ้น"}
