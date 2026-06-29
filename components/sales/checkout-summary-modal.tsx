@@ -340,13 +340,13 @@ export function CheckoutSummaryModal({
   const isCashNow = !quotationMode && customerSettlementMode === "cash_now";
   const isInvoiceMode = !quotationMode && customerSettlementMode === "invoice";
 
+  // Canonical channels only — credit & debit cards are one combined "card" channel
+  // (keys mirror lib/payment-method.ts + receipt-settings, so settings = checkout = data).
   const paymentOptions = [
     { label: dictionary.paymentMethodCashLabel, value: "cash", always: true },
     { label: dictionary.paymentMethodQrLabel, value: "promptpay", always: true },
     { label: dictionary.paymentMethodBankTransferLabel, value: "bank_transfer", always: true },
     { label: dictionary.paymentMethodCard, value: "card", always: false },
-    { label: dictionary.paymentMethodCreditCardLabel, value: "credit_card", always: false },
-    { label: dictionary.paymentMethodDebitCardLabel, value: "debit_card", always: false },
   ].filter((o) => o.always || (enabledPaymentChannels ?? []).includes(o.value));
 
   const numpadDigits = (digit: string) => {

@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -21,6 +22,7 @@ import { Alert } from "@/components/ui/alert";
 import { toast } from "@/components/ui/toast";
 import { getAuthSession } from "@/lib/auth-storage";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
+import { resolvePaymentLabel } from "@/lib/payment-method";
 import { createDocumentFromSale, createSaleReturn, getSaleById, voidSale, type CreateReturnInput } from "@/services/sales";
 import type { DocumentType } from "@/types/document";
 import type { Sale } from "@/types/sale";
@@ -84,6 +86,8 @@ export function SaleDetailModal({
   dict: SalesHistoryDict;
   onClose: () => void;
 }) {
+  const params = useParams();
+  const locale = (params?.locale as string) ?? "th";
   const { role } = useStoreRole();
   // Align with backend: owner/manager (store role) OR platform_admin (global role)
   // may void/return. useStoreRole returns "" for non-members like platform_admin,
@@ -121,22 +125,8 @@ export function SaleDetailModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [previewTemplate]);
 
-  function paymentLabel(method: string): string {
-    switch (method) {
-      case "cash":
-        return dict.paymentCash;
-      case "card":
-        return dict.paymentCard;
-      case "transfer":
-      case "bank_transfer":
-        return dict.paymentTransfer;
-      case "promptpay":
-      case "qr":
-        return dict.paymentQr;
-      default:
-        return dict.paymentOther;
-    }
-  }
+  // Canonical resolver → identical wording across dashboard / reports / history / detail.
+  const paymentLabel = (method: string): string => resolvePaymentLabel(method, locale);
 
   function handlePrintPreview() {
     const receiptTemplate = SALE_DOCUMENT_TEMPLATES.find((t) => t.kind === "RECEIPT");

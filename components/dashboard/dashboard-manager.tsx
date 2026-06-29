@@ -33,6 +33,7 @@ import {
 import { getDashboard } from "@/services/dashboard";
 import { getExpenseSummary } from "@/services/expenses";
 import { useStoreRole } from "@/lib/use-store-role";
+import { resolvePaymentLabel, canonicalPaymentKey, outstandingNote } from "@/lib/payment-method";
 import { useCopilot } from "@/components/copilot/copilot-provider";
 import { DashboardHero, type HeroPeriod } from "@/components/shared/dashboard-hero";
 import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
@@ -396,20 +397,8 @@ function paymentBadgeClass(method: string) {
   return PAYMENT_BADGE[method.toLowerCase()] ?? "bg-slate-100 text-slate-600";
 }
 
-/** Translate raw payment_method keys from API → localized label */
-function localizePaymentMethod(raw: string, dict: DashboardDictionary["paymentMethods"]): string {
-  const key = raw.toLowerCase().trim();
-  const map: Record<string, string> = {
-    cash: dict.cash,
-    transfer: dict.transfer,
-    qr: dict.qr,
-    "qr payment": dict.qr,
-    promptpay: dict.qr,
-    credit: dict.credit,
-    card: dict.card,
-  };
-  return map[key] ?? raw;
-}
+// Payment-method labels now come from the canonical resolver (lib/payment-method),
+// so every surface (dashboard / reports / P&L / sales history) shows identical wording.
 
 // ── Severity config for Action Center ───────────────────────────────────────
 
@@ -629,10 +618,10 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
     const total = (data?.payment_breakdown ?? []).reduce((s, i) => s + i.amount, 0);
     return (data?.payment_breakdown ?? []).map((item) => ({
       ...item,
-      localizedName: localizePaymentMethod(item.payment_method, t.paymentMethods),
+      localizedName: resolvePaymentLabel(item.payment_method, locale),
       ratio: total > 0 ? (item.amount / total) * 100 : 0,
     }));
-  }, [data?.payment_breakdown, t.paymentMethods]);
+  }, [data?.payment_breakdown, locale]);
 
   const topProducts = data?.top_products ?? [];
   const lowStockList = (data?.low_stock_products ?? []).filter((p) => (p.total_stock ?? p.quantity) > 0);
@@ -961,6 +950,9 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                   name: item.localizedName,
                   value: item.amount,
                   percent: item.ratio,
+                  ...(canonicalPaymentKey(item.payment_method) === "credit"
+                    ? { accent: "outstanding" as const, note: outstandingNote(locale) }
+                    : {}),
                 }))}
                 currency={(n) => formatCurrency(n, locale)}
                 emptyLabel={t.emptyStates.noPayments}
@@ -1217,7 +1209,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                       <td className="px-2 py-2.5 text-right text-xs font-bold text-slate-800">{formatCurrency(sale.total_amount, locale)}</td>
                       <td className="px-2 py-2.5">
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${paymentBadgeClass(sale.payment_method)}`}>
-                          {localizePaymentMethod(sale.payment_method, t.paymentMethods)}
+                          {resolvePaymentLabel(sale.payment_method, locale)}
                         </span>
                       </td>
                       <td className="px-2 py-2.5 text-[11px] text-slate-500">{formatTime(sale.sold_at, locale)}</td>

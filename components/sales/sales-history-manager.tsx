@@ -1,10 +1,12 @@
 ﻿"use client";
 
 import { useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { History, Receipt, Search, SlidersHorizontal, Wallet, X } from "lucide-react";
 
 import { listSales } from "@/services/sales";
+import { resolvePaymentLabel } from "@/lib/payment-method";
 import type { Sale } from "@/types/sale";
 
 import { SaleDetailModal } from "./sale-detail-modal";
@@ -53,6 +55,8 @@ function statusMeta(status: string, dict: SalesHistoryDict): { label: string; cl
 }
 
 export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHistoryDict; embedded?: boolean }) {
+  const params = useParams();
+  const locale = (params?.locale as string) ?? "th";
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
@@ -69,22 +73,8 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
     staleTime: 30_000,
   });
 
-  function paymentLabel(method: string): string {
-    switch (method) {
-      case "cash":
-        return dict.paymentCash;
-      case "card":
-        return dict.paymentCard;
-      case "transfer":
-      case "bank_transfer":
-        return dict.paymentTransfer;
-      case "promptpay":
-      case "qr":
-        return dict.paymentQr;
-      default:
-        return dict.paymentOther;
-    }
-  }
+  // Canonical resolver → identical wording across dashboard / reports / history.
+  const paymentLabel = (method: string): string => resolvePaymentLabel(method, locale);
 
   // Distinct values for the dropdown filters, derived from the loaded data.
   const cashiers = useMemo(() => {

@@ -51,17 +51,21 @@ interface PaymentChannel {
   icon: React.ReactNode;
 }
 
+// Canonical channels (keys mirror lib/payment-method.ts) + legacy keys kept ONLY so an
+// older saved config still renders with the right name. Labels match the canonical
+// resolver so settings, checkout and reports all read the same.
 const CHANNEL_META: Record<string, { name: string; color: string; icon: React.ReactNode }> = {
-  cash:        { name: "เงินสด (Cash)",            color: "bg-emerald-500", icon: <Wallet     className="h-4 w-4" /> },
-  credit_card: { name: "บัตรเครดิต",               color: "bg-blue-600",    icon: <CreditCard className="h-4 w-4" /> },
-  debit_card:  { name: "บัตรเดบิต",                color: "bg-teal-500",    icon: <CreditCard className="h-4 w-4" /> },
-  promptpay:   { name: "QR Code / PromptPay (พร้อมเพย์)", color: "bg-violet-600",  icon: <Smartphone className="h-4 w-4" /> },
-  bank_transfer: { name: "โอนเงินธนาคาร",               color: "bg-orange-500",  icon: <QrCode     className="h-4 w-4" /> },
-  qr:          { name: "โอนเงิน",                       color: "bg-orange-400",  icon: <QrCode     className="h-4 w-4" /> },
-  truemoney:   { name: "TrueMoney Wallet",          color: "bg-orange-300",  icon: <Wallet     className="h-4 w-4" /> },
-  shopeepay:   { name: "ShopeePay",                 color: "bg-rose-500",    icon: <Smartphone className="h-4 w-4" /> },
-  // legacy combined-card key (existing stores may have this in their saved channels)
-  card:        { name: "บัตรเครดิต / เดบิต",       color: "bg-blue-500",    icon: <CreditCard className="h-4 w-4" /> },
+  // — canonical —
+  cash:          { name: "เงินสด",              color: "bg-emerald-500", icon: <Wallet     className="h-4 w-4" /> },
+  bank_transfer: { name: "โอนเงิน",             color: "bg-orange-500",  icon: <QrCode     className="h-4 w-4" /> },
+  promptpay:     { name: "พร้อมเพย์ (QR)",      color: "bg-violet-600",  icon: <Smartphone className="h-4 w-4" /> },
+  card:          { name: "บัตรเครดิต / เดบิต",  color: "bg-blue-600",    icon: <CreditCard className="h-4 w-4" /> },
+  truemoney:     { name: "TrueMoney Wallet",    color: "bg-orange-300",  icon: <Wallet     className="h-4 w-4" /> },
+  shopeepay:     { name: "ShopeePay",           color: "bg-rose-500",    icon: <Smartphone className="h-4 w-4" /> },
+  // — legacy (display-only fallback for pre-existing saved configs) —
+  qr:          { name: "พร้อมเพย์ (QR)",   color: "bg-violet-500", icon: <QrCode     className="h-4 w-4" /> },
+  credit_card: { name: "บัตรเครดิต",        color: "bg-blue-500",   icon: <CreditCard className="h-4 w-4" /> },
+  debit_card:  { name: "บัตรเดบิต",         color: "bg-teal-500",   icon: <CreditCard className="h-4 w-4" /> },
 };
 
 function toChannels(raw: PaymentChannelSetting[]): PaymentChannel[] {

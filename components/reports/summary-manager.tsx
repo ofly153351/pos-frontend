@@ -34,6 +34,7 @@ import { RevenueProfitLineChart, type RevenueProfitDatum } from "@/components/re
 import { SalesByHourChart } from "@/components/reports/sales-by-hour-chart";
 import { DashboardHero, type HeroPeriod } from "@/components/shared/dashboard-hero";
 import type { SummaryDictionary } from "@/components/reports/summary-types";
+import { resolvePaymentLabel, canonicalPaymentKey, outstandingNote } from "@/lib/payment-method";
 
 type Props = { dictionary: SummaryDictionary; locale: string };
 
@@ -147,11 +148,14 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
     if (!data) return [];
     const denom = data.revenue || 1;
     return data.payment_breakdown.map((p) => ({
-      name: (t.method as Record<string, string>)[p.payment_method] ?? p.payment_method,
+      name: resolvePaymentLabel(p.payment_method, locale),
       value: p.amount,
       percent: (p.amount / denom) * 100,
+      ...(canonicalPaymentKey(p.payment_method) === "credit"
+        ? { accent: "outstanding" as const, note: outstandingNote(locale) }
+        : {}),
     }));
-  }, [data, t.method]);
+  }, [data, locale]);
 
   const topRanked = useMemo(() => (data?.top_products ?? []).slice(0, TOP_RANKED), [data]);
   const maxQty = useMemo(() => Math.max(1, ...topRanked.map((p) => p.quantity_sold)), [topRanked]);

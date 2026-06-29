@@ -32,6 +32,7 @@ import { RevenueCostProfitBars, type RcpRow } from "@/components/finance/revenue
 import { RevenueProfitLineChart, type RevenueProfitDatum } from "@/components/reports/revenue-profit-line-chart";
 import { DashboardHero, type HeroPeriod } from "@/components/shared/dashboard-hero";
 import type { PnlDictionary } from "@/components/finance/pnl-types";
+import { resolvePaymentLabel, canonicalPaymentKey, outstandingNote } from "@/lib/payment-method";
 
 type Props = { dictionary: PnlDictionary; locale: string };
 
@@ -173,11 +174,14 @@ export function PnlManager({ dictionary: t, locale }: Props) {
   const paymentRows = useMemo<CategoryValueRow[]>(() => {
     const denom = calc.grossRevenue || 1;
     return (report?.payment_breakdown ?? []).map((p) => ({
-      name: (t.method as Record<string, string>)[p.payment_method] ?? p.payment_method,
+      name: resolvePaymentLabel(p.payment_method, locale),
       value: p.amount,
       percent: (p.amount / denom) * 100,
+      ...(canonicalPaymentKey(p.payment_method) === "credit"
+        ? { accent: "outstanding" as const, note: outstandingNote(locale) }
+        : {}),
     }));
-  }, [report, calc.grossRevenue, t.method]);
+  }, [report, calc.grossRevenue, locale]);
 
   const trendData = useMemo<RevenueProfitDatum[]>(() => {
     const data = trendQuery.data;
