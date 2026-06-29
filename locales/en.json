@@ -691,7 +691,13 @@
     "defaultAddressLabel": "Default",
     "setAsDefaultLabel": "Set as default",
     "removeAddressBtn": "Remove",
-    "selectShippingAddressLabel": "Select shipping address"
+    "selectShippingAddressLabel": "Select shipping address",
+    "fullNamePlaceholder": "e.g. John Doe",
+    "phonePlaceholder": "08xxxxxxxx",
+    "emailPlaceholder": "name@email.com",
+    "addressPlaceholder": "House no. / Street / Subdistrict / District / Province",
+    "discountRuleSubtitle": "Set the discount % for each member tier",
+    "discountRuleHint": "Set 0% or leave blank to remove that tier's discount"
   },
   "admin": {
     "eyebrow": "Admin workspace",

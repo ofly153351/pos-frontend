@@ -1383,7 +1383,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
             product_id: item.product.id,
             description: item.product.name,
             quantity: item.quantity,
-            unit_price: item.product.effective_price,
+            unit_price: item.product.effective_price ?? item.product.base_price,
             discount_type: Number(item.discountValue || 0) > 0
               ? (item.discountType === "percent" ? "PERCENT" : "AMOUNT")
               : "" as const,
@@ -1470,7 +1470,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
               product_id: item.product.id,
               description: item.product.name,
               quantity: item.quantity,
-              unit_price: item.product.effective_price,
+              unit_price: item.product.effective_price ?? item.product.base_price,
               discount_type: Number(item.discountValue || 0) > 0
                 ? (item.discountType === "percent" ? "PERCENT" : "AMOUNT")
                 : "" as const,

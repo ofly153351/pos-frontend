@@ -25,6 +25,7 @@ import {
   ShoppingCart,
   Store,
   Tags,
+  UserCog,
   Users,
   Wallet,
   Warehouse,
@@ -46,6 +47,7 @@ type UserWorkspaceSidebarProps = {
     documentBills: string;
     documentPending: string;
     documents: string;
+    editProfile: string;
     inventory: string;
     products: string;
     productList: string;
@@ -228,6 +230,8 @@ export function UserWorkspaceSidebar({
   const staffHref = `/${locale}/settings/staff`;
   // storage-locations moved to Inventory — exclude it from Settings active detection.
   const isSettingsRoute = (pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`)) && !pathname.startsWith(storageLocationsHref);
+  const profileHref = `/${locale}/profile`;
+  const isProfileRoute = pathname === profileHref || pathname.startsWith(`${profileHref}/`);
   const isProductsRoute =
     pathname === productsBaseHref ||
     pathname === productsCategoriesHref ||
@@ -772,6 +776,25 @@ export function UserWorkspaceSidebar({
           ) : null}
         </div>
         ) : null}
+
+        {/* Profile — available to every role (incl. cashier), not management-gated */}
+        <Link
+          href={profileHref}
+          className={`flex items-center gap-3 px-4 py-3 text-sm ${
+            isProfileRoute
+              ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
+              : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
+          } ${collapsed ? "justify-center px-2" : ""}`}
+        >
+          <span
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+              isProfileRoute ? "bg-white/15 text-white" : "bg-violet-900/60 text-violet-300"
+            }`}
+          >
+            <UserCog className="h-4 w-4" />
+          </span>
+          {!collapsed ? <span>{labels.editProfile}</span> : null}
+        </Link>
       </nav>
 
       <div className="mt-auto">

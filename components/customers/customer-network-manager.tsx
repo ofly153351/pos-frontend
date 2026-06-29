@@ -35,17 +35,23 @@ type CustomerNetworkDictionary = {
   createSubtitle: string;
   createTitle: string;
   createTitleNew: string;
+  discountRuleHint: string;
+  discountRuleSubtitle: string;
   deleteConfirm: string;
   deleteLabel: string;
   deletedSuccess: string;
   discountPercentLabel: string;
   discountRuleTitle: string;
   editLabel: string;
+  addressPlaceholder: string;
   emailLabel: string;
+  emailPlaceholder: string;
   empty: string;
   filterAllLevels: string;
   fullNameLabel: string;
+  fullNamePlaceholder: string;
   fullNameRequired: string;
+  phonePlaceholder: string;
   inactiveStatus: string;
   invoiceLabel: string;
   kpiGold: string;
@@ -767,7 +773,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
                   autoFocus
                   className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500"
                   onChange={(event) => onFieldChange("full_name", event.target.value)}
-                  placeholder="เช่น สมชาย ใจดี"
+                  placeholder={dictionary.fullNamePlaceholder}
                   value={formState.full_name}
                 />
               </div>
@@ -779,7 +785,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
                   <input
                     className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500"
                     onChange={(event) => onFieldChange("phone", event.target.value)}
-                    placeholder="08xxxxxxxx"
+                    placeholder={dictionary.phonePlaceholder}
                     value={formState.phone}
                   />
                 </div>
@@ -788,7 +794,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
                   <input
                     className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500"
                     onChange={(event) => onFieldChange("email", event.target.value)}
-                    placeholder="name@email.com"
+                    placeholder={dictionary.emailPlaceholder}
                     type="email"
                     value={formState.email}
                   />
@@ -857,7 +863,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
                 <textarea
                   className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500"
                   onChange={(event) => onFieldChange("address", event.target.value)}
-                  placeholder="บ้านเลขที่ / ถนน / ตำบล / อำเภอ / จังหวัด"
+                  placeholder={dictionary.addressPlaceholder}
                   rows={2}
                   value={formState.address}
                 />
@@ -1052,7 +1058,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
             <div>
               <h3 className="text-lg font-bold text-slate-900">{dictionary.discountRuleTitle}</h3>
-              <p className="mt-0.5 text-xs text-slate-500">กำหนด % ส่วนลดให้แต่ละระดับสมาชิก</p>
+              <p className="mt-0.5 text-xs text-slate-500">{dictionary.discountRuleSubtitle}</p>
             </div>
             <button
               className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
@@ -1146,7 +1152,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
           </div>
 
           <p className="px-6 pb-6 text-xs text-slate-400">
-            ตั้งค่า 0% หรือเว้นว่างเพื่อลบส่วนลดของระดับนั้น
+            {dictionary.discountRuleHint}
           </p>
         </div>
       </div>

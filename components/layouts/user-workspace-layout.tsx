@@ -217,6 +217,7 @@ export function UserWorkspaceLayout({
           documentBills: shell.documentBills,
           documentPending: shell.documentPending,
           documents: shell.documents,
+          editProfile: shell.editProfile,
           inventory: shell.inventory,
           products: shell.products,
           productList: shell.productList,
