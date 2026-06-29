@@ -9,6 +9,7 @@ import type {
   DocumentType,
   RelatedDocument,
   UpdateDocumentStatusPayload,
+  UpdateDocumentPaymentStatusPayload,
 } from "@/types/document";
 
 function base() {
@@ -43,6 +44,13 @@ export async function createDocument(payload: CreateDocumentPayload): Promise<Do
 
 export async function updateDocumentStatus(id: string, payload: UpdateDocumentStatusPayload): Promise<void> {
   await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: payload, allowEmptyData: true });
+}
+
+export async function updateDocumentPaymentStatus(
+  id: string,
+  payload: UpdateDocumentPaymentStatusPayload,
+): Promise<void> {
+  await authorizedApiRequest(`${base()}/${id}/payment-status`, { method: "PUT", body: payload, allowEmptyData: true });
 }
 
 export async function deleteDocument(id: string): Promise<void> {
@@ -89,8 +97,9 @@ export async function convertDocument(id: string, targetType: DocumentType): Pro
   return res.data;
 }
 
-export async function getDocumentPrintHtml(id: string): Promise<string> {
-  return authorizedRawRequest<string>(`${base()}/${id}/print`, { method: "GET", responseType: "text" });
+export async function getDocumentPrintHtml(id: string, copyIdx?: number): Promise<string> {
+  const q = copyIdx !== undefined && copyIdx >= 0 ? `?copy=${copyIdx}` : "";
+  return authorizedRawRequest<string>(`${base()}/${id}/print${q}`, { method: "GET", responseType: "text" });
 }
 
 // Every document in the same conversion family (lineage via source_document_id),
@@ -121,14 +130,14 @@ export interface StatementPDFParams {
   note?: string;
 }
 
-export async function getDocumentPdfBlob(id: string, params?: InvoicePDFParams): Promise<Blob> {
-  const url = getDocumentPDFUrl(id, params);
+export async function getDocumentPdfBlob(id: string, params?: InvoicePDFParams, copyIdx?: number): Promise<Blob> {
+  const url = getDocumentPDFUrl(id, params, copyIdx);
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(`PDF fetch failed: ${res.status}`);
   return res.blob();
 }
 
-export function getDocumentPDFUrl(id: string, params?: InvoicePDFParams): string {
+export function getDocumentPDFUrl(id: string, params?: InvoicePDFParams, copyIdx?: number): string {
   const storeId = getCurrentStoreId();
   if (!storeId) throw new Error("No active store");
   const qs = new URLSearchParams();
@@ -137,6 +146,7 @@ export function getDocumentPDFUrl(id: string, params?: InvoicePDFParams): string
       if (v !== undefined && v !== "") qs.set(k, String(v));
     }
   }
+  if (copyIdx !== undefined && copyIdx >= 0) qs.set("copy", String(copyIdx));
   const q = qs.toString();
   return `/api/stores/${storeId}/documents/${id}/pdf${q ? `?${q}` : ""}`;
 }

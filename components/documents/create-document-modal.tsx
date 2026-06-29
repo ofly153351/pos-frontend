@@ -8,25 +8,15 @@ import { authorizedApiRequest } from "@/services/api";
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { listProducts } from "@/services/products";
 import { createDocument } from "@/services/documents";
+import { listShippingAddresses } from "@/services/customers";
 import { toast } from "@/components/ui/toast";
 import { ScanButton } from "@/components/shared/scan-button";
 import type { CreateDocumentPayload, DocumentType } from "@/types/document";
 import type { Product } from "@/types/product";
+import type { ShippingAddress } from "@/types/customer";
 
-type ShippingAddress = {
-  id: string;
-  label: string;
-  recipient_name: string;
-  recipient_phone: string;
-  address: string;
-  sub_district: string;
-  district: string;
-  province: string;
-  postal_code: string;
-  note: string;
-  use_customer_address: boolean;
-  is_default: boolean;
-};
+// Sentinel value for the "type the address myself" picker option.
+const MANUAL_ADDRESS = "__manual__";
 
 type Customer = {
   id: string;
@@ -76,6 +66,10 @@ type Dict = {
   typeCreditNote: string;
   typeDeliveryOrder?: string;
   selectShippingAddressLabel?: string;
+  shippingAddressManual?: string;
+  shippingAddressEmpty?: string;
+  shippingAddressLoading?: string;
+  shippingAddressDefault?: string;
 };
 
 type LineItem = {
@@ -151,6 +145,9 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const productWrapperRef = useRef<HTMLDivElement>(null);
   const barcodeBuffer = useRef("");
   const barcodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Tracks the customer we've already auto-applied a default address for, so the
+  // auto-apply effect fires once per customer (and never clobbers manual edits).
+  const appliedCustomerRef = useRef<string>("");
 
   useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
 
@@ -161,6 +158,15 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       return res.data;
     },
     enabled: !!storeId,
+  });
+
+  // The customer LIST endpoint does not embed shipping_addresses (only the detail
+  // endpoint does), so fetch the selected customer's saved delivery addresses
+  // on-demand. Only needed when authoring a Delivery Order.
+  const { data: shippingAddrs = [], isLoading: addrsLoading } = useQuery<ShippingAddress[]>({
+    queryKey: ["customer-shipping-addresses", storeId, customerId],
+    queryFn: async () => (await listShippingAddresses(customerId)).data ?? [],
+    enabled: !!storeId && !!customerId && docType === "DELIVERY_ORDER",
   });
 
   const { data: productsRaw = [] } = useQuery<Product[]>({
@@ -184,9 +190,15 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     return list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "th"));
   })();
 
-  // Selecting a customer pre-fills a Delivery Order's delivery block.
-  // If the customer has multi-address entries, auto-apply the default (or first).
-  // The picker lets the user switch.
+  // One-line summary of a saved address (for option labels + preview).
+  function addrSummary(a: ShippingAddress): string {
+    return [a.address, a.sub_district, a.district, a.province, a.postal_code]
+      .map((s) => (s ?? "").trim())
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  // Fills the Delivery Order block from a saved shipping address.
   function applyShippingAddress(addr: ShippingAddress, c: Customer) {
     if (addr.use_customer_address) {
       setDeliveryContact(c.full_name || "");
@@ -195,43 +207,64 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     } else {
       setDeliveryContact(addr.recipient_name || c.full_name || "");
       setDeliveryPhone(addr.recipient_phone || c.phone?.trim() || "");
-      const parts = [addr.address, addr.sub_district, addr.district, addr.province, addr.postal_code].filter(Boolean);
-      setDeliveryAddress(parts.join(" ") || c.address?.trim() || "");
+      setDeliveryAddress(addrSummary(addr) || c.address?.trim() || "");
       if (addr.note) setNotes((prev) => (prev.trim() ? prev : addr.note));
     }
   }
 
-  function handleShippingAddressPick(addrId: string, c: Customer) {
+  // Falls back to the customer's legacy single shipping profile / main address.
+  function applyLegacyShipping(c: Customer) {
+    const shipAddr = [c.shipping_address, c.shipping_district, c.shipping_province, c.shipping_postal_code]
+      .map((s) => (s ?? "").trim())
+      .filter(Boolean)
+      .join(" ");
+    setDeliveryContact(c.shipping_contact?.trim() || c.full_name || "");
+    setDeliveryPhone(c.shipping_phone?.trim() || c.phone?.trim() || "");
+    setDeliveryAddress(shipAddr || c.address?.trim() || "");
+    const note = c.delivery_note?.trim();
+    if (note) setNotes((prev) => (prev.trim() ? prev : note));
+  }
+
+  // User picks an address from the dropdown. MANUAL keeps the current fields so the
+  // user can type a one-off address.
+  function handleShippingAddressPick(addrId: string) {
     setSelectedShippingAddressId(addrId);
-    const addr = (c.shipping_addresses ?? []).find((a) => a.id === addrId);
-    if (addr) applyShippingAddress(addr, c);
+    if (addrId === MANUAL_ADDRESS) return;
+    const c = customers.find((x) => x.id === customerId);
+    const addr = shippingAddrs.find((a) => a.id === addrId);
+    if (addr && c) applyShippingAddress(addr, c);
   }
 
   function handleCustomerChange(id: string) {
     setCustomerId(id);
     setSelectedShippingAddressId("");
-    if (docType !== "DELIVERY_ORDER") return;
-    const c = customers.find((x) => x.id === id);
+    // Allow the auto-apply effect to run again for the newly chosen customer.
+    appliedCustomerRef.current = "";
+    if (docType === "DELIVERY_ORDER") {
+      // Clear stale delivery fields; the effect refills once addresses load.
+      setDeliveryContact("");
+      setDeliveryPhone("");
+      setDeliveryAddress("");
+    }
+  }
+
+  // Once the selected customer's saved addresses have loaded, auto-apply the default
+  // (or first) address — exactly once per customer, so manual edits aren't clobbered.
+  useEffect(() => {
+    if (docType !== "DELIVERY_ORDER" || !customerId || addrsLoading) return;
+    if (appliedCustomerRef.current === customerId) return;
+    const c = customers.find((x) => x.id === customerId);
     if (!c) return;
-    const addrs = c.shipping_addresses ?? [];
-    if (addrs.length > 0) {
-      // Auto-apply the default address (or first if none marked default)
-      const def = addrs.find((a) => a.is_default) ?? addrs[0];
+    appliedCustomerRef.current = customerId;
+    if (shippingAddrs.length > 0) {
+      const def = shippingAddrs.find((a) => a.is_default) ?? shippingAddrs[0];
       setSelectedShippingAddressId(def.id);
       applyShippingAddress(def, c);
     } else {
-      // Fall back to legacy single shipping profile
-      const shipAddr = [c.shipping_address, c.shipping_district, c.shipping_province, c.shipping_postal_code]
-        .map((s) => (s ?? "").trim())
-        .filter(Boolean)
-        .join(" ");
-      setDeliveryContact(c.shipping_contact?.trim() || c.full_name || "");
-      setDeliveryPhone(c.shipping_phone?.trim() || c.phone?.trim() || "");
-      setDeliveryAddress(shipAddr || c.address?.trim() || "");
-      const note = c.delivery_note?.trim();
-      if (note) setNotes((prev) => (prev.trim() ? prev : note));
+      applyLegacyShipping(c);
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shippingAddrs, addrsLoading, customerId, docType]);
 
   function addProductToItems(product: Product) {
     const price = Number(product.effective_price ?? product.base_price ?? 0);
@@ -472,27 +505,71 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 </select>
               </div>
 
-              {/* Shipping address picker — shown for DELIVERY_ORDER when customer has multi-addresses */}
+              {/* Shipping address picker — pick from the customer's saved delivery
+                  addresses (fetched on-demand). Always shown for a Delivery Order once
+                  a customer is chosen. */}
               {docType === "DELIVERY_ORDER" && customerId && (() => {
-                const c = customers.find((x) => x.id === customerId);
-                const addrs = c?.shipping_addresses ?? [];
-                if (addrs.length < 2) return null;
+                const selectedAddr = shippingAddrs.find((a) => a.id === selectedShippingAddressId);
                 return (
                   <div className="md:col-span-3">
                     <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                       {d.selectShippingAddressLabel ?? "เลือกที่อยู่จัดส่ง"}
                     </label>
-                    <select
-                      className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                      value={selectedShippingAddressId}
-                      onChange={(e) => c && handleShippingAddressPick(e.target.value, c)}
-                    >
-                      {addrs.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.label || a.address || a.recipient_name}{a.is_default ? " ★" : ""}
-                        </option>
-                      ))}
-                    </select>
+                    {addrsLoading ? (
+                      <div className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50/40 px-4 py-2.5 text-sm text-slate-400">
+                        <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+                        {d.shippingAddressLoading ?? "กำลังโหลดที่อยู่จัดส่ง..."}
+                      </div>
+                    ) : (
+                      <>
+                        <select
+                          className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                          value={selectedShippingAddressId || MANUAL_ADDRESS}
+                          onChange={(e) => handleShippingAddressPick(e.target.value)}
+                        >
+                          {shippingAddrs.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {(a.label || a.recipient_name || addrSummary(a) || "ที่อยู่จัดส่ง")}
+                              {a.is_default ? `  ★ ${d.shippingAddressDefault ?? "ค่าเริ่มต้น"}` : ""}
+                            </option>
+                          ))}
+                          <option value={MANUAL_ADDRESS}>
+                            {d.shippingAddressManual ?? "✏️ กรอกที่อยู่เอง"}
+                          </option>
+                        </select>
+
+                        {shippingAddrs.length === 0 && (
+                          <p className="mt-1.5 text-xs text-amber-600">
+                            {d.shippingAddressEmpty ??
+                              "ลูกค้านี้ยังไม่มีที่อยู่จัดส่งที่บันทึกไว้ — กรอกด้านล่างได้เลย หรือเพิ่มในเมนูลูกค้า"}
+                          </p>
+                        )}
+
+                        {/* Read-only preview of the chosen saved address */}
+                        {selectedAddr && selectedShippingAddressId !== MANUAL_ADDRESS && (
+                          <div className="mt-2 rounded-xl border border-violet-100 bg-violet-50/50 px-4 py-3 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-slate-800">
+                                {selectedAddr.recipient_name || "—"}
+                              </span>
+                              {selectedAddr.recipient_phone && (
+                                <span className="nums text-xs text-slate-500">{selectedAddr.recipient_phone}</span>
+                              )}
+                              {selectedAddr.is_default && (
+                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                                  ★ {d.shippingAddressDefault ?? "ค่าเริ่มต้น"}
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-0.5 leading-relaxed text-slate-600">
+                              {selectedAddr.use_customer_address
+                                ? (customers.find((x) => x.id === customerId)?.address?.trim() || "—")
+                                : (addrSummary(selectedAddr) || "—")}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                 );
               })()}

@@ -4,12 +4,30 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
+import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { DocumentType } from "@/types/document";
 
 import { DocumentTimeline } from "./document-timeline";
+
+// Copy print options per document type, mirroring the backend doccopy.SpecFor.
+// value -1 = whole set; 0..n = a single copy (0-based).
+function copyOptionsFor(t?: DocumentType): { value: number; label: string }[] {
+  if (t === "DELIVERY_ORDER") {
+    return [
+      { value: -1, label: "พิมพ์ทั้งชุด (3 ใบ)" },
+      { value: 0, label: "ต้นฉบับ — ลูกค้า" },
+      { value: 1, label: "สำเนา — ลูกค้า (ตั้งหนี้)" },
+      { value: 2, label: "สำเนา — บริษัท" },
+    ];
+  }
+  return [
+    { value: -1, label: "พิมพ์ทั้งชุด (2 ใบ)" },
+    { value: 0, label: "ต้นฉบับ — ลูกค้า" },
+    { value: 1, label: "สำเนา — บริษัท" },
+  ];
+}
 
 type Dict = {
   previewTitle: string;
@@ -21,6 +39,7 @@ type Dict = {
   share: string;
   comingSoon: string;
   pdfError: string;
+  pdfHint?: string;
   typeInvoice: string;
   typeReceipt: string;
   typeTaxInvoice: string;
@@ -85,18 +104,33 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   });
 
   const [isPdfLoading, startPdfTransition] = useTransition();
+  // Which copy to print/download: -1 = whole set (default), 0..n = a single copy.
+  const [copySel, setCopySel] = useState(-1);
+  const copyOptions = copyOptionsFor(documentType);
   function handleDownloadPdf() {
     startPdfTransition(async () => {
       try {
-        const blob = await getDocumentPdfBlob(documentId);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${documentNo || documentId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        // Render the SAME unified HTML as the preview/print, then let the browser
+        // produce the PDF via its print dialog ("Save as PDF"). This guarantees the
+        // PDF matches the on-screen document exactly — the app-wide pattern. The
+        // standalone gofpdf renderer drew a different layout and is no longer used here.
+        const freshHtml = await getDocumentPrintHtml(documentId, copySel);
+        const titled = freshHtml.replace(
+          /<title>[\s\S]*?<\/title>/i,
+          `<title>${documentNo || documentId}</title>`,
+        );
+        const blob = new Blob([titled], { type: "text/html;charset=utf-8" });
+        const blobUrl = URL.createObjectURL(blob);
+        const frame = document.createElement("iframe");
+        frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
+        document.body.appendChild(frame);
+        frame.src = blobUrl;
+        frame.onload = () => {
+          frame.contentWindow?.focus();
+          frame.contentWindow?.print();
+          setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
+        };
+        toast.info(dict.pdfHint ?? "เลือก \"บันทึกเป็น PDF\" ในหน้าต่างพิมพ์");
       } catch {
         toast.error(dict.pdfError);
       }
@@ -200,7 +234,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
 
   function handlePrint() {
     startOpenTransition(async () => {
-      const freshHtml = await getDocumentPrintHtml(documentId);
+      const freshHtml = await getDocumentPrintHtml(documentId, copySel);
       const blob = new Blob([freshHtml], { type: "text/html;charset=utf-8" });
       const blobUrl = URL.createObjectURL(blob);
       const frame = document.createElement("iframe");
@@ -352,6 +386,17 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   onClose={() => setConfirmCancel(false)}
                 />
               )}
+              {/* Copy selector — applies to both Print and PDF (Original/Copy set) */}
+              <select
+                value={copySel}
+                onChange={(e) => setCopySel(Number(e.target.value))}
+                title="เลือกชุดสำเนาที่จะพิมพ์/ดาวน์โหลด"
+                className="rounded-lg border border-violet-200 bg-white px-2 py-1.5 text-xs font-medium text-violet-700 outline-none transition-colors hover:bg-violet-50 focus:border-violet-400"
+              >
+                {copyOptions.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
               <button
                 type="button"
                 disabled={isPdfLoading}

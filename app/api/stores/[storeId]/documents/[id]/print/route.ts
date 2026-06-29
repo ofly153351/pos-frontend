@@ -6,5 +6,6 @@ type RouteContext = {
 
 export async function GET(request: Request, context: RouteContext) {
   const { id, storeId } = await context.params;
-  return proxyApiRequest(request, `/api/v1/stores/${storeId}/documents/${id}/print`);
+  const search = new URL(request.url).search; // forward ?copy=N
+  return proxyApiRequest(request, `/api/v1/stores/${storeId}/documents/${id}/print${search}`);
 }
