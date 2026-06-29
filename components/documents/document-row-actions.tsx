@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowRightLeft,
@@ -91,8 +92,10 @@ function convertTargetsFor(type: DocumentType): DocumentType[] {
 
 export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [isPending, startTransition] = useTransition();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const qc = useQueryClient();
 
   // Refresh the list (stats + rows) after any mutation.
@@ -113,6 +116,23 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
 
   function close() {
     setMenuOpen(false);
+  }
+
+  // Open the menu as a body portal anchored to the trigger button. This escapes the
+  // row's opacity dimming + stacking context (cancelled rows use opacity-60, which
+  // both fades the menu and traps it under the fixed backdrop) and the table's
+  // overflow clip.
+  function toggleMenu() {
+    if (menuOpen) {
+      setMenuOpen(false);
+      return;
+    }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) {
+      const MENU_W = 192; // w-48
+      setMenuPos({ top: r.bottom + 4, left: Math.max(8, r.right - MENU_W) });
+    }
+    setMenuOpen(true);
   }
 
   // Re-fetch the full document (the list row carries no items) and POST a fresh
@@ -264,8 +284,9 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
 
       {/* Overflow menu */}
       <button
+        ref={btnRef}
         title={d.moreOptions}
-        onClick={() => setMenuOpen((o) => !o)}
+        onClick={toggleMenu}
         className={`rounded-md p-1.5 transition-colors hover:bg-violet-50 hover:text-violet-600 ${
           menuOpen ? "bg-violet-50 text-violet-600" : "text-slate-400"
         }`}
@@ -274,11 +295,14 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
         <MoreVertical className="h-4 w-4" />
       </button>
 
-      {menuOpen && (
+      {menuOpen && menuPos && createPortal(
         <>
           {/* Outside-click catcher */}
-          <div className="fixed inset-0 z-[60]" onClick={close} />
-          <div className="absolute right-0 top-full z-[61] mt-1 w-48 overflow-hidden rounded-lg border border-violet-100 bg-white py-1 shadow-lg">
+          <div className="fixed inset-0 z-[70]" onClick={close} />
+          <div
+            className="fixed z-[71] w-48 overflow-hidden rounded-lg border border-violet-100 bg-white py-1 shadow-lg"
+            style={{ top: menuPos.top, left: menuPos.left }}
+          >
             <MenuItem icon={Eye} label={d.printPreview} onClick={() => { close(); onPreview(); }} />
             <MenuItem icon={FileDown} label={d.downloadPDF} onClick={handlePdf} />
             <MenuItem icon={Copy} label={d.duplicate} onClick={handleDuplicate} />
@@ -314,7 +338,8 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
               <MenuItem icon={Trash2} label={d.delete} onClick={handleDelete} tone="rose" />
             )}
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );

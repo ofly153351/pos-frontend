@@ -134,7 +134,7 @@ export function removeWarehouseProduct(warehouseId: string, productId: string) {
   const storeId = ensureStoreId();
   return authorizedApiRequest<void>(
     `/api/stores/${storeId}/warehouses/${warehouseId}/products/${productId}`,
-    { method: "DELETE" },
+    { method: "DELETE", allowEmptyData: true },
     { requireToken: true },
   );
 }
@@ -200,6 +200,7 @@ export function updateWarehouseProductQuantity(warehouseId: string, productId: s
     {
       body: { quantity } satisfies UpdateWarehouseProductInput,
       method: "PUT",
+      allowEmptyData: true,
     },
     { requireToken: true },
   );
@@ -221,6 +222,7 @@ export function allocateInventory(warehouseId: string, productId: string, quanti
     {
       body: { quantity, note: note || undefined },
       method: "POST",
+      allowEmptyData: true,
     },
     { requireToken: true },
   );

@@ -160,7 +160,7 @@ export function deleteGoodsReceiptDraft(receiptId: string) {
   const storeId = ensureStoreId();
   return authorizedApiRequest<void>(
     `/api/stores/${storeId}/receipts/${receiptId}`,
-    { method: "DELETE" },
+    { method: "DELETE", allowEmptyData: true },
   );
 }
 

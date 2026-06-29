@@ -182,5 +182,6 @@ export function updateBankAccount(storeId: string, accountId: string, input: Upd
 export function deleteBankAccount(storeId: string, accountId: string) {
   return authorizedApiRequest<null>(`/api/stores/${storeId}/bank-accounts/${accountId}`, {
     method: "DELETE",
+    allowEmptyData: true,
   });
 }

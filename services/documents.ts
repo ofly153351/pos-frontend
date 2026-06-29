@@ -59,7 +59,9 @@ export async function convertQuotation(id: string): Promise<Document> {
 }
 
 export async function cancelDocument(id: string): Promise<void> {
-  await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: { status: "CANCELLED" } });
+  // Reuse updateDocumentStatus so the empty-data response ({ data: null }) is handled
+  // correctly (allowEmptyData) — otherwise unwrapPayload throws on a successful cancel.
+  await updateDocumentStatus(id, { status: "CANCELLED" });
 }
 
 export async function payInvoice(id: string): Promise<Document> {
