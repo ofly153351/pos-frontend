@@ -74,12 +74,25 @@ export type SummaryHourStat = {
   orders: number;
 };
 
+export type SummaryMonthlyStat = {
+  /** YYYY-MM (Asia/Bangkok). */
+  month: string;
+  orders: number;
+  revenue: number;
+  cogs: number;
+  /** Gross profit = revenue − cogs. */
+  profit: number;
+  discount: number;
+};
+
 export type ExecutiveSummary = {
   range: PnlRange;
   revenue: number;
   /** Revenue of the immediately preceding equal-length window (growth basis). */
   previous_revenue: number;
   cogs: number;
+  /** Total bill + item discount granted in the window. */
+  discount_amount: number;
   expenses: number;
   gross_profit: number;
   net_profit: number;
@@ -90,6 +103,8 @@ export type ExecutiveSummary = {
   customers: number;
   average_order_value: number;
   sales_trend: SummaryTrendPoint[];
+  /** Per-month P&L rows for the summary table. */
+  months: SummaryMonthlyStat[];
   top_products: SummaryTopProduct[];
   category_breakdown: PnlCategoryTotal[];
   payment_breakdown: PnlPaymentMethod[];

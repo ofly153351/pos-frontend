@@ -15,7 +15,9 @@ import {
   PieChart,
   PiggyBank,
   Printer,
+  Receipt,
   ShoppingCart,
+  TicketPercent,
   TrendingDown,
   TrendingUp,
   Trophy,
@@ -24,7 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { getExecutiveSummary, type GetPnlParams, type PnlPeriod } from "@/services/finance";
+import { getExecutiveSummary, type GetPnlParams } from "@/services/finance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
@@ -117,6 +119,14 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
     () => new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { day: "numeric", month: "short" }),
     [locale],
   );
+  const monthfmt = useMemo(
+    () => new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { month: "short", year: "numeric" }),
+    [locale],
+  );
+  const formatMonth = (m: string) => {
+    const d = new Date(`${m}-01T00:00:00Z`);
+    return Number.isNaN(d.getTime()) ? m : monthfmt.format(d);
+  };
 
   const isLoss = !isLoading && (data?.net_profit ?? 0) < 0;
 
@@ -146,7 +156,10 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
 
   const paymentRows = useMemo<CategoryValueRow[]>(() => {
     if (!data) return [];
-    const denom = data.revenue || 1;
+    // Per-channel amounts are GROSS (no refund subtraction), so divide by their own sum
+    // — not data.revenue, which is NET (gross − refunds). Using net would push the bars
+    // past 100% whenever refunds exist in the window.
+    const denom = data.payment_breakdown.reduce((sum, p) => sum + p.amount, 0) || 1;
     return data.payment_breakdown.map((p) => ({
       name: resolvePaymentLabel(p.payment_method, locale),
       value: p.amount,
@@ -228,10 +241,10 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
   };
   const KPIS: KpiItem[] = data
     ? [
+        // Row 1 — money flow: revenue → cost → discount → profit
         { label: t.kpi.revenue, value: money(data.revenue), icon: Wallet, iconBg: "bg-violet-100", iconColor: "text-violet-600" },
-        { label: t.kpi.orders, value: `${int(data.orders)} ${t.kpi.ordersSuffix}`, icon: ShoppingCart, iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
-        { label: t.kpi.avgOrderValue, value: money(data.average_order_value), icon: Coins, iconBg: "bg-amber-100", iconColor: "text-amber-600" },
-        { label: t.kpi.productsSold, value: `${int(data.products_sold)} ${t.kpi.itemsSuffix}`, icon: Package, iconBg: "bg-violet-100", iconColor: "text-violet-600" },
+        { label: t.kpi.cost, value: money(data.cogs), icon: Receipt, iconBg: "bg-rose-100", iconColor: "text-rose-600" },
+        { label: t.kpi.discount, value: money(data.discount_amount), icon: TicketPercent, iconBg: "bg-amber-100", iconColor: "text-amber-600" },
         {
           label: t.kpi.profit,
           value: isLoss ? `-${money(Math.abs(data.net_profit))}` : money(data.net_profit),
@@ -243,6 +256,10 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
           valueTone: isLoss ? "danger" : "default",
           hint: t.kpi.grossProfitHint.replace("{value}", money(data.gross_profit)),
         },
+        // Row 2 — volume: orders → avg/bill → units → customers
+        { label: t.kpi.orders, value: `${int(data.orders)} ${t.kpi.ordersSuffix}`, icon: ShoppingCart, iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
+        { label: t.kpi.avgOrderValue, value: money(data.average_order_value), icon: Coins, iconBg: "bg-amber-100", iconColor: "text-amber-600" },
+        { label: t.kpi.productsSold, value: `${int(data.products_sold)} ${t.kpi.itemsSuffix}`, icon: Package, iconBg: "bg-violet-100", iconColor: "text-violet-600" },
         { label: t.kpi.customers, value: `${int(data.customers)} ${t.kpi.customersSuffix}`, icon: Users, iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
       ]
     : [];
@@ -311,10 +328,10 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
         />
       </div>
 
-      {/* KPI row — 6 sales metrics */}
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+      {/* KPI row — 8 sales metrics (money flow + volume) */}
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
         {isLoading
-          ? [...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-100" />)
+          ? [...Array(8)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-100" />)
           : KPIS.map((k) => (
               <ReportKpiCard key={k.label} label={k.label} value={k.value} icon={<k.icon className="h-5 w-5" />} iconBg={k.iconBg} iconColor={k.iconColor} hint={k.hint} emphasis={k.emphasis} warning={k.warning} valueTone={k.valueTone} />
             ))}
@@ -423,6 +440,43 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
           )}
         </section>
       </div>
+
+      {/* Row C0 — Monthly P&L summary table */}
+      <section className="mb-4 rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
+        {sectionHead(BarChart3, "bg-violet-100 text-violet-600", t.monthly.title, t.monthly.subtitle)}
+        {isLoading ? (
+          <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full rounded-lg bg-slate-100" />)}</div>
+        ) : (data?.months?.length ?? 0) === 0 ? (
+          <div className="flex min-h-[120px] items-center justify-center text-sm text-slate-400">{t.monthly.empty}</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] border-collapse text-left">
+              <thead>
+                <tr className="border-b border-violet-50 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <th className="px-3 py-2.5 font-bold">{t.monthly.colMonth}</th>
+                  <th className="px-3 py-2.5 text-right font-bold">{t.monthly.colOrders}</th>
+                  <th className="px-3 py-2.5 text-right font-bold">{t.monthly.colRevenue}</th>
+                  <th className="px-3 py-2.5 text-right font-bold">{t.monthly.colCost}</th>
+                  <th className="px-3 py-2.5 text-right font-bold">{t.monthly.colProfit}</th>
+                  <th className="px-3 py-2.5 text-right font-bold">{t.monthly.colDiscount}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {data?.months?.map((m) => (
+                  <tr key={m.month} className="transition hover:bg-violet-50/40">
+                    <td className="px-3 py-2.5 text-sm font-semibold text-slate-800">{formatMonth(m.month)}</td>
+                    <td className="px-3 py-2.5 text-right text-sm tabular-nums text-slate-700">{int(m.orders)}</td>
+                    <td className="px-3 py-2.5 text-right text-sm font-bold tabular-nums text-slate-900">{money(m.revenue)}</td>
+                    <td className="px-3 py-2.5 text-right text-sm tabular-nums text-rose-600">{money(m.cogs)}</td>
+                    <td className={`px-3 py-2.5 text-right text-sm font-bold tabular-nums ${m.profit < 0 ? "text-rose-600" : "text-emerald-600"}`}>{money(m.profit)}</td>
+                    <td className="px-3 py-2.5 text-right text-sm tabular-nums text-amber-600">{money(m.discount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* Row C — Top 10 products table */}
       <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">

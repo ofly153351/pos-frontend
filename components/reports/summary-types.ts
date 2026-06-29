@@ -25,6 +25,8 @@ export type SummaryDictionary = {
   };
   kpi: {
     revenue: string;
+    cost: string;
+    discount: string;
     orders: string;
     avgOrderValue: string;
     productsSold: string;
@@ -83,6 +85,17 @@ export type SummaryDictionary = {
     colQty: string;
     colRevenue: string;
     colProfit: string;
+    empty: string;
+  };
+  monthly: {
+    title: string;
+    subtitle: string;
+    colMonth: string;
+    colOrders: string;
+    colRevenue: string;
+    colCost: string;
+    colProfit: string;
+    colDiscount: string;
     empty: string;
   };
 };
