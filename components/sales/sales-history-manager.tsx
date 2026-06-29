@@ -52,7 +52,7 @@ function statusMeta(status: string, dict: SalesHistoryDict): { label: string; cl
   }
 }
 
-export function SalesHistoryManager({ dict }: { dict: SalesHistoryDict }) {
+export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHistoryDict; embedded?: boolean }) {
   const [dateFilter, setDateFilter] = useState<DateFilter>("today");
   const [search, setSearch] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
@@ -151,12 +151,14 @@ export function SalesHistoryManager({ dict }: { dict: SalesHistoryDict }) {
     "rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100";
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">{dict.title}</h1>
-        <p className="text-sm text-slate-500">{dict.subtitle}</p>
-      </div>
+    <div className={`flex h-full min-h-0 flex-col gap-4${embedded ? " px-6 pb-6 pt-4" : ""}`}>
+      {/* Page header — hidden when embedded (the Documents page supplies its own). */}
+      {!embedded && (
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">{dict.title}</h1>
+          <p className="text-sm text-slate-500">{dict.subtitle}</p>
+        </div>
+      )}
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

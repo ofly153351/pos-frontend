@@ -21,8 +21,7 @@ import { Alert } from "@/components/ui/alert";
 import { toast } from "@/components/ui/toast";
 import { getAuthSession } from "@/lib/auth-storage";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
-import { createDocument } from "@/services/documents";
-import { createSaleReturn, getSaleById, voidSale, type CreateReturnInput } from "@/services/sales";
+import { createDocumentFromSale, createSaleReturn, getSaleById, voidSale, type CreateReturnInput } from "@/services/sales";
 import type { DocumentType } from "@/types/document";
 import type { Sale } from "@/types/sale";
 
@@ -193,26 +192,11 @@ export function SaleDetailModal({
     if (!docType || !sale) return;
 
     try {
-      const items = (sale.items ?? []).map((it) => ({
-        product_id: it.product_id,
-        description: it.product_name || it.product_id,
-        quantity: it.quantity,
-        unit_price: it.unit_price ?? 0,
-        discount_type: (it.discount_type === "percent" ? "PERCENT" : it.discount_type === "amount" ? "AMOUNT" : "") as "" | "PERCENT" | "AMOUNT",
-        discount_value: it.discount_value ?? 0,
-      }));
-
-      await createDocument({
-        type: docType,
-        customer_id: sale.customer_id ?? "",
-        customer_name: sale.customer_name || dict.generalCustomer,
-        document_date: sale.created_at.slice(0, 10),
-        invoice_ref_no: sale.sale_number ?? sale.id,
-        items,
-        vat_rate: sale.vat_percent ?? 7,
-        notes: `จากบิลขาย ${sale.sale_number ?? sale.id}`,
-      });
-
+      // The backend issues the persisted document from the sale's AUTHORITATIVE stored
+      // totals (subtotal / discount / VAT / grand total), so it matches the receipt
+      // exactly. No client-side reconstruction from gross prices (which used to drop the
+      // bill discount and force VAT 7%).
+      await createDocumentFromSale(sale.id, docType);
       toast.success(dict.docSaved);
       queryClient.invalidateQueries({ queryKey: ["documents"] });
     } catch {
@@ -223,7 +207,9 @@ export function SaleDetailModal({
   const items = sale?.items ?? [];
   const lineCount = items.length;
   const pieces = sale?.total_items ?? items.reduce((s, i) => s + (i.quantity ?? 0), 0);
-  const discountTotal = (sale?.discount_amount ?? 0) + (sale?.bill_discount_amount ?? 0);
+  // discount_amount is ALREADY the combined item + bill discount (set by the sale
+  // repository) — do not add bill_discount_amount again.
+  const discountTotal = sale?.discount_amount ?? 0;
   const isVoided = sale?.status === "voided";
   const isFullyReturned = sale?.status === "fully_returned";
   const isPartiallyReturned = sale?.status === "partially_returned";

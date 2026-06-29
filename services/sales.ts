@@ -92,6 +92,22 @@ export function getSaleDocumentHtml(saleId: string, docType: string) {
   );
 }
 
+// Issues a PERSISTED document (default TAX_INVOICE) from a sale. The backend copies the
+// sale's authoritative stored totals — subtotal, discount, VAT, grand total — so the
+// document matches the receipt exactly. This replaces the old client-side reconstruction
+// that recomputed from gross prices (which dropped bill discounts and forced VAT).
+export function createDocumentFromSale(saleId: string, type: string) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<{ id: string; document_no: string }>(
+    `/api/stores/${currentStoreId}/sales/${saleId}/documents`,
+    {
+      body: { type },
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
 export function voidSale(saleId: string, input: { reason?: string; type: "void" | "return" }) {
   const currentStoreId = ensureStoreId();
   return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales/${saleId}/void`, {
