@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { StockManager } from "@/components/stock/stock-manager";
@@ -20,9 +21,11 @@ export default async function ProductsPage({ params }: ProductsPageProps) {
   const dictionary = await getDictionary(locale as Locale);
 
   return (
-    <StockManager
-      dictionary={dictionary.stock}
-      initialSection="stock-levels"
-    />
+    <Suspense fallback={null}>
+      <StockManager
+        dictionary={dictionary.stock}
+        initialSection="stock-levels"
+      />
+    </Suspense>
   );
 }
