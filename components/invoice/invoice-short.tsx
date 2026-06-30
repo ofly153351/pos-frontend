@@ -1,4 +1,5 @@
 import type { Sale } from "@/types/sale";
+import { SignatureBlock } from "./signature-block";
 
 type InvoiceDict = {
   shortTitle: string;
@@ -32,7 +33,6 @@ type InvoiceDict = {
   promptpay: string;
   vatIncluded: string;
   vatExcluded: string;
-  authorizedSignature: string;
 };
 
 type Props = {
@@ -216,16 +216,12 @@ export function InvoiceShort({ sale, dict, invoiceNo }: Props) {
         </div>
       )}
 
-      {/* Signature */}
-      <div style={{ marginTop: "5mm", textAlign: "right" }}>
-        <div style={{ display: "inline-block", textAlign: "center", minWidth: "50mm" }}>
-          <div style={{ marginBottom: "8mm" }}>&nbsp;</div>
-          <div style={{ borderTop: "0.5px solid #cbd5e1", paddingTop: "1mm", fontSize: "7.5pt", color: "#64748b" }}>
-            {dict.authorizedSignature}
-          </div>
-          <div style={{ fontSize: "7pt", color: "#94a3b8" }}>{sale.store_name ?? ""}</div>
-        </div>
-      </div>
+      <SignatureBlock
+        leftTH="ผู้รับเงิน"
+        leftEN="Received By"
+        rightTH="ผู้จ่ายเงิน"
+        rightEN="Paid By"
+      />
     </div>
   );
 }

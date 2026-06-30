@@ -39,10 +39,7 @@ type InvoiceDict = {
   vat: string;
   total: string;
   note: string;
-  authorizedSignature: string;
-  customerSignature: string;
   originalCopy: string;
-  signatureLine: string;
   formatFull: string;
   formatShort: string;
   print: string;

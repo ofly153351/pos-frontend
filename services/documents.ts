@@ -89,8 +89,10 @@ export async function convertDocument(id: string, targetType: DocumentType): Pro
   return res.data;
 }
 
-export async function getDocumentPrintHtml(id: string): Promise<string> {
-  return authorizedRawRequest<string>(`${base()}/${id}/print`, { method: "GET", responseType: "text" });
+// copy: 0-based copy index (Original=0, Company=last); omit or -1 for the whole set.
+export async function getDocumentPrintHtml(id: string, copy?: number): Promise<string> {
+  const q = copy != null && copy >= 0 ? `?copy=${copy}` : "";
+  return authorizedRawRequest<string>(`${base()}/${id}/print${q}`, { method: "GET", responseType: "text" });
 }
 
 // Every document in the same conversion family (lineage via source_document_id),
@@ -121,14 +123,15 @@ export interface StatementPDFParams {
   note?: string;
 }
 
-export async function getDocumentPdfBlob(id: string, params?: InvoicePDFParams): Promise<Blob> {
-  const url = getDocumentPDFUrl(id, params);
+// copy: 0-based copy index (Original=0, Company=last); omit or -1 for the whole set.
+export async function getDocumentPdfBlob(id: string, params?: InvoicePDFParams, copy?: number): Promise<Blob> {
+  const url = getDocumentPDFUrl(id, params, copy);
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(`PDF fetch failed: ${res.status}`);
   return res.blob();
 }
 
-export function getDocumentPDFUrl(id: string, params?: InvoicePDFParams): string {
+export function getDocumentPDFUrl(id: string, params?: InvoicePDFParams, copy?: number): string {
   const storeId = getCurrentStoreId();
   if (!storeId) throw new Error("No active store");
   const qs = new URLSearchParams();
@@ -137,6 +140,7 @@ export function getDocumentPDFUrl(id: string, params?: InvoicePDFParams): string
       if (v !== undefined && v !== "") qs.set(k, String(v));
     }
   }
+  if (copy != null && copy >= 0) qs.set("copy", String(copy));
   const q = qs.toString();
   return `/api/stores/${storeId}/documents/${id}/pdf${q ? `?${q}` : ""}`;
 }

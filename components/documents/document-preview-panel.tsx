@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { copyChoicesFor } from "@/lib/document-copies";
 import type { DocumentType } from "@/types/document";
 
 import { DocumentTimeline } from "./document-timeline";
@@ -69,9 +70,14 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const qc = useQueryClient();
 
+  // Copy selection — Original / Customer Copy / Company Copy / All copies.
+  // -1 = whole set (default). Threaded into preview, print, and PDF so all three agree.
+  const [copyIdx, setCopyIdx] = useState(-1);
+  const copyChoices = copyChoicesFor(documentType);
+
   const { data: html, isLoading } = useQuery({
-    queryKey: ["document-print", documentId],
-    queryFn: () => getDocumentPrintHtml(documentId),
+    queryKey: ["document-print", documentId, copyIdx],
+    queryFn: () => getDocumentPrintHtml(documentId, copyIdx),
     enabled: !!documentId,
     staleTime: 30_000,
   });
@@ -88,7 +94,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   function handleDownloadPdf() {
     startPdfTransition(async () => {
       try {
-        const blob = await getDocumentPdfBlob(documentId);
+        const blob = await getDocumentPdfBlob(documentId, undefined, copyIdx);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -200,7 +206,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
 
   function handlePrint() {
     startOpenTransition(async () => {
-      const freshHtml = await getDocumentPrintHtml(documentId);
+      const freshHtml = await getDocumentPrintHtml(documentId, copyIdx);
       const blob = new Blob([freshHtml], { type: "text/html;charset=utf-8" });
       const blobUrl = URL.createObjectURL(blob);
       const frame = document.createElement("iframe");
@@ -352,6 +358,18 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   onClose={() => setConfirmCancel(false)}
                 />
               )}
+              {/* Copy selector — Original / Customer Copy / Company Copy / All copies.
+                  Drives preview, print, and PDF identically. */}
+              <select
+                value={copyIdx}
+                onChange={(e) => setCopyIdx(Number(e.target.value))}
+                title="เลือกชุดสำเนาที่จะพิมพ์"
+                className="rounded-lg border border-violet-200 bg-white px-2 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-300"
+              >
+                {copyChoices.map((c) => (
+                  <option key={c.idx} value={c.idx}>{c.th}</option>
+                ))}
+              </select>
               <button
                 type="button"
                 disabled={isPdfLoading}
