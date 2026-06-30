@@ -89,7 +89,7 @@ export function PurchasingWorkspace({ dict, formDict }: Props) {
 
   // ── Tab badge counts ────────────────────────────────────────────────────────
   const counts = useMemo(() => {
-    const pendingReceiving = pos.filter((po) => isOpenPo(po) && poProgress(po).outstanding > 0).length;
+    const pendingReceiving = pos.filter((po) => isOpenPo(po) && (poProgress(po).outstanding > 0 || poProgress(po).ordered === 0)).length;
     const completedPo = pos.filter((po) => po.status === "completed").length;
     return {
       "purchase-orders": pos.length,

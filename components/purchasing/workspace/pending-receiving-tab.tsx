@@ -31,9 +31,14 @@ export function PendingReceivingTab({ dict, locale, canOperate, pos, loading, er
   const [search, setSearch] = useState("");
   const [supplierId, setSupplierId] = useState("");
 
-  // Only POs that can still receive stock AND have outstanding quantity.
+  // POs that can still receive stock: open status AND (has outstanding qty OR has no items yet).
+  // Zero-item POs (ordered=0) stay visible so the user can still receive against them.
   const receivable = useMemo(
-    () => pos.filter((po) => isOpenPo(po) && poProgress(po).outstanding > 0),
+    () => pos.filter((po) => {
+      if (!isOpenPo(po)) return false;
+      const prog = poProgress(po);
+      return prog.outstanding > 0 || prog.ordered === 0;
+    }),
     [pos],
   );
 
