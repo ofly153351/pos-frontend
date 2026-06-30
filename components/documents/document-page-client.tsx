@@ -10,6 +10,7 @@ import {
   bulkDocumentAction,
   getDocuments,
 } from "@/services/documents";
+import { type DateFilterValue, resolveDateQuery } from "@/components/shared/date-range-filter";
 import { toast } from "@/components/ui/toast";
 import type { DocumentListQuery, DocumentStatus, DocumentType } from "@/types/document";
 
@@ -211,6 +212,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
   useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
 
   const [query, setQuery] = useState<DocumentListQuery>(DEFAULT_QUERY);
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({ preset: "all" });
 
   // The "ใบเสร็จร้านค้า" tab reuses <SalesHistoryManager> (see render below), so the
   // page no longer hand-rolls a sales list / receipt preview / tax-invoice creation.
@@ -221,9 +223,12 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
   const [createModalType, setCreateModalType] = useState<DocumentType | null>(null);
   const [isBulkPending, startBulkTransition] = useTransition();
 
+  const dateRange = resolveDateQuery(dateFilter);
+  const fetchQuery = { ...query, ...dateRange };
+
   const { data, isLoading } = useQuery({
-    queryKey: ["documents", storeId, query],
-    queryFn: () => getDocuments(query),
+    queryKey: ["documents", storeId, fetchQuery],
+    queryFn: () => getDocuments(fetchQuery),
     enabled: !!storeId,
     placeholderData: (prev) => prev,
   });
@@ -238,6 +243,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
 
   const resetFilters = useCallback(() => {
     setQuery(DEFAULT_QUERY);
+    setDateFilter({ preset: "all" });
     setSelectedIds(new Set());
   }, []);
 
@@ -492,9 +498,13 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
             {/* Filter bar */}
             <DocumentFilterBar
               dict={d}
+              salesDict={salesDict}
               query={query}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
               onChange={updateQuery}
               onReset={resetFilters}
+              locale={locale}
             />
             <DocumentStatsCards
               dict={d}

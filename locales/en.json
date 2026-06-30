@@ -605,7 +605,8 @@
       "saved": "Settings saved",
       "resetDone": "Reset to defaults"
     },
-    "openCustomerDisplay": "Customer display"
+    "openCustomerDisplay": "Customer display",
+    "latestItemBadge": "Latest"
   },
   "customers": {
     "title": "Customers & Members",
@@ -3874,7 +3875,9 @@
       "ordersSuffix": "orders",
       "itemsSuffix": "items",
       "customersSuffix": "people",
-      "grossProfitHint": "Gross profit {value}"
+      "grossProfitHint": "Gross profit {value}",
+      "cost": "Total cost",
+      "discount": "Total discount"
     },
     "salesTrend": {
       "title": "Sales Trend",
@@ -3937,6 +3940,17 @@
       "colRevenue": "Revenue",
       "colProfit": "Profit",
       "empty": "No sales in this period"
+    },
+    "monthly": {
+      "title": "Monthly Summary",
+      "subtitle": "Revenue, cost and profit by month",
+      "colMonth": "Month",
+      "colOrders": "Orders",
+      "colRevenue": "Revenue",
+      "colCost": "Cost",
+      "colProfit": "Profit",
+      "colDiscount": "Discount",
+      "empty": "No data in this period"
     }
   },
   "creditSales": {
@@ -4271,6 +4285,7 @@
     "filterToday": "Today",
     "filter7d": "7 days",
     "filter30d": "30 days",
+    "filterCustom": "Custom range",
     "searchPlaceholder": "Search bill no. / customer...",
     "colTime": "Time",
     "colBillNo": "Bill No.",

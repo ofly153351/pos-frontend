@@ -605,7 +605,8 @@
       "saved": "บันทึกการตั้งค่าแล้ว",
       "resetDone": "คืนค่าเริ่มต้นแล้ว"
     },
-    "openCustomerDisplay": "เปิดจอลูกค้า"
+    "openCustomerDisplay": "เปิดจอลูกค้า",
+    "latestItemBadge": "ล่าสุด"
   },
   "customers": {
     "title": "ลูกค้า & สมาชิก",
@@ -3874,7 +3875,9 @@
       "ordersSuffix": "บิล",
       "itemsSuffix": "ชิ้น",
       "customersSuffix": "ราย",
-      "grossProfitHint": "กำไรขั้นต้น {value}"
+      "grossProfitHint": "กำไรขั้นต้น {value}",
+      "cost": "ต้นทุนรวม",
+      "discount": "ส่วนลดรวม"
     },
     "salesTrend": {
       "title": "แนวโน้มยอดขาย",
@@ -3937,6 +3940,17 @@
       "colRevenue": "ยอดขาย",
       "colProfit": "กำไร",
       "empty": "ยังไม่มียอดขายในช่วงนี้"
+    },
+    "monthly": {
+      "title": "สรุปรายเดือน",
+      "subtitle": "รายได้ ต้นทุน และกำไรแยกตามเดือน",
+      "colMonth": "เดือน",
+      "colOrders": "จำนวนบิล",
+      "colRevenue": "รายได้",
+      "colCost": "ต้นทุน",
+      "colProfit": "กำไร",
+      "colDiscount": "ส่วนลด",
+      "empty": "ยังไม่มีข้อมูลในช่วงนี้"
     }
   },
   "creditSales": {
@@ -4271,6 +4285,7 @@
     "filterToday": "วันนี้",
     "filter7d": "7 วัน",
     "filter30d": "30 วัน",
+    "filterCustom": "กำหนดเอง",
     "searchPlaceholder": "ค้นหาเลขบิล / ชื่อลูกค้า...",
     "colTime": "เวลา",
     "colBillNo": "เลขบิล",
