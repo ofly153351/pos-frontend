@@ -1122,6 +1122,7 @@
       "receiveGoods": "Receive ",
       "purchasingReceiving": "Purchasing / Receiving",
       "transactions": "Transactions",
+      "help": "Help",
       "creditSales": "Credit Sales",
       "reports": "Reports & Finance",
       "reportsInventoryValue": "Inventory Value & Dead Stock",
@@ -4423,5 +4424,18 @@
     "docComingSoon": "This document is coming soon",
     "docSaved": "Document saved to Documents",
     "docSaveError": "Failed to save document"
+  },
+  "help": {
+    "title": "Help Center",
+    "subtitle": "Find guides for using POS Today",
+    "searchPlaceholder": "Search e.g. payment, credit sale, add product...",
+    "popularTopics": "Popular topics",
+    "allCategories": "All categories",
+    "steps": "Steps",
+    "tips": "Tips",
+    "back": "Back",
+    "backToCategory": "Back to category",
+    "noResults": "No results found",
+    "noResultsDesc": "Try searching with different terms, e.g. 'invoice' or 'stock count'"
   }
 }

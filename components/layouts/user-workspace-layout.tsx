@@ -75,6 +75,7 @@ type UserWorkspaceLayoutProps = {
     station: string;
     suppliers: string;
     transactions: string;
+    help: string;
   };
   titles: {
     customers: string;
@@ -175,6 +176,7 @@ export function UserWorkspaceLayout({
   };
 
   const title = useMemo(() => {
+    if (pathname.includes("/help")) return shell.help;
     if (pathname.includes("/receipts")) return shell.salesHistory;
     if (pathname.includes("/promotions")) return titles.promotions ?? shell.promotions;
     if (pathname.includes("/profile")) return titles.profile ?? shell.editProfile;
@@ -251,6 +253,7 @@ export function UserWorkspaceLayout({
           receiveGoods: shell.receiveGoods,
           suppliers: shell.suppliers,
           transactions: shell.transactions,
+          help: shell.help,
         }}
         locale={locale}
         onOpenCashier={openCashier}

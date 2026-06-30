@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Send, MessageSquare } from "lucide-react"
 import { useCopilot } from "../copilot-provider"
 import { getActivityLogs, type ActivityLogEntry } from "@/services/activity-logs"
+import { HELP_CATEGORIES, type HelpTopic } from "@/lib/help/help-topics"
 import type {
   CopilotOverview,
   CopilotAction,
@@ -512,6 +513,73 @@ function generateFollowUps(
   return result
 }
 
+// ── Greeting / Thanks (short social messages) ──
+
+const GREETING_FOLLOWUPS: CopilotFollowUp[] = [
+  { label: '📊 ภาพรวมร้าน', query: 'ภาพรวมร้าน' },
+  { label: '🎯 ทำอะไรก่อน', query: 'วันนี้ทำอะไรก่อน' },
+  { label: '💰 ยอดขายวันนี้', query: 'ยอดขายวันนี้' },
+  { label: '📖 วิธีใช้งาน', query: 'คู่มือใช้งานทั้งหมด' },
+]
+
+function buildGreeting(lang: Lang): SakuResponse {
+  return {
+    sections: [sec('👋', '',
+      lang === 'en' ? 'Hi! I can help with your store. Ask me anything:' : 'สวัสดีครับ! ผมช่วยดูเรื่องร้านได้ ถามได้เลย:',
+      lang === 'en' ? '📊 Overview · 🎯 What to do · 💰 Sales · 📦 Stock' : '📊 ภาพรวม · 🎯 สิ่งที่ต้องทำ · 💰 ยอดขาย · 📦 สต็อก',
+      lang === 'en' ? '📖 Or how-to guides — "how to process payment"' : '📖 หรือถามวิธีใช้งาน — "วิธีรับชำระเงิน"',
+    )],
+    followUps: GREETING_FOLLOWUPS,
+    context: emptyContext(),
+  }
+}
+
+function buildThanks(lang: Lang): SakuResponse {
+  return {
+    sections: [sec('🙏', '', lang === 'en' ? "You're welcome! Anything else?" : 'ยินดีครับ! มีอะไรให้ช่วยอีกไหมครับ')],
+    followUps: GREETING_FOLLOWUPS,
+    context: emptyContext(),
+  }
+}
+
+// ── Best Sellers ──
+// Copilot data has no per-product sales ranking, so point owner to the full
+// report and surface the actionable proxy: fast-moving items that are low on
+// stock (from reorder intel). Clearly labelled so it is not mistaken for the
+// real revenue ranking.
+function buildBestSellers(data: CopilotOverview, lang: Lang): SakuResponse {
+  const intel = data.inventoryIntelligence
+  const movers = [...intel.urgentReorders]
+    .filter(r => r.avgDailySales > 0)
+    .sort((a, b) => b.avgDailySales - a.avgDailySales)
+    .slice(0, 5)
+
+  const sections: SakuSection[] = [
+    sec('📊', lang === 'en' ? 'Best sellers' : 'สินค้าขายดี',
+      lang === 'en'
+        ? 'Full per-product ranking is in Reports → Summary and the Dashboard.'
+        : 'อันดับสินค้าขายดีแบบเต็มดูได้ที่เมนู "รายงาน → รายงานสรุป" และหน้าแดชบอร์ดครับ'),
+  ]
+
+  if (movers.length > 0) {
+    sections.push(sec('🔥', lang === 'en' ? 'Fast movers (running low)' : 'ขายเร็ว & สต็อกใกล้หมด',
+      ...movers.map((m, i) => `${i + 1}. ${m.productName} — ${lang === 'en'
+        ? `${m.avgDailySales.toFixed(1)}/day, ${m.daysOfStock.toFixed(0)}d left`
+        : `${m.avgDailySales.toFixed(1)} ชิ้น/วัน, เหลือ ${m.daysOfStock.toFixed(0)} วัน`}`),
+    ))
+  }
+
+  return {
+    sections,
+    followUps: [
+      { label: lang === 'en' ? '🛒 What to reorder' : '🛒 ต้องสั่งอะไร', query: lang === 'en' ? 'what should I reorder' : 'ควรสั่งของอะไรเพิ่ม' },
+      { label: lang === 'en' ? '💰 Profit' : '💰 กำไร', query: lang === 'en' ? 'profit' : 'กำไรเท่าไหร่' },
+      { label: lang === 'en' ? '📊 Overview' : '📊 ภาพรวม', query: lang === 'en' ? 'overview' : 'ภาพรวมร้าน' },
+    ],
+    context: { lastTopic: 'sales', lastItems: [], lastItemType: null },
+  }
+}
+
 // ── Saku Response Engine ──
 
 function buildSakuResponse(
@@ -530,6 +598,19 @@ function buildSakuResponse(
 
   const q = input.toLowerCase()
   const { healthScore: h, summary: s, risks, opportunities, decisionEngine: de, moneyIntelligence: money, inventoryIntelligence: intel, purchasingIntelligence: purch } = data
+
+  // ── 0. Greeting / thanks (short social messages only) ──
+  // Thai uses `^` only — `\b` is a no-op after Thai chars (not \w), so it would
+  // never fire for "สวัสดี". English keeps `\b` to avoid matching "history" etc.
+  const social = q.trim()
+  if (social.length <= 25 &&
+      (/^(สวัสดี|หวัดดี|วัสดี|ดีครับ|ดีค่ะ|โย่)/.test(social) || /^(hello|hi|hey|yo)\b/i.test(social))) {
+    return buildGreeting(lang)
+  }
+  if (social.length <= 25 &&
+      (/^(ขอบคุณ|ขอบใจ|ขอบพระคุณ)/.test(social) || /^(thank|thx|ty)\b/i.test(social))) {
+    return buildThanks(lang)
+  }
 
   // ── 1. Reference resolution ──
   const ref = resolveReference(q, prevCtx)
@@ -570,6 +651,12 @@ function buildSakuResponse(
       followUps: generateFollowUps(prevCtx.lastTopic ?? '', data, lang),
       context: prevCtx,
     }
+  }
+
+  // ── 5b. Best sellers (catch BEFORE sales/profit so "ขายดี" isn't read as revenue) ──
+  if (q.includes('ขายดี') || q.includes('ขายเก่ง') || q.includes('best sell') || q.includes('best-sell') ||
+      q.includes('top product') || q.includes('top sell') || q.includes('top seller') || q.includes('bestsell')) {
+    return buildBestSellers(data, lang)
   }
 
   // ── 6. Profit / finance (check BEFORE priorities so "กำไรวันนี้" doesn't match วันนี้) ──
@@ -619,7 +706,10 @@ function buildSakuResponse(
 
   // ── 7. Sales (check before priorities so "ยอดขายวันนี้" works) ──
   if (q.includes('sales') || q.includes('revenue') || q.includes('ยอดขาย') ||
-      (q.includes('ขาย') && !q.includes('ขาดทุน') && !q.includes('จัดซื้อ'))) {
+      q.includes('เงินเข้า') || q.includes('รายรับ') || q.includes('ยอดวันนี้') || q.includes('ได้เงิน') ||
+      q.includes('เทียบ') || q.includes('เปรียบเทียบ') || q.includes('compare') ||
+      (q.includes('ขาย') && !q.includes('ขาดทุน') && !q.includes('จัดซื้อ') &&
+        !q.includes('ขายไม่ออก') && !q.includes('ขายไม่ได้') && !q.includes('ขายไม่ดี'))) {
     const sections: SakuSection[] = [
       sec('📊', lang === 'en' ? 'Sales (7d)' : 'ยอดขาย 7 วัน',
         `${lang === 'en' ? 'Revenue' : 'ยอด'}: ${fmtMoney(s.revenue)} (${pctStr(s.revenueChange)})`,
@@ -646,7 +736,7 @@ function buildSakuResponse(
 
   // ── 8. Today's priorities ──
   if (q.includes('ทำอะไร') || q.includes('ทำอะไรก่อน') || q.includes('ควรทำ') ||
-      q.includes('วันนี้') || q.includes('สำคัญ') ||
+      q.includes('วันนี้') || q.includes('สำคัญ') || q.includes('โฟกัส') || q.includes('เน้น') ||
       q.includes('what should') || q.includes('to do') || q.includes('today') ||
       q.includes('priority') || q.includes('priorities') || q.includes('focus')) {
     if (!de?.topPriority) {
@@ -688,7 +778,11 @@ function buildSakuResponse(
 
   // ── 7. Overview / health ──
   if (q.includes('health') || q.includes('score') || q.includes('overview') ||
-      q.includes('business') || q.includes('ภาพรวม') || q.includes('สุขภาพ') || q.includes('สรุป')) {
+      q.includes('business') || q.includes('ภาพรวม') || q.includes('สุขภาพ') || q.includes('สรุป') ||
+      // Generic "เป็นยังไง/เป็นไง" → overview ONLY when no domain word is present, so
+      // "จัดซื้อเป็นไง" / "สต็อกเป็นไง" still reach their own (later) sections.
+      (/เป็นยังไง|เป็นไง|เป็นอย่างไร|สถานะร้าน/.test(q) &&
+        !/จัดซื้อ|ซื้อ|สต็อก|สินค้า|ลูกหนี้|หนี้|ค้าง|สั่ง|ซัพพลาย|ต้นทุน|stock|supplier|reorder/.test(q))) {
     const items: ContextItem[] = []
     const sections: SakuSection[] = []
 
@@ -730,7 +824,9 @@ function buildSakuResponse(
   }
 
   // ── 8. Stock / inventory ──
-  if (q.includes('stock') || q.includes('inventory') || q.includes('สต็อก') || q.includes('สินค้า') || q.includes('หมด') || q.includes('ใกล้หมด')) {
+  if (q.includes('stock') || q.includes('inventory') || q.includes('สต็อก') || q.includes('สินค้า') || q.includes('หมด') || q.includes('ใกล้หมด') ||
+      q.includes('สั่งของ') || q.includes('ควรสั่ง') || q.includes('ต้องสั่ง') || q.includes('สั่งเพิ่ม') || q.includes('สั่งสินค้า') ||
+      q.includes('ขายไม่ออก') || q.includes('ขายไม่ได้') || q.includes('ขายไม่ดี') || q.includes('ค้างสต็อก')) {
     const items: ContextItem[] = []
     const sections: SakuSection[] = []
 
@@ -770,7 +866,9 @@ function buildSakuResponse(
 
   // ── 9. Debtors / aging ──
   if (q.includes('ลูกหนี้') || q.includes('ค้างชำระ') || q.includes('เก็บเงิน') || q.includes('เชื่อ') ||
-      q.includes('debtor') || q.includes('overdue') || q.includes('collect') || q.includes('credit') || q.includes('aging')) {
+      q.includes('ติดเงิน') || q.includes('ค้างเงิน') || q.includes('ติดหนี้') || q.includes('เป็นหนี้') ||
+      q.includes('ค้างนาน') || q.includes('ค้างเยอะ') || q.includes('ใครค้าง') || q.includes('ค้างสุด') || q.includes('บิลค้าง') ||
+      q.includes('debtor') || q.includes('overdue') || q.includes('collect') || q.includes('credit') || q.includes('aging') || q.includes('owe')) {
     if (money.totalOutstanding === 0 && money.totalOverdue === 0) {
       return {
         sections: [sec('✅', '', lang === 'en' ? 'No outstanding credit sales' : 'ไม่มีลูกหนี้ค้างชำระ')],
@@ -916,6 +1014,7 @@ function buildSakuResponse(
       lang === 'en' ? '📦 Stock • 💰 Profit • 🛒 Purchasing' : '📦 สต็อก • 💰 กำไร • 🛒 จัดซื้อ',
       lang === 'en' ? '👤 Debtors • ⚠️ Issues • 💡 Opportunities' : '👤 ลูกหนี้ • ⚠️ ปัญหา • 💡 โอกาส',
       lang === 'en' ? '📝 Activity — who changed what' : '📝 กิจกรรม — ใครแก้อะไรวันนี้',
+      lang === 'en' ? '📖 How-to guides — "how to process payment"' : '📖 คู่มือ — "วิธีรับชำระเงิน", "วิธีเปิดบิลเชื่อ"',
     )],
     followUps: generateFollowUps('', data, lang),
     context: emptyContext(),
@@ -1060,6 +1159,155 @@ function buildActivityResponse(q: string, acts: ActivityLogEntry[], lang: Lang):
   return { sections, followUps: activityFollowUps(lang), context: { lastTopic: 'activity', lastItems: [], lastItemType: null } }
 }
 
+// ── Help Topic Search ──
+
+function isHelpIntent(q: string): boolean {
+  if (/วิธี|ขั้นตอน|คู่มือ|ช่วยสอน|สอนหน่อย|how to|how do|step.by.step|teach me|guide|tutorial/i.test(q)) return true
+  // Generic "Xยังไง / Xอย่างไร" = how-to. Exclude "เป็นยังไง/เป็นไง" which asks
+  // about store STATE (→ overview), not how to do something.
+  if (/ยังไง|ยังงัย|อย่างไร/.test(q) && !/เป็นยังไง|เป็นไง|เป็นอย่างไร|เป็นยังงัย/.test(q)) return true
+  return false
+}
+
+// Thai/EN filler stripped before topic search so casual phrasing still matches.
+// Includes leading verbs (ดู/อ่าน/เช็ค) so compound tokens like "ดูรายงาน" reduce
+// to the noun "รายงาน" and match a topic title.
+const HELP_STOPWORDS = /วิธีการ|วิธี|ทำยังไง|ทำอย่างไร|ขั้นตอน|คู่มือ|ช่วยสอน|สอนหน่อย|ใช้งานยังไง|ใช้งานอย่างไร|ยังไง|ยังงัย|อย่างไร|หน่อย|ครับ|ค่ะ|คะ|ไหม|มั้ย|บ้าง|อะไร|ของ|ที่|จะ|ต้อง|อยากดู|ดูแล|เช็ค|ตรวจสอบ|อยากรู้|พิมพ์|สแกน|อ่าน|ดู|how to|how do i?|how can i?|step by step|teach me|guide me|tutorial|the|a |an |please/gi
+
+// Strip Thai tone marks / maitaikhu / thanthakhat so spelling variants compare
+// equal (e.g. "โปรโมชั่น" === "โปรโมชัน"). Applied to both query and topic text.
+const THAI_TONE = /[็-๎]/g
+function helpNorm(s: string): string {
+  return s.toLowerCase().replace(THAI_TONE, '')
+}
+
+function searchHelpTopics(rawQ: string): { categoryTitle: string; topic: HelpTopic; score: number }[] {
+  // Strip filler on the raw (tone-marked) text FIRST, then normalise — stopwords
+  // such as "พิมพ์" carry tone marks that normalisation would otherwise erase,
+  // making the stopword fail to match.
+  const core = helpNorm(rawQ.toLowerCase().replace(HELP_STOPWORDS, ' '))
+    .replace(/\s+/g, ' ')
+    .trim()
+  const words = core.split(/\s+/).filter(w => w.length > 1)
+
+  const results: { categoryTitle: string; topic: HelpTopic; score: number }[] = []
+
+  for (const cat of HELP_CATEGORIES) {
+    const catL = helpNorm(cat.title)
+    const subL = helpNorm(cat.subtitle)
+    for (const topic of cat.topics) {
+      let score = 0
+      const titleL = helpNorm(topic.title)
+      const descL = helpNorm(topic.description)
+
+      // Whole-core bonus only for cores long enough to be a real word — a 3-char
+      // core like "ขาย" would otherwise substring-match "ยอดขาย" and hijack ranking.
+      if (core.length >= 4 && titleL.includes(core)) score += 20
+      if (core.length >= 4 && descL.includes(core)) score += 10
+
+      for (const w of words) {
+        if (titleL.includes(w)) score += 5
+        if (descL.includes(w)) score += 3
+        if (topic.steps?.some(s => helpNorm(s).includes(w))) score += 2
+        if (topic.tips?.some(t => helpNorm(t).includes(w))) score += 1
+        // Category-level match (weighted above a stray topic-title substring) —
+        // lets "ขายของยังไง" surface POS topics even when no single topic title
+        // contains the word. A topic whose OWN title also contains the word still
+        // outranks its siblings (gets +9 cat +5 title), so precise queries stay precise.
+        if (catL.includes(w)) score += 9
+        if (subL.includes(w)) score += 3
+      }
+
+      if (score > 0) results.push({ categoryTitle: cat.title, topic, score })
+    }
+  }
+
+  return results.sort((a, b) => b.score - a.score)
+}
+
+function buildHelpResponse(q: string, lang: Lang): SakuResponse {
+  const lower = q.toLowerCase()
+
+  const isOverview =
+    /ทั้งหมด|ทั้งระบบ|ใช้งานระบบ|all feature|system|overview|everything/i.test(lower) &&
+    !/รับชำระ|บิลเชื่อ|เพิ่มสินค้า|นับสต็อก|รับสินค้า/.test(lower)
+
+  if (isOverview) {
+    const catLines = HELP_CATEGORIES.map(c => `• ${c.title} — ${c.subtitle}`)
+    return {
+      sections: [sec('📖', lang === 'en' ? 'Help Center' : 'คู่มือการใช้งาน',
+        lang === 'en' ? 'Ask me about any topic:' : 'ถามเรื่องใดก็ได้ครับ:',
+        ...catLines,
+      )],
+      followUps: [
+        { label: '💳 วิธีรับชำระเงิน', query: 'วิธีรับชำระเงิน' },
+        { label: '📄 วิธีเปิดบิลเชื่อ', query: 'วิธีเปิดบิลเชื่อ' },
+        { label: '📦 วิธีเพิ่มสินค้า', query: 'วิธีเพิ่มสินค้า' },
+        { label: '🏭 วิธีรับสินค้าเข้าคลัง', query: 'วิธีรับสินค้าเข้าคลัง' },
+      ],
+      context: { lastTopic: 'help', lastItems: [], lastItemType: null },
+    }
+  }
+
+  const results = searchHelpTopics(q)
+
+  if (results.length === 0) {
+    return {
+      sections: [sec('📖', lang === 'en' ? 'Help' : 'คู่มือ',
+        lang === 'en' ? 'No guide found. Try asking about:' : 'ไม่พบคู่มือสำหรับเรื่องนี้ ลองถาม:',
+        lang === 'en' ? 'payment, credit sale, add product, inventory count, receiving goods' : 'วิธีชำระเงิน, เปิดบิลเชื่อ, เพิ่มสินค้า, นับสต็อก, รับสินค้า',
+      )],
+      followUps: [
+        { label: '💳 วิธีรับชำระเงิน', query: 'วิธีรับชำระเงิน' },
+        { label: '📄 วิธีเปิดบิลเชื่อ', query: 'วิธีเปิดบิลเชื่อ' },
+        { label: '📦 วิธีเพิ่มสินค้า', query: 'วิธีเพิ่มสินค้า' },
+        { label: '📖 คู่มือทั้งหมด', query: 'คู่มือใช้งานทั้งหมด' },
+      ],
+      context: emptyContext(),
+    }
+  }
+
+  const top = results[0]
+  const sections: SakuSection[] = []
+
+  if (results.length === 1 || top.score >= (results[1]?.score ?? 0) * 1.5) {
+    const { topic, categoryTitle } = top
+    sections.push(sec('📖', topic.title, `${topic.description}  (${categoryTitle})`))
+    if (topic.steps && topic.steps.length > 0) {
+      sections.push(sec('📋', lang === 'en' ? 'Steps' : 'ขั้นตอน',
+        ...topic.steps.map((s, i) => `${i + 1}. ${s}`),
+      ))
+    }
+    if (topic.tips && topic.tips.length > 0) {
+      sections.push(sec('💡', lang === 'en' ? 'Tips' : 'เคล็ดลับ', ...topic.tips))
+    }
+    return {
+      sections,
+      followUps: [
+        ...results.slice(1, 3).map(r => ({ label: `📖 ${r.topic.title}`, query: r.topic.title })),
+        { label: '📖 คู่มือทั้งหมด', query: 'คู่มือใช้งานทั้งหมด' },
+      ].slice(0, 4),
+      context: { lastTopic: 'help', lastItems: [], lastItemType: null },
+    }
+  }
+
+  for (const { topic, categoryTitle } of results.slice(0, 3)) {
+    const lines: string[] = [`หมวด: ${categoryTitle}`, topic.description]
+    if (topic.steps && topic.steps.length > 0) {
+      lines.push(`1. ${topic.steps[0]}`)
+      if (topic.steps.length > 1) lines.push(`2. ${topic.steps[1]}`)
+      if (topic.steps.length > 2) lines.push(`  … (ถามเพิ่ม: "${topic.title}")`)
+    }
+    sections.push(sec('📖', topic.title, ...lines))
+  }
+
+  return {
+    sections,
+    followUps: results.slice(0, 4).map(r => ({ label: `📖 ${r.topic.title}`, query: r.topic.title })),
+    context: { lastTopic: 'help', lastItems: [], lastItemType: null },
+  }
+}
+
 // ── Message Type ──
 
 interface Message {
@@ -1084,6 +1332,8 @@ const SECTION_BG: Record<string, string> = {
   '🔍': 'bg-violet-50 border-violet-200',
   '🏆': 'bg-amber-50 border-amber-200',
   '💰': 'bg-emerald-50 border-emerald-100',
+  '📖': 'bg-violet-50 border-violet-200',
+  '📋': 'bg-blue-50 border-blue-200',
 }
 
 function SectionBlock({ section }: { section: SakuSection }) {
@@ -1121,13 +1371,13 @@ export function ChatTab() {
       id: 'welcome',
       role: 'assistant',
       content: '',
-      sections: [sec('👋', '', 'สวัสดีครับ! ถามเกี่ยวกับร้านได้เลย')],
+      sections: [sec('👋', '', 'สวัสดีครับ! ถามเกี่ยวกับร้านหรือวิธีใช้งานระบบได้เลย')],
       followUps: [
         { label: '📊 ภาพรวมร้าน', query: 'ภาพรวมร้าน' },
         { label: '🎯 ทำอะไรก่อน', query: 'วันนี้ทำอะไรก่อน' },
+        { label: '📖 วิธีใช้งาน', query: 'คู่มือใช้งานทั้งหมด' },
+        { label: '💳 วิธีรับชำระเงิน', query: 'วิธีรับชำระเงิน' },
         { label: '📝 ใครแก้อะไรวันนี้', query: 'วันนี้เปลี่ยนอะไรบ้าง' },
-        { label: '📦 สต็อก', query: 'สินค้าใกล้หมด' },
-        { label: '💰 กำไร', query: 'กำไรเท่าไหร่' },
       ],
       timestamp: new Date(),
     },
@@ -1180,6 +1430,23 @@ export function ChatTab() {
             : m)))
         }
       })()
+      return
+    }
+
+    // Help / how-to questions — answered from help-topics content, no API needed
+    if (isHelpIntent(q)) {
+      const response = buildHelpResponse(q, lang)
+      setConvCtx(response.context)
+      const helpMsg: Message = {
+        id: `msg-${++msgId.current}-a`,
+        role: 'assistant',
+        content: '',
+        sections: response.sections,
+        followUps: response.followUps,
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, userMsg, helpMsg])
+      setInput('')
       return
     }
 
