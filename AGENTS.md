@@ -197,6 +197,91 @@ Tones: `"success" | "error" | "info" | "warning"` — all match the violet/purpl
 - Keep UI and logic separated
 - Always integrate with backend API properly
 - Use `toast` / `<Alert>` for all notifications — never write inline `border-rose-200 bg-rose-50` divs
+
+---
+
+## Scope Rules (IMPORTANT — read first)
+
+### Frontend Only
+- Make changes to D:/Fork/pos-frontend ONLY
+- Do NOT modify D:/Fork/pos-backend unless explicitly told to
+- If a feature requires a backend endpoint that doesn't exist: implement with MOCK DATA in the frontend service (clearly comment // MOCK — replace when BE endpoint ready)
+
+### No New npm Packages
+Do not install new packages. Use only what is already in package.json.
+
+---
+
+## Shared Components — Use These, Don't Rebuild
+
+| Component | Import | Use for |
+|-----------|--------|---------|
+| DateRangeFilter | @/components/shared/date-range-filter | Date range picker (today/7d/30d/custom) with Bangkok timezone |
+| DrawerShell | @/components/warehouse/inventory/drawer-shell (or activity-logs variant) | Slide-in right drawer with backdrop + Esc close |
+| ReportKpiCard | @/components/reports/report-kpi-card | KPI stat card with icon, label, value, hint |
+| toast.success/error/info | @/components/ui/toast | All async action results — NEVER inline colored divs |
+| Alert | @/components/ui/alert | Inline validation/persistent banners |
+| ConfirmModal | Already in codebase | Confirmation dialogs |
+| QueryErrorState | @/components/ui/query-error-state | Error states in queries |
+| Skeleton | @/components/ui/skeleton | Loading states |
+
+---
+
+## Activity Center (components/activity-logs/)
+
+The /settings/activity-logs page is a business Activity Center (V2). Key files:
+- insight-provider.ts — InsightProvider seam. DETERMINISTIC (not AI). Honest Thai business language. Never label output "AI-generated". Future LLM implements same interface.
+- restore-activity.ts — forward-only restore. Reapply changes.before through EXISTING update endpoints. NEVER reuse buildProductFormData/buildStoreUpdateFormData (destructive clear-flags). Only changed fields in FormData.
+- RESTORABLE_KINDS: product/store/member/receipt_settings/promotion
+- Related activities: per-drawer useQuery on resource_id (not limited to current page)
+- Reuses: DrawerShell, ReportKpiCard, ConfirmModal — do NOT rebuild them
+
+---
+
+## Finance / Revenue Rules
+
+- Loans (ยืมสินค้า): type='loan' in credit_sales. NOT revenue. Always exclude from finance aggregates.
+- Documents (paperwork) ≠ revenue. Only sales table drives revenue figures.
+- Credit sales (type='credit') = real AR. Loans = stock-borrow only.
+- notLoanSaleSQL: NOT EXISTS (SELECT 1 FROM credit_sales cs WHERE cs.sale_id = s.id AND cs.type = 'loan') — this must be applied in any new finance query too
+
+---
+
+## Server-Side Pagination Pattern with Separate Stats Query
+
+When a list uses server-side pagination (limit/page params to backend):
+- Main query: paginated (limit=pageSize, page=currentPage) — for DISPLAY only
+- Stats query: separate useQuery with limit=9999, staleTime:30_000 — for counts/KPIs only
+- NEVER compute stats from the paginated results (will be wrong on page 2+)
+- See stock-manager.tsx allProductsQuery for the reference implementation
+
+---
+
+## Document Rules
+
+- Documents = paperwork only. statuses NOT counted in revenue/finance.
+- PDF must use stored totals (toDocData()) — NEVER recompute VAT (causes discount-omitted + VAT-on-pre-discount bug)
+- Copy-set: ?copy=N param, BFF must forward it
+- Tax Invoice creation: POST /sales/:id/documents { type: "TAX_INVOICE" }
+
+---
+
+## Migration Reference (latest)
+
+| Migration | What |
+|-----------|------|
+| 016 | activity_logs table |
+| 019 | users.card_settings JSONB |
+| 020 | expenses table |
+| 033-035 | receive flow + default_location_id + auto-resolve |
+| 041-042 | location-aware POS deduction + idempotency |
+| 043 | ready_stock/storage_stock view |
+| 046 | products.deleted_at (soft-delete) |
+| 050 | customer shipping address |
+| 052 | sale_returns + sale_return_items + returned_quantity |
+| 054 | activity_logs.changes JSONB |
+| 055 | TAX_INVOICE CreateFromSale |
+
 <!-- END:nextjs-agent-rules -->
 
 ## Activity Center (`components/activity-logs/`)
@@ -215,3 +300,10 @@ restore). Key pieces:
 - Reuses `DrawerShell`, `ReportKpiCard`, `ConfirmModal` — don't rebuild them.
 - All strings come from `dictionary.activityLogs` (th + en). Server pagination is
   the scale mechanism (no client virtual scroll).
+
+## Doc Update Reminder (Auto)
+At end of every Claude session that modifies this project:
+1. Update memory/sessions/ with session summary
+2. Update D:/POS/pos-obsidain-knowladge/POS/Features/<relevant>.md
+3. Update 00-MOC/POS Features MOC.md Feature Status table
+4. Update this AGENTS.md if new shared components / patterns added
