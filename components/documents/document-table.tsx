@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Info, Loader2, Package, Printer, Send, Trash2, X } from "lucide-react";
-import type { DocumentListItem, DocumentStatus, PaymentStatus } from "@/types/document";
+import { Loader2, Package, Printer, Send, Trash2, X } from "lucide-react";
+import type { DocumentListItem, DocumentStatus } from "@/types/document";
 import { getDocumentPrintHtml } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { DocumentTypeBadge } from "./document-type-badge";
@@ -19,10 +19,6 @@ type Dict = {
   colAmount: string;
   colStatus: string;
   colPaymentStatus: string;
-  colStatusHelp?: string;
-  colPaymentStatusHelp?: string;
-  paymentToggleHint?: string;
-  paymentUpdateSuccess?: string;
   colActions: string;
   showing: string;
   of: string;
@@ -99,7 +95,6 @@ type Props = {
   onLimitChange: (limit: number) => void;
   onBulkDelete: () => void;
   onBulkStatus: (status: DocumentStatus) => void;
-  onSetPaymentStatus: (id: string, status: PaymentStatus) => void;
   onClearSelection: () => void;
   onCreateDocument: () => void;
   isBulkPending?: boolean;
@@ -107,19 +102,6 @@ type Props = {
 
 function fmt(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// Column header with a hover ⓘ tooltip explaining what the status means.
-function ColHeaderInfo({ label, tip }: { label: string; tip: string }) {
-  return (
-    <span className="group relative inline-flex items-center gap-1">
-      {label}
-      <Info className="h-3.5 w-3.5 cursor-help text-slate-400" />
-      <span className="pointer-events-none absolute left-0 top-full z-30 mt-1.5 w-64 whitespace-normal rounded-lg bg-slate-800 px-3 py-2 text-xs font-normal normal-case leading-relaxed text-white opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100">
-        {tip}
-      </span>
-    </span>
-  );
 }
 
 function fmtDate(s: string) {
@@ -133,7 +115,7 @@ export function DocumentTable({
   selectedDocId, selectedIds,
   onSelectDoc, onToggleId, onToggleAll,
   onPageChange, onLimitChange,
-  onBulkDelete, onBulkStatus, onSetPaymentStatus, onClearSelection, onCreateDocument,
+  onBulkDelete, onBulkStatus, onClearSelection, onCreateDocument,
   isBulkPending,
 }: Props) {
   const [bulkPrinting, setBulkPrinting] = useState(false);
@@ -273,12 +255,8 @@ export function DocumentTable({
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDate}</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDueDate}</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colAmount}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <ColHeaderInfo label={d.colStatus} tip={d.colStatusHelp ?? ""} />
-                </th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <ColHeaderInfo label={d.colPaymentStatus} tip={d.colPaymentStatusHelp ?? ""} />
-                </th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colStatus}</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colPaymentStatus}</th>
                 <th className="w-28 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colActions}</th>
               </tr>
             </thead>
@@ -325,11 +303,7 @@ export function DocumentTable({
                     <DocumentStatusBadge status={doc.status} dict={d} />
                   </td>
                   <td className="px-4 py-3">
-                    <PaymentStatusBadge
-                      status={doc.payment_status}
-                      dict={d}
-                      onCycle={(next) => onSetPaymentStatus(doc.id, next)}
-                    />
+                    <PaymentStatusBadge status={doc.payment_status} dict={d} />
                   </td>
                   <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                     <DocumentRowActions

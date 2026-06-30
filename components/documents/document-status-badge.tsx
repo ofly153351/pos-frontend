@@ -1,12 +1,7 @@
 import type { DocumentStatus, PaymentStatus } from "@/types/document";
 
 type DocDict = { statusDraft: string; statusPending: string; statusOverdue: string; statusCompleted: string; statusCancelled: string };
-type PayDict = { paymentUnpaid: string; paymentPartial: string; paymentPaid: string; paymentToggleHint?: string };
-
-// One-click cycle for the quick toggle: unpaid/partial → paid → unpaid.
-function nextPaymentStatus(current: PaymentStatus): PaymentStatus {
-  return current === "PAID" ? "UNPAID" : "PAID";
-}
+type PayDict = { paymentUnpaid: string; paymentPartial: string; paymentPaid: string };
 
 const DOC_STATUS: Record<DocumentStatus, { className: string }> = {
   DRAFT:     { className: "bg-slate-100 text-slate-500" },
@@ -35,36 +30,14 @@ export function DocumentStatusBadge({ status, dict }: { status: DocumentStatus; 
   );
 }
 
-export function PaymentStatusBadge({
-  status,
-  dict,
-  onCycle,
-}: {
-  status: PaymentStatus;
-  dict: PayDict;
-  onCycle?: (next: PaymentStatus) => void;
-}) {
+export function PaymentStatusBadge({ status, dict }: { status: PaymentStatus; dict: PayDict }) {
   const cfg = PAY_STATUS[status];
   const label: Record<PaymentStatus, string> = {
     UNPAID: dict.paymentUnpaid, PARTIAL: dict.paymentPartial, PAID: dict.paymentPaid,
   };
-  const base = `inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.className}`;
-
-  if (!onCycle) {
-    return <span className={base}>{label[status]}</span>;
-  }
-  // Clickable quick toggle — stop row-selection from firing.
   return (
-    <button
-      type="button"
-      title={dict.paymentToggleHint ?? "คลิกเพื่อสลับสถานะชำระเงิน"}
-      onClick={(e) => {
-        e.stopPropagation();
-        onCycle(nextPaymentStatus(status));
-      }}
-      className={`${base} cursor-pointer transition hover:brightness-95 hover:ring-2 hover:ring-violet-200`}
-    >
+    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}>
       {label[status]}
-    </button>
+    </span>
   );
 }

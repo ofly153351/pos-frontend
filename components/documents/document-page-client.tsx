@@ -9,20 +9,17 @@ import { getCurrentStoreId } from "@/lib/store-storage";
 import {
   bulkDocumentAction,
   getDocuments,
-  updateDocumentPaymentStatus,
 } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
-import type { DocumentListQuery, DocumentStatus, DocumentType, PaymentStatus } from "@/types/document";
+import type { DocumentListQuery, DocumentStatus, DocumentType } from "@/types/document";
 
 import { DocumentFilterBar } from "./document-filter-bar";
 import { DocumentStatsCards } from "./document-stats-cards";
-import { DocumentStatusHelp } from "./document-status-help";
 import { DocumentTable } from "./document-table";
 import { DocumentPreviewPanel } from "./document-preview-panel";
 import { CreateDocumentModal } from "./create-document-modal";
 import { SalesHistoryManager } from "@/components/sales/sales-history-manager";
 import type { SalesHistoryDict } from "@/components/sales/sales-history-dict";
-import { type DateFilterValue, resolveDateQuery } from "@/components/shared/date-range-filter";
 
 type DocumentDict = {
   title: string;
@@ -61,10 +58,6 @@ type DocumentDict = {
   print: string;
   send: string;
   changeStatus: string;
-  statusHelpTitle?: string;
-  statusHelpBody?: string;
-  statusHelpCredit?: string;
-  statusHelpDismiss?: string;
   delete: string;
   cancelSelection: string;
   colDocumentNo: string;
@@ -115,10 +108,6 @@ type DocumentDict = {
   deleteError: string;
   statusUpdateSuccess: string;
   statusUpdateError: string;
-  paymentUpdateSuccess?: string;
-  colStatusHelp?: string;
-  colPaymentStatusHelp?: string;
-  paymentToggleHint?: string;
   noDocuments: string;
   noDocumentsHint: string;
   confirmDelete: string;
@@ -221,7 +210,6 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
 
-  const [dateFilter, setDateFilter] = useState<DateFilterValue>({ preset: "all" });
   const [query, setQuery] = useState<DocumentListQuery>(DEFAULT_QUERY);
 
   // The "ใบเสร็จร้านค้า" tab reuses <SalesHistoryManager> (see render below), so the
@@ -248,14 +236,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
     setQuery((q) => ({ ...q, ...patch }));
   }, []);
 
-  const applyDateFilter = useCallback((value: DateFilterValue) => {
-    setDateFilter(value);
-    const next = resolveDateQuery(value);
-    setQuery((q) => ({ ...q, ...next, page: 1 }));
-  }, []);
-
   const resetFilters = useCallback(() => {
-    setDateFilter({ preset: "all" });
     setQuery(DEFAULT_QUERY);
     setSelectedIds(new Set());
   }, []);
@@ -305,16 +286,6 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
         toast.error(d.statusUpdateError);
       }
     });
-  }
-
-  async function handleSetPaymentStatus(id: string, status: PaymentStatus) {
-    try {
-      await updateDocumentPaymentStatus(id, { payment_status: status });
-      toast.success(d.paymentUpdateSuccess ?? d.statusUpdateSuccess);
-      queryClient.invalidateQueries({ queryKey: ["documents"] });
-    } catch {
-      toast.error(d.statusUpdateError);
-    }
   }
 
   function handleModalSuccess() {
@@ -521,13 +492,9 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
             {/* Filter bar */}
             <DocumentFilterBar
               dict={d}
-              salesDict={salesDict}
               query={query}
-              dateFilter={dateFilter}
-              onDateFilterChange={applyDateFilter}
               onChange={updateQuery}
               onReset={resetFilters}
-              locale={locale}
             />
             <DocumentStatsCards
               dict={d}
@@ -538,22 +505,6 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
               onCreateDocument={(type) => setCreateModalType(type)}
             />
           </>
-        )}
-
-        {/* Explainer: statuses are a self-tracking aid, not finance */}
-        {!isReceiptMode && (
-          <DocumentStatusHelp
-            title={d.statusHelpTitle ?? "สถานะเอกสารใช้ติดตามเอง"}
-            body={
-              d.statusHelpBody ??
-              "“สถานะเอกสาร” และ “สถานะชำระเงิน” ไว้ติดตามงานเอกสารด้วยตัวคุณเอง — ไม่กระทบยอดขายหรือรายงานการเงิน ยอดขายจริงนับจากหน้าขายเท่านั้น"
-            }
-            creditHint={
-              d.statusHelpCredit ??
-              "ต้องการระบบลูกหนี้/ติดตามเก็บเงินจริง ใช้เมนู “ขายเชื่อ / ยืม”"
-            }
-            dismissLabel={d.statusHelpDismiss ?? "เข้าใจแล้ว"}
-          />
         )}
 
         {/* Body: documents table + preview panel */}
@@ -574,7 +525,6 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
             onLimitChange={(limit) => updateQuery({ limit, page: 1 })}
             onBulkDelete={handleBulkDelete}
             onBulkStatus={handleBulkStatus}
-            onSetPaymentStatus={handleSetPaymentStatus}
             onClearSelection={() => setSelectedIds(new Set())}
             onCreateDocument={() => setCreateModalType("INVOICE")}
             isBulkPending={isBulkPending}

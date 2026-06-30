@@ -149,10 +149,6 @@ export interface UpdateDocumentStatusPayload {
   status: DocumentStatus;
 }
 
-export interface UpdateDocumentPaymentStatusPayload {
-  payment_status: PaymentStatus;
-}
-
 export interface BulkActionPayload {
   ids: string[];
   action: "DELETE" | "SET_STATUS";

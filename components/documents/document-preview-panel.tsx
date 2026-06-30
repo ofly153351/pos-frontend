@@ -11,24 +11,6 @@ import type { DocumentType } from "@/types/document";
 
 import { DocumentTimeline } from "./document-timeline";
 
-// Copy print options per document type, mirroring the backend doccopy.SpecFor.
-// value -1 = whole set; 0..n = a single copy (0-based).
-function copyOptionsFor(t?: DocumentType): { value: number; label: string }[] {
-  if (t === "DELIVERY_ORDER") {
-    return [
-      { value: -1, label: "พิมพ์ทั้งชุด (3 ใบ)" },
-      { value: 0, label: "ต้นฉบับ — ลูกค้า" },
-      { value: 1, label: "สำเนา — ลูกค้า (ตั้งหนี้)" },
-      { value: 2, label: "สำเนา — บริษัท" },
-    ];
-  }
-  return [
-    { value: -1, label: "พิมพ์ทั้งชุด (2 ใบ)" },
-    { value: 0, label: "ต้นฉบับ — ลูกค้า" },
-    { value: 1, label: "สำเนา — บริษัท" },
-  ];
-}
-
 type Dict = {
   previewTitle: string;
   viewFull: string;
@@ -39,7 +21,6 @@ type Dict = {
   share: string;
   comingSoon: string;
   pdfError: string;
-  pdfHint?: string;
   typeInvoice: string;
   typeReceipt: string;
   typeTaxInvoice: string;
@@ -104,16 +85,10 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   });
 
   const [isPdfLoading, startPdfTransition] = useTransition();
-  // Which copy to print/download: -1 = whole set (default), 0..n = a single copy.
-  const [copySel, setCopySel] = useState(-1);
-  const copyOptions = copyOptionsFor(documentType);
   function handleDownloadPdf() {
     startPdfTransition(async () => {
       try {
-        // The /pdf endpoint renders the SAME unified HTML as the preview via headless
-        // Chrome, so the downloaded file matches the on-screen document exactly.
-        // copySel selects one copy or the whole set.
-        const blob = await getDocumentPdfBlob(documentId, undefined, copySel);
+        const blob = await getDocumentPdfBlob(documentId);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -123,31 +98,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
         a.remove();
         URL.revokeObjectURL(url);
       } catch {
-        // Server-side PDF unavailable (e.g. no Chrome on the host). Fall back to the
-        // browser's print → "Save as PDF" of the SAME HTML so the user still gets a
-        // matching PDF instead of a hard failure.
-        try {
-          const freshHtml = await getDocumentPrintHtml(documentId, copySel);
-          const titled = freshHtml.replace(
-            /<title>[\s\S]*?<\/title>/i,
-            `<title>${documentNo || documentId}</title>`,
-          );
-          const blobUrl = URL.createObjectURL(
-            new Blob([titled], { type: "text/html;charset=utf-8" }),
-          );
-          const frame = document.createElement("iframe");
-          frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
-          document.body.appendChild(frame);
-          frame.src = blobUrl;
-          frame.onload = () => {
-            frame.contentWindow?.focus();
-            frame.contentWindow?.print();
-            setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
-          };
-          toast.info(dict.pdfHint ?? "เลือก \"บันทึกเป็น PDF\" ในหน้าต่างพิมพ์");
-        } catch {
-          toast.error(dict.pdfError);
-        }
+        toast.error(dict.pdfError);
       }
     });
   }
@@ -249,7 +200,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
 
   function handlePrint() {
     startOpenTransition(async () => {
-      const freshHtml = await getDocumentPrintHtml(documentId, copySel);
+      const freshHtml = await getDocumentPrintHtml(documentId);
       const blob = new Blob([freshHtml], { type: "text/html;charset=utf-8" });
       const blobUrl = URL.createObjectURL(blob);
       const frame = document.createElement("iframe");
@@ -401,17 +352,6 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   onClose={() => setConfirmCancel(false)}
                 />
               )}
-              {/* Copy selector — applies to both Print and PDF (Original/Copy set) */}
-              <select
-                value={copySel}
-                onChange={(e) => setCopySel(Number(e.target.value))}
-                title="เลือกชุดสำเนาที่จะพิมพ์/ดาวน์โหลด"
-                className="rounded-lg border border-violet-200 bg-white px-2 py-1.5 text-xs font-medium text-violet-700 outline-none transition-colors hover:bg-violet-50 focus:border-violet-400"
-              >
-                {copyOptions.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
               <button
                 type="button"
                 disabled={isPdfLoading}
