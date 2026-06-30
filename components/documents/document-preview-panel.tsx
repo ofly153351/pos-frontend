@@ -123,7 +123,31 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
         a.remove();
         URL.revokeObjectURL(url);
       } catch {
-        toast.error(dict.pdfError);
+        // Server-side PDF unavailable (e.g. no Chrome on the host). Fall back to the
+        // browser's print → "Save as PDF" of the SAME HTML so the user still gets a
+        // matching PDF instead of a hard failure.
+        try {
+          const freshHtml = await getDocumentPrintHtml(documentId, copySel);
+          const titled = freshHtml.replace(
+            /<title>[\s\S]*?<\/title>/i,
+            `<title>${documentNo || documentId}</title>`,
+          );
+          const blobUrl = URL.createObjectURL(
+            new Blob([titled], { type: "text/html;charset=utf-8" }),
+          );
+          const frame = document.createElement("iframe");
+          frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
+          document.body.appendChild(frame);
+          frame.src = blobUrl;
+          frame.onload = () => {
+            frame.contentWindow?.focus();
+            frame.contentWindow?.print();
+            setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
+          };
+          toast.info(dict.pdfHint ?? "เลือก \"บันทึกเป็น PDF\" ในหน้าต่างพิมพ์");
+        } catch {
+          toast.error(dict.pdfError);
+        }
       }
     });
   }
