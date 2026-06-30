@@ -67,6 +67,7 @@ export default async function WorkspaceLayout({
         station: dictionary.stock.shell.station,
         suppliers: dictionary.purchasing.suppliers,
         creditSales: dictionary.stock.shell.creditSales,
+        help: dictionary.stock.shell.help,
         notificationsLowStock: dictionary.stock.shell.notificationsLowStock,
         notificationsLowStockDesc: dictionary.stock.shell.notificationsLowStockDesc,
         notificationsNone: dictionary.stock.shell.notificationsNone,

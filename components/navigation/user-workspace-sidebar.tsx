@@ -11,6 +11,7 @@ import {
   Clock3,
   CreditCard,
   FileText,
+  HelpCircle,
   History,
   LayoutDashboard,
   Layers3,
@@ -76,6 +77,7 @@ type UserWorkspaceSidebarProps = {
     warehouseOverview: string;
     suppliers: string;
     transactions: string;
+  help: string;
   };
   onOpenCashier?: () => void;
   shell: {
@@ -232,6 +234,8 @@ export function UserWorkspaceSidebar({
   const isSettingsRoute = (pathname === settingsBaseHref || pathname.startsWith(`${settingsBaseHref}/`)) && !pathname.startsWith(storageLocationsHref);
   const profileHref = `/${locale}/profile`;
   const isProfileRoute = pathname === profileHref || pathname.startsWith(`${profileHref}/`);
+  const helpHref = `/${locale}/help`;
+  const isHelpRoute = pathname === helpHref || pathname.startsWith(`${helpHref}/`);
   const isProductsRoute =
     pathname === productsBaseHref ||
     pathname === productsCategoriesHref ||
@@ -794,6 +798,25 @@ export function UserWorkspaceSidebar({
             <UserCog className="h-4 w-4" />
           </span>
           {!collapsed ? <span>{labels.editProfile}</span> : null}
+        </Link>
+
+        {/* Help — available to every role */}
+        <Link
+          href={helpHref}
+          className={`flex items-center gap-3 px-4 py-3 text-sm ${
+            isHelpRoute
+              ? "border-l-[3px] border-violet-400 bg-violet-900 font-bold text-white rounded-r-lg"
+              : "font-medium text-violet-300 hover:bg-violet-900/50 hover:text-white hover:rounded-r-lg"
+          } ${collapsed ? "justify-center px-2" : ""}`}
+        >
+          <span
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${
+              isHelpRoute ? "bg-white/15 text-white" : "bg-violet-900/60 text-violet-300"
+            }`}
+          >
+            <HelpCircle className="h-4 w-4" />
+          </span>
+          {!collapsed ? <span>{labels.help}</span> : null}
         </Link>
       </nav>
 
