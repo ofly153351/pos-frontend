@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getRelatedDocuments } from "@/services/documents";
+import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { DocumentType } from "@/types/document";
@@ -110,27 +110,18 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   function handleDownloadPdf() {
     startPdfTransition(async () => {
       try {
-        // Render the SAME unified HTML as the preview/print, then let the browser
-        // produce the PDF via its print dialog ("Save as PDF"). This guarantees the
-        // PDF matches the on-screen document exactly — the app-wide pattern. The
-        // standalone gofpdf renderer drew a different layout and is no longer used here.
-        const freshHtml = await getDocumentPrintHtml(documentId, copySel);
-        const titled = freshHtml.replace(
-          /<title>[\s\S]*?<\/title>/i,
-          `<title>${documentNo || documentId}</title>`,
-        );
-        const blob = new Blob([titled], { type: "text/html;charset=utf-8" });
-        const blobUrl = URL.createObjectURL(blob);
-        const frame = document.createElement("iframe");
-        frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
-        document.body.appendChild(frame);
-        frame.src = blobUrl;
-        frame.onload = () => {
-          frame.contentWindow?.focus();
-          frame.contentWindow?.print();
-          setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
-        };
-        toast.info(dict.pdfHint ?? "เลือก \"บันทึกเป็น PDF\" ในหน้าต่างพิมพ์");
+        // The /pdf endpoint renders the SAME unified HTML as the preview via headless
+        // Chrome, so the downloaded file matches the on-screen document exactly.
+        // copySel selects one copy or the whole set.
+        const blob = await getDocumentPdfBlob(documentId, undefined, copySel);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${documentNo || documentId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
       } catch {
         toast.error(dict.pdfError);
       }
