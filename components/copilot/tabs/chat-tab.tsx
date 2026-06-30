@@ -1,7 +1,12 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback } from "react"
-import { Send, MessageSquare } from "lucide-react"
+import {
+  Send, MessageSquare, Sparkles, ChevronRight,
+  LayoutDashboard, CircleDollarSign, Wallet, Boxes, Users,
+  CreditCard, FileText, Package, BarChart3, BookOpen,
+  type LucideIcon,
+} from "lucide-react"
 import { useCopilot } from "../copilot-provider"
 import { getActivityLogs, type ActivityLogEntry } from "@/services/activity-logs"
 import { HELP_CATEGORIES, type HelpTopic } from "@/lib/help/help-topics"
@@ -604,11 +609,11 @@ function buildSakuResponse(
   // never fire for "สวัสดี". English keeps `\b` to avoid matching "history" etc.
   const social = q.trim()
   if (social.length <= 25 &&
-      (/^(สวัสดี|หวัดดี|วัสดี|ดีครับ|ดีค่ะ|โย่)/.test(social) || /^(hello|hi|hey|yo)\b/i.test(social))) {
+      (/^(สวัสดี|หวัดดี|วัสดี|ดีครับ|ดีค่ะ|โย่|ว่าไง|อรุณสวัสดิ์|อรุณสวัสดิ)/.test(social) || /^(hello|hi|hey|yo)\b/i.test(social))) {
     return buildGreeting(lang)
   }
-  if (social.length <= 25 &&
-      (/^(ขอบคุณ|ขอบใจ|ขอบพระคุณ)/.test(social) || /^(thank|thx|ty)\b/i.test(social))) {
+  // Thanks may be wrapped in chatter ("โอเคขอบคุณครับเดี๋ยวลองดู") — match anywhere, short.
+  if ((social.length <= 35 && /ขอบคุณ|ขอบใจ|ขอบพระคุณ/.test(social)) || /^(thank|thx|ty)\b/i.test(social)) {
     return buildThanks(lang)
   }
 
@@ -633,9 +638,11 @@ function buildSakuResponse(
     return { sections, followUps: generateFollowUps('consequence', data, lang), context: { ...prevCtx, lastTopic: 'consequence' } }
   }
 
-  // ── 4. Urgency: "ควรทำวันนี้ไหม" ──
-  if (q.includes('ควรทำวันนี้') || q.includes('เร่งด่วน') || q.includes('ด่วนไหม') ||
-      q.includes('should i do this today') || q.includes('urgent') || q.includes('how urgent')) {
+  // ── 4. Urgency: "ควรทำวันนี้ไหม" — only when there's a referenced item to assess.
+  // Without context, "มีเรื่องด่วนไหม" is a fresh priorities question, not urgency.
+  if (prevCtx.lastItems.length > 0 &&
+      (q.includes('ควรทำวันนี้') || q.includes('เร่งด่วน') ||
+       q.includes('should i do this today') || q.includes('how urgent'))) {
     const sections = buildUrgency(data, prevCtx, lang)
     return { sections, followUps: generateFollowUps('urgency', data, lang), context: { ...prevCtx, lastTopic: 'urgency' } }
   }
@@ -654,14 +661,24 @@ function buildSakuResponse(
   }
 
   // ── 5b. Best sellers (catch BEFORE sales/profit so "ขายดี" isn't read as revenue) ──
-  if (q.includes('ขายดี') || q.includes('ขายเก่ง') || q.includes('best sell') || q.includes('best-sell') ||
-      q.includes('top product') || q.includes('top sell') || q.includes('top seller') || q.includes('bestsell')) {
+  // "ขายดีมั้ย / ขายดีกว่า / ขายดียัง" = sales-PERFORMANCE question (→ sales), not a
+  // best-seller ranking. Exclude those particles from the best-seller catch.
+  const bestKw =
+    (q.includes('ขายดี') || q.includes('ขายเก่ง') || q.includes('ขายดิบ') || q.includes('best sell') || q.includes('best-sell') ||
+     q.includes('selling best') || q.includes('sell best') || q.includes('best selling') || q.includes('top product') ||
+     q.includes('top sell') || q.includes('top seller') || q.includes('bestsell')) &&
+    !/ขายดี(ไหม|มั้ย|รึเปล่า|ป่าว|กว่า|ยัง|มัย)/.test(q) &&
+    !/เพิ่มยอด|ยอดโต|โตขึ้น/.test(q)
+  if (bestKw || q.includes('คนซื้อเยอะ') || q.includes('ฮิต') || (q.includes('ทำเงิน') && q.includes('มากสุด'))) {
     return buildBestSellers(data, lang)
   }
 
   // ── 6. Profit / finance (check BEFORE priorities so "กำไรวันนี้" doesn't match วันนี้) ──
   if (q.includes('profit') || q.includes('finance') || q.includes('margin') || q.includes('expense') ||
-      q.includes('กำไร') || q.includes('การเงิน') || q.includes('ขาดทุน') || q.includes('ค่าใช้จ่าย')) {
+      q.includes('กำไร') || q.includes('กำไล') || q.includes('การเงิน') || q.includes('ขาดทุน') || q.includes('ค่าใช้จ่าย') ||
+      q.includes('มาร์จิน') || q.includes('จ่ายค่า') || q.includes('รายจ่าย') || q.includes('คืนทุน') ||
+      q.includes('ค่าเช่า') || q.includes('ค่าน้ำ') || q.includes('ค่าไฟ') ||
+      q.includes('losing money') || q.includes('lose money') || q.includes('loss') || q.includes('net profit')) {
     const askingToday = q.includes('วันนี้') || q.includes('today')
     const sections: SakuSection[] = []
 
@@ -705,11 +722,17 @@ function buildSakuResponse(
   }
 
   // ── 7. Sales (check before priorities so "ยอดขายวันนี้" works) ──
-  if (q.includes('sales') || q.includes('revenue') || q.includes('ยอดขาย') ||
-      q.includes('เงินเข้า') || q.includes('รายรับ') || q.includes('ยอดวันนี้') || q.includes('ได้เงิน') ||
-      q.includes('เทียบ') || q.includes('เปรียบเทียบ') || q.includes('compare') ||
+  if (q.includes('sales') || q.includes('revenue') ||
+      // "ยอด"/"ยอดขาย" → sales, but NOT growth phrasing ("เพิ่มยอดขาย", "ยอดโต" → opportunities).
+      (q.includes('ยอด') && !q.includes('โต') && !q.includes('เพิ่มยอด') && !q.includes('โอกาส')) ||
+      q.includes('make') || q.includes('made') || q.includes('earn') || q.includes('takings') ||
+      q.includes('เงินเข้า') || q.includes('รายรับ') || q.includes('ยอดวันนี้') ||
+      (q.includes('ได้เงิน') && !q.includes('หนี้') && !q.includes('ทวง')) ||
+      ((q.includes('เทียบ') || q.includes('เปรียบเทียบ') || q.includes('compare')) &&
+        !q.includes('ซัพ') && !q.includes('supplier') && !q.includes('ราคาทุน') && !q.includes('ต้นทุน')) ||
       (q.includes('ขาย') && !q.includes('ขาดทุน') && !q.includes('จัดซื้อ') &&
-        !q.includes('ขายไม่ออก') && !q.includes('ขายไม่ได้') && !q.includes('ขายไม่ดี'))) {
+        !q.includes('ขายไม่ออก') && !q.includes('ขายไม่ได้') && !q.includes('ขายไม่ดี') && !q.includes('ขายไม่ค่อย') &&
+        !q.includes('ขายแย่') && !q.includes('เพิ่มยอด') && !q.includes('โตขึ้น'))) {
     const sections: SakuSection[] = [
       sec('📊', lang === 'en' ? 'Sales (7d)' : 'ยอดขาย 7 วัน',
         `${lang === 'en' ? 'Revenue' : 'ยอด'}: ${fmtMoney(s.revenue)} (${pctStr(s.revenueChange)})`,
@@ -735,10 +758,13 @@ function buildSakuResponse(
   }
 
   // ── 8. Today's priorities ──
-  if (q.includes('ทำอะไร') || q.includes('ทำอะไรก่อน') || q.includes('ควรทำ') ||
-      q.includes('วันนี้') || q.includes('สำคัญ') || q.includes('โฟกัส') || q.includes('เน้น') ||
+  // NB: bare "วันนี้" intentionally NOT a trigger — it co-occurs with sales/aging/etc
+  // ("เก็บเงินวันนี้", "ใครค้างวันนี้"); require an explicit do/urgent word instead.
+  if (q.includes('ทำอะไร') || q.includes('ทำอะไรก่อน') || q.includes('ควรทำ') || q.includes('ต้องทำ') ||
+      q.includes('สำคัญ') || q.includes('โฟกัส') || q.includes('เน้น') || q.includes('ด่วน') ||
+      q.includes('เริ่มจาก') || q.includes('เริ่มตรงไหน') || q.includes('รีบ') ||
       q.includes('what should') || q.includes('to do') || q.includes('today') ||
-      q.includes('priority') || q.includes('priorities') || q.includes('focus')) {
+      q.includes('priority') || q.includes('priorities') || q.includes('focus') || q.includes('urgent')) {
     if (!de?.topPriority) {
       return {
         sections: [sec('✅', '', lang === 'en' ? 'All clear! Nothing urgent.' : 'ทำครบแล้ว ไม่มีเรื่องด่วนครับ')],
@@ -777,12 +803,15 @@ function buildSakuResponse(
   }
 
   // ── 7. Overview / health ──
-  if (q.includes('health') || q.includes('score') || q.includes('overview') ||
+  if (q.includes('health') || q.includes('score') || q.includes('overview') || q.includes('overall') ||
       q.includes('business') || q.includes('ภาพรวม') || q.includes('สุขภาพ') || q.includes('สรุป') ||
-      // Generic "เป็นยังไง/เป็นไง" → overview ONLY when no domain word is present, so
-      // "จัดซื้อเป็นไง" / "สต็อกเป็นไง" still reach their own (later) sections.
+      q.includes('ร้านโอเค') || q.includes('ทุกอย่างโอเค') || q.includes('โอเคป่าว') || q.includes('โอเคมั้ย') || q.includes('โอเครึ') ||
+      // Generic "เป็นยังไง/เป็นไง" → overview ONLY when no domain word is present (so
+      // "จัดซื้อเป็นไง"/"สต็อกเป็นไง" reach their own sections) and not an off-topic
+      // subject ("อากาศเป็นไง", "หุ้นเป็นไง" → fall through to fallback).
       (/เป็นยังไง|เป็นไง|เป็นอย่างไร|สถานะร้าน/.test(q) &&
-        !/จัดซื้อ|ซื้อ|สต็อก|สินค้า|ลูกหนี้|หนี้|ค้าง|สั่ง|ซัพพลาย|ต้นทุน|stock|supplier|reorder/.test(q))) {
+        !/จัดซื้อ|ซื้อ|สต็อก|สินค้า|ลูกหนี้|หนี้|ค้าง|สั่ง|ซัพพลาย|ต้นทุน|stock|supplier|reorder/.test(q) &&
+        !/อากาศ|ฝน|หุ้น|ทอง|บอล|รถติด|น้ำมัน|ดอลลาร|หวย/.test(q))) {
     const items: ContextItem[] = []
     const sections: SakuSection[] = []
 
@@ -824,9 +853,12 @@ function buildSakuResponse(
   }
 
   // ── 8. Stock / inventory ──
-  if (q.includes('stock') || q.includes('inventory') || q.includes('สต็อก') || q.includes('สินค้า') || q.includes('หมด') || q.includes('ใกล้หมด') ||
+  if (q.includes('stock') || q.includes('inventory') || q.includes('สต็อก') || q.includes('สต๊อก') || q.includes('สตอค') || q.includes('สต๊อค') ||
+      (q.includes('สินค้า') && !q.includes('ต้นทุน') && !q.includes('ราคาทุน')) || (q.includes('หมด') && !q.includes('ทั้งหมด')) || q.includes('ใกล้หมด') ||
       q.includes('สั่งของ') || q.includes('ควรสั่ง') || q.includes('ต้องสั่ง') || q.includes('สั่งเพิ่ม') || q.includes('สั่งสินค้า') ||
-      q.includes('ขายไม่ออก') || q.includes('ขายไม่ได้') || q.includes('ขายไม่ดี') || q.includes('ค้างสต็อก')) {
+      q.includes('ขายไม่ออก') || q.includes('ขายไม่ได้') || q.includes('ขายไม่ดี') || q.includes('ขายไม่ค่อย') || q.includes('ขายแย่') ||
+      q.includes('ค้างสต็อก') || q.includes('ของค้าง') || q.includes('นอนสต็อก') ||
+      q.includes('เติมของ') || q.includes('เติมสต') || q.includes('ในคลัง') || q.includes('เหลือน้อย') || q.includes('reorder')) {
     const items: ContextItem[] = []
     const sections: SakuSection[] = []
 
@@ -868,6 +900,11 @@ function buildSakuResponse(
   if (q.includes('ลูกหนี้') || q.includes('ค้างชำระ') || q.includes('เก็บเงิน') || q.includes('เชื่อ') ||
       q.includes('ติดเงิน') || q.includes('ค้างเงิน') || q.includes('ติดหนี้') || q.includes('เป็นหนี้') ||
       q.includes('ค้างนาน') || q.includes('ค้างเยอะ') || q.includes('ใครค้าง') || q.includes('ค้างสุด') || q.includes('บิลค้าง') ||
+      (q.includes('ค้างจ่าย') && !q.includes('ซัพ') && !q.includes('supplier') && !q.includes('เจ้าหนี้')) ||
+      q.includes('ค้างอยู่') || q.includes('ยังค้าง') || q.includes('ทวง') || q.includes('ยังไม่จ่าย') || q.includes('ไม่จ่ายตัง') ||
+      (q.includes('หนี้') && !q.includes('เจ้าหนี้') && !q.includes('หุ้น')) ||
+      q.includes('เลยกำหนด') || q.includes('เกินกำหนด') || q.includes('กำหนดชำระ') || q.includes('เกินเครดิต') || q.includes('เครดิต') ||
+      q.includes('ยังไม่ได้เก็บ') || q.includes('ปล่อยเชื่อ') ||
       q.includes('debtor') || q.includes('overdue') || q.includes('collect') || q.includes('credit') || q.includes('aging') || q.includes('owe')) {
     if (money.totalOutstanding === 0 && money.totalOverdue === 0) {
       return {
@@ -913,8 +950,9 @@ function buildSakuResponse(
   }
 
   // ── 12. Purchasing ──
-  if (q.includes('ซื้อ') || q.includes('สั่งซื้อ') || q.includes('ซัพพลาย') || q.includes('ผู้จัด') ||
-      q.includes('ต้นทุน') || q.includes('ใบสั่งซื้อ') || q.includes('จัดซื้อ') ||
+  if ((q.includes('ซื้อ') && !q.includes('หุ้น')) || q.includes('สั่งซื้อ') || q.includes('ซัพพลาย') || q.includes('ซัพ') || q.includes('ผู้จัด') ||
+      q.includes('ต้นทุน') || q.includes('ราคาทุน') || q.includes('ใบสั่งซื้อ') || q.includes('จัดซื้อ') ||
+      q.includes('พึ่งเจ้า') || q.includes('เจ้าเดียว') || /\bpo\b/.test(q) ||
       q.includes('purchase') || q.includes('supplier') || q.includes('cost') || q.includes('buy') || q.includes('reorder')) {
     const items: ContextItem[] = []
     const sections: SakuSection[] = []
@@ -985,7 +1023,7 @@ function buildSakuResponse(
 
   // ── 14. Opportunities ──
   if (q.includes('opportunity') || q.includes('grow') || q.includes('improve') ||
-      q.includes('โอกาส') || q.includes('เติบโต')) {
+      q.includes('โอกาส') || q.includes('เติบโต') || q.includes('เพิ่มยอด') || q.includes('ยอดโต') || q.includes('โตขึ้น') || q.includes('ทำให้โต')) {
     if (opportunities.length === 0) {
       return {
         sections: [sec('💡', '', lang === 'en' ? 'No notable opportunities yet' : 'ยังไม่พบโอกาสเด่นตอนนี้')],
@@ -1057,7 +1095,7 @@ function actLabel(map: Record<string, { th: string; en: string }>, key: string, 
 }
 
 function isActivityIntent(q: string): boolean {
-  return /ใครแก้|ใครเปลี่ยน|ใครลบ|ใครทำ|ใครสร้าง|ใครปรับ|เปลี่ยนอะไร|แก้อะไร|มีอะไรเปลี่ยน|เปลี่ยนแปลงอะไร|กิจกรรม|ใครเป็นคน|who (changed|edited|deleted|made|created|adjusted)|what.*(chang|happen|edit)|recent (change|activit)|change ?log|activity log/i.test(q)
+  return /ใครแก้|ใครเปลี่ยน|ใครลบ|ใครทำ|ใครสร้าง|ใครปรับ|ใครไปแก้|ใครเข้ามาแก้|คนไหนแก้|มีคนลบ|คนลบ|เข้ามาแก้|ไปแก้|แก้ข้อมูล|แก้จำนวน|ยุ่งกับข้อมูล|เปลี่ยนอะไร|แก้อะไร|มีอะไรเปลี่ยน|เปลี่ยนแปลงอะไร|ประวัติการแก้|กิจกรรม|ใครเป็นคน|who (changed|edited|deleted|made|created|adjusted)|what.*(chang|happen|edit)|recent (change|activit)|change ?log|activity log/i.test(q)
 }
 
 function fmtVal(v: unknown): string {
@@ -1162,10 +1200,20 @@ function buildActivityResponse(q: string, acts: ActivityLogEntry[], lang: Lang):
 // ── Help Topic Search ──
 
 function isHelpIntent(q: string): boolean {
-  if (/วิธี|ขั้นตอน|คู่มือ|ช่วยสอน|สอนหน่อย|how to|how do|step.by.step|teach me|guide|tutorial/i.test(q)) return true
+  // Growth questions ("ทำไงให้ยอดโต", "เพิ่มยอดขายทำไงดี") are opportunities, not how-to.
+  if (/เพิ่มยอด|ยอดโต|โตขึ้น|ทำให้โต|เติบโต/.test(q)) return false
+  if (/วิธี|ขั้นตอน|คู่มือ|สอน|how to|how do|step.by.step|teach me|guide|tutorial/i.test(q)) return true
+  // Casual how-to: "ทำไง / ทำยังไง / ทำไงต่อ / ทำไงดี"
+  if (/ทำไง|ทำยังไง/.test(q)) return true
   // Generic "Xยังไง / Xอย่างไร" = how-to. Exclude "เป็นยังไง/เป็นไง" which asks
   // about store STATE (→ overview), not how to do something.
   if (/ยังไง|ยังงัย|อย่างไร/.test(q) && !/เป็นยังไง|เป็นไง|เป็นอย่างไร|เป็นยังงัย/.test(q)) return true
+  // "ทำ/ตั้ง X ตรงไหน / แบบไหน / ที่ไหน" = where-is-the-feature = how-to. Exclude
+  // "เริ่มจากตรงไหน" (= prioritization → priorities). Note: NOT "อันไหน/ตัวไหน"
+  // (those appear in data queries like "ตัวไหนสต็อกต่ำ").
+  if (/ตรงไหน|แบบไหน|ที่ไหน/.test(q) && !/เริ่ม/.test(q)) return true
+  // Capability / what-can-you-do
+  if (/ทำอะไรได้|ช่วยอะไรได้|ใช้ยังไง|ใช้งานยังไง|ทำงานยังไง/.test(q)) return true
   return false
 }
 
@@ -1360,6 +1408,86 @@ function SectionBlock({ section }: { section: SakuSection }) {
   )
 }
 
+// ── Empty-state suggestion cards (Edge-Copilot style) ──
+
+interface StarterCard {
+  Icon: LucideIcon
+  label: string
+  query: string
+}
+interface StarterGroup {
+  Icon: LucideIcon
+  title: string
+  cards: StarterCard[]
+}
+
+const STARTER_GROUPS: StarterGroup[] = [
+  {
+    Icon: BarChart3,
+    title: 'ดูข้อมูลร้าน',
+    cards: [
+      { Icon: LayoutDashboard, label: 'ภาพรวมร้านวันนี้', query: 'ภาพรวมร้าน' },
+      { Icon: CircleDollarSign, label: 'ยอดขายวันนี้', query: 'ยอดขายวันนี้' },
+      { Icon: Wallet, label: 'กำไรเท่าไหร่', query: 'กำไรเท่าไหร่' },
+      { Icon: Boxes, label: 'สินค้าใกล้หมด', query: 'สินค้าใกล้หมด' },
+      { Icon: Users, label: 'ลูกหนี้ค้างชำระ', query: 'ลูกหนี้ค้างเท่าไหร่' },
+    ],
+  },
+  {
+    Icon: BookOpen,
+    title: 'เรียนรู้การใช้งาน',
+    cards: [
+      { Icon: CreditCard, label: 'วิธีรับชำระเงิน', query: 'วิธีรับชำระเงิน' },
+      { Icon: FileText, label: 'วิธีเปิดบิลเชื่อ', query: 'วิธีเปิดบิลเชื่อ' },
+      { Icon: Package, label: 'วิธีเพิ่มสินค้า', query: 'วิธีเพิ่มสินค้า' },
+    ],
+  },
+]
+
+function EmptyState({ onPick }: { onPick: (q: string) => void }) {
+  return (
+    <div className="flex flex-col gap-5 px-1 py-3">
+      {/* Greeting hero */}
+      <div className="flex flex-col items-center gap-1.5 pt-2 text-center">
+        <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-violet-100">
+          <Sparkles className="h-6 w-6 text-violet-600" />
+        </span>
+        <p className="text-[15px] font-semibold text-slate-800">สวัสดีครับ</p>
+        <p className="text-[12px] leading-relaxed text-slate-500">
+          ถามข้อมูลร้าน หรือวิธีใช้งานระบบได้เลย
+        </p>
+      </div>
+
+      {/* Grouped suggestion cards */}
+      {STARTER_GROUPS.map(group => (
+        <div key={group.title} className="space-y-2">
+          <p className="flex items-center gap-1.5 px-1 text-[12px] font-medium text-slate-400">
+            <group.Icon className="h-3.5 w-3.5" />
+            {group.title}
+          </p>
+          <div className="space-y-1.5">
+            {group.cards.map(card => (
+              <button
+                key={card.query}
+                onClick={() => onPick(card.query)}
+                className="group flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition-colors hover:border-violet-300 hover:bg-violet-50"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 transition-colors group-hover:bg-violet-200">
+                  <card.Icon className="h-4 w-4" />
+                </span>
+                <span className="flex-1 text-[13px] font-medium text-slate-700 group-hover:text-violet-700">
+                  {card.label}
+                </span>
+                <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 group-hover:text-violet-400" />
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Component ──
 
 export function ChatTab() {
@@ -1484,11 +1612,15 @@ export function ChatTab() {
   const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant')
   const activeFollowUps = lastAssistant?.followUps ?? []
 
+  // Edge-Copilot-style empty state: shown until the first real exchange.
+  const showEmptyState = messages.length === 1 && messages[0].id === 'welcome'
+
   return (
     <div className="flex h-full flex-col">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto space-y-3 p-4">
-        {messages.map(m => (
+        {showEmptyState && <EmptyState onPick={send} />}
+        {!showEmptyState && messages.map(m => (
           <div key={m.id}>
             <div className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               {m.role === 'assistant' && (
@@ -1517,8 +1649,8 @@ export function ChatTab() {
         <div ref={endRef} />
       </div>
 
-      {/* Follow-up suggestion chips */}
-      {activeFollowUps.length > 0 && (
+      {/* Follow-up suggestion chips (hidden during the empty state — cards replace them) */}
+      {!showEmptyState && activeFollowUps.length > 0 && (
         <div className="flex flex-wrap gap-1.5 px-4 pb-2">
           {activeFollowUps.map(fu => (
             <button
