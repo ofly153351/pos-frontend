@@ -16,8 +16,12 @@ const labelStyle: CSSProperties = {
   textAlign: "center",
 };
 
+// justifyContent:center keeps the signing content centered INSIDE each 56mm column
+// (a fixed-width underline left-packed in the column would drift the visible group
+// off-centre even though the columns themselves are centered).
 const writeRowStyle: CSSProperties = {
   display: "flex",
+  justifyContent: "center",
   alignItems: "baseline",
   gap: "1.5mm",
   marginBottom: "2mm",
@@ -30,13 +34,15 @@ const writeLblStyle: CSSProperties = {
 };
 
 const lineStyle: CSSProperties = {
-  flex: 1,
+  width: "40mm",
+  flexShrink: 0,
   borderBottom: "1px solid #cbd5e1",
   paddingTop: "9mm",
 };
 
 const dateRowStyle: CSSProperties = {
   display: "flex",
+  justifyContent: "center",
   alignItems: "baseline",
   gap: "1mm",
   fontSize: "8pt",
