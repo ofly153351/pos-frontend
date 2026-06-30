@@ -102,18 +102,6 @@ export async function getRelatedDocuments(id: string): Promise<RelatedDocument[]
   return res.data.items ?? [];
 }
 
-export interface InvoicePDFParams {
-  customer_address?: string;
-  customer_tax_id?: string;
-  credit_term?: number;
-  reference_do?: string;
-  discount_percent?: number;
-  default_unit?: string;
-  bank_name?: string;
-  account_number?: string;
-  promptpay?: string;
-}
-
 export interface StatementPDFParams {
   customer_id: string;
   period_start?: string;
@@ -123,26 +111,21 @@ export interface StatementPDFParams {
   note?: string;
 }
 
+// The download PDF is rendered server-side from the SAME unified HTML as the
+// preview (headless Chrome) — no per-request layout params; only the copy index.
 // copy: 0-based copy index (Original=0, Company=last); omit or -1 for the whole set.
-export async function getDocumentPdfBlob(id: string, params?: InvoicePDFParams, copy?: number): Promise<Blob> {
-  const url = getDocumentPDFUrl(id, params, copy);
+export async function getDocumentPdfBlob(id: string, copy?: number): Promise<Blob> {
+  const url = getDocumentPDFUrl(id, copy);
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(`PDF fetch failed: ${res.status}`);
   return res.blob();
 }
 
-export function getDocumentPDFUrl(id: string, params?: InvoicePDFParams, copy?: number): string {
+export function getDocumentPDFUrl(id: string, copy?: number): string {
   const storeId = getCurrentStoreId();
   if (!storeId) throw new Error("No active store");
-  const qs = new URLSearchParams();
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== "") qs.set(k, String(v));
-    }
-  }
-  if (copy != null && copy >= 0) qs.set("copy", String(copy));
-  const q = qs.toString();
-  return `/api/stores/${storeId}/documents/${id}/pdf${q ? `?${q}` : ""}`;
+  const q = copy != null && copy >= 0 ? `?copy=${copy}` : "";
+  return `/api/stores/${storeId}/documents/${id}/pdf${q}`;
 }
 
 export interface WHTCertParams {

@@ -94,7 +94,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   function handleDownloadPdf() {
     startPdfTransition(async () => {
       try {
-        const blob = await getDocumentPdfBlob(documentId, undefined, copyIdx);
+        const blob = await getDocumentPdfBlob(documentId, copyIdx);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
