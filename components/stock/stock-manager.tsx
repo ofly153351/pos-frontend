@@ -136,7 +136,7 @@ export function StockManager({
       const stored = localStorage.getItem("stock-page-size");
       if (stored) {
         const parsed = parseInt(stored, 10);
-        if ([5, 10, 15, 25, 50, 100].includes(parsed)) return parsed;
+        if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 9999) return parsed;
       }
     }
     return 5;
@@ -302,6 +302,20 @@ export function StockManager({
     queryKey: ["stock", "products", isSearching ? "search" : productPage, isSearching ? "all" : productPageSize, sortBy],
   });
 
+  // Separate full-dataset query for KPI chips — always fetches all products so counts
+  // are correct regardless of the current page size or page number. Reuses the same
+  // data when already searching (main query already fetches everything).
+  const allProductsQuery = useQuery({
+    enabled: hasMounted && !isSearching,
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      const response = await listProducts({ limit: 9999, page: 1, sort_by: sortBy });
+      return response.data;
+    },
+    queryKey: ["stock", "products-all-stats", sortBy],
+    staleTime: 30_000,
+  });
+
   useEffect(() => {
     if (!productsQuery.data) return;
     const nextTotalPages = Math.max(productsQuery.data.total_pages ?? 1, 1);
@@ -314,6 +328,11 @@ export function StockManager({
   const productTotalPages = Math.max(productsQuery.data?.total_pages ?? 1, 1);
   const isProductsFetching = productsQuery.isFetching;
   const productsQueryError = productsQuery.error;
+
+  // Full product list for KPI chips. When searching, main query already has all results.
+  const allProductsForStats = isSearching
+    ? products
+    : (allProductsQuery.data?.items ?? []);
 
   if (!hasMounted) {
     return (
@@ -333,7 +352,8 @@ export function StockManager({
   }
 
   // Products matching all active filters EXCEPT stock-status (used for chip counts).
-  const productsForStatusCounts = products.filter((product) => {
+  // Uses the full-dataset query so counts are correct across all pages.
+  const productsForStatusCounts = allProductsForStats.filter((product) => {
     const keyword = search.trim().toLowerCase();
     if (selectedProductTypeId && product.product_type_id !== selectedProductTypeId) return false;
     const productUnitId = product.product_unit_id ?? product.unit_id;
@@ -353,7 +373,18 @@ export function StockManager({
     inactive: productsForStatusCounts.filter((p) => !p.is_active).length,
   };
 
-  const filteredProducts = productsForStatusCounts.filter((product) => {
+  // Display products come from the paginated query — server handles paging.
+  const filteredProducts = products.filter((product) => {
+    const keyword = search.trim().toLowerCase();
+    if (selectedProductTypeId && product.product_type_id !== selectedProductTypeId) return false;
+    const productUnitId = product.product_unit_id ?? product.unit_id;
+    if (selectedProductUnitId && productUnitId !== selectedProductUnitId) return false;
+    if (selectedProductBrandId && product.brand_id !== selectedProductBrandId) return false;
+    if (selectedLocationId && product.default_location_id !== selectedLocationId) return false;
+    if (selectedNoLocation && product.default_location_id) return false;
+    if (keyword) {
+      if (!product.name.toLowerCase().includes(keyword) && !(product.sku ?? "").toLowerCase().includes(keyword)) return false;
+    }
     if (selectedStockStatus === "active" && !product.is_active) return false;
     if (selectedStockStatus === "inactive" && product.is_active) return false;
     if (selectedStockStatus === "low_stock" && !isLowStockProduct(product)) return false;
@@ -361,12 +392,13 @@ export function StockManager({
     return true;
   });
 
+  // KPI chips use the full dataset so stats are accurate across all pages.
   const summaryStats = {
-    total: productTotal,
-    ready: filteredProducts.filter((p) => p.is_active && (p.total_stock ?? 0) > 0 && !isLowStockProduct(p)).length,
-    low: filteredProducts.filter(isLowStockProduct).length,
-    out: filteredProducts.filter((p) => (p.total_stock ?? 0) === 0).length,
-    value: filteredProducts.reduce((sum, p) => sum + (p.total_stock ?? 0) * (p.cost_price ?? 0), 0),
+    total: allProductsQuery.data?.total ?? productTotal,
+    ready: productsForStatusCounts.filter((p) => p.is_active && (p.total_stock ?? 0) > 0 && !isLowStockProduct(p)).length,
+    low: productsForStatusCounts.filter(isLowStockProduct).length,
+    out: productsForStatusCounts.filter((p) => (p.total_stock ?? 0) === 0).length,
+    value: productsForStatusCounts.reduce((sum, p) => sum + (p.total_stock ?? 0) * (p.cost_price ?? 0), 0),
   };
 
   const isCategoriesView = initialSection === "categories";

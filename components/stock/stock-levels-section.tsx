@@ -129,6 +129,18 @@ export function StockLevelsSection({
     { length: Math.max(endPage - startPage + 1, 0) },
     (_, index) => startPage + index,
   );
+  const PRESET_SIZES = [5, 10, 15, 25, 50, 100];
+  const ALL_SIZE = 9999;
+  const isPresetOrAll = PRESET_SIZES.includes(paginationPageSize) || paginationPageSize === ALL_SIZE;
+  const [showCustomInput, setShowCustomInput] = useState(!isPresetOrAll);
+  const [customRaw, setCustomRaw] = useState(String(paginationPageSize));
+
+  function applyCustomSize() {
+    const n = parseInt(customRaw, 10);
+    if (!Number.isNaN(n) && n >= 1 && n <= 9999) onPageSizeChange(n);
+    else setCustomRaw(String(paginationPageSize));
+  }
+
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [barcodingProduct, setBarcodingProduct] = useState<Product | null>(null);
   const [barcodeBatchProducts, setBarcodeBatchProducts] = useState<Product[] | null>(null);
@@ -606,15 +618,38 @@ export function StockLevelsSection({
             <select
               className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm md:text-[15px] font-semibold text-slate-700 outline-none transition focus:border-violet-300"
               id="stock-page-size"
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
-              value={paginationPageSize}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "custom") {
+                  setShowCustomInput(true);
+                  setCustomRaw(String(paginationPageSize));
+                } else {
+                  setShowCustomInput(false);
+                  onPageSizeChange(Number(val));
+                }
+              }}
+              value={showCustomInput ? "custom" : paginationPageSize}
             >
-              {[5, 10, 15, 25, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
+              {PRESET_SIZES.map((size) => (
+                <option key={size} value={size}>{size}</option>
               ))}
+              <option value={ALL_SIZE}>ทั้งหมด</option>
+              <option value="custom">กำหนดเอง...</option>
             </select>
+            {showCustomInput && (
+              <input
+                aria-label="จำนวนรายการต่อหน้า"
+                className="w-20 rounded-lg border border-violet-300 bg-white px-2 py-2.5 text-center text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                inputMode="numeric"
+                min={1}
+                max={9999}
+                onBlur={applyCustomSize}
+                onChange={(e) => setCustomRaw(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && applyCustomSize()}
+                type="number"
+                value={customRaw}
+              />
+            )}
           </div>
           <button
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-white transition hover:bg-violet-700"
