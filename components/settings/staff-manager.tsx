@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   RefreshCw,
@@ -14,6 +14,9 @@ import { ApiError } from "@/services/api";
 import { addMember, listMembers, removeMember, updateMember } from "@/services/members";
 import { getAuthSession } from "@/lib/auth-storage";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
+import { Alert } from "@/components/ui/alert";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { toast } from "@/components/ui/toast";
 import type { Member, MemberStatus, StoreRole } from "@/types/member";
 
 type Dict = {
@@ -40,6 +43,7 @@ type Dict = {
     cancel: string;
   };
   confirmRemove: string;
+  confirmRemoveTitle: string;
   errors: {
     generic: string;
     nameRequired: string;
@@ -71,7 +75,8 @@ export function StaffManager({ t, locale }: { t: Dict; locale: string }) {
   const currentUserId = getAuthSession()?.user?.id ?? "";
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [banner, setBanner] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
 
   const membersQuery = useQuery({
     queryKey: ["store-members"],
@@ -103,19 +108,23 @@ export function StaffManager({ t, locale }: { t: Dict; locale: string }) {
     mutationFn: ({ userId, input }: { userId: string; input: { role?: StoreRole; status?: MemberStatus } }) =>
       updateMember(userId, input),
     onSuccess: () => {
-      setBanner({ kind: "success", text: t.toast.updated });
+      toast.success(t.toast.updated);
       invalidate();
     },
-    onError: (err) => setBanner({ kind: "error", text: localizeError(err) }),
+    onError: (err) => toast.error(localizeError(err)),
   });
 
   const removeMutation = useMutation({
     mutationFn: (userId: string) => removeMember(userId),
     onSuccess: () => {
-      setBanner({ kind: "success", text: t.toast.removed });
+      toast.success(t.toast.removed);
+      setRemoveTarget(null);
       invalidate();
     },
-    onError: (err) => setBanner({ kind: "error", text: localizeError(err) }),
+    onError: (err) => {
+      toast.error(localizeError(err));
+      setRemoveTarget(null);
+    },
   });
 
   const dateFmt = useMemo(
@@ -135,20 +144,12 @@ export function StaffManager({ t, locale }: { t: Dict; locale: string }) {
 
   function handleRoleChange(member: Member, nextRole: StoreRole) {
     if (nextRole === member.role) return;
-    setBanner(null);
     updateMutation.mutate({ userId: member.user_id, input: { role: nextRole } });
   }
 
   function handleToggleStatus(member: Member) {
-    setBanner(null);
     const nextStatus: MemberStatus = member.status === "active" ? "suspended" : "active";
     updateMutation.mutate({ userId: member.user_id, input: { status: nextStatus } });
-  }
-
-  function handleRemove(member: Member) {
-    if (!window.confirm(t.confirmRemove)) return;
-    setBanner(null);
-    removeMutation.mutate(member.user_id);
   }
 
   // Defense-in-depth: the sidebar hides this page from non-managers, but enforce here too.
@@ -185,7 +186,7 @@ export function StaffManager({ t, locale }: { t: Dict; locale: string }) {
           <button
             className="flex h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700"
             onClick={() => {
-              setBanner(null);
+              setErrorBanner(null);
               setIsFormOpen(true);
             }}
             type="button"
@@ -196,16 +197,10 @@ export function StaffManager({ t, locale }: { t: Dict; locale: string }) {
         </div>
       </div>
 
-      {banner ? (
-        <div
-          className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
-            banner.kind === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-              : "border-rose-200 bg-rose-50 text-rose-700"
-          }`}
-        >
-          {banner.text}
-        </div>
+      {errorBanner ? (
+        <Alert tone="error" className="mt-4" onDismiss={() => setErrorBanner(null)}>
+          {errorBanner}
+        </Alert>
       ) : null}
 
       {/* Table */}
@@ -303,7 +298,7 @@ export function StaffManager({ t, locale }: { t: Dict; locale: string }) {
                             aria-label={t.rowActions.remove}
                             className="rounded-lg border border-rose-200 p-1.5 text-rose-500 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
                             disabled={isSelf || removeMutation.isPending || (member.role === "owner" && !isOwner)}
-                            onClick={() => handleRemove(member)}
+                            onClick={() => setRemoveTarget(member)}
                             type="button"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -324,14 +319,28 @@ export function StaffManager({ t, locale }: { t: Dict; locale: string }) {
           t={t}
           isOwner={isOwner}
           onClose={() => setIsFormOpen(false)}
-          onSubmitError={(err) => setBanner({ kind: "error", text: localizeError(err) })}
+          onSubmitError={(err) => setErrorBanner(localizeError(err))}
           onSuccess={() => {
             setIsFormOpen(false);
-            setBanner({ kind: "success", text: t.toast.added });
+            toast.success(t.toast.added);
             invalidate();
           }}
         />
       ) : null}
+
+      <ConfirmModal
+        open={removeTarget !== null}
+        title={t.confirmRemoveTitle}
+        message={t.confirmRemove}
+        confirmLabel={t.rowActions.remove}
+        cancelLabel={t.form.cancel}
+        tone="danger"
+        loading={removeMutation.isPending}
+        onConfirm={() => {
+          if (removeTarget) removeMutation.mutate(removeTarget.user_id);
+        }}
+        onClose={() => setRemoveTarget(null)}
+      />
     </div>
   );
 }
@@ -360,9 +369,18 @@ function AddMemberForm({
     onError: onSubmitError,
   });
 
+  // Close on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !mutation.isPending) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mutation.isPending, onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-indigo-950/50 backdrop-blur-sm p-4 smooth-fade">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl smooth-fade-up">
         <div className="flex items-center justify-between border-b border-violet-100 bg-violet-600 px-5 py-4">
           <h2 className="text-base font-bold text-white">{t.form.title}</h2>
           <button

@@ -568,6 +568,14 @@
     "holdBillPlaceholderLabel": "Bill label (optional)",
     "restoreBillConfirmLabel": "Restore",
     "noParkedBillsLabel": "No parked bills yet",
+    "menuLabel": "Menu",
+    "closeCashierLabel": "Close cashier",
+    "confirmCloseTitle": "{count} items in cart",
+    "confirmCloseMessage": "Hold the bill first, or close without saving?",
+    "confirmCloseHoldDescription": "Save items and close the cashier",
+    "confirmCloseDiscardLabel": "Close without saving",
+    "confirmCloseDiscardDescription": "Items in cart will be lost",
+    "confirmCloseCancelLabel": "Cancel",
     "summary": {
       "discountLabel": "Discount",
       "subtotalLabel": "Subtotal",
@@ -2284,7 +2292,8 @@
       "added": "Member added.",
       "updated": "Member updated.",
       "removed": "Member removed."
-    }
+    },
+    "confirmRemoveTitle": "Remove staff member"
   },
   "activityLogs": {
     "title": "Activity Logs",
@@ -4074,7 +4083,7 @@
     "errOverpayment": "Payment exceeds the outstanding balance",
     "errSaveFailed": "Could not save, please try again",
     "errDiscountCap": "Bill discount exceeds your limit (cashiers: max 20% of subtotal)",
-      "colDiscount": "Discount",
+    "colDiscount": "Discount",
     "discountUnitAmount": "฿",
     "discountUnitPercent": "%",
     "billDiscountLabel": "Bill discount",

@@ -568,6 +568,14 @@
     "holdBillPlaceholderLabel": "ชื่อบิล (ไม่บังคับ)",
     "restoreBillConfirmLabel": "เรียกคืน",
     "noParkedBillsLabel": "ยังไม่มีบิลที่พักไว้",
+    "menuLabel": "เมนู",
+    "closeCashierLabel": "ปิดหน้าขาย",
+    "confirmCloseTitle": "มีสินค้าในตะกร้า {count} รายการ",
+    "confirmCloseMessage": "ต้องการพักบิลไว้ก่อน หรือปิดโดยไม่บันทึก?",
+    "confirmCloseHoldDescription": "บันทึกรายการไว้ แล้วปิดหน้าร้าน",
+    "confirmCloseDiscardLabel": "ปิดโดยไม่บันทึก",
+    "confirmCloseDiscardDescription": "รายการในตะกร้าจะหายไป",
+    "confirmCloseCancelLabel": "ยกเลิก",
     "summary": {
       "discountLabel": "ส่วนลด",
       "subtotalLabel": "ยอดก่อนส่วนลด",
@@ -2284,7 +2292,8 @@
       "added": "เพิ่มพนักงานแล้ว",
       "updated": "อัปเดตพนักงานแล้ว",
       "removed": "นำพนักงานออกแล้ว"
-    }
+    },
+    "confirmRemoveTitle": "นำพนักงานออก"
   },
   "activityLogs": {
     "title": "Activity Logs",
@@ -4074,7 +4083,7 @@
     "errOverpayment": "ยอดชำระเกินยอดคงค้าง",
     "errSaveFailed": "ไม่สามารถบันทึกได้ กรุณาลองใหม่อีกครั้ง",
     "errDiscountCap": "ส่วนลดท้ายบิลเกินสิทธิ์ของคุณ (แคชเชียร์ลดได้สูงสุด 20% ของยอด)",
-      "colDiscount": "ส่วนลด",
+    "colDiscount": "ส่วนลด",
     "discountUnitAmount": "฿",
     "discountUnitPercent": "%",
     "billDiscountLabel": "ส่วนลดท้ายบิล",
