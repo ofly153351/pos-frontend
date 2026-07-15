@@ -190,4 +190,12 @@ export type SalesDictionary = {
   holdBillPlaceholderLabel: string;
   restoreBillConfirmLabel: string;
   noParkedBillsLabel: string;
+  menuLabel: string;
+  closeCashierLabel: string;
+  confirmCloseTitle: string; // contains "{count}"
+  confirmCloseMessage: string;
+  confirmCloseHoldDescription: string;
+  confirmCloseDiscardLabel: string;
+  confirmCloseDiscardDescription: string;
+  confirmCloseCancelLabel: string;
 };
