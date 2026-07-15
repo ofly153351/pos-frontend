@@ -178,7 +178,7 @@ export function AuthForm({
 
         saveAuthSession(payload.data);
 
-        if (payload.data.store_id) {
+        if (mode === "login" && payload.data.store_id) {
           saveCurrentStoreId(payload.data.store_id);
         } else {
           clearCurrentStoreId();
@@ -186,7 +186,11 @@ export function AuthForm({
 
         setMessageTone("success");
         setMessage(payload.message);
-        router.replace(`/${locale}/dashboard`);
+        if (mode === "login" && payload.data.store_id) {
+          router.replace(`/${locale}/dashboard`);
+        } else {
+          router.replace(`/${locale}/subscription`);
+        }
       } catch (error) {
         const nextMessage =
           error instanceof Error ? error.message : validation.genericError;
