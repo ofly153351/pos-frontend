@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 
 import { saveAuthSession } from "@/lib/auth-storage";
-import { SUBSCRIPTION_ENABLED } from "@/lib/feature-config";
 import { clearCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
 import type { Locale } from "@/lib/locale-config";
 import { login, register } from "@/services/auth";
@@ -189,10 +188,8 @@ export function AuthForm({
         setMessage(payload.message);
         if (mode === "login" && payload.data.store_id) {
           router.replace(`/${locale}/dashboard`);
-        } else if (SUBSCRIPTION_ENABLED) {
-          router.replace(`/${locale}/subscription`);
         } else {
-          router.replace(`/${locale}/setup/store`);
+          router.replace(`/${locale}/subscription`);
         }
       } catch (error) {
         const nextMessage =

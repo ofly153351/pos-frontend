@@ -26,6 +26,13 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
       description={dictionary.register.description}
       fields={[
         {
+          autoComplete: "organization",
+          label: dictionary.register.storeLabel,
+          name: "storeName",
+          placeholder: dictionary.register.storePlaceholder,
+          type: "text",
+        },
+        {
           autoComplete: "name",
           label: dictionary.register.nameLabel,
           name: "name",
