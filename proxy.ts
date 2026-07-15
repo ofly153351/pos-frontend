@@ -61,14 +61,6 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  // Protected routes – no store selected → redirect to setup
-  if (requiresAuth(pathname) && accessToken && !storeId) {
-    const setupUrl = new URL(`/${locale}/setup/store`, request.url);
-    const response = NextResponse.redirect(setupUrl);
-    response.headers.set("Cache-Control", "no-store, must-revalidate");
-    return response;
-  }
-
   // Auth pages – already logged in with store → redirect to Dashboard.
   if (isAuthPath(pathname) && accessToken && storeId) {
     const homeUrl = new URL(`/${locale}/dashboard`, request.url);

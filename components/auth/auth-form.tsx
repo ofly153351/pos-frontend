@@ -186,11 +186,10 @@ export function AuthForm({
 
         setMessageTone("success");
         setMessage(payload.message);
-        if (mode === "login" && payload.data.store_id) {
-          router.replace(`/${locale}/dashboard`);
-        } else {
-          router.replace(`/${locale}/subscription`);
+        if (payload.data.store_id) {
+          saveCurrentStoreId(payload.data.store_id);
         }
+        router.replace(`/${locale}/dashboard`);
       } catch (error) {
         const nextMessage =
           error instanceof Error ? error.message : validation.genericError;
