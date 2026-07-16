@@ -911,19 +911,19 @@ export function CreditSalesManager({
             <p className="text-xs text-slate-400">{dictionary.emptyHint}</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-100">
+          <div className="overflow-x-auto pretty-scroll">
+            <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-slate-50">
                 <tr className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3">{dictionary.tableDocNo}</th>
-                  <th className="px-4 py-3">{dictionary.tableCustomer}</th>
-                  <th className="px-4 py-3">{dictionary.tableType}</th>
-                  <th className="px-4 py-3 text-right">{dictionary.tableAmountQty}</th>
-                  <th className="px-4 py-3">{dictionary.tablePaidProgress}</th>
-                  <th className="px-4 py-3 text-right">{dictionary.tableRemaining}</th>
-                  <th className="px-4 py-3">{dictionary.tableDueDate}</th>
-                  <th className="px-4 py-3">{dictionary.tableStatus}</th>
-                  <th className="px-4 py-3">{dictionary.tableActions}</th>
+                  <th className="px-3 py-2.5">{dictionary.tableDocNo}</th>
+                  <th className="px-3 py-2.5">{dictionary.tableCustomer}</th>
+                  <th className="hidden px-3 py-2.5 lg:table-cell">{dictionary.tableType}</th>
+                  <th className="px-3 py-2.5 text-right">{dictionary.tableAmountQty}</th>
+                  <th className="hidden px-3 py-2.5 lg:table-cell">{dictionary.tablePaidProgress}</th>
+                  <th className="px-3 py-2.5 text-right">{dictionary.tableRemaining}</th>
+                  <th className="hidden px-3 py-2.5 xl:table-cell">{dictionary.tableDueDate}</th>
+                  <th className="px-3 py-2.5">{dictionary.tableStatus}</th>
+                  <th className="px-3 py-2.5 text-right">{dictionary.tableActions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white text-sm">
@@ -934,30 +934,30 @@ export function CreditSalesManager({
                   const totalQty = sale.items.reduce((n, i) => n + i.quantity, 0);
                   return (
                     <tr key={sale.id} className="transition-colors hover:bg-slate-50">
-                      <td className="px-4 py-3 nums text-xs font-medium text-slate-700 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-3 py-2.5 nums text-xs font-medium text-slate-700">
                         {sale.document_number}
                       </td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-slate-900">{sale.customer_name}</p>
+                      <td className="max-w-[160px] px-3 py-2.5">
+                        <p className="truncate font-medium text-slate-900">{sale.customer_name}</p>
                         {sale.customer_phone ? (
-                          <p className="text-xs text-slate-400">{sale.customer_phone}</p>
+                          <p className="truncate text-xs text-slate-400">{sale.customer_phone}</p>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="hidden px-3 py-2.5 lg:table-cell">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${TYPE_CLASSES[sale.type]}`}>
                           {typeLabel(sale.type)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right">
                         {sale.type === "credit" ? (
                           <p className="font-semibold text-slate-800">{fmtBaht(sale.total_amount)}</p>
                         ) : (
                           <p className="font-semibold text-slate-800">{totalQty} {dictionary.pieces}</p>
                         )}
                       </td>
-                      <td className="px-4 py-3 min-w-[120px]">
-                        <div className="space-y-1">
-                          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <td className="hidden px-3 py-2.5 lg:table-cell">
+                        <div className="w-[100px] space-y-1">
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                             <div
                               className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-emerald-500" : "bg-violet-500"}`}
                               style={{ width: `${pct}%` }}
@@ -966,21 +966,21 @@ export function CreditSalesManager({
                           <p className="text-xs text-slate-500">{Math.round(pct)}%</p>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-rose-600">
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right font-medium text-rose-600">
                         {remaining > 0 ? fmtBaht(remaining) : "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">
-                        <p className={new Date(sale.due_date) < new Date() && liveStatus !== "completed" && liveStatus !== "cancelled" ? "font-medium text-rose-600" : ""}>
+                      <td className="hidden px-3 py-2.5 xl:table-cell text-slate-600">
+                        <p className={`whitespace-nowrap ${new Date(sale.due_date) < new Date() && liveStatus !== "completed" && liveStatus !== "cancelled" ? "font-medium text-rose-600" : ""}`}>
                           {fmtDate(sale.due_date)}
                         </p>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_CLASSES[liveStatus]}`}>
                           {statusLabel(liveStatus)}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
                             onClick={() => {
