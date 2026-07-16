@@ -304,7 +304,13 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
 
         rowResults.push({ row: i + 2, name, status: "ok" });
       } catch (err) {
-        rowResults.push({ row: i + 2, name, status: "error", error: err instanceof Error ? err.message : "เกิดข้อผิดพลาด" });
+        const raw = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+        // Translate known backend errors to Thai for the import result UI.
+        let msg = raw;
+        if (raw.includes("sku or barcode already exists"))      msg = "SKU หรือบาร์โค้ดซ้ำกับสินค้าที่มีอยู่แล้ว";
+        else if (raw.includes("name already exists"))            msg = "ชื่อนี้มีอยู่แล้วในร้าน";
+        else if (raw.includes("internal server error"))          msg = "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์";
+        rowResults.push({ row: i + 2, name, status: "error", error: msg });
       }
 
       setProgress({ done: i + 1, total: rawRows.length });
