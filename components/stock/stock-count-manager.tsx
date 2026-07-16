@@ -8,6 +8,8 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   ClipboardCheck,
   Download,
@@ -23,6 +25,7 @@ import {
 
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { ScanButton } from "@/components/shared/scan-button";
+import { PageSizeDropdown } from "@/components/ui/page-size-dropdown";
 import { toast } from "@/components/ui/toast";
 import type { CountDictionary } from "@/components/stock/inventory-types";
 import { listProducts, listProductTypes } from "@/services/products";
@@ -256,6 +259,8 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   const [listWarehouse, setListWarehouse] = useState("all");
   const [listDateFrom, setListDateFrom] = useState("");
   const [listDateTo, setListDateTo] = useState("");
+  const [listPage, setListPage] = useState(1);
+  const [listPageSize, setListPageSize] = useState(10);
 
   const [scan, setScan] = useState("");
   const [countMode, setCountMode] = useState<CountMode>("table");
@@ -474,6 +479,18 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
       return session.name.toLowerCase().includes(q);
     });
   }, [sessions, listSearch, listStatus, listWarehouse, listDateFrom, listDateTo]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setListPage(1);
+  }, [listSearch, listStatus, listWarehouse, listDateFrom, listDateTo]);
+
+  const listTotalPages = Math.max(1, Math.ceil(filteredSessions.length / listPageSize));
+  const safeListPage = Math.min(listPage, listTotalPages);
+  const paginatedSessions = useMemo(() => {
+    const start = (safeListPage - 1) * listPageSize;
+    return filteredSessions.slice(start, start + listPageSize);
+  }, [filteredSessions, safeListPage, listPageSize]);
 
   const countTypeOptions = [
     { value: "full" as const, label: t.create.countTypeOptions.full },
@@ -1078,31 +1095,31 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
     return (
       <div className="w-full xl:px-2 2xl:px-4">
-        <div className="my-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="my-3 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-slate-900">{t.title}</h2>
             <p className="text-sm text-slate-500">{t.subtitle}</p>
           </div>
-          <button type="button" onClick={openNewWizard} className="inline-flex h-11 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700">
+          <button type="button" onClick={openNewWizard} className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700">
             <Plus className="h-4 w-4" />
             {t.newSession}
           </button>
         </div>
 
-        <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
+        <div className="mb-3 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6">
           {dashboardCards.map((card) => (
-            <div key={card.label} className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
-              <div className={`inline-flex rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide ${card.tone}`}>{card.label}</div>
-              <p className="mt-3 text-3xl font-black text-slate-900 tabular-nums">{card.value}</p>
+            <div key={card.label} className="rounded-xl border border-violet-100 bg-white p-3 shadow-sm">
+              <div className={`inline-flex rounded-lg px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${card.tone}`}>{card.label}</div>
+              <p className="mt-2 text-xl font-black text-slate-900 tabular-nums sm:text-2xl">{card.value}</p>
             </div>
           ))}
         </div>
 
-        <section className="mb-4 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
-          <div className="grid gap-3 lg:grid-cols-4 xl:grid-cols-5">
+        <section className="mb-3 rounded-xl border border-violet-100 bg-white p-3 shadow-sm">
+          <div className="grid gap-2 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5">
             <div className="relative lg:col-span-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-400" />
-              <input value={listSearch} onChange={(e) => setListSearch(e.target.value)} placeholder={t.list.searchPlaceholder} className="h-11 w-full rounded-xl border border-violet-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
+              <input value={listSearch} onChange={(e) => setListSearch(e.target.value)} placeholder={t.list.searchPlaceholder} className="h-10 w-full rounded-xl border border-violet-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
             </div>
             <select value={listStatus} onChange={(e) => setListStatus(e.target.value as ListStatusFilter)} className={inputCls}>
               <option value="all">{t.list.allStatuses}</option>
@@ -1125,31 +1142,31 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
         </section>
 
         {filteredSessions.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 px-6 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 px-6 py-12 text-center">
             <ClipboardCheck className="mx-auto h-10 w-10 text-violet-300" />
             <p className="mt-3 text-sm text-slate-500">{sessions.length === 0 ? t.noSessions : t.list.noFilteredSessions}</p>
           </div>
         ) : (
-          <section className="rounded-2xl bg-white shadow-sm">
-            <div className="overflow-auto rounded-2xl">
-              <table className="w-full min-w-[1420px] border-collapse text-left">
+          <section className="rounded-xl bg-white shadow-sm">
+            <div className="overflow-auto pretty-scroll rounded-xl">
+              <table className="w-full min-w-[1100px] border-collapse text-left">
                 <thead>
                   <tr className="bg-slate-100 text-xs uppercase tracking-wider text-slate-500">
-                    <th className="px-4 py-3 font-bold">{t.list.session}</th>
-                    <th className="px-3 py-3 font-bold">{t.list.warehouse}</th>
-                    <th className="px-3 py-3 font-bold">{t.list.zone}</th>
-                    <th className="px-3 py-3 font-bold">{t.list.category}</th>
-                    <th className="px-3 py-3 font-bold">{t.list.status}</th>
-                    <th className="px-3 py-3 font-bold">{t.list.type}</th>
-                    <th className="px-3 py-3 font-bold">{t.list.progress}</th>
-                    <th className="px-3 py-3 text-right font-bold">{t.list.varianceItems}</th>
-                    <th className="px-3 py-3 font-bold">{t.list.lastActivity}</th>
-                    <th className="px-3 py-3 font-bold">{t.list.createdBy}</th>
-                    <th className="px-3 py-3 text-right font-bold">{t.list.actions}</th>
+                    <th className="px-3 py-2.5 font-bold">{t.list.session}</th>
+                    <th className="hidden px-3 py-2.5 font-bold lg:table-cell">{t.list.warehouse}</th>
+                    <th className="hidden px-3 py-2.5 font-bold xl:table-cell">{t.list.zone}</th>
+                    <th className="hidden px-3 py-2.5 font-bold xl:table-cell">{t.list.category}</th>
+                    <th className="px-3 py-2.5 font-bold">{t.list.status}</th>
+                    <th className="hidden px-3 py-2.5 font-bold lg:table-cell">{t.list.type}</th>
+                    <th className="px-3 py-2.5 font-bold">{t.list.progress}</th>
+                    <th className="px-3 py-2.5 text-right font-bold">{t.list.varianceItems}</th>
+                    <th className="hidden px-3 py-2.5 font-bold xl:table-cell">{t.list.lastActivity}</th>
+                    <th className="hidden px-3 py-2.5 font-bold lg:table-cell">{t.list.createdBy}</th>
+                    <th className="px-3 py-2.5 text-right font-bold">{t.list.actions}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredSessions.map((session) => {
+                  {paginatedSessions.map((session) => {
                     const sBadge = statusBadge(session.status);
                     const typeLabel = countTypeLabel(session.countType);
                     const countedItems = session.items.filter((item) => item.counted != null && !item.skipped).length;
@@ -1162,43 +1179,43 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                     }, session.createdAt);
                     return (
                       <tr key={session.id} className="bg-white align-middle hover:bg-violet-50/40">
-                        <td className="px-4 py-3">
+                        <td className="px-3 py-2.5">
                           <p className="truncate text-sm font-bold text-slate-900" title={session.name}>{session.name}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
                             {session.staff ? <span>{session.staff}</span> : null}
                             {session.blindCount ? <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-500">{t.create.blindCount}</span> : null}
                             {session.cycleRule ? <span>{session.cycleRule}</span> : null}
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-sm text-slate-600">{session.warehouseName || t.list.allWarehouses}</td>
-                        <td className="px-3 py-3 text-sm text-slate-600">{session.zone || "—"}</td>
-                        <td className="px-3 py-3 text-sm text-slate-600">{session.categoryName || t.list.allCategories}</td>
-                        <td className="px-3 py-3"><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${sBadge.cls}`}>{sBadge.label}</span></td>
-                        <td className="px-3 py-3"><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${COUNT_TYPE_BADGE[session.countType]}`}>{typeLabel}</span></td>
-                        <td className="px-3 py-3">
+                        <td className="hidden px-3 py-2.5 text-sm text-slate-600 lg:table-cell">{session.warehouseName || t.list.allWarehouses}</td>
+                        <td className="hidden px-3 py-2.5 text-sm text-slate-600 xl:table-cell">{session.zone || "—"}</td>
+                        <td className="hidden px-3 py-2.5 text-sm text-slate-600 xl:table-cell">{session.categoryName || t.list.allCategories}</td>
+                        <td className="px-3 py-2.5"><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${sBadge.cls}`}>{sBadge.label}</span></td>
+                        <td className="hidden px-3 py-2.5 lg:table-cell"><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${COUNT_TYPE_BADGE[session.countType]}`}>{typeLabel}</span></td>
+                        <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-16 overflow-hidden rounded-full bg-slate-100">
+                            <div className="h-1.5 w-14 overflow-hidden rounded-full bg-slate-100">
                               <div className={`h-full rounded-full transition-all ${progressPct === 100 ? "bg-emerald-500" : "bg-violet-500"}`} style={{ width: `${progressPct}%` }} />
                             </div>
                             <span className="text-xs font-bold text-slate-600 tabular-nums">{progressPct}%</span>
                           </div>
                           <p className="mt-0.5 text-[11px] text-slate-400 tabular-nums">{countedItems}/{session.items.length}</p>
                         </td>
-                        <td className={`px-3 py-3 text-right text-sm font-bold tabular-nums ${varianceCount(session) > 0 ? "text-rose-600" : "text-slate-400"}`}>{varianceCount(session)}</td>
-                        <td className="whitespace-nowrap px-3 py-3 text-xs text-slate-500">{dtf.format(new Date(lastAct))}</td>
-                        <td className="px-3 py-3 text-sm text-slate-600">{session.createdBy || t.list.unknownUser}</td>
-                        <td className="px-3 py-3">
+                        <td className={`px-3 py-2.5 text-right text-sm font-bold tabular-nums ${varianceCount(session) > 0 ? "text-rose-600" : "text-slate-400"}`}>{varianceCount(session)}</td>
+                        <td className="hidden whitespace-nowrap px-3 py-2.5 text-xs text-slate-500 xl:table-cell">{dtf.format(new Date(lastAct))}</td>
+                        <td className="hidden px-3 py-2.5 text-sm text-slate-600 lg:table-cell">{session.createdBy || t.list.unknownUser}</td>
+                        <td className="px-3 py-2.5">
                           <div className="flex items-center justify-end gap-1.5">
                             {canContinue ? (
-                              <button type="button" onClick={() => openContinue(session)} className="inline-flex h-10 items-center rounded-lg border border-violet-200 bg-white px-3 text-xs font-semibold text-violet-700 transition hover:bg-violet-50">{t.list.continue}</button>
+                              <button type="button" onClick={() => openContinue(session)} className="inline-flex h-9 items-center rounded-lg border border-violet-200 bg-white px-3 text-xs font-semibold text-violet-700 transition hover:bg-violet-50">{t.list.continue}</button>
                             ) : (
-                              <button type="button" onClick={() => openReview(session)} className="inline-flex h-10 items-center rounded-lg border border-violet-200 bg-white px-3 text-xs font-semibold text-violet-700 transition hover:bg-violet-50">{t.list.viewResult}</button>
+                              <button type="button" onClick={() => openReview(session)} className="inline-flex h-9 items-center rounded-lg border border-violet-200 bg-white px-3 text-xs font-semibold text-violet-700 transition hover:bg-violet-50">{t.list.viewResult}</button>
                             )}
                             {canContinue ? (
-                              <button type="button" onClick={() => setConfirmCancelId(session.id)} className="inline-flex h-10 items-center rounded-lg px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{t.list.cancel}</button>
+                              <button type="button" onClick={() => setConfirmCancelId(session.id)} className="inline-flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50">{t.list.cancel}</button>
                             ) : null}
                             {canDelete ? (
-                              <button type="button" aria-label={t.list.delete} title={t.list.delete} onClick={() => setConfirmDeleteId(session.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-500">
+                              <button type="button" aria-label={t.list.delete} title={t.list.delete} onClick={() => setConfirmDeleteId(session.id)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-500">
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             ) : null}
@@ -1210,6 +1227,62 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                 </tbody>
               </table>
             </div>
+            {/* Pagination footer */}
+            {filteredSessions.length > 0 && (
+              <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-slate-400">
+                    {(safeListPage - 1) * listPageSize + 1}–{Math.min(safeListPage * listPageSize, filteredSessions.length)} / {filteredSessions.length}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <PageSizeDropdown
+                      value={listPageSize}
+                      options={[10, 25, 50, 100]}
+                      perPageLabel={locale === "th" ? "หน้าละ" : "per page"}
+                      onChange={(v: number) => { setListPageSize(v); setListPage(1); }}
+                    />
+                    <div className="flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setListPage(p => Math.max(1, p - 1))}
+                        disabled={safeListPage <= 1}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-700 disabled:pointer-events-none disabled:opacity-30"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      {Array.from({ length: listTotalPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === listTotalPages || Math.abs(p - safeListPage) <= 1)
+                        .map((p, idx, arr) => (
+                          <span key={p} className="flex items-center">
+                            {idx > 0 && arr[idx - 1] !== p - 1 && (
+                              <span className="px-1 text-slate-300">…</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setListPage(p)}
+                              className={`flex h-8 min-w-[32px] items-center justify-center rounded-lg text-sm font-medium tabular-nums transition-colors ${
+                                p === safeListPage
+                                  ? "bg-violet-600 text-white shadow-sm"
+                                  : "text-slate-500 hover:bg-violet-50 hover:text-violet-700"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          </span>
+                        ))}
+                      <button
+                        type="button"
+                        onClick={() => setListPage(p => Math.min(listTotalPages, p + 1))}
+                        disabled={safeListPage >= listTotalPages}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-700 disabled:pointer-events-none disabled:opacity-30"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
