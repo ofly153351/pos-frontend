@@ -1,4 +1,4 @@
-export type GoodsReceiptStatus = "draft" | "confirmed" | "cancelled";
+export type GoodsReceiptStatus = "draft" | "pending_review" | "confirmed" | "cancelled";
 
 export type GoodsReceiptAudit = {
   action: string;
@@ -174,7 +174,7 @@ export type UpsertGoodsReceiptItemsInput = {
   items: Array<{
     discount_type?: string;
     discount_value?: number | null;
-    location_id: string;
+    location_id?: string;
     product_id: string;
     quantity: number;
     unit_price?: number;

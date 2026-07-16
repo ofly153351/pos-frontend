@@ -47,7 +47,7 @@ export function createGoodsReceiptDraft(input: Omit<CreateGoodsReceiptDraftInput
 type ListGoodsReceiptsOptions = {
   limit?: number;
   page?: number;
-  status?: "draft" | "confirmed" | "cancelled";
+  status?: "draft" | "pending_review" | "confirmed" | "cancelled";
 };
 
 export async function listGoodsReceipts(options: ListGoodsReceiptsOptions = {}) {
@@ -115,13 +115,36 @@ export function upsertGoodsReceiptItems(receiptId: string, input: UpsertGoodsRec
   );
 }
 
-export function confirmGoodsReceipt(receiptId: string) {
+export function confirmGoodsReceipt(receiptId: string, idempotencyKey?: string) {
   const storeId = ensureStoreId();
+  // Phase W3 §12: a confirm idempotency key makes a network-retried confirm safe — the
+  // backend returns the original result instead of double-applying stock/cost/PO.
+  const headers: Record<string, string> = {};
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
   return authorizedApiRequest<GoodsReceiptDraft>(
     `/api/stores/${storeId}/receipts/${receiptId}/confirm`,
     {
       method: "POST",
+      headers,
     },
+  );
+}
+
+// Submit a draft for approval (draft -> pending_review). Cashier/warehouse can do this.
+export function submitGoodsReceipt(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}/submit`,
+    { method: "POST" },
+  );
+}
+
+// Reopen a pending-review receipt back to draft (owner/manager only).
+export function reopenGoodsReceipt(receiptId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<GoodsReceiptDraft>(
+    `/api/stores/${storeId}/receipts/${receiptId}/reopen`,
+    { method: "POST" },
   );
 }
 
@@ -137,7 +160,7 @@ export function deleteGoodsReceiptDraft(receiptId: string) {
   const storeId = ensureStoreId();
   return authorizedApiRequest<void>(
     `/api/stores/${storeId}/receipts/${receiptId}`,
-    { method: "DELETE" },
+    { method: "DELETE", allowEmptyData: true },
   );
 }
 

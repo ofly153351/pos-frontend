@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Plus, X } from "lucide-react";
@@ -204,7 +204,7 @@ export function LocationFormModal({
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-700">{dictionary.formCode} *</label>
               <input
-                className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 font-mono text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 placeholder={dictionary.formCodeHint}
                 value={form.code}
                 onChange={(e) => setField("code", e.target.value)}

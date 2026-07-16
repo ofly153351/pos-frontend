@@ -1,4 +1,5 @@
 import type { Location } from "@/services/locations";
+import type { DeletionDialogDictionary } from "@/types/lifecycle";
 
 // ── Dictionary ────────────────────────────────────────────────────────────────
 export type StorageLocationDictionary = {
@@ -105,6 +106,9 @@ export type StorageLocationDictionary = {
   toastZoneDeleted: string;
   toastFloorRenamed: string;
   toastFloorDeleted: string;
+  // ── Safe delete / archive lifecycle ──
+  statusArchived: string;
+  lifecycle: DeletionDialogDictionary;
 };
 
 // ── Status ────────────────────────────────────────────────────────────────────

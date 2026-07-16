@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Plus } from "lucide-react";
 
-import type { CardSettings } from "@/lib/card-settings";
+import { resolveCardImageHeight, type CardSettings } from "@/lib/card-settings";
 
 // Minimal shape the card needs — works for real products and preview samples.
 export type ProductCardItem = {
@@ -26,14 +26,11 @@ type ProductCardProps = {
   qtyInCart: number;
   onAdd: () => void;
   labels: ProductCardLabels;
+  /** Short promo label ("ลด 10%", "ซื้อ 3 แถม 1"). Rendered when config.showPromoBadge. */
+  promoLabel?: string | null;
 };
 
 // ── Literal class maps — Tailwind scanner sees every class, no safelist needed ──
-const ASPECT: Record<CardSettings["aspect"], string> = {
-  "1/1": "aspect-square",
-  "4/3": "aspect-[4/3]",
-  "3/4": "aspect-[3/4]",
-};
 const CLAMP: Record<CardSettings["lines"], string> = {
   1: "line-clamp-1",
   2: "line-clamp-2",
@@ -57,13 +54,14 @@ const SIZE: Record<
     qty: string;
     stockPos: string;
     qtyPos: string;
+    promoPos: string;
   }
 > = {
   sm: {
     radius: "rounded-xl",
     pad: "px-2.5",
     nameText: "text-[12px]",
-    namePad: "pt-2",
+    namePad: "mt-2",
     footPad: "px-2.5 pb-2.5 pt-1.5",
     price: "text-[12.5px]",
     addBtn: "h-6 w-6",
@@ -73,12 +71,13 @@ const SIZE: Record<
     qty: "h-5 min-w-5 px-1 text-[10px]",
     stockPos: "right-1.5 top-1.5",
     qtyPos: "left-1.5 top-1.5",
+    promoPos: "bottom-1.5 left-1.5",
   },
   md: {
     radius: "rounded-[14px]",
     pad: "px-3",
     nameText: "text-[14px]",
-    namePad: "pt-2.5",
+    namePad: "mt-2.5",
     footPad: "px-3 pb-3 pt-2",
     price: "text-[15px]",
     addBtn: "h-8 w-8",
@@ -88,12 +87,13 @@ const SIZE: Record<
     qty: "h-6 min-w-6 px-1.5 text-[11px]",
     stockPos: "right-2 top-2",
     qtyPos: "left-2 top-2",
+    promoPos: "bottom-2 left-2",
   },
   lg: {
     radius: "rounded-2xl",
     pad: "px-4",
     nameText: "text-[15.5px]",
-    namePad: "pt-3",
+    namePad: "mt-3",
     footPad: "px-4 pb-4 pt-2.5",
     price: "text-[17px]",
     addBtn: "h-9 w-9",
@@ -103,13 +103,14 @@ const SIZE: Record<
     qty: "h-7 min-w-7 px-2 text-[12px]",
     stockPos: "right-2.5 top-2.5",
     qtyPos: "left-2.5 top-2.5",
+    promoPos: "bottom-2.5 left-2.5",
   },
 };
 
 function baht(value: number) {
   return new Intl.NumberFormat("th-TH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(value);
 }
 
@@ -126,16 +127,17 @@ function stockBadge(item: ProductCardItem, labels: ProductCardLabels) {
   };
 }
 
-export function ProductCard({ item, config, qtyInCart, onAdd, labels }: ProductCardProps) {
+export function ProductCard({ item, config, qtyInCart, onAdd, labels, promoLabel }: ProductCardProps) {
   const outOfStock = item.stock === 0;
   const inCart = qtyInCart > 0;
   const badge = stockBadge(item, labels);
   const s = SIZE[config.size];
+  const imageHeight = resolveCardImageHeight(config);
 
   const Name = (
     <div
-      className={`${s.pad} ${s.nameText} ${s.namePad} font-semibold leading-[1.35] text-slate-900 ${CLAMP[config.lines]}`}
-      style={{ minHeight: `calc(${config.lines} * 1.35em)` }}
+      className={`${s.pad} ${s.nameText} ${s.namePad} font-semibold leading-[1.6] text-slate-900 ${CLAMP[config.lines]}`}
+      style={{ minHeight: `calc(${config.lines} * 1.6em)` }}
     >
       {item.name}
     </div>
@@ -146,14 +148,17 @@ export function ProductCard({ item, config, qtyInCart, onAdd, labels }: ProductC
       type="button"
       disabled={outOfStock}
       onClick={onAdd}
-      className={`flex h-full flex-col overflow-hidden border bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0 ${s.radius} ${
+      className={`flex flex-col overflow-hidden border bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0 ${s.radius} ${
         inCart ? "border-violet-400 ring-1 ring-violet-300" : "border-violet-100 hover:border-violet-300"
       }`}
     >
       {config.namePos === "top" ? Name : null}
 
-      {/* Image box — FIXED aspect-ratio so it never gets squeezed */}
-      <div className={`relative flex w-full items-center justify-center overflow-hidden bg-violet-50 ${ASPECT[config.aspect]}`}>
+      {/* Image box — FIXED height (resolver) + shrink-0 so flex can never squeeze it */}
+      <div
+        className="relative flex w-full shrink-0 items-center justify-center overflow-hidden bg-violet-50"
+        style={{ height: imageHeight }}
+      >
         {config.showStock ? (
           <span className={`absolute z-10 rounded-full font-semibold ${s.badge} ${s.stockPos} ${badge.cls}`}>
             {badge.txt}
@@ -161,8 +166,14 @@ export function ProductCard({ item, config, qtyInCart, onAdd, labels }: ProductC
         ) : null}
 
         {inCart ? (
-          <span className={`absolute z-10 flex items-center justify-center rounded-full bg-violet-600 font-mono font-bold text-white shadow-sm ${s.qty} ${s.qtyPos}`}>
+          <span className={`absolute z-10 flex items-center justify-center rounded-full bg-violet-600 nums font-bold text-white shadow-sm ${s.qty} ${s.qtyPos}`}>
             x{qtyInCart}
+          </span>
+        ) : null}
+
+        {config.showPromoBadge && promoLabel ? (
+          <span className={`absolute z-10 max-w-[calc(100%-1rem)] truncate rounded-full border border-amber-300 bg-amber-500 font-semibold text-white shadow-sm ${s.badge} ${s.promoPos}`}>
+            {promoLabel}
           </span>
         ) : null}
 
@@ -174,7 +185,7 @@ export function ProductCard({ item, config, qtyInCart, onAdd, labels }: ProductC
             height={320}
             unoptimized
             loading="lazy"
-            className={`h-full w-full ${config.fit === "contain" ? "object-contain p-3" : "object-cover"}`}
+            className={`h-full w-full ${config.fit === "contain" ? "object-contain p-2" : "object-cover"}`}
           />
         ) : (
           <span className={`font-extrabold text-violet-200 ${s.initials}`}>
@@ -187,7 +198,7 @@ export function ProductCard({ item, config, qtyInCart, onAdd, labels }: ProductC
 
       {/* Footer pinned to bottom */}
       <div className={`mt-auto flex items-center justify-between gap-2 ${s.footPad}`}>
-        <span className={`font-mono tabular-nums font-bold text-slate-900 ${s.price}`}>
+        <span className={`nums font-bold text-slate-900 ${s.price}`}>
           ฿{baht(item.price)}
         </span>
         <span

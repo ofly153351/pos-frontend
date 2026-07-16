@@ -33,6 +33,7 @@ interface FormState {
   phone: string;
   lineId: string;
   email: string;
+  taxId: string;
   logoFile: File | null;
   logoPreviewUrl: string;
   logoError: string;
@@ -53,6 +54,7 @@ interface FormErrors {
   contactName?: string;
   phone?: string;
   email?: string;
+  taxId?: string;
   promptpayNumber?: string;
   bankName?: string;
   bankAccountNumber?: string;
@@ -77,6 +79,7 @@ export type AddSupplierDict = {
     timeHint: string;
     activateNow: string;
     sectionContact: string;
+    sectionAdditional: string;
     companyName: string;
     companyNamePlaceholder: string;
     contactNamePlaceholder: string;
@@ -85,6 +88,9 @@ export type AddSupplierDict = {
     lineIdPlaceholder: string;
     email: string;
     emailPlaceholder: string;
+    taxId: string;
+    taxIdPlaceholder: string;
+    errTaxId: string;
     sectionLogo: string;
     logoOptional: string;
     logoUploadText: string;
@@ -153,6 +159,7 @@ const INITIAL_FORM: FormState = {
   phone: "",
   lineId: "",
   email: "",
+  taxId: "",
   logoFile: null,
   logoPreviewUrl: "",
   logoError: "",
@@ -271,6 +278,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
       form.phone !== "" ||
       form.lineId !== "" ||
       form.email !== "" ||
+      form.taxId !== "" ||
       form.logoFile !== null ||
       form.paymentMethod !== "promptpay" ||
       form.promptpayNumber !== "" ||
@@ -338,6 +346,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
     if (form.contactName.trim().length < 2) e.contactName = m.errContactName;
     if (!isValidThaiPhone(form.phone)) e.phone = m.errPhone;
     if (form.email && !isValidEmail(form.email)) e.email = m.errEmail;
+    if (form.taxId && form.taxId.length !== 13) e.taxId = m.errTaxId;
     if (form.paymentMethod === "promptpay") {
       if (!isValidPromptPay(form.promptpayNumber)) e.promptpayNumber = m.errPromptpay;
     } else {
@@ -387,6 +396,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
         bank_name: form.paymentMethod === "bank_account" ? form.bankName : undefined,
         bank_account_number: form.paymentMethod === "bank_account" ? form.bankAccountNumber : undefined,
         bank_account_name: form.paymentMethod === "bank_account" ? form.bankAccountName.trim() : undefined,
+        tax_id: form.taxId.trim() || undefined,
         credit_days: creditDays,
         logo: form.logoFile ?? undefined,
       });
@@ -470,30 +480,27 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
           {/* ── Body ── */}
           <div ref={bodyRef} className="flex-1 overflow-y-auto">
             <div className="grid grid-cols-2 gap-0 divide-x divide-slate-100">
-              {/* ─ Left column ─ */}
+              {/* ─ Left column: Contact ─ */}
               <div className="px-6 py-5 space-y-5">
-                {/* Contact section */}
                 <div>
                   <SectionHeader icon={<User className="h-4 w-4" />} title={m.sectionContact} />
-                  <div className="space-y-4">
-                    {/* Company name */}
-                    <div>
-                      <FieldLabel required>{m.companyName}</FieldLabel>
-                      <input
-                        ref={companyNameRef}
-                        type="text"
-                        maxLength={200}
-                        placeholder={m.companyNamePlaceholder}
-                        value={form.companyName}
-                        onChange={(e) => set("companyName", e.target.value)}
-                        aria-describedby="err-companyName"
-                        className={errors.companyName ? inputError : inputNormal}
-                      />
-                      <FieldError msg={errors.companyName} id="err-companyName" />
-                    </div>
-
-                    {/* Contact name + Phone */}
+                  <div className="space-y-3">
+                    {/* Row 1: Company Name + Contact Person */}
                     <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <FieldLabel required>{m.companyName}</FieldLabel>
+                        <input
+                          ref={companyNameRef}
+                          type="text"
+                          maxLength={200}
+                          placeholder={m.companyNamePlaceholder}
+                          value={form.companyName}
+                          onChange={(e) => set("companyName", e.target.value)}
+                          aria-describedby="err-companyName"
+                          className={errors.companyName ? inputError : inputNormal}
+                        />
+                        <FieldError msg={errors.companyName} id="err-companyName" />
+                      </div>
                       <div>
                         <FieldLabel required>{dict.contactPerson}</FieldLabel>
                         <input
@@ -507,6 +514,10 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
                         />
                         <FieldError msg={errors.contactName} id="err-contactName" />
                       </div>
+                    </div>
+
+                    {/* Row 2: Phone + LINE ID */}
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <FieldLabel required>{dict.supplierPhone}</FieldLabel>
                         <div className="relative">
@@ -523,10 +534,6 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
                         </div>
                         <FieldError msg={errors.phone} id="err-phone" />
                       </div>
-                    </div>
-
-                    {/* LINE ID + Email */}
-                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <FieldLabel>{m.lineId}</FieldLabel>
                         <div className="relative">
@@ -541,6 +548,10 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
                           />
                         </div>
                       </div>
+                    </div>
+
+                    {/* Row 3: Email + Tax ID */}
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <FieldLabel>{m.email}</FieldLabel>
                         <div className="relative">
@@ -556,18 +567,189 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
                         </div>
                         <FieldError msg={errors.email} id="err-email" />
                       </div>
+                      <div>
+                        <FieldLabel>{m.taxId}</FieldLabel>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={13}
+                          placeholder={m.taxIdPlaceholder}
+                          value={form.taxId}
+                          onChange={(e) => set("taxId", e.target.value.replace(/\D/g, "").slice(0, 13))}
+                          aria-describedby="err-taxId"
+                          className={errors.taxId ? inputError : inputNormal}
+                        />
+                        <FieldError msg={errors.taxId} id="err-taxId" />
+                      </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Logo section */}
+              {/* ─ Right column: Financial + Address ─ */}
+              <div className="px-6 py-5 space-y-5">
                 <div>
-                  <SectionHeader
-                    icon={<Upload className="h-4 w-4" />}
-                    title={m.sectionLogo}
-                    suffix={m.logoOptional}
-                  />
+                  <SectionHeader icon={<CreditCard className="h-4 w-4" />} title={m.sectionFinancial} />
+                  <div className="space-y-4">
+                    {/* Payment method toggle */}
+                    <div>
+                      <FieldLabel required>{m.paymentMethodLabel}</FieldLabel>
+                      <div className="flex gap-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                        {(["promptpay", "bank_account"] as PaymentMethod[]).map((method) => (
+                          <button
+                            key={method}
+                            type="button"
+                            onClick={() => set("paymentMethod", method)}
+                            className={`flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
+                              form.paymentMethod === method
+                                ? "bg-violet-600 text-white shadow"
+                                : "text-slate-600 hover:bg-white hover:text-violet-700"
+                            }`}
+                          >
+                            {method === "promptpay" ? <QrCode className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
+                            {method === "promptpay" ? m.promptpay : m.bankAccount}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
+                    {/* Conditional payment fields */}
+                    <div key={form.paymentMethod} className="field-slide-in">
+                      {form.paymentMethod === "promptpay" ? (
+                        <div>
+                          <FieldLabel required>{m.promptpayNumber}</FieldLabel>
+                          <input
+                            type="text"
+                            maxLength={13}
+                            placeholder={m.promptpayNumberPlaceholder}
+                            value={form.promptpayNumber}
+                            onChange={(e) => set("promptpayNumber", e.target.value.replace(/\D/g, "").slice(0, 13))}
+                            aria-describedby="err-promptpayNumber"
+                            className={errors.promptpayNumber ? inputError : inputNormal}
+                          />
+                          <p className="mt-1 text-xs text-slate-400">{m.promptpayHint}</p>
+                          <FieldError msg={errors.promptpayNumber} id="err-promptpayNumber" />
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div>
+                            <FieldLabel required>{m.bankNameLabel}</FieldLabel>
+                            <select
+                              value={form.bankName}
+                              onChange={(e) => set("bankName", e.target.value)}
+                              aria-describedby="err-bankName"
+                              className={`${errors.bankName ? inputError : inputNormal} appearance-none`}
+                            >
+                              <option value="">{m.selectBankPlaceholder}</option>
+                              {THAI_BANKS.map((b) => (
+                                <option key={b.code} value={b.code}>{b.name}</option>
+                              ))}
+                            </select>
+                            <FieldError msg={errors.bankName} id="err-bankName" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <FieldLabel required>{m.bankAccountNumber}</FieldLabel>
+                              <input
+                                type="text"
+                                maxLength={12}
+                                placeholder={m.bankAccountNumberPlaceholder}
+                                value={form.bankAccountNumber}
+                                onChange={(e) => set("bankAccountNumber", e.target.value.replace(/\D/g, "").slice(0, 12))}
+                                aria-describedby="err-bankAccountNumber"
+                                className={errors.bankAccountNumber ? inputError : inputNormal}
+                              />
+                              <FieldError msg={errors.bankAccountNumber} id="err-bankAccountNumber" />
+                            </div>
+                            <div>
+                              <FieldLabel required>{m.bankAccountName}</FieldLabel>
+                              <input
+                                type="text"
+                                placeholder={m.bankAccountNamePlaceholder}
+                                value={form.bankAccountName}
+                                onChange={(e) => set("bankAccountName", e.target.value)}
+                                aria-describedby="err-bankAccountName"
+                                className={errors.bankAccountName ? inputError : inputNormal}
+                              />
+                              <FieldError msg={errors.bankAccountName} id="err-bankAccountName" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Credit term pills */}
+                    <div>
+                      <FieldLabel required>{m.creditTerm}</FieldLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {CREDIT_OPTIONS.map((c) => (
+                          <button
+                            key={String(c)}
+                            type="button"
+                            onClick={() => set("creditTerm", c)}
+                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                              form.creditTerm === c
+                                ? "border-violet-600 bg-violet-600 text-white"
+                                : "border-violet-300 bg-white text-violet-600 hover:bg-violet-50"
+                            }`}
+                          >
+                            {creditLabel(c)}
+                          </button>
+                        ))}
+                      </div>
+                      {form.creditTerm === "custom" && (
+                        <div className="field-slide-in mt-3">
+                          <FieldLabel>{m.creditCustomLabel}</FieldLabel>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min={1}
+                              max={365}
+                              placeholder={m.creditCustomPlaceholder}
+                              value={form.customDays}
+                              onChange={(e) => set("customDays", e.target.value)}
+                              aria-describedby="err-customDays"
+                              className={`${errors.customDays ? inputError : inputNormal} pr-12`}
+                            />
+                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                              {m.creditSuffix}
+                            </span>
+                          </div>
+                          <FieldError msg={errors.customDays} id="err-customDays" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Address */}
+                    <div>
+                      <FieldLabel>{dict.address}</FieldLabel>
+                      <div className="relative">
+                        <MapPin className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                        <textarea
+                          rows={5}
+                          maxLength={500}
+                          placeholder={m.addressPlaceholder}
+                          value={form.address}
+                          onChange={(e) => set("address", e.target.value)}
+                          className={`${inputNormal} resize-none pl-9`}
+                        />
+                      </div>
+                      <p className="mt-0.5 text-right text-xs text-slate-400">
+                        {form.address.length}/500
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ─ Bottom: Additional Information (Logo + Notes) ─ */}
+            <div className="border-t border-slate-100 px-6 py-5">
+              <SectionHeader icon={<Upload className="h-4 w-4" />} title={m.sectionAdditional} />
+              <div className="grid grid-cols-2 gap-6">
+                {/* Logo upload */}
+                <div>
+                  <FieldLabel>{m.sectionLogo} <span className="font-normal text-slate-400">{m.logoOptional}</span></FieldLabel>
                   {form.logoPreviewUrl ? (
                     <div className="field-slide-in flex items-center gap-3 rounded-xl border border-violet-100 bg-white p-3 shadow-sm">
                       <img
@@ -616,7 +798,6 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
                         <Upload className="h-6 w-6 text-slate-400" />
                         <p className="text-xs font-medium text-slate-600">{m.logoUploadText}</p>
                         <p className="text-xs text-slate-400">{m.logoUploadHint}</p>
-                        {/* Decorative ghost icons */}
                         <div className="pointer-events-none absolute bottom-2 right-3 flex gap-1 opacity-10">
                           <Building2 className="h-8 w-8 text-slate-500" />
                         </div>
@@ -627,182 +808,24 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
                     </>
                   )}
                 </div>
-              </div>
 
-              {/* ─ Right column ─ */}
-              <div className="px-6 py-5 space-y-5">
+                {/* Notes */}
                 <div>
-                  <SectionHeader icon={<CreditCard className="h-4 w-4" />} title={m.sectionFinancial} />
-                  <div className="space-y-4">
-                    {/* Payment method toggle */}
-                    <div>
-                      <FieldLabel required>{m.paymentMethodLabel}</FieldLabel>
-                      <div className="flex gap-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                        {(["promptpay", "bank_account"] as PaymentMethod[]).map((method) => (
-                          <button
-                            key={method}
-                            type="button"
-                            onClick={() => set("paymentMethod", method)}
-                            className={`flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-semibold transition-all ${
-                              form.paymentMethod === method
-                                ? "bg-violet-600 text-white shadow"
-                                : "text-slate-600 hover:bg-white hover:text-violet-700"
-                            }`}
-                          >
-                            {method === "promptpay" ? <QrCode className="h-4 w-4" /> : <Building2 className="h-4 w-4" />}
-                            {method === "promptpay" ? m.promptpay : m.bankAccount}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Conditional payment fields */}
-                    <div key={form.paymentMethod} className="field-slide-in">
-                      {form.paymentMethod === "promptpay" ? (
-                        <div>
-                          <FieldLabel required>{m.promptpayNumber}</FieldLabel>
-                          <input
-                            type="text"
-                            maxLength={13}
-                            placeholder={m.promptpayNumberPlaceholder}
-                            value={form.promptpayNumber}
-                            onChange={(e) => set("promptpayNumber", e.target.value.replace(/\D/g, "").slice(0, 13))}
-                            aria-describedby="err-promptpayNumber"
-                            className={errors.promptpayNumber ? inputError : inputNormal}
-                          />
-                          <p className="mt-1 text-xs text-slate-400">{m.promptpayHint}</p>
-                          <FieldError msg={errors.promptpayNumber} id="err-promptpayNumber" />
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {/* Bank select */}
-                          <div>
-                            <FieldLabel required>{m.bankNameLabel}</FieldLabel>
-                            <select
-                              value={form.bankName}
-                              onChange={(e) => set("bankName", e.target.value)}
-                              aria-describedby="err-bankName"
-                              className={`${errors.bankName ? inputError : inputNormal} appearance-none`}
-                            >
-                              <option value="">{m.selectBankPlaceholder}</option>
-                              {THAI_BANKS.map((b) => (
-                                <option key={b.code} value={b.code}>{b.name}</option>
-                              ))}
-                            </select>
-                            <FieldError msg={errors.bankName} id="err-bankName" />
-                          </div>
-                          {/* Account number */}
-                          <div>
-                            <FieldLabel required>{m.bankAccountNumber}</FieldLabel>
-                            <input
-                              type="text"
-                              maxLength={12}
-                              placeholder={m.bankAccountNumberPlaceholder}
-                              value={form.bankAccountNumber}
-                              onChange={(e) => set("bankAccountNumber", e.target.value.replace(/\D/g, "").slice(0, 12))}
-                              aria-describedby="err-bankAccountNumber"
-                              className={errors.bankAccountNumber ? inputError : inputNormal}
-                            />
-                            <FieldError msg={errors.bankAccountNumber} id="err-bankAccountNumber" />
-                          </div>
-                          {/* Account name */}
-                          <div>
-                            <FieldLabel required>{m.bankAccountName}</FieldLabel>
-                            <input
-                              type="text"
-                              placeholder={m.bankAccountNamePlaceholder}
-                              value={form.bankAccountName}
-                              onChange={(e) => set("bankAccountName", e.target.value)}
-                              aria-describedby="err-bankAccountName"
-                              className={errors.bankAccountName ? inputError : inputNormal}
-                            />
-                            <FieldError msg={errors.bankAccountName} id="err-bankAccountName" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Credit term pills */}
-                    <div>
-                      <FieldLabel required>{m.creditTerm}</FieldLabel>
-                      <div className="flex flex-wrap gap-2">
-                        {CREDIT_OPTIONS.map((c) => (
-                          <button
-                            key={String(c)}
-                            type="button"
-                            onClick={() => set("creditTerm", c)}
-                            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-                              form.creditTerm === c
-                                ? "border-violet-600 bg-violet-600 text-white"
-                                : "border-violet-300 bg-white text-violet-600 hover:bg-violet-50"
-                            }`}
-                          >
-                            {creditLabel(c)}
-                          </button>
-                        ))}
-                      </div>
-                      {/* Custom days input */}
-                      {form.creditTerm === "custom" && (
-                        <div className="field-slide-in mt-3">
-                          <FieldLabel>{m.creditCustomLabel}</FieldLabel>
-                          <div className="relative">
-                            <input
-                              type="number"
-                              min={1}
-                              max={365}
-                              placeholder={m.creditCustomPlaceholder}
-                              value={form.customDays}
-                              onChange={(e) => set("customDays", e.target.value)}
-                              aria-describedby="err-customDays"
-                              className={`${errors.customDays ? inputError : inputNormal} pr-12`}
-                            />
-                            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                              {m.creditSuffix}
-                            </span>
-                          </div>
-                          <FieldError msg={errors.customDays} id="err-customDays" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Address */}
-                    <div>
-                      <FieldLabel>{dict.address}</FieldLabel>
-                      <div className="relative">
-                        <MapPin className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <textarea
-                          rows={3}
-                          maxLength={200}
-                          placeholder={m.addressPlaceholder}
-                          value={form.address}
-                          onChange={(e) => set("address", e.target.value)}
-                          className={`${inputNormal} resize-none pl-9`}
-                        />
-                      </div>
-                      <p className="mt-0.5 text-right text-xs text-slate-400">
-                        {form.address.length}/200
-                      </p>
-                    </div>
-
-                    {/* Notes */}
-                    <div>
-                      <FieldLabel>{dict.note}</FieldLabel>
-                      <div className="relative">
-                        <MessageSquare className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <textarea
-                          rows={3}
-                          maxLength={300}
-                          placeholder={m.notesPlaceholder}
-                          value={form.notes}
-                          onChange={(e) => set("notes", e.target.value)}
-                          className={`${inputNormal} resize-none pl-9`}
-                        />
-                      </div>
-                      <p className="mt-0.5 text-right text-xs text-slate-400">
-                        {form.notes.length}/300
-                      </p>
-                    </div>
+                  <FieldLabel>{dict.note}</FieldLabel>
+                  <div className="relative">
+                    <MessageSquare className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <textarea
+                      rows={5}
+                      maxLength={300}
+                      placeholder={m.notesPlaceholder}
+                      value={form.notes}
+                      onChange={(e) => set("notes", e.target.value)}
+                      className={`${inputNormal} resize-none pl-9`}
+                    />
                   </div>
+                  <p className="mt-0.5 text-right text-xs text-slate-400">
+                    {form.notes.length}/300
+                  </p>
                 </div>
               </div>
             </div>

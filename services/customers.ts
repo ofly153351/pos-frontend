@@ -4,6 +4,8 @@ import type {
   CreateCustomerInput,
   Customer,
   CustomerLevelDiscount,
+  ShippingAddress,
+  ShippingAddressInput,
   UpdateCustomerInput,
 } from "@/types/customer";
 
@@ -56,6 +58,41 @@ export function deleteCustomer(customerId: string) {
     method: "DELETE",
   });
 }
+
+// ── Shipping addresses ──────────────────────────────────────────────────────
+
+export function listShippingAddresses(customerId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<ShippingAddress[]>(
+    `/api/stores/${storeId}/customers/${customerId}/shipping-addresses`,
+  );
+}
+
+export function createShippingAddress(customerId: string, input: ShippingAddressInput) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<ShippingAddress>(
+    `/api/stores/${storeId}/customers/${customerId}/shipping-addresses`,
+    { body: input, headers: { "Content-Type": "application/json" }, method: "POST" },
+  );
+}
+
+export function updateShippingAddress(customerId: string, addrId: string, input: ShippingAddressInput) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<ShippingAddress>(
+    `/api/stores/${storeId}/customers/${customerId}/shipping-addresses/${addrId}`,
+    { body: input, headers: { "Content-Type": "application/json" }, method: "PUT" },
+  );
+}
+
+export function deleteShippingAddress(customerId: string, addrId: string) {
+  const storeId = ensureStoreId();
+  return authorizedApiRequest<Record<string, never>>(
+    `/api/stores/${storeId}/customers/${customerId}/shipping-addresses/${addrId}`,
+    { allowEmptyData: true, method: "DELETE" },
+  );
+}
+
+// ── Level discounts ─────────────────────────────────────────────────────────
 
 export function listCustomerLevelDiscounts() {
   const storeId = ensureStoreId();

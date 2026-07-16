@@ -1,26 +1,34 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
-import { StockManager } from "@/components/stock/stock-manager";
-import { getDictionary } from "@/lib/i18n";
-import { isSupportedLocale, type Locale } from "@/lib/locale-config";
+import { isSupportedLocale } from "@/lib/locale-config";
 
-type StockCategoriesPageProps = {
+type StockCategoriesRedirectPageProps = {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function StockCategoriesPage({ params }: StockCategoriesPageProps) {
+// Product Master category management moved to /[locale]/products/categories.
+// Redirect server-side, preserving URL state.
+export default async function StockCategoriesRedirectPage({
+  params,
+  searchParams,
+}: StockCategoriesRedirectPageProps) {
   const { locale } = await params;
 
   if (!isSupportedLocale(locale)) {
     notFound();
   }
 
-  const dictionary = await getDictionary(locale as Locale);
+  const sp = await searchParams;
+  const qs = new URLSearchParams();
+  for (const [key, value] of Object.entries(sp)) {
+    if (Array.isArray(value)) {
+      for (const v of value) qs.append(key, v);
+    } else if (value != null) {
+      qs.set(key, value);
+    }
+  }
+  const query = qs.toString();
 
-  return (
-    <StockManager
-      dictionary={dictionary.stock}
-      initialSection="categories"
-    />
-  );
+  redirect(`/${locale}/products/categories${query ? `?${query}` : ""}`);
 }

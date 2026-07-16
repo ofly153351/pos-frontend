@@ -16,5 +16,11 @@ export default async function PendingDocumentsPage({ params }: PendingDocumentsP
   }
 
   const dictionary = await getDictionary(locale as Locale);
-  return <DocumentsManager dictionary={dictionary.sales} mode="pending" />;
+  return (
+    <DocumentsManager
+      dictionary={dictionary.sales}
+      salesDict={dictionary.salesHistory}
+      mode="pending"
+    />
+  );
 }

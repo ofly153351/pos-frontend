@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 
 import { getDictionary } from "@/lib/i18n";
@@ -18,5 +17,10 @@ export default async function PurchasesPage({ params }: PageProps) {
 
   const dictionary = await getDictionary(locale as Locale);
 
-  return <PurchasesContent dictionary={dictionary.purchasing} />;
+  return (
+    <PurchasesContent
+      workspace={dictionary.purchasingWorkspace}
+      purchasing={dictionary.purchasing}
+    />
+  );
 }

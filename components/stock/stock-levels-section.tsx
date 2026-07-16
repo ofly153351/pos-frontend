@@ -1,7 +1,13 @@
 "use client";
 
 import * as XLSX from "xlsx";
+import { LayoutGrid, List } from "lucide-react";
 import { ProductsTable } from "@/components/stock/products-table";
+import { ScanButton } from "@/components/shared/scan-button";
+import { ProductCardGrid } from "@/components/stock/product-card-grid";
+import { BarcodeModal, type BarcodeModalLabels } from "@/components/stock/barcode-modal";
+import { BarcodeBatchModal } from "@/components/stock/barcode-batch-modal";
+import { ProductDetailView } from "@/components/stock/product-detail-view";
 import { ImportProductModal } from "@/components/stock/import-product-modal";
 import { createProduct } from "@/services/products";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -10,6 +16,7 @@ import type {
   StockManagerDictionary,
 } from "@/components/stock/types";
 import type { Product, ProductBrand, ProductType, ProductUnit } from "@/types/product";
+import type { Location } from "@/services/locations";
 
 type ProductStockStatus =
   | "all"
@@ -20,6 +27,11 @@ type ProductStockStatus =
 
 type StockLevelsSectionProps = {
   dictionary: StockManagerDictionary;
+  /** Stock mode (Inventory page): show stock-mutating actions and force table view.
+   * Default false = Product master-data list (read-only stock, card/table toggle). */
+  allowStockActions?: boolean;
+  /** When set, auto-opens the ProductDetailView for the product with this ID once products load. */
+  initialDetailProductId?: string;
   emptyState: string;
   error: string;
   filteredProducts: Product[];
@@ -52,22 +64,42 @@ type StockLevelsSectionProps = {
   productUnits: ProductUnit[];
   search: string;
   stockStatusFilter: ProductStockStatus;
+  statusCounts: { all: number; active: number; low_stock: number; out_of_stock: number; inactive: number };
+  locations: Location[];
+  locationFilter: string;
+  noLocationFilter: boolean;
+  onLocationFilterChange: (id: string) => void;
+  onNoLocationFilterChange: (v: boolean) => void;
+  summaryStats: { total: number; ready: number; low: number; out: number; value: number };
+  onBulkEnable: (ids: string[]) => void;
+  onBulkDisable: (ids: string[]) => void;
+  onBulkCategoryChange: (ids: string[], categoryId: string) => void;
 };
 
 export function StockLevelsSection({
   dictionary,
+  allowStockActions = false,
+  initialDetailProductId,
   emptyState,
   error,
   filteredProducts,
   isPending,
   loadingLabel,
+  locations,
+  locationFilter,
+  noLocationFilter,
   managementDictionary,
+  onBulkEnable,
+  onBulkDisable,
+  onBulkCategoryChange,
   onPageChange,
   onPageSizeChange,
   onDelete,
   onDeleteMany,
   onEdit,
   onAdjustStock,
+  onLocationFilterChange,
+  onNoLocationFilterChange,
   onOpenCreateModal,
   onProductBrandFilterChange,
   onProductTypeFilterChange,
@@ -88,6 +120,8 @@ export function StockLevelsSection({
   productUnits,
   search,
   stockStatusFilter,
+  statusCounts,
+  summaryStats,
 }: StockLevelsSectionProps) {
   const startPage = Math.max(paginationCurrentPage - 2, 1);
   const endPage = Math.min(startPage + 4, paginationTotalPages);
@@ -95,16 +129,121 @@ export function StockLevelsSection({
     { length: Math.max(endPage - startPage + 1, 0) },
     (_, index) => startPage + index,
   );
+  const PRESET_SIZES = [5, 10, 15, 25, 50, 100];
+  const ALL_SIZE = 9999;
+  const isPresetOrAll = PRESET_SIZES.includes(paginationPageSize) || paginationPageSize === ALL_SIZE;
+  const [showCustomInput, setShowCustomInput] = useState(!isPresetOrAll);
+  const [customRaw, setCustomRaw] = useState(String(paginationPageSize));
+
+  function applyCustomSize() {
+    const n = parseInt(customRaw, 10);
+    if (!Number.isNaN(n) && n >= 1 && n <= 9999) onPageSizeChange(n);
+    else setCustomRaw(String(paginationPageSize));
+  }
+
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [barcodingProduct, setBarcodingProduct] = useState<Product | null>(null);
+  const [barcodeBatchProducts, setBarcodeBatchProducts] = useState<Product[] | null>(null);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isFilterPanelVisible, setIsFilterPanelVisible] = useState(false);
   const [draftProductTypeFilter, setDraftProductTypeFilter] = useState(productTypeFilter);
   const [draftProductUnitFilter, setDraftProductUnitFilter] = useState(productUnitFilter);
   const [draftProductBrandFilter, setDraftProductBrandFilter] = useState(productBrandFilter);
   const [draftStockStatusFilter, setDraftStockStatusFilter] = useState<ProductStockStatus>(stockStatusFilter);
+  const [draftLocationFilter, setDraftLocationFilter] = useState(locationFilter);
+  const [draftNoLocationFilter, setDraftNoLocationFilter] = useState(noLocationFilter);
   const [optionSearch, setOptionSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const importFileRef = useRef<HTMLInputElement>(null);
+
+  // Auto-open detail view when navigated here with ?product=<id> (e.g. from inventory table).
+  useEffect(() => {
+    if (!initialDetailProductId || filteredProducts.length === 0) return;
+    const target = filteredProducts.find((p) => p.id === initialDetailProductId);
+    if (target) setDetailProduct(target);
+  }, [initialDetailProductId, filteredProducts]);
+
+  const barcodeLabels: BarcodeModalLabels = {
+    title:               dictionary.table.barcodePreviewTitle,
+    printLabel:          dictionary.table.barcodePrintLabel,
+    downloadPng:         dictionary.table.barcodeDownloadPng,
+    downloadPdf:         dictionary.table.barcodeDownloadPdf,
+    exporting:           dictionary.table.barcodeExporting,
+    copyCode:            dictionary.table.barcodeCopyCode,
+    copied:              dictionary.table.barcodeCopied,
+    noBarcodeLabel:      dictionary.table.noBarcodeLabel,
+    invalidBarcodeLabel: dictionary.table.invalidBarcodeLabel,
+    templateLabel:       dictionary.table.barcodeTemplateLabel,
+    templateSmall:       dictionary.table.barcodeTemplateSmall,
+    templateMedium:      dictionary.table.barcodeTemplateMedium,
+    templateLarge:       dictionary.table.barcodeTemplateLarge,
+    templateShelf:       dictionary.table.barcodeTemplateShelf,
+    templateQr:          dictionary.table.barcodeTemplateQr,
+    barcodeTypeLabel:    dictionary.table.barcodeTypeLabel,
+    barcodeTypeCode128:  dictionary.table.barcodeTypeCode128,
+    barcodeTypeEan13:    dictionary.table.barcodeTypeEan13,
+    barcodeTypeEan8:     dictionary.table.barcodeTypeEan8,
+    barcodeTypeUpca:     dictionary.table.barcodeTypeUpca,
+    barcodeTypeQr:       dictionary.table.barcodeTypeQr,
+    contentOptionsLabel: dictionary.table.barcodeContentOptions,
+    showName:            dictionary.table.barcodeShowName,
+    showSku:             dictionary.table.barcodeShowSku,
+    showPrice:           dictionary.table.barcodeShowPrice,
+    showBarcodeNumber:   dictionary.table.barcodeShowBarcodeNumber,
+    showCategory:        dictionary.table.barcodeShowCategory,
+    showBrand:           dictionary.table.barcodeShowBrand,
+    showLocation:        dictionary.table.barcodeShowLocation,
+    showStoreName:       dictionary.table.barcodeShowStoreName,
+    showSalePrice:       dictionary.table.barcodeShowSalePrice,
+    origPriceInput:      dictionary.table.barcodeOrigPriceInput,
+    salePriceInput:      dictionary.table.barcodeSalePriceInput,
+    quantityLabel:       dictionary.table.barcodeQuantityLabel,
+    printerModeLabel:    dictionary.table.barcodePrinterModeLabel,
+    printerLabel:        dictionary.table.barcodePrinterLabel,
+    printerA4:           dictionary.table.barcodePrinterA4,
+    printer58mm:         dictionary.table.barcodePrinter58mm,
+    printer80mm:         dictionary.table.barcodePrinter80mm,
+    a4LayoutLabel:       dictionary.table.barcodeA4LayoutLabel,
+    previewLabel:        dictionary.table.barcodePreviewLabel,
+    infoTemplate:        dictionary.table.barcodeInfoTemplate,
+    infoSize:            dictionary.table.barcodeInfoSize,
+    infoType:            dictionary.table.barcodeInfoType,
+    infoMode:            dictionary.table.barcodeInfoMode,
+    infoQuantity:        dictionary.table.barcodeInfoQuantity,
+    infoPages:           dictionary.table.barcodeInfoPages,
+    pagesUnit:           dictionary.table.barcodePagesUnit,
+    labelsUnit:          dictionary.table.barcodeLabelsUnit,
+    pagesWillPrint:      dictionary.table.barcodePagesWillPrint,
+    sampleNote:          dictionary.table.barcodeSampleNote,
+    labelPrinterNote:    dictionary.table.barcodeLabelPrinterNote,
+    closeLabel:          dictionary.table.barcodeClose,
+    batchTitle:          dictionary.table.barcodeBatchTitle,
+    batchProducts:       dictionary.table.barcodeBatchProducts,
+    batchQtyPerProduct:  dictionary.table.barcodeBatchQtyPerProduct,
+    batchPrintAll:       dictionary.table.barcodeBatchPrintAll,
+    batchTotalLabels:    dictionary.table.barcodeBatchTotalLabels,
+  };
   const filterPanelRef = useRef<HTMLDivElement>(null);
+
+  // Restore the chosen view for the current session (set after mount to avoid SSR mismatch).
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("pos-product-view");
+      if (saved === "card" || saved === "table") setViewMode(saved);
+    } catch {
+      /* sessionStorage unavailable — keep default */
+    }
+  }, []);
+
+  function changeViewMode(mode: "card" | "table") {
+    setViewMode(mode);
+    try {
+      sessionStorage.setItem("pos-product-view", mode);
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     if (!isFilterPanelOpen) return;
@@ -146,7 +285,9 @@ export function StockLevelsSection({
     setDraftProductUnitFilter(productUnitFilter);
     setDraftProductBrandFilter(productBrandFilter);
     setDraftStockStatusFilter(stockStatusFilter);
-  }, [isFilterPanelOpen, productBrandFilter, productTypeFilter, productUnitFilter, stockStatusFilter]);
+    setDraftLocationFilter(locationFilter);
+    setDraftNoLocationFilter(noLocationFilter);
+  }, [isFilterPanelOpen, productBrandFilter, productTypeFilter, productUnitFilter, stockStatusFilter, locationFilter, noLocationFilter]);
 
   const normalizedOptionSearch = optionSearch.trim().toLowerCase();
   const visibleTypes = useMemo(
@@ -174,6 +315,8 @@ export function StockLevelsSection({
     productBrandFilter,
     stockStatusFilter !== "all" ? stockStatusFilter : "",
     search.trim(),
+    locationFilter,
+    noLocationFilter ? "1" : "",
   ].filter(Boolean).length;
 
   function clearDraftFilters() {
@@ -181,6 +324,8 @@ export function StockLevelsSection({
     setDraftProductUnitFilter("");
     setDraftProductBrandFilter("");
     setDraftStockStatusFilter("all");
+    setDraftLocationFilter("");
+    setDraftNoLocationFilter(false);
     setOptionSearch("");
   }
 
@@ -189,6 +334,8 @@ export function StockLevelsSection({
     onProductUnitFilterChange(draftProductUnitFilter);
     onProductBrandFilterChange(draftProductBrandFilter);
     onStockStatusFilterChange(draftStockStatusFilter);
+    onLocationFilterChange(draftLocationFilter);
+    onNoLocationFilterChange(draftNoLocationFilter);
     setIsFilterPanelOpen(false);
   }
 
@@ -211,6 +358,12 @@ export function StockLevelsSection({
               value={search}
             />
           </div>
+
+          <ScanButton
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-white text-violet-600 transition hover:border-violet-400 hover:bg-violet-50"
+            onScan={(code) => onSearchChange(code)}
+            title={dictionary.scanWithCamera}
+          />
 
           {/* Sort selector */}
           <select
@@ -346,6 +499,56 @@ export function StockLevelsSection({
                     ))}
                   </div>
                 </div>
+
+                {/* Phase 2: Location filter */}
+                {locations.length > 0 ? (
+                  <div className="rounded-lg border border-violet-100 p-2">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">{dictionary.filters.locationLabel ?? "ตำแหน่งจัดเก็บ"}</p>
+                    <div className="space-y-1">
+                      <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-slate-700 hover:bg-violet-50">
+                        <input
+                          checked={draftLocationFilter === ""}
+                          className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-400"
+                          onChange={() => { setDraftLocationFilter(""); setDraftNoLocationFilter(false); }}
+                          type="radio"
+                          name="locationFilter"
+                        />
+                        {dictionary.filters.allLocations ?? "ทุกตำแหน่ง"}
+                      </label>
+                      {locations.map((loc) => (
+                        <label key={loc.id} className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-slate-700 hover:bg-violet-50">
+                          <input
+                            checked={draftLocationFilter === loc.id}
+                            className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-400"
+                            onChange={() => { setDraftLocationFilter(loc.id); setDraftNoLocationFilter(false); }}
+                            type="radio"
+                            name="locationFilter"
+                          />
+                          {loc.name}
+                          {loc.zone_name ? <span className="text-xs text-slate-400">{loc.zone_name}</span> : null}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Phase 3: No location filter */}
+                <div className="rounded-lg border border-violet-100 p-2">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">ตัวกรองพิเศษ</p>
+                  <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-slate-700 hover:bg-violet-50">
+                    <input
+                      checked={draftNoLocationFilter}
+                      className="h-4 w-4 rounded border-violet-300 text-violet-600 focus:ring-violet-400"
+                      onChange={() => {
+                        const next = !draftNoLocationFilter;
+                        setDraftNoLocationFilter(next);
+                        if (next) setDraftLocationFilter("");
+                      }}
+                      type="checkbox"
+                    />
+                    {dictionary.filters.noLocationLabel ?? "ไม่มีตำแหน่งจัดเก็บ"}
+                  </label>
+                </div>
               </div>
 
               <div className="mt-4 flex items-center justify-end gap-2 border-t border-violet-100 pt-3">
@@ -374,6 +577,34 @@ export function StockLevelsSection({
             </div>
           ) : null}
           </div>
+
+          {/* View mode toggle (card / table) — product master-data list only */}
+          {!allowStockActions ? (
+          <div className="inline-flex items-center gap-1 rounded-lg border border-violet-200 bg-white p-1">
+            <button
+              aria-label={dictionary.table.cardView}
+              title={dictionary.table.cardView}
+              className={`rounded-md px-2.5 py-2 transition ${
+                viewMode === "card" ? "bg-violet-600 text-white" : "text-violet-700 hover:bg-violet-50"
+              }`}
+              onClick={() => changeViewMode("card")}
+              type="button"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              aria-label={dictionary.table.tableView}
+              title={dictionary.table.tableView}
+              className={`rounded-md px-2.5 py-2 transition ${
+                viewMode === "table" ? "bg-violet-600 text-white" : "text-violet-700 hover:bg-violet-50"
+              }`}
+              onClick={() => changeViewMode("table")}
+              type="button"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-3">
@@ -387,15 +618,38 @@ export function StockLevelsSection({
             <select
               className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm md:text-[15px] font-semibold text-slate-700 outline-none transition focus:border-violet-300"
               id="stock-page-size"
-              onChange={(event) => onPageSizeChange(Number(event.target.value))}
-              value={paginationPageSize}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "custom") {
+                  setShowCustomInput(true);
+                  setCustomRaw(String(paginationPageSize));
+                } else {
+                  setShowCustomInput(false);
+                  onPageSizeChange(Number(val));
+                }
+              }}
+              value={showCustomInput ? "custom" : paginationPageSize}
             >
-              {[5, 10, 15, 25, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
+              {PRESET_SIZES.map((size) => (
+                <option key={size} value={size}>{size}</option>
               ))}
+              <option value={ALL_SIZE}>ทั้งหมด</option>
+              <option value="custom">กำหนดเอง...</option>
             </select>
+            {showCustomInput && (
+              <input
+                aria-label="จำนวนรายการต่อหน้า"
+                className="w-20 rounded-lg border border-violet-300 bg-white px-2 py-2.5 text-center text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                inputMode="numeric"
+                min={1}
+                max={9999}
+                onBlur={applyCustomSize}
+                onChange={(e) => setCustomRaw(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && applyCustomSize()}
+                type="number"
+                value={customRaw}
+              />
+            )}
           </div>
           <button
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm md:text-[15px] font-semibold text-white transition hover:bg-violet-700"
@@ -420,12 +674,112 @@ export function StockLevelsSection({
         </div>
       </section>
 
+      {/* ── Phase 5: Summary bar ───────────────────────────────────────────── */}
+      <div className="my-2 flex flex-wrap gap-2 overflow-x-auto pb-1">
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm">
+          <span className="font-semibold text-slate-500">{dictionary.table.summaryAll ?? "ทั้งหมด"}</span>
+          <span className="font-bold text-slate-900">{summaryStats.total.toLocaleString()}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-100 bg-emerald-50 px-3.5 py-2 text-sm">
+          <span className="font-semibold text-emerald-600">{dictionary.table.summaryReady ?? "พร้อมขาย"}</span>
+          <span className="font-bold text-emerald-700">{summaryStats.ready.toLocaleString()}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-amber-100 bg-amber-50 px-3.5 py-2 text-sm">
+          <span className="font-semibold text-amber-600">{dictionary.table.summaryLow ?? "สต็อกต่ำ"}</span>
+          <span className="font-bold text-amber-700">{summaryStats.low.toLocaleString()}</span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-rose-100 bg-rose-50 px-3.5 py-2 text-sm">
+          <span className="font-semibold text-rose-500">{dictionary.table.summaryOut ?? "สินค้าหมด"}</span>
+          <span className="font-bold text-rose-700">{summaryStats.out.toLocaleString()}</span>
+        </div>
+        {summaryStats.value > 0 ? (
+          <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-violet-100 bg-violet-50 px-3.5 py-2 text-sm">
+            <span className="font-semibold text-violet-600">{dictionary.table.summaryValue ?? "มูลค่าสต็อก"}</span>
+            <span className="font-bold text-violet-700">
+              {new Intl.NumberFormat("th-TH", { currency: "THB", maximumFractionDigits: 0, minimumFractionDigits: 0, style: "currency" }).format(summaryStats.value)}
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* ── Phase 1: Quick status chips + Phase 6: Quick view buttons ─────── */}
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {(
+          [
+            { value: "all" as const, label: dictionary.filters.allStatuses, count: statusCounts.all },
+            { value: "active" as const, label: dictionary.filters.readyToSellStatus ?? dictionary.filters.activeStatus, count: statusCounts.active },
+            { value: "low_stock" as const, label: dictionary.filters.lowStockStatus, count: statusCounts.low_stock },
+            { value: "out_of_stock" as const, label: dictionary.filters.outOfStockStatus, count: statusCounts.out_of_stock },
+            { value: "inactive" as const, label: dictionary.filters.inactiveStatus, count: statusCounts.inactive },
+          ] as const
+        ).map((chip) => (
+          <button
+            key={chip.value}
+            type="button"
+            onClick={() => onStockStatusFilterChange(chip.value)}
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+              stockStatusFilter === chip.value
+                ? "bg-violet-600 text-white shadow-sm"
+                : "border border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700"
+            }`}
+          >
+            {chip.label}
+            <span className={`rounded-full px-1.5 py-0.5 text-xs font-bold ${stockStatusFilter === chip.value ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+              {chip.count}
+            </span>
+          </button>
+        ))}
+
+        {/* Phase 6: No Location quick view */}
+        <button
+          type="button"
+          onClick={() => {
+            onNoLocationFilterChange(!noLocationFilter);
+            if (!noLocationFilter) onLocationFilterChange("");
+          }}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+            noLocationFilter
+              ? "bg-violet-600 text-white shadow-sm"
+              : "border border-slate-200 bg-white text-slate-600 hover:border-violet-300 hover:text-violet-700"
+          }`}
+        >
+          {dictionary.filters.quickViewNoLocation ?? "ไม่มีตำแหน่ง"}
+        </button>
+      </div>
+
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       ) : null}
 
+      {viewMode === "card" && !allowStockActions ? (
+        <ProductCardGrid
+          products={filteredProducts}
+          isPending={isPending}
+          emptyState={emptyState}
+          labels={{
+            sku: dictionary.table.sku,
+            category: dictionary.table.category,
+            brand: dictionary.filters.brandLabel,
+            stock: dictionary.table.stock,
+            stockReady: dictionary.table.stockReady,
+            lowStock: dictionary.filters.lowStockStatus,
+            outOfStock: dictionary.filters.outOfStockStatus,
+            statusActive: dictionary.table.statusActive,
+            statusInactive: dictionary.table.statusInactive,
+            locationUnassigned: dictionary.table.locationUnassigned,
+            viewAction: dictionary.table.viewAction,
+            barcodeAction: dictionary.table.barcodeAction,
+            editAction: dictionary.table.editAction,
+            deleteAction: dictionary.table.deleteAction,
+          }}
+          onView={(product) => setDetailProduct(product)}
+          onBarcode={(product) => setBarcodingProduct(product)}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ) : (
       <ProductsTable
         emptyState={emptyState}
         isPending={isPending}
@@ -435,6 +789,10 @@ export function StockLevelsSection({
         onDeleteMany={onDeleteMany}
         onEdit={onEdit}
         onAdjustStock={onAdjustStock}
+        onBarcode={(product) => setBarcodingProduct(product)}
+        onBulkBarcode={(prods) => setBarcodeBatchProducts(prods)}
+        onRowClick={(product) => setDetailProduct(product)}
+        showStockActions={allowStockActions}
         onExport={(selectedIds) => {
           const selectedProducts = filteredProducts.filter((p) =>
             selectedIds.includes(p.id),
@@ -458,6 +816,10 @@ export function StockLevelsSection({
         lowStockLabel={dictionary.filters.lowStockStatus}
         outOfStockLabel={dictionary.filters.outOfStockStatus}
         products={filteredProducts}
+        productTypes={productTypes}
+        onBulkEnable={onBulkEnable}
+        onBulkDisable={onBulkDisable}
+        onBulkCategoryChange={onBulkCategoryChange}
         receiveDictionary={{
           receiveStockTitle: dictionary.receive?.receiveStockTitle ?? dictionary.form.titleCreate,
           receiveStock: dictionary.receive?.receiveStock ?? dictionary.table.importLabel,
@@ -480,6 +842,7 @@ export function StockLevelsSection({
         }}
         tableDictionary={dictionary.table}
       />
+      )}
 
       {isImportModalOpen ? (
         <ImportProductModal
@@ -488,6 +851,27 @@ export function StockLevelsSection({
           importFileRef={importFileRef}
         />
       ) : null}
+
+      <BarcodeModal
+        product={barcodingProduct}
+        onClose={() => setBarcodingProduct(null)}
+        labels={barcodeLabels}
+      />
+
+      <BarcodeBatchModal
+        products={barcodeBatchProducts}
+        onClose={() => setBarcodeBatchProducts(null)}
+        labels={barcodeLabels}
+      />
+
+      <ProductDetailView
+        product={detailProduct}
+        dictionary={dictionary}
+        onClose={() => setDetailProduct(null)}
+        onEdit={(product) => { setDetailProduct(null); onEdit(product); }}
+        onDelete={onDelete}
+        onBarcode={(product) => setBarcodingProduct(product)}
+      />
 
       {paginationTotalPages > 1 ? (
         <section className="my-4 flex flex-wrap items-center justify-end gap-3 rounded-xl bg-white px-4 py-3.5 shadow-sm">

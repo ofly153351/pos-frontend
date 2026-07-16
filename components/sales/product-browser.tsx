@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List, Plus, Search, SlidersHorizontal, Ticket } from "lucide-react";
 
 import { CardSettingsModal } from "@/components/sales/card-settings-modal";
 import { ProductCard } from "@/components/sales/product-card";
+import { ScanButton } from "@/components/shared/scan-button";
 import {
   CARD_SIZE_MIN,
   DEFAULT_CARD_SETTINGS,
@@ -21,6 +22,8 @@ import type {
   ProductViewMode,
   SalesDictionary,
 } from "@/components/sales/types";
+import type { PromoChip } from "@/components/sales/promo-display";
+import type { Campaign } from "@/components/promotions/promotion-types";
 import type { Product } from "@/types/product";
 
 type ProductBrowserProps = {
@@ -32,18 +35,37 @@ type ProductBrowserProps = {
   onCategoryFilterChange: (category: string) => void;
   onProductViewChange: (mode: ProductViewMode) => void;
   onSearchChange: (value: string) => void;
+  /** Camera scan: decoded barcode/SKU → parent resolves & adds to cart. */
+  onScanDetected?: (code: string) => void;
   productView: ProductViewMode;
   products: Product[];
+  /** Sentinel value for the promotion tab (e.g. "__promo__"). */
+  promoCategory?: string;
+  /** IDs of products covered by at least one active promotion. */
+  promotionProductIds?: Set<string>;
+  /** Sub-chips (one per product-targeting promo), shown under the promo tab. */
+  promoChips?: PromoChip[];
+  /** Store-wide / bill-level promos, shown as an info strip under the promo tab. */
+  promoStoreWide?: Campaign[];
+  /** Selected promo sub-chip id (null = all promo products). */
+  selectedPromoId?: string | null;
+  onPromoSelect?: (promoId: string | null) => void;
+  /** productId → short promo badge label rendered on each card. */
+  productPromoLabels?: Map<string, string>;
   search: string;
   selectedCategory: string;
   getCartQuantity: (productId: string) => number;
+  /** Compact selector/label rendered in the toolbar row (Cases C / D). Null hides it. */
+  salePointSlot?: ReactNode;
+  /** Replaces the product grid with a blocking state (Case A: no sale points). */
+  salePointBlocker?: ReactNode;
 };
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
     currency: "THB",
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
     style: "currency",
   }).format(value);
 }
@@ -57,11 +79,21 @@ export function ProductBrowser({
   onCategoryFilterChange,
   onProductViewChange,
   onSearchChange,
+  onScanDetected,
   productView,
   products,
+  promoCategory,
+  promotionProductIds,
+  promoChips,
+  promoStoreWide,
+  selectedPromoId = null,
+  onPromoSelect,
+  productPromoLabels,
   search,
   selectedCategory,
   hideSearch = false,
+  salePointSlot,
+  salePointBlocker,
 }: ProductBrowserProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [page, setPage] = useState(1);
@@ -188,7 +220,9 @@ export function ProductBrowser({
             </button>
           </div>
 
-          {!hideSearch && <div className="relative w-full">
+          {salePointSlot}
+          {!hideSearch && <div className="relative flex w-full items-center gap-2">
+            <div className="relative flex-1">
             <input
               className="w-full rounded-lg border border-violet-200 bg-violet-50/60 px-4 py-3 pr-10 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
               onBlur={() => {
@@ -240,6 +274,14 @@ export function ProductBrowser({
                 ))}
               </div>
             ) : null}
+            </div>
+            {onScanDetected ? (
+              <ScanButton
+                className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-lg border border-violet-200 bg-violet-50/60 text-violet-600 transition hover:border-violet-400 hover:bg-violet-50"
+                onScan={onScanDetected}
+                title={dictionary.scanWithCamera}
+              />
+            ) : null}
           </div>}
         </div>
       </div>
@@ -250,9 +292,10 @@ export function ProductBrowser({
         </div>
       ) : null}
 
-
+      {salePointBlocker ?? (
+        <>
       {/* Category filter pills */}
-      {categories.length > 0 ? (
+      {(categories.length > 0 || (promoCategory && (promotionProductIds?.size ?? 0) > 0)) ? (
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
@@ -265,6 +308,20 @@ export function ProductBrowser({
           >
             {dictionary.categoryFilterAll}
           </button>
+          {/* Promotion tab — shown only when active promotions cover at least one product */}
+          {promoCategory && (promotionProductIds?.size ?? 0) > 0 ? (
+            <button
+              className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+                selectedCategory === promoCategory
+                  ? "border-amber-400 bg-amber-500 text-white shadow-sm"
+                  : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+              }`}
+              onClick={() => onCategoryFilterChange(promoCategory)}
+              type="button"
+            >
+              🏷 โปรโมชั่น ({promotionProductIds!.size})
+            </button>
+          ) : null}
           {categories.map((category) => (
             <button
               className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
@@ -282,9 +339,65 @@ export function ProductBrowser({
         </div>
       ) : null}
 
+      {/* Promo sub-bar — one chip per active promotion + a store-wide info strip */}
+      {promoCategory &&
+      selectedCategory === promoCategory &&
+      ((promoChips?.length ?? 0) > 0 || (promoStoreWide?.length ?? 0) > 0) ? (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+          {(promoChips?.length ?? 0) > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onPromoSelect?.(null)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                  selectedPromoId === null
+                    ? "border-amber-500 bg-amber-500 text-white shadow-sm"
+                    : "border-amber-200 bg-white text-amber-700 hover:bg-amber-100"
+                }`}
+              >
+                {dictionary.promo.all}
+              </button>
+              {promoChips!.map((chip) => {
+                const active = selectedPromoId === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    type="button"
+                    onClick={() => onPromoSelect?.(chip.id)}
+                    className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                      active
+                        ? "border-amber-500 bg-amber-500 text-white shadow-sm"
+                        : "border-amber-200 bg-white text-amber-700 hover:bg-amber-100"
+                    }`}
+                  >
+                    {chip.name}
+                    <span
+                      className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] ${
+                        active ? "bg-white/25 text-white" : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {chip.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+          {(promoStoreWide?.length ?? 0) > 0 ? (
+            <div className="mt-2 flex items-start gap-1.5 text-xs text-amber-800">
+              <Ticket className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                <span className="font-semibold">{dictionary.promo.storeWide}:</span>{" "}
+                {promoStoreWide!.map((c) => c.name).join(" · ")}
+              </span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <div
         ref={gridRef}
-        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid gap-3" : "space-y-3"}`}
+        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid content-start auto-rows-max gap-3" : "space-y-3"}`}
         style={productView === "grid" ? gridStyle : undefined}
       >
         {pagedProducts.length > 0 ? (
@@ -309,6 +422,7 @@ export function ProductBrowser({
                   outOfStock: dictionary.productOutOfStock,
                   add: dictionary.addButton,
                 }}
+                promoLabel={productPromoLabels?.get(product.id) ?? null}
               />
             ) : (
               <div
@@ -348,6 +462,11 @@ export function ProductBrowser({
                       product.product_type?.name ??
                       "-"}
                   </p>
+                  {cardSettings.showPromoBadge && productPromoLabels?.get(product.id) ? (
+                    <span className="mt-1 inline-block rounded-full border border-amber-300 bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                      {productPromoLabels.get(product.id)}
+                    </span>
+                  ) : null}
                   <div className="mt-1 flex items-center gap-2 text-xs text-slate-600">
                     <span>
                       {dictionary.stockLabel} {product.total_stock ?? 0}
@@ -433,6 +552,8 @@ export function ProductBrowser({
             <ChevronRight className="h-4.5 w-4.5" />
           </button>
         </div>
+      )}
+        </>
       )}
 
       <CardSettingsModal

@@ -7,9 +7,7 @@ type RouteContext = {
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const { storeId } = await context.params;
-  const searchParams = request.nextUrl.searchParams;
-  const queryString = searchParams.toString();
-  const path = `/api/v1/stores/${storeId}/stock-movements${queryString ? `?${queryString}` : ""}`;
-
-  return proxyApiRequest(request, path);
+  // proxyApiRequest already forwards the incoming query string; baking it in here too
+  // double-appended it (?a=b?a=b) and corrupted the movement filters. Pass only the path.
+  return proxyApiRequest(request, `/api/v1/stores/${storeId}/stock-movements`);
 }

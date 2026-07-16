@@ -28,6 +28,12 @@ export type StockManagerDictionary = {
     searchLabel: string;
     statusLabel: string;
     typeLabel: string;
+    readyToSellStatus?: string;
+    locationLabel?: string;
+    allLocations?: string;
+    noLocationLabel?: string;
+    quickViewLowStock?: string;
+    quickViewNoLocation?: string;
   };
   form: {
     activeLabel: string;
@@ -67,6 +73,18 @@ export type StockManagerDictionary = {
     descriptionHint: string;
     storageLocationLabel: string;
     storageLocationHint: string;
+    storageAssignmentSection: string;
+    storageAssignmentHint: string;
+    warehouseLabel: string;
+    zoneLabel: string;
+    storagePlaceholder: string;
+    storageSelectWarehouseFirst: string;
+    storageNoWarehouses: string;
+    storageNoLocations: string;
+    storageCurrentLabel: string;
+    storageClearLabel: string;
+    storageUnavailableLabel: string;
+    defaultLocationWarning: string;
     save: string;
     saving: string;
     setupSection: string;
@@ -77,6 +95,12 @@ export type StockManagerDictionary = {
     barcodeHint: string;
     specialPriceLabel: string;
     specialPriceHint: string;
+    initialStockLabel: string;
+    initialStockHint: string;
+    supplierLabel: string;
+    supplierHint: string;
+    supplierPlaceholder: string;
+    supplierEmptyLabel: string;
     titleCreate: string;
     titleEdit: string;
     unitPair: string;
@@ -148,6 +172,7 @@ export type StockManagerDictionary = {
     title: string;
   };
   searchPlaceholder: string;
+  scanWithCamera: string;
   stats: {
     categoriesLabel: string;
     highStockListLabel: string;
@@ -160,6 +185,108 @@ export type StockManagerDictionary = {
     barcodeAction: string;
     barcodePreviewTitle: string;
     barcodePrintLabel: string;
+    barcodeDownloadPng: string;
+    barcodeDownloadPdf: string;
+    barcodeExporting: string;
+    barcodeCopyCode: string;
+    barcodeCopied: string;
+    barcodeTemplateLabel: string;
+    barcodeTemplateSmall: string;
+    barcodeTemplateMedium: string;
+    barcodeTemplateLarge: string;
+    barcodeTemplateShelf: string;
+    barcodeTemplateQr: string;
+    barcodeClose: string;
+    barcodeTypeLabel: string;
+    barcodeTypeCode128: string;
+    barcodeTypeEan13: string;
+    barcodeTypeEan8: string;
+    barcodeTypeUpca: string;
+    barcodeTypeQr: string;
+    barcodeContentOptions: string;
+    barcodeShowName: string;
+    barcodeShowSku: string;
+    barcodeShowPrice: string;
+    barcodeShowBarcodeNumber: string;
+    barcodeShowCategory: string;
+    barcodeShowBrand: string;
+    barcodeShowLocation: string;
+    barcodeShowStoreName: string;
+    barcodeShowSalePrice: string;
+    barcodeOrigPriceInput: string;
+    barcodeSalePriceInput: string;
+    barcodeQuantityLabel: string;
+    barcodePrinterModeLabel: string;
+    barcodePrinterLabel: string;
+    barcodePrinterA4: string;
+    barcodePrinter58mm: string;
+    barcodePrinter80mm: string;
+    barcodeA4LayoutLabel: string;
+    barcodePreviewLabel: string;
+    barcodeInfoTemplate: string;
+    barcodeInfoSize: string;
+    barcodeInfoType: string;
+    barcodeInfoMode: string;
+    barcodeInfoQuantity: string;
+    barcodeInfoPages: string;
+    barcodePagesUnit: string;
+    barcodeLabelsUnit: string;
+    barcodePagesWillPrint: string;
+    barcodeSampleNote: string;
+    barcodeLabelPrinterNote: string;
+    barcodeBatchTitle: string;
+    barcodeBatchProducts: string;
+    barcodeBatchQtyPerProduct: string;
+    barcodeBatchPrintAll: string;
+    barcodeBatchTotalLabels: string;
+    copy: string;
+    copied: string;
+    location: string;
+    noLocation: string;
+    locationUnassigned: string;
+    viewDetails: string;
+    duplicate: string;
+    archive: string;
+    unarchive: string;
+    statusReady: string;
+    statusLow: string;
+    statusOut: string;
+    densityLabel: string;
+    densityComfortable: string;
+    densityCompact: string;
+    densityWarehouse: string;
+    selectedSuffix: string;
+    printBarcodeAction: string;
+    clearSelection: string;
+    cancel: string;
+    deleteConfirmTitle: string;
+    deleteConfirmTitleMany: string;
+    deleteConfirmBody: string;
+    deleteConfirmBodyMany: string;
+    detailTabGeneral: string;
+    detailTabBarcode: string;
+    detailTabInventory: string;
+    detailTabMovements: string;
+    detailNoMovements: string;
+    detailMovementType: string;
+    detailMovementQty: string;
+    detailMovementDate: string;
+    detailMovementBy: string;
+    detailMovementNote: string;
+    detailMaxStock: string;
+    detailBack: string;
+    detailProfit: string;
+    detailReserved: string;
+    detailDamaged: string;
+    detailAvailable: string;
+    detailWarehouse: string;
+    detailZone: string;
+    detailLastPrinted: string;
+    detailPrintCount: string;
+    detailNever: string;
+    detailProductInfo: string;
+    detailStorageHierarchy: string;
+    detailKpiSummary: string;
     category: string;
     deleteAction: string;
     editAction: string;
@@ -179,6 +306,21 @@ export type StockManagerDictionary = {
     statusInactive: string;
     receiveAction: string;
     moreActions: string;
+    viewAction: string;
+    cardView: string;
+    tableView: string;
+    stockReady: string;
+    summaryAll?: string;
+    summaryReady?: string;
+    summaryLow?: string;
+    summaryOut?: string;
+    summaryValue?: string;
+    bulkEnableLabel?: string;
+    bulkDisableLabel?: string;
+    bulkChangeCategoryLabel?: string;
+    changeCategoryTitle?: string;
+    changeCategoryApply?: string;
+    changeCategorySelectPlaceholder?: string;
   };
   receive?: {
     receiveStockTitle?: string;
@@ -279,6 +421,9 @@ export type StockManagerDictionary = {
 export type StockManagerProps = {
   dictionary: StockManagerDictionary;
   initialSection?: "categories" | "stock-levels";
+  /** true = Inventory/Stock page (stock adjust + receive enabled, table view).
+   * Default false = Product master-data list (read-only stock, card/table toggle). */
+  allowStockActions?: boolean;
 };
 
 export type ProductFormLabels = StockManagerDictionary["form"];
@@ -295,8 +440,11 @@ export const initialProductFormState: ProductInput = {
   product_code: "",
   description: "",
   storage_location: "",
+  default_location_id: "",
   sku: "",
   barcode: "",
   special_price: "",
+  initial_stock: "",
+  supplier_id: "",
   unit_id: "",
 };

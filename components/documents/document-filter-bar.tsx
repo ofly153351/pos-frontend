@@ -1,7 +1,13 @@
 "use client";
 
 import { RotateCcw, Search, X } from "lucide-react";
-import type { DocumentListQuery, DocumentStatus, DocumentType, PaymentStatus } from "@/types/document";
+import type { DocumentListQuery, DocumentStatus, PaymentStatus } from "@/types/document";
+import type { SalesHistoryDict } from "@/components/sales/sales-history-dict";
+import {
+  DateRangeFilter,
+  type DateFilterValue,
+  isDefaultDateFilter,
+} from "@/components/shared/date-range-filter";
 
 type Dict = {
   searchPlaceholder: string;
@@ -28,13 +34,28 @@ type Dict = {
 
 type Props = {
   dict: Dict;
+  salesDict: SalesHistoryDict;
   query: DocumentListQuery;
+  dateFilter: DateFilterValue;
+  onDateFilterChange: (value: DateFilterValue) => void;
   onChange: (q: Partial<DocumentListQuery>) => void;
   onReset: () => void;
+  locale?: string;
 };
 
-export function DocumentFilterBar({ dict, query, onChange, onReset }: Props) {
-  const activeCount = [query.type, query.status, query.payment_status].filter(Boolean).length;
+export function DocumentFilterBar({
+  dict,
+  salesDict,
+  query,
+  dateFilter,
+  onDateFilterChange,
+  onChange,
+  onReset,
+  locale = "th",
+}: Props) {
+  const activeCount = [query.type, query.status, query.payment_status, query.search, query.customer_id, query.staff_id]
+    .filter(Boolean)
+    .length + (isDefaultDateFilter(dateFilter, "all") ? 0 : 1);
 
   return (
     <div className="border-b border-violet-100 px-6 py-3">
@@ -58,6 +79,23 @@ export function DocumentFilterBar({ dict, query, onChange, onReset }: Props) {
             </button>
           )}
         </div>
+
+        <DateRangeFilter
+          value={dateFilter}
+          onChange={onDateFilterChange}
+          labels={{
+            today: salesDict.filterToday,
+            sevenDays: salesDict.filter7d,
+            thirtyDays: salesDict.filter30d,
+            all: salesDict.filterAll,
+            custom: salesDict.filterCustom,
+            startDate: salesDict.dateFrom,
+            endDate: salesDict.dateTo,
+            cancel: salesDict.cancelBtn,
+            apply: salesDict.confirmBtn,
+          }}
+          locale={locale}
+        />
 
         {/* Status */}
         <select

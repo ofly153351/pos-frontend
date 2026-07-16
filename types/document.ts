@@ -74,6 +74,18 @@ export interface DocumentListItem {
   source_document_id?: string;
 }
 
+export interface RelatedDocument {
+  id: string;
+  document_no: string;
+  document_no_full: string;
+  type: DocumentType;
+  status: DocumentStatus;
+  payment_status: PaymentStatus;
+  document_date: string;
+  total_amount: number;
+  source_document_id?: string;
+}
+
 export interface DocumentStats {
   total: number;
   pending_payment: number;

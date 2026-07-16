@@ -1,4 +1,5 @@
 import type { Sale } from "@/types/sale";
+import { SignatureBlock } from "./signature-block";
 
 type InvoiceDict = {
   title: string;
@@ -27,8 +28,6 @@ type InvoiceDict = {
   vat: string;
   total: string;
   note: string;
-  authorizedSignature: string;
-  customerSignature: string;
   originalCopy: string;
   generalCustomer: string;
   cash: string;
@@ -188,9 +187,6 @@ export function InvoiceA4({ sale, dict, invoiceNo }: Props) {
                 <td style={{ padding: "2mm 3mm", textAlign: "center", color: "#64748b" }}>{i + 1}</td>
                 <td style={{ padding: "2mm 3mm" }}>
                   <div style={{ fontWeight: 500 }}>{item.product_name ?? ""}</div>
-                  {item.sku && (
-                    <div style={{ fontSize: "7pt", color: "#94a3b8" }}>SKU: {item.sku}</div>
-                  )}
                 </td>
                 <td style={{ padding: "2mm 3mm", textAlign: "center", color: "#64748b" }}>
                   {item.unit_type ?? "ชิ้น"}
@@ -274,23 +270,12 @@ export function InvoiceA4({ sale, dict, invoiceNo }: Props) {
         </div>
       </div>
 
-      {/* Signature area */}
-      <div style={{ display: "flex", gap: "10mm", marginTop: "6mm" }}>
-        <div style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ marginBottom: "9mm" }}>&nbsp;</div>
-          <div style={{ borderTop: "1px solid #cbd5e1", paddingTop: "1.5mm", fontSize: "8pt", color: "#64748b" }}>
-            {dict.authorizedSignature}
-          </div>
-          <div style={{ fontSize: "7.5pt", color: "#94a3b8", marginTop: "0.5mm" }}>{sale.store_name ?? ""}</div>
-        </div>
-        <div style={{ flex: 1, textAlign: "center" }}>
-          <div style={{ marginBottom: "9mm" }}>&nbsp;</div>
-          <div style={{ borderTop: "1px solid #cbd5e1", paddingTop: "1.5mm", fontSize: "8pt", color: "#64748b" }}>
-            {dict.customerSignature}
-          </div>
-          <div style={{ fontSize: "7.5pt", color: "#94a3b8", marginTop: "0.5mm" }}>{customerName}</div>
-        </div>
-      </div>
+      <SignatureBlock
+        leftTH="ผู้รับเงิน"
+        leftEN="Received By"
+        rightTH="ผู้จ่ายเงิน"
+        rightEN="Paid By"
+      />
 
       {/* Footer */}
       <div style={{ marginTop: "6mm", borderTop: "0.5px solid #e2e8f0", paddingTop: "2.5mm", display: "flex", justifyContent: "space-between", fontSize: "7pt", color: "#94a3b8" }}>

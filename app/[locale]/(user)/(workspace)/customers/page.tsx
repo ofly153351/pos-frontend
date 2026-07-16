@@ -4,6 +4,7 @@ import { CustomerNetworkManager } from "@/components/customers/customer-network-
 import { getDictionary } from "@/lib/i18n";
 import { isSupportedLocale, type Locale } from "@/lib/locale-config";
 
+
 type CustomersPageProps = {
   params: Promise<{ locale: string }>;
 };
@@ -17,5 +18,5 @@ export default async function CustomersPage({ params }: CustomersPageProps) {
 
   const dictionary = await getDictionary(locale as Locale);
 
-  return <CustomerNetworkManager dictionary={dictionary.customers} />;
+  return <CustomerNetworkManager dictionary={dictionary.customers} locale={locale as Locale} />;
 }

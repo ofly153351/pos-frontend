@@ -10,6 +10,9 @@ export type Store = {
   logo_url?: string | null;
   name: string;
   owner_user_id?: string;
+  // Caller's store_members.role for THIS store (owner/manager/cashier/warehouse),
+  // populated by /me/stores. Source of truth for store-scoped UI permissions.
+  role?: string | null;
   phone?: string | null;
   promptpay_id?: string | null;
   tax_id?: string | null;
@@ -59,14 +62,25 @@ export type StoreBankAccount = {
   bank_name: string;
   account_no: string;
   account_name: string;
+  is_active: boolean;
+  is_default: boolean;
   created_at?: string;
+  updated_at?: string;
 };
 
 export type CreateBankAccountInput = {
-  bank_code: string;
+  bank_code?: string;
   bank_name: string;
   account_no: string;
   account_name: string;
+};
+
+export type UpdateBankAccountInput = {
+  bank_name?: string;
+  account_no?: string;
+  account_name?: string;
+  is_active?: boolean;
+  is_default?: boolean;
 };
 
 export type StoreSubscription = {

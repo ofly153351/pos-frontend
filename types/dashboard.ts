@@ -41,8 +41,10 @@ export type DashboardTopProduct = {
 export type DashboardLowStockProduct = {
   name: string;
   product_id: string;
-  quantity: number;
+  quantity: number; // ready_stock (sale-point on-hand) — basis for low/out split
   total_stock?: number;
+  min_stock?: number; // product reorder point; effective = min_stock>0 ? min_stock : fallback
+  max_stock?: number;
   sku?: string;
   unit_type?: string;
 };

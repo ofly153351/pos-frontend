@@ -17,9 +17,18 @@ function ensureStoreId() {
   return storeId;
 }
 
-export function listSales() {
+export type ListSalesParams = {
+  dateFrom?: string; // YYYY-MM-DD
+  dateTo?: string;   // YYYY-MM-DD
+};
+
+export function listSales(params?: ListSalesParams) {
   const currentStoreId = ensureStoreId();
-  return authorizedApiRequest<Sale[]>(`/api/stores/${currentStoreId}/sales`);
+  const qs = new URLSearchParams();
+  if (params?.dateFrom) qs.set("date_from", params.dateFrom);
+  if (params?.dateTo) qs.set("date_to", params.dateTo);
+  const query = qs.toString() ? `?${qs.toString()}` : "";
+  return authorizedApiRequest<Sale[]>(`/api/stores/${currentStoreId}/sales${query}`);
 }
 
 export function getSaleById(saleId: string) {
@@ -27,13 +36,18 @@ export function getSaleById(saleId: string) {
   return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales/${saleId}`);
 }
 
-export function createSale(input: CreateSaleInput) {
+// Phase W4B: the optional idempotency key makes a network-retried checkout safe — the
+// backend returns the original sale instead of creating a second sale / second payment /
+// second stock deduction. The sale deducts from input.location_id (the active sale point).
+export function createSale(input: CreateSaleInput, idempotencyKey?: string) {
   const currentStoreId = ensureStoreId();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
   return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales`, {
     body: input,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     method: "POST",
   });
 }
@@ -72,6 +86,61 @@ export function getSaleReceiptPreviewHtml(saleId: string) {
       responseType: "text",
     },
   );
+}
+
+// Renders a sale through a shared document template (the same forms the Documents
+// module prints). docType: TAX_INVOICE | QUOTATION | DELIVERY_ORDER | INVOICE | BILL …
+export function getSaleDocumentHtml(saleId: string, docType: string) {
+  const currentStoreId = ensureStoreId();
+  return authorizedRawRequest<string>(
+    `/api/stores/${currentStoreId}/sales/${saleId}/document?type=${encodeURIComponent(docType)}`,
+    {
+      method: "GET",
+      responseType: "text",
+    },
+  );
+}
+
+// Issues a PERSISTED document (default TAX_INVOICE) from a sale. The backend copies the
+// sale's authoritative stored totals — subtotal, discount, VAT, grand total — so the
+// document matches the receipt exactly. This replaces the old client-side reconstruction
+// that recomputed from gross prices (which dropped bill discounts and forced VAT).
+export function createDocumentFromSale(saleId: string, type: string) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<{ id: string; document_no: string }>(
+    `/api/stores/${currentStoreId}/sales/${saleId}/documents`,
+    {
+      body: { type },
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    },
+  );
+}
+
+export function voidSale(saleId: string, input: { reason?: string; type: "void" | "return" }) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales/${saleId}/void`, {
+    body: input,
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+}
+
+export type CreateReturnInput = {
+  refund_method: string;
+  reason?: string;
+  items: { sale_item_id?: string; product_id?: string; quantity: number }[];
+};
+
+// Partial return — records a return WITHOUT voiding the sale. Returns the
+// refreshed sale (updated status + returns history).
+export function createSaleReturn(saleId: string, input: CreateReturnInput) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<Sale>(`/api/stores/${currentStoreId}/sales/${saleId}/returns`, {
+    body: input,
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
 }
 
 // --- Parked Bills (Hold Bill) ---

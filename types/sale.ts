@@ -10,7 +10,11 @@ export type SaleItemInput = {
 
 export type CreateSaleInput = {
   customer_id?: string;
-  discount_bill?: number;
+  discount_bill?: number; // deprecated: kept during rollout, treated as manual_discount by the backend
+  location_id?: string; // Phase W4B: the active sale-point location to deduct from (else store default)
+  manual_discount?: number;
+  promo_discount?: number;
+  promotion_ids?: string[];
   items: SaleItemInput[];
   note?: string;
   paid_amount: number;
@@ -31,11 +35,44 @@ export type SaleItem = {
   product_image_url?: string | null;
   product_name?: string | null;
   quantity: number;
+  returned_quantity?: number; // migration 052 — running returned tally per line
   sku?: string | null;
   total_amount?: number;
   unit_price?: number;
   unit_type?: string | null;
 };
+
+export type SaleReturnItem = {
+  id: string;
+  return_id: string;
+  sale_item_id: string;
+  product_id: string;
+  product_name?: string | null;
+  sku?: string | null;
+  quantity: number;
+  unit_price: number;
+  line_refund: number;
+};
+
+export type SaleReturn = {
+  id: string;
+  sale_id: string;
+  return_number: string;
+  refund_method: string;
+  refund_amount: number;
+  reason?: string | null;
+  created_by: string;
+  created_by_name?: string | null;
+  created_at: string;
+  items?: SaleReturnItem[];
+};
+
+export type SaleStatus =
+  | "completed"
+  | "voided"
+  | "partially_returned"
+  | "fully_returned"
+  | string;
 
 export type Sale = {
   bill_discount_amount?: number;
@@ -48,17 +85,25 @@ export type Sale = {
   discount_amount?: number;
   id: string;
   items?: SaleItem[];
+  returns?: SaleReturn[]; // migration 052 — partial-return history
+  location_id?: string | null; // Phase W4B: the sale-point location this sale deducted from
   note?: string | null;
   paid_amount?: number;
   payment_method: SalePaymentMethod;
   sale_number?: string | null;
+  status?: SaleStatus; // migration 042: completed | voided
   store_address?: string | null;
   store_name?: string | null;
   store_phone?: string | null;
   store_tax_id?: string | null;
   subtotal_amount?: number;
   total_amount?: number;
+  total_items?: number; // total piece count (Σ item quantity); returned by list + detail
   vat_amount?: number;
+  voided_at?: string | null;
+  voided_by?: string | null;
+  void_reason?: string | null;
+  void_type?: string | null; // "void" | "return"
   vat_included?: boolean;
   vat_percent?: number;
 };

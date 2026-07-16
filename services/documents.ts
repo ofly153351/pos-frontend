@@ -6,6 +6,8 @@ import type {
   Document,
   DocumentListQuery,
   DocumentListResponse,
+  DocumentType,
+  RelatedDocument,
   UpdateDocumentStatusPayload,
 } from "@/types/document";
 
@@ -40,15 +42,15 @@ export async function createDocument(payload: CreateDocumentPayload): Promise<Do
 }
 
 export async function updateDocumentStatus(id: string, payload: UpdateDocumentStatusPayload): Promise<void> {
-  await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: payload });
+  await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: payload, allowEmptyData: true });
 }
 
 export async function deleteDocument(id: string): Promise<void> {
-  await authorizedApiRequest(`${base()}/${id}`, { method: "DELETE" });
+  await authorizedApiRequest(`${base()}/${id}`, { method: "DELETE", allowEmptyData: true });
 }
 
 export async function bulkDocumentAction(payload: BulkActionPayload): Promise<void> {
-  await authorizedApiRequest(`${base()}/bulk`, { method: "POST", body: payload });
+  await authorizedApiRequest(`${base()}/bulk`, { method: "POST", body: payload, allowEmptyData: true });
 }
 
 export async function convertQuotation(id: string): Promise<Document> {
@@ -57,7 +59,9 @@ export async function convertQuotation(id: string): Promise<Document> {
 }
 
 export async function cancelDocument(id: string): Promise<void> {
-  await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: { status: "CANCELLED" } });
+  // Reuse updateDocumentStatus so the empty-data response ({ data: null }) is handled
+  // correctly (allowEmptyData) — otherwise unwrapPayload throws on a successful cancel.
+  await updateDocumentStatus(id, { status: "CANCELLED" });
 }
 
 export async function payInvoice(id: string): Promise<Document> {
@@ -75,20 +79,27 @@ export async function convertToDeliveryOrder(id: string): Promise<Document> {
   return res.data;
 }
 
-export async function getDocumentPrintHtml(id: string): Promise<string> {
-  return authorizedRawRequest<string>(`${base()}/${id}/print`, { method: "GET", responseType: "text" });
+// Generic workflow conversion — server validates the (source → target) pair
+// against the allowed matrix and links the new document back to its source.
+export async function convertDocument(id: string, targetType: DocumentType): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-to`, {
+    method: "POST",
+    body: { target_type: targetType },
+  });
+  return res.data;
 }
 
-export interface InvoicePDFParams {
-  customer_address?: string;
-  customer_tax_id?: string;
-  credit_term?: number;
-  reference_do?: string;
-  discount_percent?: number;
-  default_unit?: string;
-  bank_name?: string;
-  account_number?: string;
-  promptpay?: string;
+// copy: 0-based copy index (Original=0, Company=last); omit or -1 for the whole set.
+export async function getDocumentPrintHtml(id: string, copy?: number): Promise<string> {
+  const q = copy != null && copy >= 0 ? `?copy=${copy}` : "";
+  return authorizedRawRequest<string>(`${base()}/${id}/print${q}`, { method: "GET", responseType: "text" });
+}
+
+// Every document in the same conversion family (lineage via source_document_id),
+// ordered chronologically for the timeline.
+export async function getRelatedDocuments(id: string): Promise<RelatedDocument[]> {
+  const res = await authorizedApiRequest<{ items: RelatedDocument[] }>(`${base()}/${id}/related`);
+  return res.data.items ?? [];
 }
 
 export interface StatementPDFParams {
@@ -100,24 +111,21 @@ export interface StatementPDFParams {
   note?: string;
 }
 
-export async function getDocumentPdfBlob(id: string, params?: InvoicePDFParams): Promise<Blob> {
-  const url = getDocumentPDFUrl(id, params);
+// The download PDF is rendered server-side from the SAME unified HTML as the
+// preview (headless Chrome) — no per-request layout params; only the copy index.
+// copy: 0-based copy index (Original=0, Company=last); omit or -1 for the whole set.
+export async function getDocumentPdfBlob(id: string, copy?: number): Promise<Blob> {
+  const url = getDocumentPDFUrl(id, copy);
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(`PDF fetch failed: ${res.status}`);
   return res.blob();
 }
 
-export function getDocumentPDFUrl(id: string, params?: InvoicePDFParams): string {
+export function getDocumentPDFUrl(id: string, copy?: number): string {
   const storeId = getCurrentStoreId();
   if (!storeId) throw new Error("No active store");
-  const qs = new URLSearchParams();
-  if (params) {
-    for (const [k, v] of Object.entries(params)) {
-      if (v !== undefined && v !== "") qs.set(k, String(v));
-    }
-  }
-  const q = qs.toString();
-  return `/api/stores/${storeId}/documents/${id}/pdf${q ? `?${q}` : ""}`;
+  const q = copy != null && copy >= 0 ? `?copy=${copy}` : "";
+  return `/api/stores/${storeId}/documents/${id}/pdf${q}`;
 }
 
 export interface WHTCertParams {

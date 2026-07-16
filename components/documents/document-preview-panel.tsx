@@ -1,17 +1,40 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ArrowRight, Ban, ChevronDown, FileText, Loader2, Printer, Truck, X } from "lucide-react";
+import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml } from "@/services/documents";
+import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { copyChoicesFor } from "@/lib/document-copies";
 import type { DocumentType } from "@/types/document";
+
+import { DocumentTimeline } from "./document-timeline";
 
 type Dict = {
   previewTitle: string;
   viewFull: string;
   loading: string;
+  relatedDocs: string;
+  downloadPDF: string;
+  email: string;
+  share: string;
+  comingSoon: string;
+  pdfError: string;
+  typeInvoice: string;
+  typeReceipt: string;
+  typeTaxInvoice: string;
+  typeQuotation: string;
+  typeBill: string;
+  typeCreditNote: string;
+  typeDeliveryOrder?: string;
+  cancel: string;
+  confirm: string;
+  cancelDocument: string;
+  confirmCancelDoc: string;
+  cancelSuccess: string;
+  cancelError: string;
 };
 
 type Props = {
@@ -23,6 +46,7 @@ type Props = {
   sourceDocumentId?: string;   // for DELIVERY_ORDER → linked INVOICE id
   dict: Dict;
   onClose: () => void;
+  onNavigate?: (id: string) => void; // jump to another document in the lineage
 };
 
 // A4 types open as a full drawer; all others use the inline panel card.
@@ -32,11 +56,12 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, sourceDocumentId, dict, onClose }: Props) {
-  const [isOpening, startOpenTransition] = useTransition();
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, sourceDocumentId, dict, onClose, onNavigate }: Props) {
+  const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
   const [isCancelling, startCancelTransition] = useTransition();
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
 
   const isPaid = paymentStatus === "PAID";
@@ -45,12 +70,44 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const qc = useQueryClient();
 
+  // Copy selection — Original / Customer Copy / Company Copy / All copies.
+  // -1 = whole set (default). Threaded into preview, print, and PDF so all three agree.
+  const [copyIdx, setCopyIdx] = useState(-1);
+  const copyChoices = copyChoicesFor(documentType);
+
   const { data: html, isLoading } = useQuery({
-    queryKey: ["document-print", documentId],
-    queryFn: () => getDocumentPrintHtml(documentId),
+    queryKey: ["document-print", documentId, copyIdx],
+    queryFn: () => getDocumentPrintHtml(documentId, copyIdx),
     enabled: !!documentId,
     staleTime: 30_000,
   });
+
+  // Lineage for the timeline strip (Quotation → Invoice → DO → Tax Invoice …).
+  const { data: related = [] } = useQuery({
+    queryKey: ["document-related", documentId],
+    queryFn: () => getRelatedDocuments(documentId),
+    enabled: !!documentId,
+    staleTime: 30_000,
+  });
+
+  const [isPdfLoading, startPdfTransition] = useTransition();
+  function handleDownloadPdf() {
+    startPdfTransition(async () => {
+      try {
+        const blob = await getDocumentPdfBlob(documentId, copyIdx);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${documentNo || documentId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch {
+        toast.error(dict.pdfError);
+      }
+    });
+  }
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -129,22 +186,27 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   }
 
   function handleCancel() {
-    if (!window.confirm("ยืนยันการยกเลิกเอกสารนี้?")) return;
+    setConfirmCancel(true);
+  }
+
+  function runCancel() {
     startCancelTransition(async () => {
       try {
         await cancelDocument(documentId);
-        toast.success("ยกเลิกเอกสารแล้ว");
+        toast.success(dict.cancelSuccess);
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
       } catch {
-        toast.error("ไม่สามารถยกเลิกเอกสารได้");
+        toast.error(dict.cancelError);
+      } finally {
+        setConfirmCancel(false);
       }
     });
   }
 
   function handlePrint() {
     startOpenTransition(async () => {
-      const freshHtml = await getDocumentPrintHtml(documentId);
+      const freshHtml = await getDocumentPrintHtml(documentId, copyIdx);
       const blob = new Blob([freshHtml], { type: "text/html;charset=utf-8" });
       const blobUrl = URL.createObjectURL(blob);
       const frame = document.createElement("iframe");
@@ -197,7 +259,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
             <div className="flex items-center gap-3">
               <span className="text-sm font-bold text-slate-800">{dict.previewTitle}</span>
               {documentNo && (
-                <span className="font-mono text-xs font-semibold text-slate-500">{documentNo}</span>
+                <span className="nums text-xs font-semibold text-slate-500 whitespace-nowrap">{documentNo}</span>
               )}
             </div>
             <div className="flex items-center gap-1">
@@ -283,6 +345,56 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   ยกเลิก
                 </button>
               )}
+              {confirmCancel && (
+                <ConfirmModal
+                  open
+                  tone="danger"
+                  title={dict.cancelDocument}
+                  message={dict.confirmCancelDoc}
+                  confirmLabel={dict.confirm}
+                  cancelLabel={dict.cancel}
+                  loading={isCancelling}
+                  onConfirm={runCancel}
+                  onClose={() => setConfirmCancel(false)}
+                />
+              )}
+              {/* Copy selector — Original / Customer Copy / Company Copy / All copies.
+                  Drives preview, print, and PDF identically. */}
+              <select
+                value={copyIdx}
+                onChange={(e) => setCopyIdx(Number(e.target.value))}
+                title="เลือกชุดสำเนาที่จะพิมพ์"
+                className="rounded-lg border border-violet-200 bg-white px-2 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-300"
+              >
+                {copyChoices.map((c) => (
+                  <option key={c.idx} value={c.idx}>{c.th}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={isPdfLoading}
+                onClick={handleDownloadPdf}
+                title={dict.downloadPDF}
+                className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-40"
+              >
+                {isPdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.info(dict.comingSoon)}
+                title={dict.email}
+                className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50"
+              >
+                <Mail className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => toast.info(dict.comingSoon)}
+                title={dict.share}
+                className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+              </button>
               <button
                 type="button"
                 disabled={!html}
@@ -301,6 +413,15 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
               </button>
             </div>
           </div>
+
+          {/* Lineage timeline */}
+          <DocumentTimeline
+            items={related}
+            currentId={documentId}
+            label={dict.relatedDocs}
+            typeLabels={dict}
+            onSelect={onNavigate}
+          />
 
           {/* Document iframe */}
           {iframeBody}

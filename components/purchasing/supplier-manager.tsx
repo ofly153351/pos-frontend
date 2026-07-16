@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +20,7 @@ import { toast } from "@/components/ui/toast";
 import { friendlyMessage } from "@/lib/form-errors";
 import { SkeletonListItem } from "@/components/ui/skeleton";
 import { AddSupplierModal } from "./add-supplier-modal";
+import { QueryErrorState } from "@/components/ui/query-error-state";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,9 @@ type SupplierUI = {
   kpiAllTime: string;
   kpiNoDue: string;
   kpiNoLimit: string;
+  kpiOrders: string;
+  kpiLastOrder: string;
+  kpiNoOrders: string;
   sectionContact: string;
   sectionPayment: string;
   sectionAddress: string;
@@ -170,6 +174,10 @@ type SupplierManagerProps = {
       errBankAccountName: string;
       errCreditTerm: string;
       errCustomDays: string;
+      taxId: string;
+      taxIdPlaceholder: string;
+      errTaxId: string;
+      sectionAdditional: string;
     };
   };
 };
@@ -177,7 +185,7 @@ type SupplierManagerProps = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmtAmount(v: number) {
-  return v.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return v.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function fmtDate(iso: string) {
@@ -298,7 +306,7 @@ function SupplierCard({
         <InitialsAvatar name={supplier.name} logoUrl={supplier.logo_url} size="md" />
         <div className="min-w-0 flex-1">
           <div className="mb-0.5 flex items-start justify-between gap-2">
-            <p className={`line-clamp-1 text-sm font-bold leading-tight ${isSelected ? "text-violet-900" : "text-slate-800"}`}>
+            <p className={`line-clamp-1 text-sm font-bold leading-[1.6] ${isSelected ? "text-violet-900" : "text-slate-800"}`}>
               {supplier.name}
             </p>
             <StatusBadge isActive={supplier.is_active} ui={ui} />
@@ -310,11 +318,11 @@ function SupplierCard({
             {supplier.phone && (
               <span className="flex items-center gap-1 text-xs text-slate-400">
                 <Phone className="h-3 w-3 shrink-0" />
-                <span className="font-mono">{supplier.phone}</span>
+                <span className="">{supplier.phone}</span>
               </span>
             )}
             <span className="inline-flex items-center rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold text-violet-600 ring-1 ring-violet-100">
-              {ui.creditDaysPrefix} 30 {ui.daysSuffix}
+              {ui.creditDaysPrefix} {supplier.credit_days ?? 0} {ui.daysSuffix}
             </span>
           </div>
         </div>
@@ -354,7 +362,7 @@ function KpiCard({
         {icon}
       </div>
       <div>
-        <p className={`text-xl font-bold tabular-nums leading-tight ${
+        <p className={`nums text-xl font-bold leading-tight ${
           primary ? "text-white" : alert ? "text-red-600" : "text-slate-800"
         }`}>
           {value}
@@ -418,6 +426,29 @@ function SupplierDetail({
   const totalValue = supplierPOs.reduce((s, p) => s + p.total_cost, 0);
   const recentPOs = supplierPOs.slice(0, 5);
 
+  // ── Real KPI + detail values (no placeholders) ──
+  const outstanding = supplierPOs
+    .filter((p) => p.status === "pending" || p.status === "partial")
+    .reduce((s, p) => s + p.total_cost, 0);
+  const orderCount = supplierPOs.length;
+  // supplierPOs is sorted newest-first, so [0] is the most recent order.
+  const lastOrderAt = supplierPOs[0]?.created_at ?? null;
+  const lastOrderLabel = lastOrderAt
+    ? new Date(lastOrderAt).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })
+    : "";
+
+  const paymentMethodLabel =
+    supplier.payment_method === "promptpay"
+      ? "พร้อมเพย์ (PromptPay)"
+      : supplier.payment_method === "bank_account"
+        ? "โอนเข้าบัญชีธนาคาร"
+        : "";
+  const accountValue =
+    supplier.payment_method === "bank_account"
+      ? supplier.bank_account_number ?? ""
+      : supplier.promptpay_number ?? "";
+  const creditTerm = supplier.credit_days != null ? `${supplier.credit_days} ${ui.daysSuffix}` : "";
+
   return (
     <div className="flex h-full flex-col overflow-y-auto pretty-scroll">
       {/* ── Hero header ── */}
@@ -427,8 +458,8 @@ function SupplierDetail({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="truncate text-xl font-bold text-white leading-tight">{supplier.name}</h2>
-                <p className="mt-0.5 font-mono text-sm text-violet-200">
+                <h2 className="truncate text-xl font-bold text-white leading-normal">{supplier.name}</h2>
+                <p className="mt-0.5 text-sm text-violet-200">
                   #{supplier.id.substring(0, 8).toUpperCase()}
                 </p>
               </div>
@@ -477,20 +508,21 @@ function SupplierDetail({
           />
           <KpiCard
             title={ui.kpiOutstanding}
-            value="฿0.00"
-            sub={ui.kpiNoDue}
+            value={`฿${fmtAmount(outstanding)}`}
+            sub={outstanding > 0 ? "" : ui.kpiNoDue}
+            alert={outstanding > 0}
             icon={<CreditCard className="h-4.5 w-4.5" />}
           />
           <KpiCard
-            title={ui.kpiCreditLimit}
-            value="฿0.00"
-            sub={ui.kpiNoLimit}
-            icon={<Building2 className="h-4.5 w-4.5" />}
+            title={ui.kpiOrders}
+            value={`${orderCount}`}
+            sub={ui.kpiAllTime}
+            icon={<ShoppingBag className="h-4.5 w-4.5" />}
           />
           <KpiCard
-            title={ui.kpiRemaining}
-            value="฿0.00"
-            sub={ui.kpiNoLimit}
+            title={ui.kpiLastOrder}
+            value={lastOrderLabel || "—"}
+            sub={lastOrderAt ? "" : ui.kpiNoOrders}
             icon={<FileText className="h-4.5 w-4.5" />}
           />
         </div>
@@ -503,15 +535,15 @@ function SupplierDetail({
             <div className="space-y-1.5">
               <InfoRow icon={<User className="h-3.5 w-3.5" />} label={ui.primaryContact} value={supplier.contact_person ?? ""} />
               <InfoRow icon={<Phone className="h-3.5 w-3.5" />} label="เบอร์โทร" value={supplier.phone ?? ""} />
-              <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="อีเมล" value="" />
+              <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="อีเมล" value={supplier.email ?? ""} />
             </div>
           </InfoCard>
 
           <InfoCard icon={<CreditCard className="h-3.5 w-3.5" />} title={ui.sectionPayment}>
             <div className="space-y-1.5">
-              <InfoRow icon={<CreditCard className="h-3.5 w-3.5" />} label="วิธีการชำระ" value="PromptPay" />
-              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เลขที่บัญชี" value="" />
-              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เครดิตเทอม" value="30 วัน" />
+              <InfoRow icon={<CreditCard className="h-3.5 w-3.5" />} label="วิธีการชำระ" value={paymentMethodLabel} />
+              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เลขที่บัญชี" value={accountValue} />
+              <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เครดิตเทอม" value={creditTerm} />
               <InfoRow icon={<FileText className="h-3.5 w-3.5" />} label="เลขประจำตัวผู้เสียภาษี" value={supplier.tax_id ?? ""} />
             </div>
           </InfoCard>
@@ -574,11 +606,11 @@ function SupplierDetail({
                     key={po.id}
                     className={`border-t border-slate-100 transition-colors hover:bg-violet-50/40 ${idx % 2 !== 0 ? "bg-slate-50/30" : ""}`}
                   >
-                    <td className="px-4 py-3 font-mono text-xs font-medium text-slate-700">
+                    <td className="px-4 py-3 nums text-xs font-medium text-slate-700 whitespace-nowrap">
                       {po.order_number}
                     </td>
                     <td className="px-4 py-3 text-slate-500">{fmtDate(po.created_at)}</td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums text-slate-800">
+                    <td className="px-4 py-3 text-right font-semibold nums text-slate-800">
                       ฿{fmtAmount(po.total_cost)}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -629,7 +661,7 @@ const THAI_BANKS = [
   "ธนาคารยูโอบี (UOB)", "ธนาคารแลนด์ แอนด์ เฮ้าส์ (LH)", "ธนาคารอาคารสงเคราะห์ (GHB)",
 ];
 
-const CREDIT_PRESETS = [0, 7, 15, 30, 45, 60, 90];
+const CREDIT_PRESETS = [0, 7, 15, 30, 45];
 
 function EditSupplierModal({
   supplier,
@@ -739,58 +771,41 @@ function EditSupplierModal({
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {error && <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
 
-            {/* Logo */}
-            <div>
-              <p className={sectionTitle}>{m.sectionLogo}</p>
-              <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-violet-200 bg-violet-50">
-                  {logoPreview
-                    ? <img src={logoPreview} alt="logo" className="h-full w-full object-cover" />
-                    : <Building2 className="h-8 w-8 text-violet-300" />}
-                </div>
-                <div className="space-y-2">
-                  <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleLogoChange} />
-                  <button type="button" onClick={() => fileRef.current?.click()}
-                    className="rounded-lg border border-violet-200 bg-white px-4 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50">
-                    {m.logoUploadText}
-                  </button>
-                  {logoPreview && (
-                    <button type="button" onClick={handleRemoveLogo}
-                      className="ml-2 rounded-lg border border-red-100 bg-white px-4 py-2 text-xs font-semibold text-red-500 hover:bg-red-50">
-                      {m.logoRemove}
-                    </button>
-                  )}
-                  <p className="text-xs text-slate-400">{m.logoUploadHint}</p>
-                </div>
-              </div>
-            </div>
-
             {/* Contact */}
             <div>
               <p className={sectionTitle}>{m.sectionContact}</p>
               <div className="space-y-3">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">{m.companyName} <span className="text-red-500">*</span></label>
-                  <input className={inp} value={form.name} onChange={(e) => set("name", e.target.value)} />
-                </div>
+                {/* Row 1: Company Name + Contact Person */}
                 <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.companyName} <span className="text-red-500">*</span></label>
+                    <input className={inp} value={form.name} onChange={(e) => set("name", e.target.value)} placeholder={m.companyNamePlaceholder} />
+                  </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.contactPerson}</label>
                     <input className={inp} value={form.contact_person} onChange={(e) => set("contact_person", e.target.value)} placeholder={m.contactNamePlaceholder} />
                   </div>
+                </div>
+                {/* Row 2: Phone + LINE ID */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.supplierPhone}</label>
-                    <input className={inp} value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder={m.phonePlaceholder} />
+                    <input className={inp} value={form.phone} onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder={m.phonePlaceholder} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.lineId}</label>
+                    <input className={inp} value={form.line_id} onChange={(e) => set("line_id", e.target.value)} placeholder={m.lineIdPlaceholder} />
                   </div>
                 </div>
+                {/* Row 3: Email + Tax ID */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-slate-600">{m.email}</label>
                     <input className={inp} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder={m.emailPlaceholder} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-600">{m.lineId}</label>
-                    <input className={inp} value={form.line_id} onChange={(e) => set("line_id", e.target.value)} placeholder={m.lineIdPlaceholder} />
+                    <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.taxId}</label>
+                    <input className={inp} inputMode="numeric" maxLength={13} value={form.tax_id} onChange={(e) => set("tax_id", e.target.value.replace(/\D/g, "").slice(0, 13))} placeholder={m.taxIdPlaceholder} />
                   </div>
                 </div>
               </div>
@@ -800,7 +815,6 @@ function EditSupplierModal({
             <div>
               <p className={sectionTitle}>{m.sectionFinancial}</p>
               <div className="space-y-3">
-                {/* Payment method toggle */}
                 <div>
                   <label className="mb-2 block text-xs font-semibold text-slate-600">{m.paymentMethodLabel}</label>
                   <div className="flex gap-2">
@@ -851,32 +865,56 @@ function EditSupplierModal({
                       </button>
                     ))}
                     <button type="button" onClick={() => set("credit_days", "")}
-                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${form.credit_days === "" ? "border-slate-400 bg-slate-100 text-slate-700" : !CREDIT_PRESETS.includes(Number(form.credit_days)) ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${form.credit_days === "" ? "border-slate-400 bg-slate-100 text-slate-700" : !CREDIT_PRESETS.includes(form.credit_days as number) ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>
                       {m.creditCustom}
                     </button>
                   </div>
-                  {!CREDIT_PRESETS.includes(Number(form.credit_days)) && (
+                  {!CREDIT_PRESETS.includes(Number(form.credit_days)) && form.credit_days !== "" && (
                     <input type="number" min={0} max={365} className={inp + " mt-2"} value={form.credit_days} onChange={(e) => set("credit_days", e.target.value === "" ? "" : Number(e.target.value))} placeholder={m.creditCustomPlaceholder} />
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Address & Notes */}
+            {/* Address */}
             <div>
               <p className={sectionTitle}>{dict.address}</p>
-              <div className="space-y-3">
+              <textarea className={inp + " resize-none"} rows={4} value={form.address} onChange={(e) => set("address", e.target.value)} placeholder={m.addressPlaceholder} />
+            </div>
+
+            {/* Additional Information: Logo + Notes */}
+            <div>
+              <p className={sectionTitle}>{m.sectionAdditional}</p>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Logo */}
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.address}</label>
-                  <textarea className={inp + " resize-none"} rows={2} value={form.address} onChange={(e) => set("address", e.target.value)} placeholder={m.addressPlaceholder} />
+                  <label className="mb-2 block text-xs font-semibold text-slate-600">{m.sectionLogo} <span className="font-normal text-slate-400">{m.logoOptional}</span></label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-violet-200 bg-violet-50">
+                      {logoPreview
+                        ? <img src={logoPreview} alt="logo" className="h-full w-full object-cover" />
+                        : <Building2 className="h-7 w-7 text-violet-300" />}
+                    </div>
+                    <div className="space-y-1.5">
+                      <input ref={fileRef} type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleLogoChange} />
+                      <button type="button" onClick={() => fileRef.current?.click()}
+                        className="block rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-50">
+                        {m.logoUploadText}
+                      </button>
+                      {logoPreview && (
+                        <button type="button" onClick={handleRemoveLogo}
+                          className="block rounded-lg border border-red-100 bg-white px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-50">
+                          {m.logoRemove}
+                        </button>
+                      )}
+                      <p className="text-xs text-slate-400">{m.logoUploadHint}</p>
+                    </div>
+                  </div>
                 </div>
+                {/* Notes */}
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.taxId}</label>
-                  <input className={inp} value={form.tax_id} onChange={(e) => set("tax_id", e.target.value)} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">{dict.note}</label>
-                  <textarea className={inp + " resize-none"} rows={2} value={form.note} onChange={(e) => set("note", e.target.value)} placeholder={m.notesPlaceholder} />
+                  <label className="mb-2 block text-xs font-semibold text-slate-600">{dict.note}</label>
+                  <textarea className={inp + " resize-none"} rows={4} value={form.note} onChange={(e) => set("note", e.target.value)} placeholder={m.notesPlaceholder} />
                 </div>
               </div>
             </div>
@@ -932,7 +970,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data: suppliers = [], isLoading: loadingSuppliers } = useQuery<Supplier[]>({
+  const { data: suppliers = [], isLoading: loadingSuppliers, isError: suppliersError, refetch: refetchSuppliers } = useQuery<Supplier[]>({
     queryKey: ["suppliers"],
     queryFn: async () => {
       const res = await listSuppliers();
@@ -985,6 +1023,16 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
     } finally {
       setIsDeletingId(null);
     }
+  }
+
+  if (suppliersError) {
+    return (
+      <div className="-mx-6 -my-6 lg:-mx-8 lg:-my-8 flex flex-col overflow-hidden" style={{ height: "calc(100dvh - 4.5rem)" }}>
+        <div className="flex flex-1 items-center justify-center p-6">
+          <QueryErrorState onRetry={() => refetchSuppliers()} />
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -1,7 +1,6 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest, authorizedRawRequest } from "@/services/api";
 import type {
-  CreateInvoiceInput,
   CreateInvoicePaymentInput,
   Invoice,
 } from "@/types/invoice";
@@ -26,16 +25,9 @@ export function getInvoiceById(invoiceId: string) {
   return authorizedApiRequest<Invoice>(`/api/stores/${storeId}/invoices/${invoiceId}`);
 }
 
-export function createInvoice(input: CreateInvoiceInput) {
-  const storeId = ensureStoreId();
-  return authorizedApiRequest<Invoice>(`/api/stores/${storeId}/invoices`, {
-    body: input,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  });
-}
+// Phase W5 — the legacy invoice-CREATE service is removed: it was orphaned (no caller)
+// and the backend endpoint is disabled (ErrInvoiceCreateDisabled). Live invoice creation
+// goes through the documents module; invoice reads/payments/PDF below remain active.
 
 export function createInvoicePayment(
   invoiceId: string,

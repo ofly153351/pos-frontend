@@ -7,6 +7,7 @@ import type {
   StoreBankAccount,
   StoreSubscription,
   SubscriptionPlan,
+  UpdateBankAccountInput,
   UpdateStoreInput,
 } from "@/types/store";
 
@@ -171,8 +172,16 @@ export function createBankAccount(storeId: string, input: CreateBankAccountInput
   });
 }
 
+export function updateBankAccount(storeId: string, accountId: string, input: UpdateBankAccountInput) {
+  return authorizedApiRequest<StoreBankAccount>(`/api/stores/${storeId}/bank-accounts/${accountId}`, {
+    method: "PATCH",
+    body: input,
+  });
+}
+
 export function deleteBankAccount(storeId: string, accountId: string) {
   return authorizedApiRequest<null>(`/api/stores/${storeId}/bank-accounts/${accountId}`, {
     method: "DELETE",
+    allowEmptyData: true,
   });
 }

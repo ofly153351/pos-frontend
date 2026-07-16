@@ -9,5 +9,7 @@ export default async function DocumentsPage({ params }: PageProps) {
   const { locale } = await params;
   if (!isSupportedLocale(locale)) notFound();
   const dict = await getDictionary(locale as Locale);
-  return <DocumentPageClient dictionary={dict.documents} />;
+  // salesHistory dict is threaded so the "ใบเสร็จร้านค้า" tab reuses SalesHistoryManager
+  // (full sale-detail modal: print / tax invoice / void / return + Thai payment labels).
+  return <DocumentPageClient dictionary={dict.documents} salesDict={dict.salesHistory} />;
 }

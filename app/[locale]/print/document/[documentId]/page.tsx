@@ -5,11 +5,14 @@ import { DocumentPrintClient } from "@/components/documents/document-print-clien
 
 type PageProps = {
   params: Promise<{ locale: string; documentId: string }>;
+  searchParams: Promise<{ copy?: string }>;
 };
 
-export default async function DocumentPrintPage({ params }: PageProps) {
+export default async function DocumentPrintPage({ params, searchParams }: PageProps) {
   const { locale, documentId } = await params;
+  const { copy } = await searchParams;
   if (!isSupportedLocale(locale)) notFound();
   const dict = await getDictionary(locale as Locale);
-  return <DocumentPrintClient documentId={documentId} dict={dict.documents} />;
+  const copyIdx = copy != null && copy !== "" ? Number(copy) : -1;
+  return <DocumentPrintClient documentId={documentId} dict={dict.documents} copy={Number.isNaN(copyIdx) ? -1 : copyIdx} />;
 }

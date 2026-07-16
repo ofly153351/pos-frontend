@@ -1,27 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Calendar, CheckCircle2, Download, FileBadge, FileDigit, FileMinus, FileQuestion, FileStack, FileText, LayoutGrid, Loader2, Package, Printer, Receipt, Search, Truck, X } from "lucide-react";
+import { FileBadge, FileDigit, FileMinus, FileQuestion, FileText, LayoutGrid, Receipt, Truck } from "lucide-react";
 
 import { getCurrentStoreId } from "@/lib/store-storage";
 import {
   bulkDocumentAction,
-  createDocument,
   getDocuments,
-  updateDocumentStatus,
 } from "@/services/documents";
-import { getSaleById, listSales, getSaleReceiptHtml } from "@/services/sales";
+import { type DateFilterValue, resolveDateQuery } from "@/components/shared/date-range-filter";
 import { toast } from "@/components/ui/toast";
 import type { DocumentListQuery, DocumentStatus, DocumentType } from "@/types/document";
-import type { Sale } from "@/types/sale";
 
 import { DocumentFilterBar } from "./document-filter-bar";
 import { DocumentStatsCards } from "./document-stats-cards";
 import { DocumentTable } from "./document-table";
 import { DocumentPreviewPanel } from "./document-preview-panel";
 import { CreateDocumentModal } from "./create-document-modal";
+import { SalesHistoryManager } from "@/components/sales/sales-history-manager";
+import type { SalesHistoryDict } from "@/components/sales/sales-history-dict";
 
 type DocumentDict = {
   title: string;
@@ -135,10 +134,31 @@ type DocumentDict = {
   printAll: string;
   printError: string;
   productSearch: string;
+  scanWithCamera: string;
   productNotFound: string;
+  // Row actions + bulk (Phase 1)
+  duplicate: string;
+  duplicateSuccess: string;
+  duplicateError: string;
+  printPreview: string;
+  convertTo: string;
+  recordPayment: string;
+  paySuccess: string;
+  payError: string;
+  cancelDocument: string;
+  cancelSuccess: string;
+  cancelError: string;
+  confirmCancelDoc: string;
+  confirmDeleteDoc: string;
+  convertSuccess: string;
+  convertError: string;
+  pdfError: string;
+  comingSoon: string;
+  email: string;
+  share: string;
 };
 
-type Props = { dictionary: DocumentDict };
+type Props = { dictionary: DocumentDict; salesDict: SalesHistoryDict };
 
 const EMPTY_STATS = { total: 0, pending_payment: 0, overdue: 0, paid: 0 };
 const DEFAULT_QUERY: DocumentListQuery = { page: 1, limit: 20 };
@@ -146,180 +166,69 @@ const DEFAULT_QUERY: DocumentListQuery = { page: 1, limit: 20 };
 function fmtCurrency(n: number) {
   return new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", minimumFractionDigits: 2 }).format(n);
 }
-function fmtDateTime(s: string) {
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" }).format(new Date(s));
+function fmtDateShort(s: string) {
+  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(s));
 }
 
-export function DocumentPageClient({ dictionary: d }: Props) {
+// Localised label maps for the document type / status / payment enums — shared by
+// the CSV export and the printable report so both speak the user's language.
+function buildDocLabelMaps(d: DocumentDict) {
+  const typeLabel: Record<string, string> = {
+    INVOICE: d.typeInvoice,
+    RECEIPT: d.typeReceipt,
+    TAX_INVOICE: d.typeTaxInvoice,
+    QUOTATION: d.typeQuotation,
+    BILL: d.typeBill,
+    CREDIT_NOTE: d.typeCreditNote,
+    DELIVERY_ORDER: d.typeDeliveryOrder ?? "ใบส่งของ",
+  };
+  const statusLabel: Record<string, string> = {
+    DRAFT: d.statusDraft,
+    PENDING: d.statusPending,
+    OVERDUE: d.statusOverdue,
+    COMPLETED: d.statusCompleted,
+    CANCELLED: d.statusCancelled,
+  };
+  const payLabel: Record<string, string> = {
+    UNPAID: d.paymentUnpaid,
+    PARTIAL: d.paymentPartial,
+    PAID: d.paymentPaid,
+  };
+  return { typeLabel, statusLabel, payLabel };
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+}
+
+export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
   const queryClient = useQueryClient();
   const params = useParams();
   const locale = (params?.locale as string) ?? "th";
   const [storeId, setStoreId] = useState<string | null>(null);
 
+  // Read the active store id from client storage once on mount (client-only API).
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
 
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [salesLoading, setSalesLoading] = useState(false);
-  const [salesError, setSalesError] = useState("");
-  const [salesSearch, setSalesSearch] = useState("");
-  const [salesDateFrom, setSalesDateFrom] = useState("");
-  const [salesDateTo, setSalesDateTo] = useState("");
-  const [selectedSaleIds, setSelectedSaleIds] = useState<Set<string>>(new Set());
-  const [selectedReceiptId, setSelectedReceiptId] = useState<string | null>(null);
-  const receiptIframeRef = useRef<HTMLIFrameElement>(null);
-  const [receiptLoadingId, setReceiptLoadingId] = useState<string | null>(null);
-
   const [query, setQuery] = useState<DocumentListQuery>(DEFAULT_QUERY);
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({ preset: "all" });
 
+  // The "ใบเสร็จร้านค้า" tab reuses <SalesHistoryManager> (see render below), so the
+  // page no longer hand-rolls a sales list / receipt preview / tax-invoice creation.
   const isReceiptMode = query.type === "RECEIPT";
-
-  useEffect(() => {
-    if (!isReceiptMode || !storeId) return;
-    setSalesLoading(true);
-    setSalesError("");
-    listSales()
-      .then((r) => setSales(r.data ?? []))
-      .catch(() => setSalesError(d.receiptLoadError))
-      .finally(() => setSalesLoading(false));
-  }, [isReceiptMode, storeId, d.receiptLoadError]);
-
-  function openReceipt(saleId: string) {
-    setReceiptLoadingId(saleId);
-    getSaleReceiptHtml(saleId)
-      .then((html) => {
-        const win = window.open("", "_blank", "noopener,noreferrer,width=480,height=700");
-        if (win) {
-          win.document.write(html);
-          win.document.close();
-        }
-      })
-      .catch(() => toast.error(d.receiptLoadError))
-      .finally(() => setReceiptLoadingId(null));
-  }
-
-  // Receipt slide panel — fetch HTML for selected sale
-  const { data: receiptHtml, isLoading: receiptHtmlLoading } = useQuery({
-    queryKey: ["sale-receipt-html", selectedReceiptId],
-    queryFn: () => getSaleReceiptHtml(selectedReceiptId!),
-    enabled: !!selectedReceiptId,
-    staleTime: 60_000,
-  });
-
-  // Print from the panel's already-rendered iframe — smooth, no hidden iframe creation
-  function printReceipt() {
-    const fw = receiptIframeRef.current?.contentWindow;
-    if (!fw) return;
-    fw.focus();
-    fw.print();
-  }
-
-  const [multiPrinting, setMultiPrinting] = useState(false);
-
-  async function multiPrint() {
-    if (multiPrinting) return;
-    setMultiPrinting(true);
-    const ids = Array.from(selectedSaleIds);
-    for (const id of ids) {
-      try {
-        const html = await getSaleReceiptHtml(id);
-        await new Promise<void>((resolve) => {
-          const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-          const blobUrl = URL.createObjectURL(blob);
-          const frame = document.createElement("iframe");
-          frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
-          document.body.appendChild(frame);
-          frame.src = blobUrl;
-          frame.onload = () => {
-            // Small delay so content paints before dialog opens
-            setTimeout(() => {
-              frame.contentWindow?.focus();
-              frame.contentWindow?.print();
-              setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); resolve(); }, 1500);
-            }, 150);
-          };
-        });
-        // Gap between each print dialog so browser doesn't stack them
-        await new Promise((r) => setTimeout(r, 800));
-      } catch { /* skip failed */ }
-    }
-    setMultiPrinting(false);
-    toast.success(`พิมพ์ ${ids.length} ใบเสร็จเรียบร้อย`);
-  }
-
-  function exportCSV() {
-    const ids = selectedSaleIds.size > 0 ? selectedSaleIds : new Set(sales.map((s) => s.id));
-    const rows = [
-      ["วันที่", "ลูกค้า", "วิธีชำระเงิน", "ยอดรวม (฿)"],
-      ...sales
-        .filter((s) => ids.has(s.id))
-        .map((s) => [
-          fmtDateTime(s.created_at),
-          s.customer_name?.trim() || "ลูกค้าทั่วไป",
-          s.payment_method ?? "",
-          String(s.total_amount ?? 0),
-        ]),
-    ];
-    const csv = "﻿" + rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `receipts-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function handleCreateTaxInvoiceFromSale(saleId: string) {
-    startTaxInvoiceTransition(async () => {
-      try {
-        const saleRes = await getSaleById(saleId);
-        const sale = saleRes.data;
-        const today = new Date().toISOString().split("T")[0];
-        await createDocument({
-          type: "TAX_INVOICE",
-          customer_id: sale.customer_id ?? "",
-          // Walk-in fallback: use sale's snapshotted customer info when no customer_id
-          ...((!sale.customer_id) && {
-            customer_name: sale.customer_name ?? "ลูกค้าทั่วไป",
-            customer_address: "",
-            customer_phone: sale.customer_phone ?? "",
-          }),
-          document_date: today,
-          vat_rate: sale.vat_included ? (sale.vat_percent ?? 7) : 0,
-          items: (sale.items ?? []).map((item) => ({
-            product_id: item.product_id ?? undefined,
-            description: item.product_name ?? "",
-            quantity: item.quantity,
-            unit_price: item.unit_price ?? 0,
-            discount_type: "" as const,
-            discount_value: 0,
-          })),
-          notes: sale.note ?? undefined,
-        });
-        toast.success("สร้างใบกำกับภาษีสำเร็จ");
-      } catch {
-        toast.error("ไม่สามารถสร้างใบกำกับภาษีได้");
-      }
-    });
-  }
-
-  function toggleSaleId(id: string) {
-    setSelectedSaleIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
 
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [createModalType, setCreateModalType] = useState<DocumentType | null>(null);
   const [isBulkPending, startBulkTransition] = useTransition();
-  const [isTaxInvoicePending, startTaxInvoiceTransition] = useTransition();
+
+  const dateRange = resolveDateQuery(dateFilter);
+  const fetchQuery = { ...query, ...dateRange };
 
   const { data, isLoading } = useQuery({
-    queryKey: ["documents", storeId, query],
-    queryFn: () => getDocuments(query),
+    queryKey: ["documents", storeId, fetchQuery],
+    queryFn: () => getDocuments(fetchQuery),
     enabled: !!storeId,
     placeholderData: (prev) => prev,
   });
@@ -334,6 +243,7 @@ export function DocumentPageClient({ dictionary: d }: Props) {
 
   const resetFilters = useCallback(() => {
     setQuery(DEFAULT_QUERY);
+    setDateFilter({ preset: "all" });
     setSelectedIds(new Set());
   }, []);
 
@@ -389,9 +299,124 @@ export function DocumentPageClient({ dictionary: d }: Props) {
     queryClient.invalidateQueries({ queryKey: ["documents"] });
   }
 
+  // Pull every document matching the CURRENT filter across all pages. The list
+  // endpoint caps page size at 200, so walk pages until we have them all.
+  async function fetchAllDocuments() {
+    const PAGE = 200;
+    const first = await getDocuments({ ...query, page: 1, limit: PAGE });
+    const all = [...first.items];
+    const grandTotal = first.total ?? all.length;
+    let page = 2;
+    while (all.length < grandTotal) {
+      const next = await getDocuments({ ...query, page, limit: PAGE });
+      if (!next.items.length) break;
+      all.push(...next.items);
+      page += 1;
+    }
+    return all;
+  }
+
+  // Export every document matching the CURRENT filter (not just the visible page)
+  // to a UTF-8 CSV that Excel opens cleanly.
+  async function exportDocumentsCSV() {
+    try {
+      const allItems = await fetchAllDocuments();
+      const { typeLabel, statusLabel, payLabel } = buildDocLabelMaps(d);
+      const rows = [
+        [d.colDocumentNo, d.colType, d.colCustomer, d.colDate, d.colDueDate, d.colAmount, d.colStatus, d.colPaymentStatus],
+        ...allItems.map((doc) => [
+          doc.document_no_full || doc.document_no,
+          typeLabel[doc.type] ?? doc.type,
+          doc.customer_name || d.allCustomers,
+          fmtDateShort(doc.document_date),
+          doc.due_date ? fmtDateShort(doc.due_date) : "-",
+          String(doc.total_amount ?? 0),
+          statusLabel[doc.status] ?? doc.status,
+          payLabel[doc.payment_status] ?? doc.payment_status,
+        ]),
+      ];
+      const csv = "﻿" + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `documents-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error(d.requestFailed);
+    }
+  }
+
+  // Build a clean A4 report of the filtered documents and print it.
+  // Open the popup window synchronously (inside the user-gesture handler) so
+  // Chrome doesn't block it as a popup, then populate it after the async fetch.
+  async function printDocumentsReport() {
+    const win = window.open("about:blank", "_blank");
+    if (!win) {
+      toast.error(d.printError);
+      return;
+    }
+    try {
+      const allItems = await fetchAllDocuments();
+      const { typeLabel, statusLabel, payLabel } = buildDocLabelMaps(d);
+      const totalSum = allItems.reduce((s, doc) => s + (doc.total_amount ?? 0), 0);
+      const body = allItems
+        .map(
+          (doc, i) => `<tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(doc.document_no_full || doc.document_no)}</td>
+            <td>${escapeHtml(typeLabel[doc.type] ?? doc.type)}</td>
+            <td>${escapeHtml(doc.customer_name || d.allCustomers)}</td>
+            <td>${escapeHtml(fmtDateShort(doc.document_date))}</td>
+            <td class="r">${escapeHtml(fmtCurrency(doc.total_amount ?? 0))}</td>
+            <td>${escapeHtml(statusLabel[doc.status] ?? doc.status)}</td>
+            <td>${escapeHtml(payLabel[doc.payment_status] ?? doc.payment_status)}</td>
+          </tr>`,
+        )
+        .join("");
+      const html = `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"><title>${escapeHtml(d.title)}</title>
+        <style>
+          *{font-family:'Sarabun','Noto Sans Thai',sans-serif;box-sizing:border-box}
+          body{margin:24px;color:#1e293b}
+          h1{font-size:18px;margin:0 0 2px}
+          .meta{font-size:12px;color:#64748b;margin-bottom:16px}
+          table{width:100%;border-collapse:collapse;font-size:12px}
+          th,td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left;vertical-align:top}
+          th{background:#f5f3ff;color:#6d28d9;font-weight:600}
+          td.r,th.r{text-align:right}
+          tfoot td{font-weight:bold;background:#faf5ff}
+          @media print{body{margin:0}}
+        </style></head>
+        <body>
+          <h1>${escapeHtml(d.title)}</h1>
+          <div class="meta">${escapeHtml(d.showing)} ${allItems.length} ${escapeHtml(d.records)} · ${escapeHtml(new Date().toLocaleString("th-TH"))}</div>
+          <table>
+            <thead><tr>
+              <th>#</th><th>${escapeHtml(d.colDocumentNo)}</th><th>${escapeHtml(d.colType)}</th><th>${escapeHtml(d.colCustomer)}</th>
+              <th>${escapeHtml(d.colDate)}</th><th class="r">${escapeHtml(d.colAmount)}</th><th>${escapeHtml(d.colStatus)}</th><th>${escapeHtml(d.colPaymentStatus)}</th>
+            </tr></thead>
+            <tbody>${body}</tbody>
+            <tfoot><tr><td colspan="5" class="r">${escapeHtml(d.total)}</td><td class="r">${escapeHtml(fmtCurrency(totalSum))}</td><td colspan="2"></td></tr></tfoot>
+          </table>
+        </body></html>`;
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 400);
+    } catch {
+      win.close();
+      toast.error(d.printError);
+    }
+  }
+
   return (
     <>
-      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+      <div className="flex flex-col rounded-xl border border-violet-100 bg-white shadow-sm">
         {/* Page header */}
         <div className="shrink-0 border-b border-violet-100 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -431,7 +456,8 @@ export function DocumentPageClient({ dictionary: d }: Props) {
           </div>
         </div>
 
-        <>
+        {!isReceiptMode && (
+          <>
             {/* Type quick-filter — icon buttons, centered, with tooltip */}
             <div className="shrink-0 border-b border-violet-50 px-6 py-2.5">
               <div className="flex items-center justify-center gap-1">
@@ -470,28 +496,29 @@ export function DocumentPageClient({ dictionary: d }: Props) {
             </div>
 
             {/* Filter bar */}
-            {!isReceiptMode && (
-              <>
-                <DocumentFilterBar
-                  dict={d}
-                  query={query}
-                  onChange={updateQuery}
-                  onReset={resetFilters}
-                />
-                <DocumentStatsCards
-                  dict={d}
-                  stats={stats}
-                  defaultCreateType={(query.type as DocumentType) || "INVOICE"}
-                  onExport={() => toast.info(d.exportExcel)}
-                  onPrint={() => window.print()}
-                  onCreateDocument={(type) => setCreateModalType(type)}
-                />
-              </>
-            )}
+            <DocumentFilterBar
+              dict={d}
+              salesDict={salesDict}
+              query={query}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              onChange={updateQuery}
+              onReset={resetFilters}
+              locale={locale}
+            />
+            <DocumentStatsCards
+              dict={d}
+              stats={stats}
+              defaultCreateType={(query.type as DocumentType) || "INVOICE"}
+              onExport={exportDocumentsCSV}
+              onPrint={printDocumentsReport}
+              onCreateDocument={(type) => setCreateModalType(type)}
+            />
           </>
+        )}
 
         {/* Body: documents table + preview panel */}
-        {!isReceiptMode && <div className="flex min-h-0 flex-1">
+        {!isReceiptMode && <div className="flex flex-1 flex-col">
           <DocumentTable
             dict={d}
             documents={documents}
@@ -524,283 +551,19 @@ export function DocumentPageClient({ dictionary: d }: Props) {
               sourceDocumentId={documents.find((doc) => doc.id === selectedDocId)?.source_document_id}
               dict={d}
               onClose={() => setSelectedDocId(null)}
+              onNavigate={(id) => setSelectedDocId(id)}
             />
           )}
         </div>}
 
-        {/* Receipts (POS sales history) — shown when RECEIPT type selected */}
-        {isReceiptMode && (() => {
-          const kw = salesSearch.trim().toLowerCase();
-          const filtered = sales.filter((s) => {
-            const matchKw = !kw || (s.customer_name ?? "").toLowerCase().includes(kw) || (s.payment_method ?? "").toLowerCase().includes(kw);
-            const d = new Date(s.created_at);
-            const matchFrom = !salesDateFrom || d >= new Date(salesDateFrom);
-            const matchTo = !salesDateTo || d <= new Date(salesDateTo + "T23:59:59");
-            return matchKw && matchFrom && matchTo;
-          });
-          const allChecked = filtered.length > 0 && filtered.every((s) => selectedSaleIds.has(s.id));
-          const someChecked = filtered.some((s) => selectedSaleIds.has(s.id));
-          const totalFiltered = filtered.reduce((s, r) => s + (r.total_amount ?? 0), 0);
-
-          return (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-
-              {/* Bulk action bar */}
-              {selectedSaleIds.size > 0 && (
-                <div className="flex shrink-0 items-center gap-3 border-b border-violet-100 bg-violet-50 px-6 py-2.5">
-                  <span className="text-sm font-medium text-violet-700">เลือก {selectedSaleIds.size} รายการ</span>
-                  <div className="ml-2 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={multiPrint}
-                      disabled={multiPrinting}
-                      className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-50"
-                    >
-                      {multiPrinting
-                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        : <Printer className="h-3.5 w-3.5" />}
-                      {multiPrinting ? `${d.loading}` : d.printAll}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={exportCSV}
-                      className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      Export CSV
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSaleIds(new Set())}
-                    className="ml-auto flex items-center gap-1 text-sm text-slate-500 hover:text-violet-600"
-                  >
-                    {d.cancelSelection} <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Filter bar */}
-              <div className="shrink-0 border-b border-violet-100 px-6 py-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="relative min-w-52 flex-1">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      className="w-full rounded-lg border border-violet-200 bg-white py-2 pl-9 pr-8 text-sm text-slate-800 placeholder:text-slate-400 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                      placeholder="ค้นหาลูกค้า, วิธีชำระเงิน..."
-                      value={salesSearch}
-                      onChange={(e) => setSalesSearch(e.target.value)}
-                    />
-                    {salesSearch && (
-                      <button className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600" onClick={() => setSalesSearch("")} type="button">
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-1.5">
-                    <Calendar className="h-4 w-4 text-slate-400" />
-                    <input type="date" value={salesDateFrom} onChange={(e) => setSalesDateFrom(e.target.value)}
-                      className="text-sm text-slate-700 outline-none" />
-                    <span className="text-slate-400">—</span>
-                    <input type="date" value={salesDateTo} onChange={(e) => setSalesDateTo(e.target.value)}
-                      className="text-sm text-slate-700 outline-none" />
-                    {(salesDateFrom || salesDateTo) && (
-                      <button onClick={() => { setSalesDateFrom(""); setSalesDateTo(""); }} type="button" className="text-slate-400 hover:text-slate-600">
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={exportCSV}
-                    className="flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-violet-700 transition-colors hover:bg-violet-50"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export
-                  </button>
-                </div>
-              </div>
-
-              {/* Stats bar */}
-              <div className="shrink-0 border-b border-violet-100 px-6 py-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-600 px-4 py-3 shadow-md shadow-violet-200/60">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
-                      <Receipt className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-violet-100">{d.receiptStatsTotal}</p>
-                      <p className="tabular-nums text-xl font-bold text-white">{filtered.length}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">{d.receiptStatsPaid}</p>
-                      <p className="tabular-nums text-xl font-bold text-emerald-600">{filtered.length}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 rounded-xl border border-violet-100 bg-white px-4 py-3 shadow-sm">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50">
-                      <FileStack className="h-4 w-4 text-violet-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500">{d.receiptStatsAmount}</p>
-                      <p className="tabular-nums text-xl font-bold text-violet-700">{fmtCurrency(totalFiltered)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Table + A5 receipt slide panel */}
-              <div className="flex min-h-0 flex-1">
-                <div className="flex flex-1 flex-col overflow-hidden">
-                  <div className="flex-1 overflow-auto">
-                    {salesLoading ? (
-                      <div className="flex h-full items-center justify-center text-sm text-slate-400">{d.loading}</div>
-                    ) : salesError ? (
-                      <div className="m-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{salesError}</div>
-                    ) : filtered.length === 0 ? (
-                      <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100">
-                          <Package className="h-8 w-8 text-violet-400" />
-                        </div>
-                        <p className="font-semibold text-slate-600">{d.receiptEmpty}</p>
-                      </div>
-                    ) : (
-                      <table className="w-full text-left text-sm">
-                        <thead className="sticky top-0 z-10 border-b border-violet-100 bg-violet-50/80 backdrop-blur-sm">
-                          <tr>
-                            <th className="w-10 px-4 py-3">
-                              <input
-                                type="checkbox"
-                                checked={allChecked}
-                                ref={(el) => { if (el) el.indeterminate = someChecked && !allChecked; }}
-                                onChange={() => {
-                                  if (allChecked) setSelectedSaleIds(new Set());
-                                  else setSelectedSaleIds(new Set(filtered.map((s) => s.id)));
-                                }}
-                                className="h-4 w-4 rounded border-violet-300 accent-violet-600"
-                              />
-                            </th>
-                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.receiptPaymentMethod}</th>
-                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.customer}</th>
-                            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.date}</th>
-                            <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">{d.total}</th>
-                            <th className="w-14 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">จัดการ</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-violet-50">
-                          {filtered.map((sale) => (
-                            <tr
-                              key={sale.id}
-                              onClick={() => setSelectedReceiptId((prev) => prev === sale.id ? null : sale.id)}
-                              className={`cursor-default border-b border-violet-50 transition-colors ${selectedReceiptId === sale.id ? "bg-violet-50" : "hover:bg-slate-50/70"}`}
-                            >
-                              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedSaleIds.has(sale.id)}
-                                  onChange={() => toggleSaleId(sale.id)}
-                                  className="h-4 w-4 rounded border-violet-300 accent-violet-600"
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-slate-600">{sale.payment_method}</td>
-                              <td className="px-4 py-3 text-slate-700">{sale.customer_name?.trim() || "ลูกค้าทั่วไป"}</td>
-                              <td className="px-4 py-3 text-xs text-slate-500">{fmtDateTime(sale.created_at)}</td>
-                              <td className="px-4 py-3 text-right font-mono text-sm font-medium tabular-nums text-slate-800">
-                                {fmtCurrency(sale.total_amount ?? 0)}
-                              </td>
-                              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  type="button"
-                                  title="พิมพ์ใบเสร็จ"
-                                  onClick={() => {
-                                    getSaleReceiptHtml(sale.id).then((html) => {
-                                      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-                                      const blobUrl = URL.createObjectURL(blob);
-                                      const frame = document.createElement("iframe");
-                                      frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
-                                      document.body.appendChild(frame);
-                                      frame.src = blobUrl;
-                                      frame.onload = () => {
-                                        frame.contentWindow?.focus();
-                                        frame.contentWindow?.print();
-                                        setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
-                                      };
-                                    }).catch(() => toast.error(d.printError));
-                                  }}
-                                  className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600"
-                                >
-                                  <Printer className="h-4 w-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                </div>
-
-                {/* A5 receipt slide panel */}
-                {selectedReceiptId && (
-                  <div className="flex w-[360px] shrink-0 flex-col border-l border-violet-100 bg-white">
-                    {/* Panel header */}
-                    <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
-                      <span className="text-sm font-bold text-slate-800">{d.receiptViewBtn}</span>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          disabled={isTaxInvoicePending}
-                          onClick={() => handleCreateTaxInvoiceFromSale(selectedReceiptId)}
-                          className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
-                        >
-                          {isTaxInvoicePending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
-                          ใบกำกับภาษี
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!receiptHtml}
-                          onClick={printReceipt}
-                          className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-40"
-                        >
-                          <Printer className="h-3.5 w-3.5" />
-                          พิมพ์
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedReceiptId(null)}
-                          className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    {/* Panel body */}
-                    <div className="relative flex-1 overflow-hidden bg-slate-50">
-                      {receiptHtmlLoading ? (
-                        <div className="flex h-full items-center justify-center">
-                          <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
-                        </div>
-                      ) : receiptHtml ? (
-                        <iframe
-                          ref={receiptIframeRef}
-                          srcDoc={receiptHtml}
-                          title="receipt preview"
-                          className="h-full w-full border-0"
-                          sandbox="allow-same-origin allow-scripts"
-                        />
-                      ) : null}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })()}
+        {/* Receipts (POS sales history) — full Sales History experience embedded:
+            filters, KPIs, status badges, Thai payment labels, and the rich detail
+            modal (print / tax invoice / void / return). */}
+        {isReceiptMode && (
+          <div className="flex-1 overflow-auto">
+            <SalesHistoryManager dict={salesDict} embedded />
+          </div>
+        )}
       </div>
 
       {/* Create modal */}

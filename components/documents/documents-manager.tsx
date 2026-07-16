@@ -4,6 +4,12 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
 
 import type { SalesDictionary } from "@/components/sales/types";
+import type { SalesHistoryDict } from "@/components/sales/sales-history-dict";
+import {
+  DateRangeFilter,
+  type DateFilterValue,
+  resolveDateQuery,
+} from "@/components/shared/date-range-filter";
 import {
   createInvoicePayment,
   downloadInvoicePdf,
@@ -18,8 +24,20 @@ import type { Sale } from "@/types/sale";
 
 type DocumentsManagerProps = {
   dictionary: SalesDictionary;
+  salesDict: SalesHistoryDict;
   mode?: "all" | "pending";
 };
+
+// Bangkok calendar date (YYYY-MM-DD) of an ISO timestamp. Matches the convention in
+// date-range-filter (todayIso) and the backend's `AT TIME ZONE 'Asia/Bangkok'`, so a
+// 00:30 ICT document lands on the right local day rather than the prior UTC day.
+const BKK_OFFSET_MS = 7 * 60 * 60 * 1000;
+function bkkDate(iso?: string | null): string {
+  if (!iso) return "";
+  const t = new Date(iso);
+  if (Number.isNaN(t.getTime())) return "";
+  return new Date(t.getTime() + BKK_OFFSET_MS).toISOString().slice(0, 10);
+}
 
 type DocumentLineItem = {
   id?: string;
@@ -128,12 +146,13 @@ function findLatestProofPaymentId(invoice: Invoice) {
   return undefined;
 }
 
-export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerProps) {
+export function DocumentsManager({ dictionary, salesDict, mode = "all" }: DocumentsManagerProps) {
   const params = useParams();
   const locale = (params?.locale as string) ?? "th";
   const [sales, setSales] = useState<Sale[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterValue>({ preset: "all" });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
@@ -204,12 +223,22 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
   const filteredRecords = useMemo(() => {
     const sourceRecords = mode === "pending" ? invoices : sales;
     const keyword = search.trim().toLowerCase();
-
-    if (!keyword) {
-      return sourceRecords;
-    }
+    // Date window is interpreted as Bangkok calendar days (inclusive), consistent with
+    // the sales-history list and the backend filter.
+    const { date_from: dateFrom, date_to: dateTo } = resolveDateQuery(dateFilter);
 
     return sourceRecords.filter((record) => {
+      if (dateFrom || dateTo) {
+        const day = bkkDate(record.created_at);
+        if (!day) return false;
+        if (dateFrom && day < dateFrom) return false;
+        if (dateTo && day > dateTo) return false;
+      }
+
+      if (!keyword) {
+        return true;
+      }
+
       if (mode === "pending") {
         const invoice = record as Invoice;
         const customerName = getInvoiceCustomerDisplayName(invoice, dictionary).toLowerCase();
@@ -230,7 +259,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
         String(sale.created_at ?? "").toLowerCase().includes(keyword)
       );
     });
-  }, [dictionary, mode, invoices, sales, search]);
+  }, [dictionary, mode, invoices, sales, search, dateFilter]);
 
   const totalPages = Math.max(Math.ceil(filteredRecords.length / pageSize), 1);
   const startPage = Math.max(currentPage - 2, 1);
@@ -246,7 +275,7 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [mode, pageSize, search]);
+  }, [mode, pageSize, search, dateFilter]);
 
   useEffect(() => {
     setCurrentPage((page) => Math.min(page, totalPages));
@@ -574,9 +603,26 @@ export function DocumentsManager({ dictionary, mode = "all" }: DocumentsManagerP
           </span>
         </div>
 
-        <div className="mt-4">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <DateRangeFilter
+            value={dateFilter}
+            onChange={setDateFilter}
+            labels={{
+              today: salesDict.filterToday,
+              sevenDays: salesDict.filter7d,
+              thirtyDays: salesDict.filter30d,
+              all: salesDict.filterAll,
+              custom: salesDict.filterCustom,
+              startDate: salesDict.dateFrom,
+              endDate: salesDict.dateTo,
+              cancel: salesDict.cancelBtn,
+              apply: salesDict.confirmBtn,
+            }}
+            locale={locale}
+            className="shrink-0"
+          />
           <input
-            className="w-full rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+            className="w-full flex-1 rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
             onChange={(event) => setSearch(event.target.value)}
             placeholder={dictionary.documentSearchPlaceholder}
             value={search}

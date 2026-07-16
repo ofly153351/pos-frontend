@@ -25,6 +25,13 @@ function buildForwardHeaders(request: Request, body: BodyInit | undefined) {
     headers.set("Content-Type", contentType);
   }
 
+  // Forward the idempotency key (Phase W3 confirm idempotency) so a retried request
+  // reaches the backend with the same key.
+  const idempotencyKey = request.headers.get("idempotency-key");
+  if (idempotencyKey) {
+    headers.set("Idempotency-Key", idempotencyKey);
+  }
+
   return headers;
 }
 

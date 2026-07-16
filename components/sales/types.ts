@@ -3,6 +3,7 @@ export type ProductViewMode = "grid" | "list";
 export type SalesDictionary = {
   addButton: string;
   cartTitle: string;
+  couponLabel: string;
   changeLabel: string;
   checkoutButton: string;
   checkoutSectionTitle: string;
@@ -44,9 +45,22 @@ export type SalesDictionary = {
   discountPercentLabel: string;
   discountSummaryLabel: string;
   totalDiscountLabel: string;
+  itemDiscountLabel: string;
   discountTypeLabel: string;
   discountValueLabel: string;
+  discountScopeLabel: string;
+  discountScopeWholeLine: string;
+  discountScopePerUnit: string;
+  discountPreviewUnitPriceLabel: string;
+  discountPreviewQtyLabel: string;
+  discountPreviewLineSubtotalLabel: string;
+  discountPreviewLineDiscountLabel: string;
+  discountPreviewPerUnitDiscountLabel: string;
+  discountPreviewTotalDiscountLabel: string;
+  discountPreviewAfterDiscountLabel: string;
+  discountBadgePerUnit: string;
   emptyCart: string;
+  latestItemBadge: string;
   emptyHistory: string;
   emptyProducts: string;
   historyTitle: string;
@@ -61,9 +75,19 @@ export type SalesDictionary = {
   notePlaceholder: string;
   paymentMethodCard: string;
   paymentMethodPromptPay: string;
+  paymentMethodQrLabel: string;
+  paymentMethodBankTransferLabel: string;
+  paymentMethodCreditCardLabel: string;
+  paymentMethodDebitCardLabel: string;
   paymentMethodCash: string;
   paymentMethodCashLabel: string;
   paymentMethodLabel: string;
+  bankAccountLabel: string;
+  bankAccountNone: string;
+  bankTransferInstructions: string;
+  bankTransferAccountNo: string;
+  bankTransferAccountName: string;
+  bankTransferBankName: string;
   invoiceButton: string;
   markUnpaidButton: string;
   markPaidButton: string;
@@ -86,6 +110,8 @@ export type SalesDictionary = {
   printReceiptSkipButton: string;
   printWindowBlockedError: string;
   receiptPreviewLoading: string;
+  receiptPreviewError: string;
+  receiptPreviewRetryButton: string;
   receiptPreviewPrintButton: string;
   receiptPreviewTitle: string;
   requestFailedLabel: string;
@@ -97,6 +123,7 @@ export type SalesDictionary = {
   productViewGrid: string;
   productViewList: string;
   cardSettings: string;
+  openCustomerDisplay: string;
   cardSettingsModal: import("@/components/sales/card-settings-modal").CardSettingsDictionary;
   productOutOfStock: string;
   quantityLabel: string;
@@ -109,7 +136,16 @@ export type SalesDictionary = {
   remainingLabel: string;
   removeItemButton: string;
   saleAtLabel: string;
+  saleLocationLabel: string;
+  saleLocationRequired: string;
+  saleLocationCartAdjusted: string;
+  customerDiscountUnavailable: string;
+  noSalePointConfigured: string;
+  noSalePointDescription: string;
+  configureSalePoint: string;
+  contactManager: string;
   searchPlaceholder: string;
+  scanWithCamera: string;
   stockLabel: string;
   summary: {
     discountLabel: string;
@@ -132,6 +168,20 @@ export type SalesDictionary = {
   viewReceiptButton: string;
   printInvoiceButton: string;
   categoryFilterAll: string;
+  promo: {
+    tab: string;
+    all: string;
+    storeWide: string;
+    discountLabel: string;
+    badge: {
+      percent: string; // contains "{v}"
+      amount: string; // contains "{v}"
+      price: string; // contains "{v}"
+      bxgy: string; // contains "{b}" and "{g}"
+      member: string;
+      generic: string;
+    };
+  };
   holdBillLabel: string;
   restoreBillLabel: string;
   restoreBillDrawerTitle: string;
@@ -140,4 +190,12 @@ export type SalesDictionary = {
   holdBillPlaceholderLabel: string;
   restoreBillConfirmLabel: string;
   noParkedBillsLabel: string;
+  menuLabel: string;
+  closeCashierLabel: string;
+  confirmCloseTitle: string; // contains "{count}"
+  confirmCloseMessage: string;
+  confirmCloseHoldDescription: string;
+  confirmCloseDiscardLabel: string;
+  confirmCloseDiscardDescription: string;
+  confirmCloseCancelLabel: string;
 };

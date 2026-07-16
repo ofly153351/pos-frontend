@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CircleDollarSign,
   Menu,
+  Monitor,
+  MoreHorizontal,
   Search,
   X,
 } from "lucide-react";
@@ -12,6 +14,7 @@ import { SidebarDrawer } from "@/components/navigation/sidebar-drawer";
 import type { NavLabels } from "@/components/navigation/nav-config";
 import { SalesManager } from "@/components/sales/sales-manager";
 import type { SalesManagerHandle } from "@/components/sales/sales-manager";
+import { ScanButton } from "@/components/shared/scan-button";
 import type { SalesDictionary } from "@/components/sales/types";
 
 const CLOSE_DURATION = 220;
@@ -26,12 +29,14 @@ type CashierModalProps = {
 export function CashierModal({ dictionary, locale, navLabels, onClose }: CashierModalProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
   const salesRef = useRef<SalesManagerHandle>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [cartCount, setCartCount] = useState(0);
   const [confirmClose, setConfirmClose] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [search, setSearch] = useState("");
   const [vatOn, setVatOn] = useState(false);
@@ -50,6 +55,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
     if (isClosing) return;
     setIsClosing(true);
     setIsMenuOpen(false);
+    setIsActionsOpen(false);
     closeTimerRef.current = setTimeout(() => onClose(), CLOSE_DURATION);
   }, [isClosing, onClose]);
 
@@ -69,17 +75,53 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
 
   const handleEscape = useCallback(() => {
     if (isClosing) return;
+    if (isActionsOpen) { setIsActionsOpen(false); return; }
     if (isMenuOpen) { setIsMenuOpen(false); return; }
     if (confirmClose) { setConfirmClose(false); return; }
     if (cartCount > 0) setConfirmClose(true);
     else triggerClose();
-  }, [isClosing, isMenuOpen, confirmClose, cartCount, triggerClose]);
+  }, [isClosing, isActionsOpen, isMenuOpen, confirmClose, cartCount, triggerClose]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") handleEscape(); }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [handleEscape]);
+
+  useEffect(() => {
+    if (!isActionsOpen) return;
+    function onPointerDown(e: PointerEvent) {
+      if (actionsMenuRef.current?.contains(e.target as Node)) return;
+      setIsActionsOpen(false);
+    }
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, [isActionsOpen]);
+
+  const openCustomerDisplay = useCallback(() => {
+    setIsActionsOpen(false);
+    window.open(`/${locale}/customer-display`, "pos-customer-display");
+  }, [locale]);
+
+  const toggleVat = useCallback(() => {
+    setIsActionsOpen(false);
+    salesRef.current?.toggleVat();
+  }, []);
+
+  const holdBill = useCallback(() => {
+    setIsActionsOpen(false);
+    salesRef.current?.holdBill();
+  }, []);
+
+  const restoreBill = useCallback(() => {
+    setIsActionsOpen(false);
+    salesRef.current?.restoreBill();
+  }, []);
+
+  const toggleNote = useCallback(() => {
+    setIsActionsOpen(false);
+    salesRef.current?.toggleNote();
+  }, []);
 
   return (
     <div
@@ -91,9 +133,9 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
       }}
     >
       {/* Header */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-violet-100 bg-white px-5 py-4">
+      <div className="flex shrink-0 items-center gap-2 border-b border-violet-100 bg-white px-3 py-3 sm:gap-3 sm:px-5 sm:py-4">
         <button
-          aria-label="Menu"
+          aria-label={dictionary.menuLabel}
           className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition ${isMenuOpen ? "bg-violet-100 text-violet-700" : "text-slate-500 hover:bg-violet-50 hover:text-violet-600"}`}
           onClick={() => setIsMenuOpen(true)}
           type="button"
@@ -104,7 +146,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
         <div className="flex shrink-0 items-center gap-2">
           <CircleDollarSign className="h-4 w-4 text-violet-500" />
           <h2 className="text-base font-bold text-slate-900">
-            {dictionary.title || "หน้าขาย"}
+            {dictionary.title}
           </h2>
           {cartCount > 0 && (
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-[10px] font-bold text-white">
@@ -123,41 +165,110 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <ScanButton
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-violet-200 bg-white text-violet-600 transition hover:border-violet-400 hover:bg-violet-50"
+          onScan={(code) => salesRef.current?.scanCode(code)}
+          title={dictionary.scanWithCamera}
+        />
+
+        <div className="hidden shrink-0 items-center gap-1.5 xl:flex">
+          <button
+            className="flex h-10 items-center gap-1.5 rounded-full border border-violet-200 bg-white px-3.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-50"
+            onClick={openCustomerDisplay}
+            title={dictionary.openCustomerDisplay}
+            type="button"
+          >
+            <Monitor className="h-3.5 w-3.5" />
+            {dictionary.openCustomerDisplay}
+          </button>
           <button
             className={`flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-xs font-bold transition ${vatOn ? "border-violet-500 bg-violet-600 text-white shadow-sm" : "border-violet-200 bg-white text-violet-400 hover:bg-violet-50"}`}
-            onClick={() => salesRef.current?.toggleVat()}
+            onClick={toggleVat}
             type="button"
           >
             <span className={`h-1.5 w-1.5 rounded-full ${vatOn ? "bg-white" : "bg-violet-300"}`} />
-            VAT {vatOn ? "7%" : "off"}
+            {dictionary.vatToggleLabel}
           </button>
           <button
             className="flex h-10 items-center rounded-full border border-orange-200 bg-orange-50 px-3.5 text-xs font-semibold text-orange-600 transition hover:bg-orange-100"
-            onClick={() => salesRef.current?.holdBill()}
+            onClick={holdBill}
             type="button"
           >
-            พักบิล
+            {dictionary.holdBillLabel}
           </button>
           <button
             className="flex h-10 items-center rounded-full border border-violet-200 bg-violet-50 px-3.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-100"
-            onClick={() => salesRef.current?.restoreBill()}
+            onClick={restoreBill}
             type="button"
           >
-            เรียกบิล
+            {dictionary.restoreBillLabel}
           </button>
           <button
             className={`flex h-10 items-center rounded-full border px-3.5 text-xs font-semibold transition ${noteOn ? "border-violet-400 bg-violet-100 text-violet-700" : "border-violet-200 bg-white text-violet-500 hover:bg-violet-50"}`}
-            onClick={() => salesRef.current?.toggleNote()}
+            onClick={toggleNote}
             type="button"
           >
-            หมายเหตุ
+            {dictionary.noteLabel}
           </button>
+        </div>
+
+        <div ref={actionsMenuRef} className="relative shrink-0 xl:hidden">
+          <button
+            aria-expanded={isActionsOpen}
+            aria-label={dictionary.actionsLabel}
+            className={`flex h-10 w-10 items-center justify-center rounded-full border transition ${isActionsOpen ? "border-violet-400 bg-violet-100 text-violet-700" : "border-violet-200 bg-white text-violet-600 hover:border-violet-400 hover:bg-violet-50"}`}
+            onClick={() => setIsActionsOpen((value) => !value)}
+            type="button"
+          >
+            <MoreHorizontal className="h-5 w-5" />
+          </button>
+
+          {isActionsOpen ? (
+            <div className="absolute right-0 top-full z-40 mt-2 w-56 overflow-hidden rounded-xl border border-violet-100 bg-white py-1.5 shadow-xl shadow-violet-950/10 smooth-fade-up">
+              <button
+                className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                onClick={openCustomerDisplay}
+                type="button"
+              >
+                <Monitor className="h-4 w-4" />
+                <span className="min-w-0 truncate">{dictionary.openCustomerDisplay}</span>
+              </button>
+              <button
+                className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-violet-50"
+                onClick={toggleVat}
+                type="button"
+              >
+                <span className={`h-2 w-2 rounded-full ${vatOn ? "bg-violet-600" : "bg-violet-300"}`} />
+                <span className="min-w-0 truncate">{dictionary.vatToggleLabel}</span>
+              </button>
+              <button
+                className="flex w-full items-center px-3.5 py-2.5 text-left text-sm font-semibold text-orange-600 transition hover:bg-orange-50"
+                onClick={holdBill}
+                type="button"
+              >
+                {dictionary.holdBillLabel}
+              </button>
+              <button
+                className="flex w-full items-center px-3.5 py-2.5 text-left text-sm font-semibold text-violet-700 transition hover:bg-violet-50"
+                onClick={restoreBill}
+                type="button"
+              >
+                {dictionary.restoreBillLabel}
+              </button>
+              <button
+                className={`flex w-full items-center px-3.5 py-2.5 text-left text-sm font-semibold transition ${noteOn ? "bg-violet-50 text-violet-700" : "text-slate-700 hover:bg-violet-50"}`}
+                onClick={toggleNote}
+                type="button"
+              >
+                {dictionary.noteLabel}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <button
           ref={closeRef}
-          aria-label="Close cashier"
+          aria-label={dictionary.closeCashierLabel}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
           onClick={handleCloseClick}
           type="button"
@@ -172,6 +283,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
           <SalesManager
             ref={salesRef}
             dictionary={dictionary}
+            locale={locale}
             externalSearch={search}
             onCartItemsChange={handleCartChange}
             onExternalSearchChange={setSearch}
@@ -200,9 +312,9 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
           <div className="mx-4 w-full max-w-sm rounded-2xl border border-violet-100 bg-white shadow-2xl smooth-fade-up">
             {/* Header */}
             <div className="px-6 pt-6 pb-4">
-              <h3 className="text-base font-bold text-slate-900">มีสินค้าในตะกร้า {cartCount} รายการ</h3>
+              <h3 className="text-base font-bold text-slate-900">{dictionary.confirmCloseTitle.replace("{count}", String(cartCount))}</h3>
               <p className="mt-1.5 text-sm text-slate-500">
-                ต้องการพักบิลไว้ก่อน หรือปิดโดยไม่บันทึก?
+                {dictionary.confirmCloseMessage}
               </p>
             </div>
 
@@ -220,8 +332,8 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
               >
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white text-sm">⏸</span>
                 <div>
-                  <p className="text-sm font-semibold text-violet-800">พักบิล</p>
-                  <p className="text-xs text-violet-500">บันทึกรายการไว้ แล้วปิดหน้าร้าน</p>
+                  <p className="text-sm font-semibold text-violet-800">{dictionary.holdBillLabel}</p>
+                  <p className="text-xs text-violet-500">{dictionary.confirmCloseHoldDescription}</p>
                 </div>
               </button>
 
@@ -233,8 +345,8 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
               >
                 <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose-500 text-white text-sm">✕</span>
                 <div>
-                  <p className="text-sm font-semibold text-rose-700">ปิดโดยไม่บันทึก</p>
-                  <p className="text-xs text-rose-400">รายการในตะกร้าจะหายไป</p>
+                  <p className="text-sm font-semibold text-rose-700">{dictionary.confirmCloseDiscardLabel}</p>
+                  <p className="text-xs text-rose-400">{dictionary.confirmCloseDiscardDescription}</p>
                 </div>
               </button>
             </div>
@@ -246,7 +358,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
                 onClick={handleCancelClose}
                 type="button"
               >
-                ยกเลิก
+                {dictionary.confirmCloseCancelLabel}
               </button>
             </div>
           </div>

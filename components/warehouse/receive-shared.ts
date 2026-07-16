@@ -92,6 +92,7 @@ export type ReceiveDictionary = {
   placeholderReferenceNo: string;
   placeholderScanCode: string;
   placeholderSearchProducts: string;
+  scanWithCamera?: string;
   placeholderSelectSupplier: string;
   placeholderSelectWarehouse: string;
   startPageDescription: string;
@@ -143,6 +144,62 @@ export type ReceiveDictionary = {
   validationWarehouseOnlySalePoints: string;
   validationWarehouseWithoutLocations: string;
   viewNotConfirmed: string;
+  // ── Single-page editor ──
+  editorTitle: string;
+  editorSubtitle: string;
+  sectionDocument: string;
+  sectionItems: string;
+  sectionInspection: string;
+  sectionFinancial: string;
+  sourceLabel: string;
+  sourceFromPo: string;
+  sourceDirect: string;
+  labelPurchaseOrder: string;
+  placeholderSelectPo: string;
+  colDestination: string;
+  colOrdered: string;
+  colPrevReceived: string;
+  colRemaining: string;
+  colActualReceived: string;
+  colDifference: string;
+  colStatus: string;
+  statusComplete: string;
+  statusShort: string;
+  statusOver: string;
+  statusNotReceived: string;
+  statusReceived: string;
+  inspectionTotalLines: string;
+  inspectionTotalOrdered: string;
+  inspectionTotalReceived: string;
+  inspectionComplete: string;
+  inspectionShort: string;
+  inspectionOver: string;
+  inspectionNotReceived: string;
+  inspectionMismatchTitle: string; // uses {count}
+  inspectionOverWarning: string;
+  inspectionReceivedNote: string;
+  overReceiptInline: string; // uses {remaining}
+  autoLocationHint: string;
+  itemNoLocation: string;
+  itemLocationUnavailable: string;
+  itemLocationWrongWarehouse: string;
+  actionGoSetProductLocation: string;
+  locationSalePointTag: string;
+  locationStorageTag: string;
+  validationSelectAllLocations: string;
+  statePrereqError: string;
+  emptyItems: string;
+  actionSaveDraft: string;
+  actionSubmit: string;
+  actionSubmitting: string;
+  actionReopen: string;
+  actionConfirmReceipt: string;
+  actionConfirming: string;
+  badgePendingReview: string;
+  readonlyPending: string;
+  readonlyConfirmed: string;
+  readonlyCancelled: string;
+  actionBackToList: string;
 };
 
 export type HeaderForm = {
@@ -198,7 +255,8 @@ export function formatSignedNumber(value?: number | null) {
 export function formatCurrency(value?: number | null) {
   return new Intl.NumberFormat("th-TH", {
     currency: "THB",
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
     style: "currency",
   }).format(value ?? 0);
 }
@@ -312,4 +370,95 @@ export function buildDraftItemsPayload(itemRows: Record<string, ItemFormRow>) {
       unit_price: Number(row.unitPrice || 0),
     }))
     .sort((a, b) => a.product_id.localeCompare(b.product_id));
+}
+
+// ── Single-page editor model ─────────────────────────────────────────────────
+// Rows are keyed by PRODUCT (one product = one row). Each row carries an explicit
+// receiving locationId: it is PRE-SELECTED from the product's authoritative default
+// (products.default_location_id) when that default is valid for the receipt
+// warehouse, and the user can override it per line. An empty locationId means the
+// line is unresolved and must be selected before submit/confirm.
+
+export type ReceiveItemRow = {
+  key: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  barcode: string;
+  unitName: string;
+  quantity: string; // kept as a string so the input can be temporarily empty while typing
+  unitPrice: string;
+  discountValue: string;
+  locationId: string; // explicit per-line receiving location ("" = unresolved)
+};
+
+export type ReceiveRowStatus = "complete" | "short" | "over" | "not_received" | "received";
+
+/** Resolution state of a product's default receiving location.
+ *  "resolving" = prerequisite product/location data not loaded yet (neutral, non-blocking). */
+export type LocationResolveStatus = "ok" | "resolving" | "missing" | "unavailable" | "wrong_warehouse";
+
+/** PO ordered/received per product, used for the ordered/remaining/difference columns. */
+export type ReceivePoLine = { productId: string; ordered: number; previouslyReceived: number };
+
+export function receiveRowKey(productId: string) {
+  return productId;
+}
+
+export function buildEditorRows(receipt?: GoodsReceiptDraft | null): Record<string, ReceiveItemRow> {
+  const rows: Record<string, ReceiveItemRow> = {};
+  for (const item of receipt?.items ?? []) {
+    const key = receiveRowKey(item.product_id);
+    const existing = rows[key];
+    if (existing) {
+      // Pre-Phase-2 drafts could split one product across locations; merge them and
+      // keep the first persisted location as the row's selection.
+      existing.quantity = String(Number(existing.quantity || 0) + Number(item.quantity || 0));
+      if (!existing.locationId) existing.locationId = (item.location_id ?? "").trim();
+      continue;
+    }
+    rows[key] = {
+      key,
+      productId: item.product_id,
+      productName: item.product_name,
+      sku: item.sku ?? "",
+      barcode: item.barcode ?? "",
+      unitName: item.unit_name ?? "",
+      quantity: String(item.quantity),
+      unitPrice: String(item.unit_price ?? 0),
+      discountValue: String(item.discount_value ?? 0),
+      // Reopening a draft restores the user's previously chosen receiving location.
+      locationId: (item.location_id ?? "").trim(),
+    };
+  }
+  return rows;
+}
+
+export function buildEditorItemsPayload(rows: Record<string, ReceiveItemRow>) {
+  // location_id carries the user's explicit per-line receiving location so it is
+  // persisted on the draft (and restored on reopen). When empty, the backend
+  // resolves the product's authoritative default.
+  return Object.values(rows)
+    .filter((row) => Number(row.quantity) > 0)
+    .map((row) => ({
+      discount_value: Number(row.discountValue || 0),
+      location_id: row.locationId ? row.locationId : undefined,
+      product_id: row.productId,
+      quantity: Math.floor(Number(row.quantity) || 0),
+      unit_price: Number(row.unitPrice || 0),
+    }))
+    .sort((a, b) => a.product_id.localeCompare(b.product_id));
+}
+
+/** Status of a row vs the PO remaining for its product (aggregate received across rows). */
+export function receiveRowStatus(
+  hasPo: boolean,
+  receivedForProduct: number,
+  remainingForProduct: number,
+): ReceiveRowStatus {
+  if (!hasPo) return receivedForProduct > 0 ? "received" : "not_received";
+  if (receivedForProduct <= 0) return "not_received";
+  if (receivedForProduct > remainingForProduct) return "over";
+  if (receivedForProduct < remainingForProduct) return "short";
+  return "complete";
 }

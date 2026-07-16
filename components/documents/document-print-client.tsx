@@ -16,20 +16,21 @@ type Dict = {
 type Props = {
   documentId: string;
   dict: Dict;
+  copy?: number; // 0-based copy index; -1/undefined = whole set
 };
 
-export function DocumentPrintClient({ documentId, dict }: Props) {
+export function DocumentPrintClient({ documentId, dict, copy = -1 }: Props) {
   const [html, setHtml] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const frameRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    getDocumentPrintHtml(documentId)
+    getDocumentPrintHtml(documentId, copy)
       .then((h) => setHtml(h))
       .catch(() => setError(dict.requestFailed))
       .finally(() => setLoading(false));
-  }, [documentId, dict.requestFailed]);
+  }, [documentId, copy, dict.requestFailed]);
 
   function handlePrint() {
     const fw = frameRef.current?.contentWindow;

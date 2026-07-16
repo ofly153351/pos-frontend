@@ -35,6 +35,7 @@ export type CardSettingsDictionary = {
   sizeMd: string;
   sizeLg: string;
   stockBadge: string;
+  promoBadge: string;
   show: string;
   hide: string;
   previewTitle: string;
@@ -51,12 +52,12 @@ type Props = {
   dictionary: CardSettingsDictionary;
 };
 
-const SAMPLE: (ProductCardItem & { qty: number })[] = [
-  { id: "1", name: "โค้ก 1.25L", price: 35, stock: 23, qty: 0 },
-  { id: "2", name: "เลย์ บาร์บีคิว รสเข้มข้นพิเศษ สูตรดั้งเดิม ถุงจัมโบ้ 75 กรัม", price: 25, stock: 48, qty: 2 },
+const SAMPLE: (ProductCardItem & { qty: number; promo?: string })[] = [
+  { id: "1", name: "โค้ก 1.25L", price: 35, stock: 23, qty: 0, promo: "ลด 10%" },
+  { id: "2", name: "เลย์ บาร์บีคิว รสเข้มข้นพิเศษ สูตรดั้งเดิม ถุงจัมโบ้ 75 กรัม", price: 25, stock: 48, qty: 2, promo: "ซื้อ 3 แถม 1" },
   { id: "3", name: "น้ำดื่ม 600ml", price: 10, stock: 89, qty: 0 },
   { id: "4", name: "สบู่ก้อน", price: 29, stock: 0, qty: 0 },
-  { id: "5", name: "แชมพูสูตรอ่อนโยน 200ml", price: 89, stock: 10, qty: 0 },
+  { id: "5", name: "แชมพูสูตรอ่อนโยน 200ml", price: 89, stock: 10, qty: 0, promo: "ลด ฿15" },
   { id: "6", name: "มาม่า ต้มยำกุ้ง", price: 8, stock: 78, qty: 0 },
 ];
 
@@ -199,6 +200,12 @@ export function CardSettingsModal({ open, onClose, dictionary: d }: Props) {
                   options={[{ val: "on", label: d.show }, { val: "off", label: d.hide }]}
                   onChange={(v) => set("showStock", v === "on")}
                 />
+                <SegControl
+                  label={d.promoBadge}
+                  value={cfg.showPromoBadge ? "on" : "off"}
+                  options={[{ val: "on", label: d.show }, { val: "off", label: d.hide }]}
+                  onChange={(v) => set("showPromoBadge", v === "on")}
+                />
               </div>
               <div className="mt-auto flex gap-2.5 border-t border-violet-100 p-5">
                 <button
@@ -229,7 +236,7 @@ export function CardSettingsModal({ open, onClose, dictionary: d }: Props) {
               </div>
               <div className="flex-1 overflow-y-auto bg-[linear-gradient(160deg,#f5f3ff_0%,#faf5ff_45%,#f8fafc_100%)] p-5">
                 <div
-                  className="grid gap-3"
+                  className="grid content-start auto-rows-max gap-3"
                   style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_SIZE_MIN[cfg.size]}, 1fr))` }}
                 >
                   {SAMPLE.map((p) => (
@@ -240,6 +247,7 @@ export function CardSettingsModal({ open, onClose, dictionary: d }: Props) {
                       qtyInCart={p.qty}
                       onAdd={() => {}}
                       labels={{ stock: "สต็อก", outOfStock: "หมด", add: "เพิ่ม" }}
+                      promoLabel={p.promo}
                     />
                   ))}
                 </div>

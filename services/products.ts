@@ -35,6 +35,13 @@ function buildProductFormData(input: ProductInput) {
   formData.set("description", input.description ?? "");
   formData.set("storage_location", input.storage_location ?? "");
 
+  // Authoritative default receiving/storage location (FK). Always sent so an
+  // edit can clear it (the clear flag lets the backend null the column).
+  formData.set("default_location_id", input.default_location_id ?? "");
+  if (!input.default_location_id) {
+    formData.set("clear_default_location", "true");
+  }
+
   formData.set("sku", input.sku ?? "");
   if (!input.sku) {
     formData.set("clear_sku", "true");
@@ -55,6 +62,17 @@ function buildProductFormData(input: ProductInput) {
 
   if (typeof input.min_stock === "string" && input.min_stock) {
     formData.set("min_stock", input.min_stock);
+  }
+
+  // Opening-balance stock, seeded at create time only. The backend posts it as a single
+  // OPENING_BALANCE ADD movement at the product's resolved default sale-point location, in
+  // the same transaction as the insert. Sent only when > 0; the update parser ignores it,
+  // so carrying a stray value on edit is harmless.
+  if (typeof input.initial_stock === "string" && input.initial_stock.trim()) {
+    const qty = Number(input.initial_stock);
+    if (Number.isFinite(qty) && qty > 0) {
+      formData.set("initial_stock", String(Math.trunc(qty)));
+    }
   }
 
   if (input.special_price) {
@@ -165,6 +183,13 @@ export async function listProducts(options: ListProductsOptions = {}) {
     ...response,
     data: normalizedData,
   };
+}
+
+export function getProductById(productId: string) {
+  const currentStoreId = ensureStoreId();
+  return authorizedApiRequest<Product>(
+    `/api/stores/${currentStoreId}/products/${productId}`,
+  );
 }
 
 export function createProduct(input: ProductInput) {

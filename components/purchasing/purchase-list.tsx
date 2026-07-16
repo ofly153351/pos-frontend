@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useRouter } from "next/navigation";
 import {
   FileText, Package, Plus, Search,
   ShoppingBag, TrendingUp, X, XCircle,
@@ -10,6 +11,7 @@ import {
 import { ReceiveModal } from "@/components/purchasing/receive-modal";
 import { cancelPurchaseOrder, listPurchaseOrders, type PurchaseOrder } from "@/services/purchases";
 import { toast } from "@/components/ui/toast";
+import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 
 type StatusFilter = "all" | "pending" | "partial" | "completed" | "cancelled";
 
@@ -101,7 +103,7 @@ function SupplierCell({ name, logoUrl, size = "sm" }: { name?: string; logoUrl?:
 
 function formatTHB(amount: number) {
   return new Intl.NumberFormat("th-TH", {
-    currency: "THB", minimumFractionDigits: 2, style: "currency",
+    currency: "THB", minimumFractionDigits: 0, style: "currency",
   }).format(amount);
 }
 
@@ -112,15 +114,13 @@ function formatDate(dateStr: string) {
 type KpiCardProps = { icon: React.ReactNode; label: string; value: string; accent?: string };
 function KpiCard({ icon, label, value, accent }: KpiCardProps) {
   return (
-    <div className="flex flex-1 items-center gap-3 rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accent ?? "bg-violet-100 text-violet-600"}`}>
-        {icon}
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-xs font-medium text-slate-500">{label}</p>
-        <p className="font-mono text-lg font-bold leading-tight text-slate-900">{value}</p>
-      </div>
-    </div>
+    <ReportKpiCard
+      label={label}
+      value={value}
+      icon={icon}
+      iconBg={accent ?? "bg-violet-100 text-violet-600"}
+      iconColor=""
+    />
   );
 }
 
@@ -131,6 +131,11 @@ const statusLabels = (d: Dict): Record<StatusFilter, string> => ({
 
 export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dict; onCreateOrder: () => void }) {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const params = useParams();
+  const locale = (params?.locale as string) || "th";
+  // Receiving is one workflow: open the single-page Goods Receiving editor with this PO preloaded.
+  const goReceive = (poId: string) => router.push(`/${locale}/warehouse/receive/new?po=${poId}`);
   const [receivePO, setReceivePO] = useState<PurchaseOrder | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
@@ -194,7 +199,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
       <div className="space-y-4 pb-20 md:pb-0">
 
         {/* ── KPI row: 2×2 on mobile, single row on desktop ── */}
-        <div className="grid grid-cols-2 gap-3 md:flex md:gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <KpiCard
             accent="bg-violet-600 text-white"
             icon={<FileText className="h-5 w-5" />}
@@ -356,7 +361,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                           className={`group transition-colors hover:bg-violet-50/50 ${order.status === "cancelled" ? "opacity-60" : ""}`}
                         >
                           <td className="px-6 py-3.5">
-                            <span className="font-mono text-xs font-semibold text-violet-700">{order.order_number}</span>
+                            <span className="nums text-xs font-semibold text-violet-700 whitespace-nowrap">{order.order_number}</span>
                           </td>
                           <td className="max-w-[200px] px-4 py-3.5">
                             <SupplierCell name={order.supplier?.name} logoUrl={order.supplier?.logo_url} />
@@ -368,7 +373,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                             </span>
                           </td>
                           <td className="px-4 py-3.5 text-right">
-                            <span className="font-mono text-sm font-bold text-slate-900">{formatTHB(order.total_cost)}</span>
+                            <span className="nums text-sm font-bold text-slate-900">{formatTHB(order.total_cost)}</span>
                           </td>
                           <td className="px-4 py-3.5 text-xs text-slate-500">{formatDate(order.created_at)}</td>
                           <td className="px-4 py-3.5">
@@ -381,7 +386,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                               {isActionable && (
                                 <button
                                   className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700 shadow-sm transition-all hover:border-violet-400 hover:shadow"
-                                  onClick={() => setReceivePO(order)}
+                                  onClick={() => goReceive(order.id)}
                                   title={d.receiveStock}
                                   type="button"
                                 >
@@ -434,7 +439,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="font-mono text-xs font-semibold text-violet-700">{order.order_number}</p>
+                            <p className="nums text-xs font-semibold text-violet-700">{order.order_number}</p>
                             <p className="truncate text-sm font-medium text-slate-800">{order.supplier?.name ?? "—"}</p>
                           </div>
                         </div>
@@ -452,7 +457,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                           </span>
                           <span>{formatDate(order.created_at)}</span>
                         </div>
-                        <span className="font-mono text-base font-bold text-slate-900">{formatTHB(order.total_cost)}</span>
+                        <span className="nums text-base font-bold text-slate-900">{formatTHB(order.total_cost)}</span>
                       </div>
 
                       {/* Action buttons */}
@@ -460,7 +465,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
                         <div className="mt-3 flex gap-2">
                           <button
                             className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-white py-2 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50"
-                            onClick={() => setReceivePO(order)}
+                            onClick={() => goReceive(order.id)}
                             type="button"
                           >
                             <Package className="h-3.5 w-3.5" />

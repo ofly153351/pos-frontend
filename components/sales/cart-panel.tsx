@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef } from "react";
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2, Ticket } from "lucide-react";
 import type { SaleDiscountType } from "@/types/sale";
 import type { Product } from "@/types/product";
 import { formatAmount, getCartLine } from "./utils/sales-calculations";
 
 type CartItem = {
+  discountScope: "line" | "unit";
   discountType: SaleDiscountType;
   discountValue: string;
   product: Product;
@@ -22,24 +22,37 @@ type Dict = {
   cartTitle: string;
   netTotalLabel: string;
   discountBillLabel: string;
+  couponLabel: string;
   totalDiscountLabel: string;
+  itemDiscountLabel: string;
+  customerDiscountLabel: string;
+  promo: { discountLabel: string };
   summary: { subtotalLabel: string };
   notePlaceholder: string;
   emptyCart: string;
   discountTypeLabel: string;
+  discountBadgePerUnit: string;
   removeItemButton: string;
   checkoutButton: string;
+  latestItemBadge: string;
 };
 
 type Props = {
   cart: CartItem[];
+  recentProductId: string | null;
   cartSummary: CartSummary;
   settlementTotal: number;
   vatAmount: number;
   applyVat: boolean;
   billDiscount: string;
   billDiscountType: "amount" | "percent";
+  couponCode: string;
   totalDiscountAmount: number;
+  itemDiscountAmount: number;
+  customerDiscountAmount: number;
+  billDiscountAmount: number;
+  promoDiscountAmount: number;
+  promoBreakdown: Array<{ name: string; amount: number }>;
   showNoteField: boolean;
   note: string;
   isPending: boolean;
@@ -49,6 +62,7 @@ type Props = {
   onClearCart: () => void;
   onToggleBillDiscountField: () => void;
   onBillDiscountTypeChange: (type: "amount" | "percent") => void;
+  onCouponChange: (v: string) => void;
   onOpenAmountNumpad: (field: "bill_discount" | "paid_amount") => void;
   onNoteChange: (v: string) => void;
   onOpenDiscountEditor: (productId: string) => void;
@@ -61,13 +75,20 @@ type Props = {
 
 export function CartPanel({
   cart,
+  recentProductId,
   cartSummary,
   settlementTotal,
   vatAmount,
   applyVat,
   billDiscount,
   billDiscountType,
+  couponCode,
   totalDiscountAmount,
+  itemDiscountAmount,
+  customerDiscountAmount,
+  billDiscountAmount,
+  promoDiscountAmount,
+  promoBreakdown,
   showNoteField,
   note,
   isPending,
@@ -77,6 +98,7 @@ export function CartPanel({
   onClearCart,
   onToggleBillDiscountField,
   onBillDiscountTypeChange,
+  onCouponChange,
   onOpenAmountNumpad,
   onNoteChange,
   onOpenDiscountEditor,
@@ -86,6 +108,16 @@ export function CartPanel({
   onLongPressStart,
   onLongPressEnd,
 }: Props) {
+  // Itemised discount breakdown — display only; the math (totalDiscountAmount /
+  // settlementTotal) is computed upstream and unchanged. Each row shows only when > 0.
+  const genericDiscountRows = [
+    { key: "item", label: dictionary.itemDiscountLabel, amount: itemDiscountAmount },
+    { key: "customer", label: dictionary.customerDiscountLabel, amount: customerDiscountAmount },
+    { key: "bill", label: dictionary.discountBillLabel, amount: billDiscountAmount },
+  ].filter((r) => r.amount > 0);
+  const discountSourceCount =
+    genericDiscountRows.length + (promoDiscountAmount > 0 ? 1 : 0);
+
   return (
     <div className="xl:h-full xl:min-h-0">
       <section className="flex h-full min-h-[74dvh] flex-col rounded-[2rem] border border-violet-100 bg-white shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh]">
@@ -124,7 +156,7 @@ export function CartPanel({
               />
               {dictionary.netTotalLabel}
             </button>
-            <span className="text-lg font-bold text-violet-700">
+            <span className="nums text-lg font-bold text-violet-700">
               ฿{formatAmount(settlementTotal)}
             </span>
           </div>
@@ -165,20 +197,68 @@ export function CartPanel({
                   </div>
                 </div>
               </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-violet-700">
+                  {dictionary.couponLabel}
+                </label>
+                <input
+                  className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-xs uppercase tracking-wide text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                  onChange={(e) => onCouponChange(e.target.value)}
+                  placeholder={dictionary.couponLabel}
+                  value={couponCode}
+                />
+              </div>
               <div className="flex items-center justify-between text-xs text-slate-500">
                 <span>{dictionary.summary.subtotalLabel}</span>
-                <span>฿{formatAmount(cartSummary.subtotal)}</span>
+                <span className="nums">฿{formatAmount(cartSummary.subtotal)}</span>
               </div>
-              {totalDiscountAmount > 0 && (
-                <div className="flex items-center justify-between text-xs text-emerald-600">
-                  <span>{dictionary.totalDiscountLabel}</span>
-                  <span>-฿{formatAmount(totalDiscountAmount)}</span>
+
+              {/* Generic discount sources (item / customer / bill) */}
+              {genericDiscountRows.map((r) => (
+                <div
+                  key={r.key}
+                  className="flex items-center justify-between text-xs text-emerald-600"
+                >
+                  <span>{r.label}</span>
+                  <span className="nums">-฿{formatAmount(r.amount)}</span>
+                </div>
+              ))}
+
+              {/* Promotion discount — highlighted so the cashier sees it came from a campaign */}
+              {promoDiscountAmount > 0 && (
+                <div className="-mx-1 rounded-lg bg-amber-50 px-2 py-1.5">
+                  <div className="flex items-center justify-between text-xs font-semibold text-amber-700">
+                    <span className="flex items-center gap-1.5">
+                      <Ticket className="h-3.5 w-3.5" />
+                      {dictionary.promo.discountLabel}
+                    </span>
+                    <span className="nums">-฿{formatAmount(promoDiscountAmount)}</span>
+                  </div>
+                  {promoBreakdown.length > 0 && (
+                    <ul className="mt-1 space-y-0.5 pl-5">
+                      {promoBreakdown.map((p, i) => (
+                        <li key={i} className="flex items-center justify-between gap-2 text-[11px] text-amber-600">
+                          <span className="truncate">{p.name}</span>
+                          <span className="nums shrink-0">-฿{formatAmount(p.amount)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
+
+              {/* Grand total — only when more than one discount source contributes */}
+              {discountSourceCount >= 2 && totalDiscountAmount > 0 && (
+                <div className="flex items-center justify-between border-t border-violet-100 pt-1.5 text-xs font-bold text-emerald-700">
+                  <span>{dictionary.totalDiscountLabel}</span>
+                  <span className="nums">-฿{formatAmount(totalDiscountAmount)}</span>
+                </div>
+              )}
+
               {applyVat && (
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <span>VAT 7%</span>
-                  <span>฿{formatAmount(vatAmount)}</span>
+                  <span className="nums">฿{formatAmount(vatAmount)}</span>
                 </div>
               )}
             </div>
@@ -204,10 +284,15 @@ export function CartPanel({
             <div className="space-y-2">
               {cart.map((item) => {
                 const line = getCartLine(item);
+                const isRecent = item.product.id === recentProductId;
                 return (
                   <div
                     key={item.product.id}
-                    className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3.5 shadow-sm select-none"
+                    className={`relative flex items-center gap-3 rounded-2xl border px-4 py-3.5 shadow-sm transition-colors duration-300 select-none ${
+                      isRecent
+                        ? "border-violet-400 bg-violet-50 ring-2 ring-violet-300"
+                        : "border-violet-100 bg-white"
+                    }`}
                     onPointerDown={() => onLongPressStart(item.product)}
                     onPointerUp={onLongPressEnd}
                     onPointerLeave={onLongPressEnd}
@@ -223,17 +308,25 @@ export function CartPanel({
                         src={item.product.image_url}
                       />
                     ) : (
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-sm font-bold text-violet-600">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-xs font-bold text-violet-600">
                         {item.product.name.slice(0, 2).toUpperCase()}
                       </div>
                     )}
 
                     {/* Name + unit price */}
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-900">
-                        {item.product.name}
-                      </p>
-                      <p className="text-xs text-slate-400">
+                      <div className="flex items-center gap-1.5">
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {item.product.name}
+                        </p>
+                        {isRecent && (
+                          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-violet-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white motion-safe:animate-pulse" />
+                            {dictionary.latestItemBadge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="nums text-xs text-slate-400">
                         ฿{formatAmount(line.unitPrice)}/{item.product.product_unit_name ?? item.product.unit_type ?? "หน่วย"}
                       </p>
                     </div>
@@ -246,8 +339,12 @@ export function CartPanel({
                       type="button"
                     >
                       {line.lineDiscount > 0 ? (
-                        <span className="text-emerald-600">
-                          -฿{formatAmount(line.lineDiscount)}
+                        <span className="nums text-emerald-600">
+                          {item.discountType === "percent"
+                            ? `${item.discountValue}%`
+                            : item.discountScope === "unit"
+                              ? `฿${formatAmount(line.discountPerUnit)}${dictionary.discountBadgePerUnit}`
+                              : `-฿${formatAmount(line.lineDiscount)}`}
                         </span>
                       ) : (
                         "%ลด"
@@ -264,7 +361,7 @@ export function CartPanel({
                         −
                       </button>
                       <input
-                        className="h-8 w-8 bg-white text-center text-sm font-bold text-slate-900 outline-none"
+                        className="nums h-8 w-8 bg-white text-center text-sm font-bold text-slate-900 outline-none"
                         inputMode="numeric"
                         max={item.product.total_stock ?? 0}
                         min="1"
@@ -291,7 +388,7 @@ export function CartPanel({
                     </div>
 
                     {/* Line total */}
-                    <span className="shrink-0 w-20 text-right text-sm font-bold text-slate-900">
+                    <span className="nums shrink-0 w-20 text-right text-sm font-bold text-slate-900">
                       ฿{formatAmount(line.lineTotal)}
                     </span>
 

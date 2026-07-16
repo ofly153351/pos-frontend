@@ -29,9 +29,10 @@ type Props = {
 };
 
 export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE", onExport, onPrint, onCreateDocument }: Props) {
+  // RECEIPT is intentionally excluded — receipts are issued from POS sales, not
+  // hand-authored here. The Receipts tab surfaces them from sales history instead.
   const docTypes: { type: DocumentType; label: string }[] = [
     { type: "INVOICE",     label: dict.typeInvoice },
-    { type: "RECEIPT",     label: dict.typeReceipt },
     { type: "TAX_INVOICE", label: dict.typeTaxInvoice },
     { type: "QUOTATION",   label: dict.typeQuotation },
     { type: "BILL",        label: dict.typeBill },
@@ -40,9 +41,9 @@ export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE",
 
   return (
     <div className="border-b border-violet-100 px-6 py-4">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col items-center gap-4">
         {/* KPI cards */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap justify-center gap-3">
           {/* Total */}
           <div className="flex items-center gap-3 rounded-xl border border-violet-200 bg-violet-600 px-4 py-3 shadow-md shadow-violet-200/60">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
@@ -89,7 +90,7 @@ export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE",
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center justify-end gap-2">
           <button
             className="flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-violet-700 transition-colors hover:bg-violet-50"
             onClick={onExport}

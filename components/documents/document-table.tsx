@@ -1,9 +1,14 @@
 "use client";
 
-import { Copy, Loader2, MoreVertical, Package, Printer, Send, Trash2, X } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Package, Printer, Send, Trash2, X } from "lucide-react";
 import type { DocumentListItem, DocumentStatus } from "@/types/document";
+import { getDocumentPrintHtml } from "@/services/documents";
+import { toast } from "@/components/ui/toast";
+import { PageSizeDropdown } from "@/components/ui/page-size-dropdown";
 import { DocumentTypeBadge } from "./document-type-badge";
 import { DocumentStatusBadge, PaymentStatusBadge } from "./document-status-badge";
+import { DocumentRowActions } from "./document-row-actions";
 import { SkeletonDocumentRow } from "@/components/ui/skeleton";
 
 type Dict = {
@@ -46,7 +51,33 @@ type Dict = {
   typeQuotation: string;
   typeBill: string;
   typeCreditNote: string;
+  typeDeliveryOrder?: string;
   createDocument: string;
+  // Row actions + bulk
+  duplicate: string;
+  duplicateSuccess: string;
+  duplicateError: string;
+  printPreview: string;
+  downloadPDF: string;
+  convertTo: string;
+  recordPayment: string;
+  paySuccess: string;
+  payError: string;
+  cancelDocument: string;
+  cancelSuccess: string;
+  cancelError: string;
+  confirmCancelDoc: string;
+  deleteSuccess: string;
+  deleteError: string;
+  confirmDeleteDoc: string;
+  convertSuccess: string;
+  convertError: string;
+  pdfError: string;
+  comingSoon: string;
+  printAll: string;
+  printError: string;
+  cancel: string;
+  confirm: string;
 };
 
 type Props = {
@@ -88,9 +119,42 @@ export function DocumentTable({
   onBulkDelete, onBulkStatus, onClearSelection, onCreateDocument,
   isBulkPending,
 }: Props) {
+  const [bulkPrinting, setBulkPrinting] = useState(false);
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const allChecked = documents.length > 0 && documents.every((d) => selectedIds.has(d.id));
   const someChecked = documents.some((d) => selectedIds.has(d.id));
+
+  // Print every selected document. Each one renders through the shared backend
+  // template into a hidden iframe, then opens its own print dialog in sequence.
+  async function bulkPrint() {
+    if (bulkPrinting) return;
+    setBulkPrinting(true);
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      try {
+        const html = await getDocumentPrintHtml(id);
+        await new Promise<void>((resolve) => {
+          const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+          const blobUrl = URL.createObjectURL(blob);
+          const frame = document.createElement("iframe");
+          frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
+          document.body.appendChild(frame);
+          frame.src = blobUrl;
+          frame.onload = () => {
+            setTimeout(() => {
+              frame.contentWindow?.focus();
+              frame.contentWindow?.print();
+              setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); resolve(); }, 1500);
+            }, 150);
+          };
+        });
+        await new Promise((r) => setTimeout(r, 800));
+      } catch {
+        /* skip docs that fail to render */
+      }
+    }
+    setBulkPrinting(false);
+  }
 
   const from = (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
@@ -101,7 +165,7 @@ export function DocumentTable({
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col">
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="flex shrink-0 items-center gap-3 border-b border-violet-100 bg-violet-50 px-6 py-2.5">
@@ -110,15 +174,17 @@ export function DocumentTable({
           </span>
           <div className="ml-2 flex items-center gap-2">
             <button
-              className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50"
-              onClick={() => window.print()}
+              className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-50"
+              disabled={bulkPrinting}
+              onClick={bulkPrint}
               type="button"
             >
-              <Printer className="h-3.5 w-3.5" />
-              {d.print}
+              {bulkPrinting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Printer className="h-3.5 w-3.5" />}
+              {bulkPrinting ? d.loading : d.printAll}
             </button>
             <button
               className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50"
+              onClick={() => toast.info(d.comingSoon)}
               type="button"
             >
               <Send className="h-3.5 w-3.5" />
@@ -156,7 +222,7 @@ export function DocumentTable({
       )}
 
       {/* Table */}
-      <div className="flex-1 overflow-auto">
+      <div className="min-h-[400px] flex-1 overflow-auto">
         {isLoading ? (
           <div className="divide-y divide-slate-50">
             {Array.from({ length: 10 }).map((_, i) => (
@@ -172,10 +238,10 @@ export function DocumentTable({
             <p className="text-sm text-slate-400">{d.noDocumentsHint}</p>
           </div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <table className="w-full min-w-[900px] text-left text-sm">
             <thead className="sticky top-0 z-10 border-b border-violet-100 bg-violet-50/80 backdrop-blur-sm">
               <tr>
-                <th className="w-10 px-4 py-3">
+                <th className="w-10 px-3 py-2.5">
                   <input
                     type="checkbox"
                     checked={allChecked}
@@ -184,15 +250,15 @@ export function DocumentTable({
                     className="h-4 w-4 rounded border-violet-300 accent-violet-600"
                   />
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDocumentNo}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colType}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colCustomer}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDate}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDueDate}</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colAmount}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colStatus}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colPaymentStatus}</th>
-                <th className="w-28 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colActions}</th>
+                <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDocumentNo}</th>
+                <th className="hidden px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:table-cell">{d.colType}</th>
+                <th className="max-w-[120px] px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colCustomer}</th>
+                <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDate}</th>
+                <th className="hidden px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 xl:table-cell">{d.colDueDate}</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colAmount}</th>
+                <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colStatus}</th>
+                <th className="hidden px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:table-cell">{d.colPaymentStatus}</th>
+                <th className="w-28 px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colActions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-violet-50">
@@ -205,7 +271,7 @@ export function DocumentTable({
                     ${doc.status === "OVERDUE" ? "bg-red-50/20" : ""}
                     ${doc.status === "CANCELLED" ? "opacity-60" : ""}`}
                 >
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2.5">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(doc.id)}
@@ -214,44 +280,38 @@ export function DocumentTable({
                       className="h-4 w-4 rounded border-violet-300 accent-violet-600"
                     />
                   </td>
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs font-semibold text-violet-700">{doc.document_no}</span>
+                  <td className="px-3 py-2.5">
+                    <span className="nums text-xs font-semibold text-violet-700 whitespace-nowrap">{doc.document_no}</span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden px-3 py-2.5 lg:table-cell">
                     <DocumentTypeBadge type={doc.type} dict={d} />
                   </td>
-                  <td className="max-w-[180px] px-4 py-3">
+                  <td className="max-w-[120px] px-3 py-2.5">
                     <span className="truncate text-slate-700">{doc.customer_name}</span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{fmtDate(doc.document_date)}</td>
-                  <td className="px-4 py-3 text-xs text-slate-500">
+                  <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(doc.document_date)}</td>
+                  <td className="hidden px-3 py-2.5 text-xs text-slate-500 xl:table-cell">
                     {doc.due_date ? fmtDate(doc.due_date) : "—"}
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    <span className={`font-mono text-sm font-medium tabular-nums ${doc.total_amount < 0 ? "text-red-600" : "text-slate-800"}`}>
+                  <td className="px-3 py-2.5 text-right">
+                    <span className={`nums text-sm font-medium ${doc.total_amount < 0 ? "text-red-600" : "text-slate-800"}`}>
                       {doc.total_amount < 0
                         ? `-${fmt(Math.abs(doc.total_amount))}`
                         : fmt(doc.total_amount)}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2.5">
                     <DocumentStatusBadge status={doc.status} dict={d} />
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden px-3 py-2.5 lg:table-cell">
                     <PaymentStatusBadge status={doc.payment_status} dict={d} />
                   </td>
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-0.5">
-                      <button title={d.copy} className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600" type="button">
-                        <Copy className="h-4 w-4" />
-                      </button>
-                      <button title={d.print} className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600" type="button">
-                        <Printer className="h-4 w-4" />
-                      </button>
-                      <button title={d.moreOptions} className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600" type="button">
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-                    </div>
+                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                    <DocumentRowActions
+                      doc={doc}
+                      dict={d}
+                      onPreview={() => onSelectDoc(doc.id)}
+                    />
                   </td>
                 </tr>
               ))}
@@ -262,20 +322,17 @@ export function DocumentTable({
 
       {/* Pagination */}
       {!isLoading && documents.length > 0 && (
-        <div className="flex shrink-0 items-center justify-between border-t border-violet-100 bg-white px-6 py-3">
+        <div className="relative z-20 flex shrink-0 items-center justify-between border-t border-violet-100 bg-white px-6 py-3">
           <span className="text-sm text-slate-500">
             {d.showing} {from}–{to} {d.of} {total} {d.records}
           </span>
           <div className="flex items-center gap-2">
-            <select
-              className="rounded-lg border border-violet-200 bg-white px-2 py-1 text-sm text-slate-700 outline-none focus:border-violet-400"
+            <PageSizeDropdown
               value={limit}
-              onChange={(e) => onLimitChange(Number(e.target.value))}
-            >
-              {[10, 20, 50, 100].map((n) => (
-                <option key={n} value={n}>{n} {d.perPage}</option>
-              ))}
-            </select>
+              options={[10, 20, 50, 100]}
+              perPageLabel={d.perPage}
+              onChange={onLimitChange}
+            />
             <div className="flex gap-1">
               <button
                 className="rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 disabled:opacity-40 hover:bg-violet-50"

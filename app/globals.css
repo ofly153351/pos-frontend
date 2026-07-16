@@ -50,6 +50,29 @@
   button:not(:disabled) {
     cursor: pointer;
   }
+
+  /* Lining (non-descending) numerals everywhere — Thai text is unaffected.
+     --tw-numeric-figure is inherited by all children; when Tailwind's
+     .tabular-nums applies its font-variant-numeric shorthand the variable
+     expands to "lining-nums tabular-nums" automatically, so every element
+     that uses either .tabular-nums or .nums gets both values for free. */
+  body {
+    --tw-numeric-figure: lining-nums;
+    font-variant-numeric: lining-nums;
+    font-feature-settings: "lnum" 1;
+  }
+}
+
+/* ── Numeric typography foundation ──────────────────────────────────
+   Apply .nums on any element showing prices, quantities, totals, or
+   table values where column alignment matters (currency, KPIs, stock).
+   Enforces lining + tabular numerals regardless of base font family.
+   ─────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .nums {
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: "lnum" 1, "tnum" 1;
+  }
 }
 
 .pretty-scroll {
