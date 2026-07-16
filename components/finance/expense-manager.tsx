@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, Hash, Pencil, Plus, Scale, Tags, Trash2, Wallet, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Hash, Pencil, Plus, Scale, Tags, Trash2, Wallet, type LucideIcon } from "lucide-react";
 
 import { getAuthSession } from "@/lib/auth-storage";
 import { toast } from "@/components/ui/toast";
+import { PageSizeDropdown } from "@/components/ui/page-size-dropdown";
 import { ApiError } from "@/services/api";
 import { deleteExpense, getExpenseSummary, listExpenseCategories, listExpenses } from "@/services/expenses";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,6 +30,8 @@ export function ExpenseManager({ dictionary: t, locale }: Props) {
   const [editing, setEditing] = useState<Expense | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Role drives which action buttons show (backend enforces regardless).
   const [role, setRole] = useState("");
@@ -97,6 +100,17 @@ export function ExpenseManager({ dictionary: t, locale }: Props) {
   }, [summary, shortMonth]);
 
   const listedTotal = useMemo(() => expenses.reduce((sum, e) => sum + e.amount, 0), [expenses]);
+
+  // Client-side pagination
+  const totalPages = Math.max(1, Math.ceil(expenses.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const paginatedExpenses = useMemo(() => {
+    const start = (safePage - 1) * pageSize;
+    return expenses.slice(start, start + pageSize);
+  }, [expenses, safePage, pageSize]);
+
+  // Reset page when data refreshes and page is out of range
+  useEffect(() => { setPage(1); }, [pageSize]);
 
   function refetchAll() {
     queryClient.invalidateQueries({ queryKey: ["expenses"] });
@@ -221,6 +235,7 @@ export function ExpenseManager({ dictionary: t, locale }: Props) {
             </button>
           </div>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] border-collapse text-left">
               <thead>
@@ -235,7 +250,7 @@ export function ExpenseManager({ dictionary: t, locale }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {expenses.map((e) => (
+                {paginatedExpenses.map((e) => (
                   <tr key={e.id} className="transition hover:bg-violet-50/40">
                     <td className="px-4 py-3 text-sm text-slate-600">{dtf.format(new Date(e.expense_date))}</td>
                     <td className="px-4 py-3">
@@ -275,6 +290,63 @@ export function ExpenseManager({ dictionary: t, locale }: Props) {
               </tfoot>
             </table>
           </div>
+          {/* Pagination footer */}
+          {expenses.length > 0 && (
+            <div className="shrink-0 border-t border-slate-100 px-4 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-slate-400">
+                  {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, expenses.length)} / {expenses.length}
+                </span>
+                <div className="flex items-center gap-3">
+                  <PageSizeDropdown
+                    value={pageSize}
+                    options={[10, 25, 50, 100]}
+                    perPageLabel={locale === "th" ? "หน้าละ" : "per page"}
+                    onChange={(v: number) => { setPageSize(v); setPage(1); }}
+                  />
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={safePage <= 1}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-700 disabled:pointer-events-none disabled:opacity-30"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                      .map((p, idx, arr) => (
+                        <span key={p} className="flex items-center">
+                          {idx > 0 && arr[idx - 1] !== p - 1 && (
+                            <span className="px-1 text-slate-300">…</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setPage(p)}
+                            className={`flex h-8 min-w-[32px] items-center justify-center rounded-lg text-sm font-medium tabular-nums transition-colors ${
+                              p === safePage
+                                ? "bg-violet-600 text-white shadow-sm"
+                                : "text-slate-500 hover:bg-violet-50 hover:text-violet-700"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        </span>
+                      ))}
+                    <button
+                      type="button"
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      disabled={safePage >= totalPages}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-700 disabled:pointer-events-none disabled:opacity-30"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </section>
 
