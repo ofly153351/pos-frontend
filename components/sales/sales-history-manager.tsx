@@ -286,7 +286,7 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
       </div>
 
       {/* Table */}
-      <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="min-h-[400px] flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         {isLoading ? (
           <TableSkeleton />
         ) : isError ? (
@@ -305,18 +305,18 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
           </div>
         ) : (
           <div className="h-full overflow-auto pretty-scroll">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[800px] text-sm">
               <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_#e2e8f0]">
                 <tr>
                   <Th>{dict.colTime}</Th>
                   <Th>{dict.colBillNo}</Th>
                   <Th>{dict.colCustomer}</Th>
-                  <Th className="hidden lg:table-cell">{dict.colCashier}</Th>
+                  <Th className="hidden xl:table-cell">{dict.colCashier}</Th>
                   <Th center className="hidden sm:table-cell">{dict.colItems}</Th>
                   <Th right>{dict.colTotal}</Th>
-                  <Th className="hidden md:table-cell">{dict.colPayment}</Th>
+                  <Th className="hidden xl:table-cell">{dict.colPayment}</Th>
                   <Th center>{dict.colStatus}</Th>
-                  <th className="px-4 py-3" />
+                  <th className="px-3 py-2.5" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -328,44 +328,44 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
                       onClick={() => setSelectedId(sale.id)}
                       className="cursor-pointer transition-colors hover:bg-violet-50/60"
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5">
                         <span className="block text-xs text-slate-400">{fmtDate(sale.created_at)}</span>
                         <span className="font-medium tabular-nums">{fmtTime(sale.created_at)}</span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5">
                         <span className="text-xs text-slate-500 tabular-nums">
                           {sale.sale_number ?? sale.id.slice(0, 8).toUpperCase()}
                         </span>
                       </td>
-                      <td className="max-w-[160px] px-4 py-3">
+                      <td className="max-w-[120px] px-3 py-2.5">
                         <span className="block truncate text-slate-800">
                           {sale.customer_name || dict.generalCustomer}
                         </span>
                       </td>
-                      <td className="hidden max-w-[140px] px-4 py-3 lg:table-cell">
+                      <td className="hidden max-w-[100px] px-3 py-2.5 xl:table-cell">
                         <span className="block truncate text-slate-600">{sale.cashier_name || "—"}</span>
                       </td>
-                      <td className="hidden px-4 py-3 text-center sm:table-cell">
+                      <td className="hidden px-3 py-2.5 text-center sm:table-cell">
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 tabular-nums">
                           {sale.total_items ?? sale.items?.length ?? 0} {dict.itemsSuffix}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2.5 text-right">
                         <span className="font-semibold tabular-nums text-slate-900">
                           {baht(sale.total_amount)}
                         </span>
                       </td>
-                      <td className="hidden px-4 py-3 md:table-cell">
+                      <td className="hidden px-3 py-2.5 xl:table-cell">
                         <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
                           {paymentLabel(sale.payment_method ?? "")}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-2.5 text-center">
                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${st.cls}`}>
                           {st.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2.5 text-right">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -406,7 +406,7 @@ function Th({
 }) {
   return (
     <th
-      className={`px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 ${
+      className={`px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-slate-500 ${
         center ? "text-center" : right ? "text-right" : "text-left"
       } ${className ?? ""}`}
     >

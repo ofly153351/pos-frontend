@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { createStore, updateStoreSubscription } from "@/services/stores";
 import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
+import { DEFAULT_PLAN_CODE, SUBSCRIPTION_ENABLED } from "@/lib/feature-config";
 import type { Locale } from "@/lib/locale-config";
 import {
   clearPendingPlanId,
@@ -73,7 +74,12 @@ export function StoreSetupForm({
     event.preventDefault();
     setError("");
 
-    if (!pendingPlan?.code) {
+    // When subscription is disabled, use default plan code.
+    const planCode = SUBSCRIPTION_ENABLED
+      ? pendingPlan?.code
+      : DEFAULT_PLAN_CODE;
+
+    if (!planCode) {
       setError(dictionary.planRequired);
       return;
     }
@@ -83,8 +89,8 @@ export function StoreSetupForm({
         if (resolvedStoreId.trim()) {
           const storeId = resolvedStoreId.trim();
           saveCurrentStoreId(storeId);
-          await applyPendingPlan(storeId);
-          router.replace(`/${locale}/admin/plans`);
+          if (SUBSCRIPTION_ENABLED) await applyPendingPlan(storeId);
+          router.replace(SUBSCRIPTION_ENABLED ? `/${locale}/admin/plans` : `/${locale}/dashboard`);
           return;
         }
 
@@ -94,12 +100,12 @@ export function StoreSetupForm({
           description,
           name,
           phone: phone || undefined,
-          subscription_plan_code: pendingPlan.code,
+          subscription_plan_code: planCode,
         });
 
         saveCurrentStoreId(response.data.id);
-        await applyPendingPlan(response.data.id);
-        router.replace(`/${locale}/admin/plans`);
+        if (SUBSCRIPTION_ENABLED) await applyPendingPlan(response.data.id);
+        router.replace(SUBSCRIPTION_ENABLED ? `/${locale}/admin/plans` : `/${locale}/dashboard`);
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Request failed");
       }
@@ -118,6 +124,7 @@ export function StoreSetupForm({
         <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">
           {dictionary.helper}
         </p>
+        {SUBSCRIPTION_ENABLED ? (
         <div className="mt-6 rounded-xl bg-violet-50/60 p-5">
           <p className="text-sm uppercase tracking-[0.2em] text-violet-600">
             {dictionary.selectedPlanLabel}
@@ -130,6 +137,7 @@ export function StoreSetupForm({
               : dictionary.selectedPlanEmpty}
           </p>
         </div>
+        ) : null}
 
         <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
           <label className="block">
