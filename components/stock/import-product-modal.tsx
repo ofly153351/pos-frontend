@@ -120,31 +120,68 @@ class LookupCache {
     this.loaded = true;
   }
 
+  /** Re-fetch the list for a category and rebuild the map (used as a fallback
+   *  when create fails — the item may already exist, created by a prior run
+   *  or a concurrent request. The backend currently returns a generic 500
+   *  for unique-constraint violations instead of a 409, so we can't detect
+   *  "duplicate" from the status code alone.) */
+  private async refreshAndFind(
+    which: "types" | "units" | "brands",
+    key: string,
+  ): Promise<string | undefined> {
+    let list: { name: string; id: string }[] = [];
+    if (which === "types")   { const r = await listProductTypes();  list = r.data ?? []; }
+    if (which === "units")   { const r = await listProductUnits();  list = r.data ?? []; }
+    if (which === "brands")  { const r = await listProductBrands(); list = r.data ?? []; }
+    const map = this[which];
+    map.clear();
+    for (const item of list) map.set(item.name.trim().toLowerCase(), item.id);
+    return map.get(key);
+  }
+
   async resolveType(name: string) {
     const key = name.trim().toLowerCase();
     if (!key) return "";
     if (this.types.has(key)) return this.types.get(key)!;
-    const res = await createProductType({ name: name.trim(), slug: key.replace(/\s+/g, "-") });
-    this.types.set(key, res.data.id);
-    return res.data.id;
+    try {
+      const res = await createProductType({ name: name.trim(), slug: key.replace(/\s+/g, "-") });
+      this.types.set(key, res.data.id);
+      return res.data.id;
+    } catch {
+      const existing = await this.refreshAndFind("types", key);
+      if (existing) return existing;
+      throw new Error(`ไม่สามารถสร้างหมวดหมู่ "${name}" ได้`);
+    }
   }
 
   async resolveUnit(name: string) {
     const key = name.trim().toLowerCase();
     if (!key) return "";
     if (this.units.has(key)) return this.units.get(key)!;
-    const res = await createProductUnit({ name: name.trim(), code: key.slice(0, 10) });
-    this.units.set(key, res.data.id);
-    return res.data.id;
+    try {
+      const res = await createProductUnit({ name: name.trim(), code: key.slice(0, 10) });
+      this.units.set(key, res.data.id);
+      return res.data.id;
+    } catch {
+      const existing = await this.refreshAndFind("units", key);
+      if (existing) return existing;
+      throw new Error(`ไม่สามารถสร้างหน่วย "${name}" ได้`);
+    }
   }
 
   async resolveBrand(name: string) {
     const key = name.trim().toLowerCase();
     if (!key) return "";
     if (this.brands.has(key)) return this.brands.get(key)!;
-    const res = await createProductBrand({ name: name.trim() });
-    this.brands.set(key, res.data.id);
-    return res.data.id;
+    try {
+      const res = await createProductBrand({ name: name.trim() });
+      this.brands.set(key, res.data.id);
+      return res.data.id;
+    } catch {
+      const existing = await this.refreshAndFind("brands", key);
+      if (existing) return existing;
+      throw new Error(`ไม่สามารถสร้างแบรนด์ "${name}" ได้`);
+    }
   }
 }
 
