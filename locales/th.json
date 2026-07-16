@@ -4432,7 +4432,13 @@
     "docDebitNote": "ใบเพิ่มหนี้",
     "docComingSoon": "เอกสารนี้กำลังพัฒนา",
     "docSaved": "บันทึกเอกสารในระบบเรียบร้อย",
-    "docSaveError": "ไม่สามารถบันทึกเอกสารได้"
+    "docSaveError": "ไม่สามารถบันทึกเอกสารได้",
+    "pageShowing": "แสดง",
+    "pageOf": "จาก",
+    "pageRecords": "รายการ",
+    "pagePerPage": "หน้าละ",
+    "pagePrev": "ก่อนหน้า",
+    "pageNext": "ถัดไป"
   },
   "help": {
     "title": "ศูนย์ช่วยเหลือ",

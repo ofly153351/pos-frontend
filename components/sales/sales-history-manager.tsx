@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { History, Receipt, Search, SlidersHorizontal, Wallet, X } from "lucide-react";
@@ -10,6 +10,7 @@ import { resolvePaymentLabel } from "@/lib/payment-method";
 import type { Sale } from "@/types/sale";
 
 import { SaleDetailModal } from "./sale-detail-modal";
+import { SalesHistoryPagination } from "./sales-history-pagination";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import type { SalesHistoryDict } from "./sales-history-dict";
 import { DateRangeFilter, type DateFilterValue, resolveDateQuery } from "@/components/shared/date-range-filter";
@@ -52,6 +53,9 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
   const [amountMax, setAmountMax] = useState("");
   const [showMore, setShowMore] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
   const salesQuery = resolveDateQuery(dateFilter);
 
@@ -118,6 +122,21 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
   const hasActiveFilters =
     !!search || !!paymentFilter || !!statusFilter || !!cashierFilter || !!amountMin || !!amountMax;
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, paymentFilter, statusFilter, cashierFilter, amountMin, amountMax, dateFilter]);
+
+  const totalPages = Math.max(Math.ceil(filtered.length / pageSize), 1);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEnd = Math.min(pageStart + pageSize, filtered.length);
+  const paginatedSales = filtered.slice(pageStart, pageEnd);
+
+  // Clamp current page when filtered list shrinks
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
   function clearFilters() {
     setSearch("");
     setPaymentFilter("");
@@ -131,6 +150,7 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
     "rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm shadow-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100";
 
   return (
+    <>
     <div className={`flex h-full min-h-0 flex-col gap-4${embedded ? " px-6 pb-6 pt-4" : ""}`}>
       {/* Page header — hidden when embedded (the Documents page supplies its own). */}
       {!embedded && (
@@ -285,49 +305,50 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
         )}
       </div>
 
-      {/* Table */}
-      <div className="min-h-[400px] flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {isLoading ? (
-          <TableSkeleton />
-        ) : isError ? (
-          <div className="flex h-48 items-center justify-center text-sm text-rose-500">
-            {dict.errorLoad}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-3 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50">
-              <History className="h-8 w-8 text-slate-300" />
+      {/* Table + Pagination — one visual card, two structural pieces */}
+      <div className="flex flex-col">
+        <div className={`min-h-[400px] flex-1 overflow-hidden border border-b-0 border-slate-200 bg-white shadow-sm ${filtered.length > 0 ? "rounded-t-2xl" : "rounded-2xl"}`}>
+          {isLoading ? (
+            <TableSkeleton />
+          ) : isError ? (
+            <div className="flex h-48 items-center justify-center text-sm text-rose-500">
+              {dict.errorLoad}
             </div>
-            <div>
-              <p className="font-semibold text-slate-600">{dict.empty}</p>
-              <p className="mt-0.5 text-sm text-slate-400">{dict.emptyDesc}</p>
+          ) : filtered.length === 0 ? (
+            <div className="flex h-64 flex-col items-center justify-center gap-3 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50">
+                <History className="h-8 w-8 text-slate-300" />
+              </div>
+              <div>
+                <p className="font-semibold text-slate-600">{dict.empty}</p>
+                <p className="mt-0.5 text-sm text-slate-400">{dict.emptyDesc}</p>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="h-full overflow-auto pretty-scroll">
-            <table className="w-full min-w-[800px] text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_#e2e8f0]">
-                <tr>
-                  <Th>{dict.colTime}</Th>
-                  <Th>{dict.colBillNo}</Th>
-                  <Th>{dict.colCustomer}</Th>
-                  <Th className="hidden xl:table-cell">{dict.colCashier}</Th>
-                  <Th center className="hidden sm:table-cell">{dict.colItems}</Th>
-                  <Th right>{dict.colTotal}</Th>
-                  <Th className="hidden xl:table-cell">{dict.colPayment}</Th>
-                  <Th center>{dict.colStatus}</Th>
-                  <th className="px-3 py-2.5" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map((sale) => {
-                  const st = statusMeta(sale.status ?? "completed", dict);
-                  return (
-                    <tr
-                      key={sale.id}
-                      onClick={() => setSelectedId(sale.id)}
-                      className="cursor-pointer transition-colors hover:bg-violet-50/60"
-                    >
+          ) : (
+            <div className="h-full overflow-auto pretty-scroll">
+              <table className="w-full min-w-[800px] text-sm">
+                <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_#e2e8f0]">
+                  <tr>
+                    <Th>{dict.colTime}</Th>
+                    <Th>{dict.colBillNo}</Th>
+                    <Th>{dict.colCustomer}</Th>
+                    <Th className="hidden xl:table-cell">{dict.colCashier}</Th>
+                    <Th center className="hidden sm:table-cell">{dict.colItems}</Th>
+                    <Th right>{dict.colTotal}</Th>
+                    <Th className="hidden xl:table-cell">{dict.colPayment}</Th>
+                    <Th center>{dict.colStatus}</Th>
+                    <th className="px-3 py-2.5" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedSales.map((sale) => {
+                    const st = statusMeta(sale.status ?? "completed", dict);
+                    return (
+                      <tr
+                        key={sale.id}
+                        onClick={() => setSelectedId(sale.id)}
+                        className="cursor-pointer border-b border-slate-100 transition-colors hover:bg-violet-50/60"
+                      >
                       <td className="px-3 py-2.5">
                         <span className="block text-xs text-slate-400">{fmtDate(sale.created_at)}</span>
                         <span className="font-medium tabular-nums">{fmtTime(sale.created_at)}</span>
@@ -384,12 +405,29 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
             </table>
           </div>
         )}
+        </div>
+
+        {/* Pagination footer — flush with table card, no overflow constraint */}
+        {filtered.length > 0 && (
+          <div className="shrink-0 rounded-b-2xl border border-t-0 border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+            <SalesHistoryPagination
+              total={filtered.length}
+              page={currentPage}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              dict={dict}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(n) => { setPageSize(n); setCurrentPage(1); }}
+            />
+          </div>
+        )}
       </div>
+    </div>
 
       {selectedId && (
         <SaleDetailModal saleId={selectedId} dict={dict} onClose={() => setSelectedId(null)} />
       )}
-    </div>
+    </>
   );
 }
 

@@ -4432,7 +4432,13 @@
     "docDebitNote": "Debit Note",
     "docComingSoon": "This document is coming soon",
     "docSaved": "Document saved to Documents",
-    "docSaveError": "Failed to save document"
+    "docSaveError": "Failed to save document",
+    "pageShowing": "Showing",
+    "pageOf": "of",
+    "pageRecords": "records",
+    "pagePerPage": "per page",
+    "pagePrev": "Previous",
+    "pageNext": "Next"
   },
   "help": {
     "title": "Help Center",

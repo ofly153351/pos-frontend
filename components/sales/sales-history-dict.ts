@@ -157,4 +157,11 @@ export type SalesHistoryDict = {
   // document save
   docSaved: string;
   docSaveError: string;
+  // pagination
+  pageShowing: string;
+  pageOf: string;
+  pageRecords: string;
+  pagePerPage: string;
+  pagePrev: string;
+  pageNext: string;
 };
