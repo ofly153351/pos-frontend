@@ -7,10 +7,10 @@ import {
   ArrowRightLeft,
   Ban,
   Copy,
-  Eye,
   FileBadge,
   FileDown,
   FileMinus,
+  FileSearch,
   FileText,
   Loader2,
   MoreVertical,
@@ -288,16 +288,6 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
         {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
       </button>
 
-      {/* Quick: open preview drawer (carries print / pdf / convert) */}
-      <button
-        title={d.printPreview}
-        onClick={onPreview}
-        className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600"
-        type="button"
-      >
-        <Eye className="h-4 w-4" />
-      </button>
-
       {/* Overflow menu */}
       <button
         ref={btnRef}
@@ -319,7 +309,7 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
             className="fixed z-[71] w-48 overflow-hidden rounded-lg border border-violet-100 bg-white py-1 shadow-lg"
             style={{ top: menuPos.top, left: menuPos.left }}
           >
-            <MenuItem icon={Eye} label={d.printPreview} onClick={() => { close(); onPreview(); }} />
+            <MenuItem icon={FileSearch} label={d.printPreview} onClick={() => { close(); onPreview(); }} />
             <MenuItem icon={FileDown} label={d.downloadPDF} onClick={handlePdf} />
             <MenuItem icon={Copy} label={d.duplicate} onClick={handleDuplicate} />
 

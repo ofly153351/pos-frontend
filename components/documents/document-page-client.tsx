@@ -416,7 +416,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
 
   return (
     <>
-      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-violet-100 bg-white shadow-sm">
+      <div className="flex flex-col rounded-xl border border-violet-100 bg-white shadow-sm">
         {/* Page header */}
         <div className="shrink-0 border-b border-violet-100 px-6 py-4">
           <div className="flex items-center gap-3">
@@ -518,7 +518,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
         )}
 
         {/* Body: documents table + preview panel */}
-        {!isReceiptMode && <div className="flex min-h-0 flex-1">
+        {!isReceiptMode && <div className="flex flex-1 flex-col">
           <DocumentTable
             dict={d}
             documents={documents}
@@ -560,7 +560,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
             filters, KPIs, status badges, Thai payment labels, and the rich detail
             modal (print / tax invoice / void / return). */}
         {isReceiptMode && (
-          <div className="min-h-0 flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto">
             <SalesHistoryManager dict={salesDict} embedded />
           </div>
         )}
