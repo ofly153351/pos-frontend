@@ -849,6 +849,7 @@ export function StockLevelsSection({
           onClose={() => setIsImportModalOpen(false)}
           onSuccess={() => { setIsImportModalOpen(false); onPageChange(1); }}
           importFileRef={importFileRef}
+          dictionary={dictionary.importProduct!}
         />
       ) : null}
 

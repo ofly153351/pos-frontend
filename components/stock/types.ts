@@ -416,6 +416,57 @@ export type StockManagerDictionary = {
     requiredError: string;
     title: string;
   };
+  importProduct?: {
+    title: string;
+    subtitleIdle: string;
+    subtitlePreview: string;
+    subtitleImporting: string;
+    subtitleDone: string;
+    step1Title: string;
+    step1Columns: string;
+    step1Guide: string;
+    step1StockLocation: string;
+    downloadTemplate: string;
+    step2Title: string;
+    step2Desc: string;
+    selectFile: string;
+    allRows: string;
+    readyImport: string;
+    hasIssues: string;
+    colName: string;
+    colSku: string;
+    colBarcode: string;
+    colPrice: string;
+    colCost: string;
+    colStock: string;
+    colUnit: string;
+    colCategory: string;
+    colBrand: string;
+    colStatus: string;
+    statusReady: string;
+    importing: string;
+    success: string;
+    failed: string;
+    failedList: string;
+    rowLabel: string;
+    cancel: string;
+    chooseNewFile: string;
+    confirmImport: string;
+    doneViewProducts: string;
+    toastSuccess: string;
+    toastPartial: string;
+    errorGeneric: string;
+    errorCategory: string;
+    errorUnit: string;
+    errorBrand: string;
+    errorProduct: string;
+    errorCreateCategory: string;
+    errorCreateUnit: string;
+    errorCreateBrand: string;
+    errDuplicateSku: string;
+    errDuplicateName: string;
+    errInternal: string;
+  };
 };
 
 export type StockManagerProps = {
@@ -426,6 +477,7 @@ export type StockManagerProps = {
   allowStockActions?: boolean;
 };
 
+export type ImportProductDictionary = NonNullable<StockManagerDictionary["importProduct"]>;
 export type ProductFormLabels = StockManagerDictionary["form"];
 export type ManagementDictionary = NonNullable<StockManagerDictionary["management"]>;
 export type UnitsDictionary = NonNullable<StockManagerDictionary["units"]>;

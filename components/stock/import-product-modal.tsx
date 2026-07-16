@@ -13,6 +13,7 @@ import {
   listProductUnits,
 } from "@/services/products";
 import { toast } from "@/components/ui/toast";
+import type { ImportProductDictionary } from "@/components/stock/types";
 
 // ─── Template ─────────────────────────────────────────────────────────────────
 
@@ -75,14 +76,14 @@ type PreviewRow = {
   error?: string; // validation error before import
 };
 
-function parsePreviewRows(dataRows: Record<string, string>[]): PreviewRow[] {
+function parsePreviewRows(dataRows: Record<string, string>[], dict: ImportProductDictionary): PreviewRow[] {
   return dataRows.map((row, i) => {
     const g = (col: string) => String(row[col] ?? "").trim();
     const name = g(COL_NAME);
     const price = g(COL_PRICE);
     let error: string | undefined;
-    if (!name) error = "ชื่อสินค้าจำเป็น";
-    else if (!price || isNaN(Number(price))) error = "ราคาขายต้องเป็นตัวเลข";
+    if (!name) error = dict.errorGeneric;
+    else if (!price || isNaN(Number(price))) error = dict.errorGeneric;
     return {
       rowNum: i + 2,
       name,
@@ -108,6 +109,11 @@ class LookupCache {
   private units  = new Map<string, string>();
   private brands = new Map<string, string>();
   private loaded = false;
+  private dict: ImportProductDictionary;
+
+  constructor(dict: ImportProductDictionary) {
+    this.dict = dict;
+  }
 
   async load() {
     if (this.loaded) return;
@@ -120,31 +126,66 @@ class LookupCache {
     this.loaded = true;
   }
 
+  /** Re-fetch the list for a category and rebuild the map (used as a fallback
+   *  when create fails — the item may already exist, created by a prior run
+   *  or a concurrent request.) */
+  private async refreshAndFind(
+    which: "types" | "units" | "brands",
+    key: string,
+  ): Promise<string | undefined> {
+    let list: { name: string; id: string }[] = [];
+    if (which === "types")   { const r = await listProductTypes();  list = r.data ?? []; }
+    if (which === "units")   { const r = await listProductUnits();  list = r.data ?? []; }
+    if (which === "brands")  { const r = await listProductBrands(); list = r.data ?? []; }
+    const map = this[which];
+    map.clear();
+    for (const item of list) map.set(item.name.trim().toLowerCase(), item.id);
+    return map.get(key);
+  }
+
   async resolveType(name: string) {
     const key = name.trim().toLowerCase();
     if (!key) return "";
     if (this.types.has(key)) return this.types.get(key)!;
-    const res = await createProductType({ name: name.trim(), slug: key.replace(/\s+/g, "-") });
-    this.types.set(key, res.data.id);
-    return res.data.id;
+    try {
+      const res = await createProductType({ name: name.trim(), slug: key.replace(/\s+/g, "-") });
+      this.types.set(key, res.data.id);
+      return res.data.id;
+    } catch {
+      const existing = await this.refreshAndFind("types", key);
+      if (existing) return existing;
+      throw new Error(this.dict.errorCreateCategory.replace("{name}", name));
+    }
   }
 
   async resolveUnit(name: string) {
     const key = name.trim().toLowerCase();
     if (!key) return "";
     if (this.units.has(key)) return this.units.get(key)!;
-    const res = await createProductUnit({ name: name.trim(), code: key.slice(0, 10) });
-    this.units.set(key, res.data.id);
-    return res.data.id;
+    try {
+      const res = await createProductUnit({ name: name.trim(), code: key.slice(0, 10) });
+      this.units.set(key, res.data.id);
+      return res.data.id;
+    } catch {
+      const existing = await this.refreshAndFind("units", key);
+      if (existing) return existing;
+      throw new Error(this.dict.errorCreateUnit.replace("{name}", name));
+    }
   }
 
   async resolveBrand(name: string) {
     const key = name.trim().toLowerCase();
     if (!key) return "";
     if (this.brands.has(key)) return this.brands.get(key)!;
-    const res = await createProductBrand({ name: name.trim() });
-    this.brands.set(key, res.data.id);
-    return res.data.id;
+    try {
+      const res = await createProductBrand({ name: name.trim() });
+      this.brands.set(key, res.data.id);
+      return res.data.id;
+    } catch {
+      const existing = await this.refreshAndFind("brands", key);
+      if (existing) return existing;
+      throw new Error(this.dict.errorCreateBrand.replace("{name}", name));
+    }
   }
 }
 
@@ -158,9 +199,14 @@ type Step = "idle" | "preview" | "importing" | "done";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-type Props = { onClose: () => void; onSuccess: () => void; importFileRef: React.RefObject<HTMLInputElement | null> };
+type Props = {
+  onClose: () => void;
+  onSuccess: () => void;
+  importFileRef: React.RefObject<HTMLInputElement | null>;
+  dictionary: ImportProductDictionary;
+};
 
-export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props) {
+export function ImportProductModal({ onClose, onSuccess, importFileRef, dictionary: t }: Props) {
   const [step, setStep]           = useState<Step>("idle");
   const [preview, setPreview]     = useState<PreviewRow[]>([]);
   const [rawRows, setRawRows]     = useState<Record<string, string>[]>([]);
@@ -170,38 +216,31 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
   function downloadTemplate() {
     const wb = XLSX.utils.book_new();
 
-    // Sheet 1 — the data the user fills in.
     const ws = XLSX.utils.json_to_sheet(TEMPLATE_ROWS);
     ws["!cols"] = [
-      { wch: 25 }, { wch: 14 }, { wch: 16 }, { wch: 18 }, { wch: 18 },
-      { wch: 14 }, { wch: 18 }, { wch: 12 }, { wch: 16 }, { wch: 14 },
-      { wch: 22 },
+      { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 10 },
+      { wch: 10 }, { wch: 8 },  { wch: 12 }, { wch: 10 },
+      { wch: 14 }, { wch: 10 }, { wch: 24 },
     ];
     XLSX.utils.book_append_sheet(wb, ws, "Products");
 
-    // Sheet 2 — column guide, so the file is self-explanatory offline.
-    const guide = [
-      ["คอลัมน์ (Column)", "จำเป็น (Required)", "คำอธิบาย (Description)"],
-      [COL_NAME, "ใช่ / Yes", "ชื่อสินค้าที่แสดงในระบบ"],
-      [COL_SKU, "ไม่ / No", "รหัสสินค้า เว้นว่างได้ ระบบสร้างให้อัตโนมัติ"],
-      [COL_BARCODE, "ไม่ / No", "บาร์โค้ด เว้นว่างได้ ระบบสร้างให้อัตโนมัติ"],
-      [COL_PRICE, "ใช่ / Yes", "ราคาขาย (ตัวเลข) เช่น 35"],
-      [COL_COST, "ไม่ / No", "ราคาทุน (ตัวเลข) ใช้คำนวณกำไรและมูลค่าสต็อก"],
-      [COL_STOCK, "ไม่ / No", "จำนวนเริ่มต้น ระบบลงสต็อกให้ที่ตำแหน่ง 'หน้าร้าน' (จุดขาย)"],
-      [COL_MIN, "ไม่ / No", "จุดแจ้งเตือนเมื่อสต็อกหน้าร้านต่ำกว่าหรือเท่ากับค่านี้"],
-      [COL_UNIT, "ไม่ / No", "หน่วยนับ เช่น ชิ้น/กล่อง ถ้ายังไม่มีระบบสร้างให้"],
-      [COL_CATEGORY, "ไม่ / No", "หมวดหมู่สินค้า ถ้ายังไม่มีระบบสร้างให้"],
-      [COL_BRAND, "ไม่ / No", "แบรนด์ ถ้ายังไม่มีระบบสร้างให้"],
-      [COL_DESC, "ไม่ / No", "รายละเอียดเพิ่มเติม"],
-      [],
-      ["หมายเหตุ (Notes)", "", ""],
-      ["• ห้ามแก้ชื่อหัวคอลัมน์ในชีต Products", "", ""],
-      ["• ลบแถวตัวอย่าง 2 แถวออกก่อนกรอกข้อมูลจริง", "", ""],
-      ["• สต็อกที่กรอกจะถูกบันทึกเป็นยอดยกมา (Opening Balance) ที่ตำแหน่งหน้าร้าน", "", ""],
+    const guide: (string | number)[][] = [
+      ["Column", "Description", "Required?"],
+      [COL_NAME,     t.colName,     "Yes"],
+      ["SKU",         t.colSku,      "No (auto-generated if empty)"],
+      ["Barcode",     t.colBarcode,  "No"],
+      [COL_PRICE,    t.colPrice,    "Yes"],
+      [COL_COST,     t.colCost,     "No"],
+      [COL_STOCK,    t.colStock,    "No (opening balance)"],
+      [COL_MIN,      t.colStock,    "No"],
+      [COL_UNIT,     t.colUnit,     "No (auto-created if missing)"],
+      [COL_CATEGORY, t.colCategory, "No (auto-created if missing)"],
+      [COL_BRAND,    t.colBrand,    "No (auto-created if missing)"],
+      [COL_DESC,     t.colName,     "No"],
     ];
     const wsGuide = XLSX.utils.aoa_to_sheet(guide);
-    wsGuide["!cols"] = [{ wch: 26 }, { wch: 16 }, { wch: 58 }];
-    XLSX.utils.book_append_sheet(wb, wsGuide, "วิธีใช้ (Guide)");
+    wsGuide["!cols"] = [{ wch: 28 }, { wch: 32 }, { wch: 28 }];
+    XLSX.utils.book_append_sheet(wb, wsGuide, "Guide");
 
     XLSX.writeFile(wb, "product-import-template.xlsx");
   }
@@ -211,15 +250,14 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
     if (!file) return;
     e.target.value = "";
 
-    const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, { type: "array" });
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const dataRows: Record<string, string>[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    const buf = await file.arrayBuffer();
+    const wb  = XLSX.read(buf, { type: "array" });
+    const ws  = wb.Sheets["Products"] ?? wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: "" });
+    setRawRows(rows);
 
-    if (!dataRows.length) { toast.error("ไฟล์ไม่มีข้อมูล"); return; }
-
-    setRawRows(dataRows);
-    setPreview(parsePreviewRows(dataRows));
+    const parsed = parsePreviewRows(rows, t);
+    setPreview(parsed);
     setStep("preview");
   }
 
@@ -227,7 +265,7 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
     setStep("importing");
     setProgress({ done: 0, total: rawRows.length });
 
-    const cache = new LookupCache();
+    const cache = new LookupCache(t);
     await cache.load();
 
     const rowResults: RowResult[] = [];
@@ -238,36 +276,61 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
       const name = g(COL_NAME);
 
       if (!name) {
-        rowResults.push({ row: i + 2, name: "(ไม่มีชื่อ)", status: "error", error: "ชื่อสินค้าจำเป็น" });
+        rowResults.push({ row: i + 2, name: "", status: "error", error: t.errorGeneric });
         setProgress({ done: i + 1, total: rawRows.length });
         continue;
       }
 
       try {
-        const [typeId, unitId, brandId] = await Promise.all([
-          cache.resolveType(g(COL_CATEGORY)),
-          cache.resolveUnit(g(COL_UNIT)),
-          cache.resolveBrand(g(COL_BRAND)),
-        ]);
+        // Resolve lookups sequentially so we know exactly which step fails.
+        let typeId = "";
+        let unitId = "";
+        let brandId = "";
 
-        await createProduct({
-          name,
-          sku:             g(COL_SKU)      || undefined,
-          barcode:         g(COL_BARCODE)  || undefined,
-          base_price:      g(COL_PRICE)    || "0",
-          cost_price:      g(COL_COST)     || undefined,
-          min_stock:       g(COL_MIN)      || "0",
-          // Opening-balance stock → seeded at the default sale-point (หน้าร้าน) location.
-          initial_stock:   g(COL_STOCK)    || undefined,
-          description:     g(COL_DESC)     || undefined,
-          product_type_id: typeId          || undefined,
-          unit_id:         unitId          || undefined,
-          brand_id:        brandId         || undefined,
-        });
+        const category = g(COL_CATEGORY);
+        const unit     = g(COL_UNIT);
+        const brand    = g(COL_BRAND);
+
+        if (category) {
+          try { typeId = await cache.resolveType(category); }
+          catch (e) { throw new Error(`${t.errorCategory}: ${e instanceof Error ? e.message : e}`); }
+        }
+        if (unit) {
+          try { unitId = await cache.resolveUnit(unit); }
+          catch (e) { throw new Error(`${t.errorUnit}: ${e instanceof Error ? e.message : e}`); }
+        }
+        if (brand) {
+          try { brandId = await cache.resolveBrand(brand); }
+          catch (e) { throw new Error(`${t.errorBrand}: ${e instanceof Error ? e.message : e}`); }
+        }
+
+        try {
+          await createProduct({
+            name,
+            sku:             g(COL_SKU)      || undefined,
+            barcode:         g(COL_BARCODE)  || undefined,
+            base_price:      g(COL_PRICE)    || "0",
+            cost_price:      g(COL_COST)     || undefined,
+            min_stock:       g(COL_MIN)      || "0",
+            initial_stock:   g(COL_STOCK)    || undefined,
+            description:     g(COL_DESC)     || undefined,
+            product_type_id: typeId          || undefined,
+            unit_id:         unitId          || undefined,
+            brand_id:        brandId         || undefined,
+          });
+        } catch (e) {
+          const raw = e instanceof Error ? e.message : String(e);
+          // Translate known backend errors to locale.
+          let msg = raw;
+          if (raw.includes("sku or barcode already exists"))  msg = t.errDuplicateSku;
+          else if (raw.includes("name already exists"))        msg = t.errDuplicateName;
+          else if (raw.includes("internal server error"))      msg = t.errInternal;
+          throw new Error(`${t.errorProduct}: ${msg}`);
+        }
 
         rowResults.push({ row: i + 2, name, status: "ok" });
       } catch (err) {
-        rowResults.push({ row: i + 2, name, status: "error", error: err instanceof Error ? err.message : "เกิดข้อผิดพลาด" });
+        rowResults.push({ row: i + 2, name, status: "error", error: err instanceof Error ? err.message : t.errorGeneric });
       }
 
       setProgress({ done: i + 1, total: rawRows.length });
@@ -278,8 +341,8 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
 
     const ok   = rowResults.filter((r) => r.status === "ok").length;
     const fail = rowResults.filter((r) => r.status === "error").length;
-    if (fail === 0) toast.success(`นำเข้าสำเร็จ ${ok} รายการ`);
-    else toast.warning(`สำเร็จ ${ok} / ล้มเหลว ${fail} รายการ`);
+    if (fail === 0) toast.success(t.toastSuccess.replace("{count}", String(ok)));
+    else toast.warning(t.toastPartial.replace("{ok}", String(ok)).replace("{fail}", String(fail)));
   }
 
   const validRows   = preview.filter((r) => !r.error);
@@ -306,12 +369,12 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
               <FileSpreadsheet className="h-5 w-5 text-violet-600" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">นำเข้าสินค้าจาก Excel</h3>
+              <h3 className="text-base font-bold text-slate-900">{t.title}</h3>
               <p className="text-xs text-slate-500">
-                {step === "idle"     && "ดาวน์โหลด Template กรอกข้อมูล แล้วอัปโหลด"}
-                {step === "preview"  && `พบ ${preview.length} รายการ — ตรวจสอบก่อนนำเข้า`}
-                {step === "importing"&& `กำลังนำเข้า ${progress.done}/${progress.total} รายการ…`}
-                {step === "done"     && `เสร็จสิ้น — สำเร็จ ${okCount} / ล้มเหลว ${failCount}`}
+                {step === "idle"     && t.subtitleIdle}
+                {step === "preview"  && t.subtitlePreview.replace("{count}", String(preview.length))}
+                {step === "importing"&& t.subtitleImporting.replace("{done}", String(progress.done)).replace("{total}", String(progress.total))}
+                {step === "done"     && t.subtitleDone.replace("{ok}", String(okCount)).replace("{fail}", String(failCount))}
               </p>
             </div>
           </div>
@@ -329,27 +392,27 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
           {step === "idle" && (
             <div className="space-y-4 p-6">
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">ขั้นตอนที่ 1 — ดาวน์โหลด Template</p>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{t.step1Title}</p>
                 <p className="mb-1 text-xs text-slate-400">
-                  มีคอลัมน์: ชื่อสินค้า, SKU, Barcode, ราคาขาย, ราคาทุน, สต็อก, สต็อกขั้นต่ำ, หน่วย, หมวดหมู่, แบรนด์, คำอธิบาย
+                  {t.step1Columns}
                 </p>
                 <p className="mb-3 text-xs text-slate-400">
-                  ดูคำอธิบายแต่ละคอลัมน์ได้ในชีต “วิธีใช้” · จำนวน “สต็อก” จะถูกบันทึกเป็นยอดยกมาที่ตำแหน่ง <span className="font-semibold text-slate-500">หน้าร้าน</span>
+                  {t.step1Guide} <span className="font-semibold text-slate-500">{t.step1StockLocation}</span>
                 </p>
                 <button onClick={downloadTemplate} type="button"
                   className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50">
                   <Download className="h-4 w-4" />
-                  ดาวน์โหลด Template (.xlsx)
+                  {t.downloadTemplate}
                 </button>
               </div>
 
               <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">ขั้นตอนที่ 2 — อัปโหลดไฟล์</p>
-                <p className="mb-3 text-xs text-slate-400">ระบบจะสร้างหมวดหมู่ หน่วย และแบรนด์ที่ยังไม่มีให้อัตโนมัติ</p>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{t.step2Title}</p>
+                <p className="mb-3 text-xs text-slate-400">{t.step2Desc}</p>
                 <button onClick={() => importFileRef.current?.click()} type="button"
                   className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">
                   <Upload className="h-4 w-4" />
-                  เลือกไฟล์ Excel
+                  {t.selectFile}
                 </button>
               </div>
 
@@ -363,14 +426,14 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
               {/* summary bar */}
               <div className="flex shrink-0 items-center gap-4 border-b border-slate-100 bg-violet-50/60 px-5 py-3">
                 <span className="text-xs font-semibold text-slate-600">
-                  ทั้งหมด <span className="text-violet-700">{preview.length}</span> แถว
+                  {t.allRows} <span className="text-violet-700">{preview.length}</span>
                 </span>
                 <span className="text-xs font-semibold text-emerald-600">
-                  พร้อมนำเข้า <span>{validRows.length}</span>
+                  {t.readyImport} <span>{validRows.length}</span>
                 </span>
                 {invalidRows.length > 0 && (
                   <span className="text-xs font-semibold text-red-500">
-                    มีปัญหา <span>{invalidRows.length}</span>
+                    {t.hasIssues} <span>{invalidRows.length}</span>
                   </span>
                 )}
               </div>
@@ -381,16 +444,16 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
                   <thead>
                     <tr className="border-b border-slate-100 bg-violet-50/40 text-left">
                       <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">#</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">ชื่อสินค้า</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">SKU</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">Barcode</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap text-right">ราคาขาย</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap text-right">ราคาทุน</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap text-right">สต็อก</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">หน่วย</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">หมวดหมู่</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">แบรนด์</th>
-                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">สถานะ</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">{t.colName}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">{t.colSku}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">{t.colBarcode}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap text-right">{t.colPrice}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap text-right">{t.colCost}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap text-right">{t.colStock}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">{t.colUnit}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">{t.colCategory}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">{t.colBrand}</th>
+                      <th className="px-3 py-2.5 font-semibold text-slate-500 whitespace-nowrap">{t.colStatus}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -422,7 +485,7 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
                         <td className="px-3 py-2 whitespace-nowrap">
                           {row.error
                             ? <span className="flex items-center gap-1 text-red-500"><AlertCircle className="h-3 w-3" />{row.error}</span>
-                            : <span className="flex items-center gap-1 text-emerald-600"><CheckCircle className="h-3 w-3" />พร้อม</span>}
+                            : <span className="flex items-center gap-1 text-emerald-600"><CheckCircle className="h-3 w-3" />{t.statusReady}</span>}
                         </td>
                       </tr>
                     ))}
@@ -437,7 +500,7 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
             <div className="flex flex-col items-center justify-center gap-4 p-8">
               <Loader2 className="h-10 w-10 animate-spin text-violet-500" />
               <p className="text-sm font-medium text-slate-700">
-                กำลังนำเข้า {progress.done}/{progress.total} รายการ…
+                {t.importing.replace("{done}", String(progress.done)).replace("{total}", String(progress.total))}
               </p>
               <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-violet-100">
                 <div
@@ -455,7 +518,7 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
                 <div className="flex flex-1 items-center gap-3 rounded-xl bg-emerald-50 px-4 py-3">
                   <CheckCircle className="h-6 w-6 text-emerald-500" />
                   <div>
-                    <p className="text-xs text-emerald-600">สำเร็จ</p>
+                    <p className="text-xs text-emerald-600">{t.success}</p>
                     <p className="text-2xl font-bold text-emerald-700">{okCount}</p>
                   </div>
                 </div>
@@ -463,7 +526,7 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
                   <div className="flex flex-1 items-center gap-3 rounded-xl bg-red-50 px-4 py-3">
                     <AlertCircle className="h-6 w-6 text-red-400" />
                     <div>
-                      <p className="text-xs text-red-500">ล้มเหลว</p>
+                      <p className="text-xs text-red-500">{t.failed}</p>
                       <p className="text-2xl font-bold text-red-600">{failCount}</p>
                     </div>
                   </div>
@@ -472,11 +535,11 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
 
               {failCount > 0 && (
                 <div className="rounded-xl border border-red-100 bg-red-50 p-3">
-                  <p className="mb-2 text-xs font-semibold text-red-600">รายการที่ล้มเหลว:</p>
+                  <p className="mb-2 text-xs font-semibold text-red-600">{t.failedList}</p>
                   <div className="max-h-48 space-y-1.5 overflow-y-auto">
                     {results.filter((r) => r.status === "error").map((r) => (
                       <div key={r.row} className="text-xs text-red-600">
-                        <span className="font-semibold">แถว {r.row} — {r.name}:</span> {r.error}
+                        <span className="font-semibold">{t.rowLabel} {r.row} — {r.name}:</span> {r.error}
                       </div>
                     ))}
                   </div>
@@ -490,7 +553,7 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
         <div className="flex shrink-0 gap-3 border-t border-slate-100 bg-slate-50/60 px-6 py-4">
           {step === "idle" && (
             <button onClick={onClose} className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
-              ยกเลิก
+              {t.cancel}
             </button>
           )}
 
@@ -500,14 +563,14 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
                 onClick={() => { setStep("idle"); setPreview([]); setRawRows([]); }}
                 className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
               >
-                เลือกไฟล์ใหม่
+                {t.chooseNewFile}
               </button>
               <button
                 onClick={startImport}
                 disabled={validRows.length === 0}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
               >
-                ยืนยันนำเข้า {validRows.length} รายการ
+                {t.confirmImport.replace("{count}", String(validRows.length))}
                 <ArrowRight className="h-4 w-4" />
               </button>
             </>
@@ -515,7 +578,7 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef }: Props)
 
           {step === "done" && (
             <button onClick={onSuccess} className="flex-1 rounded-xl bg-violet-600 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">
-              เสร็จสิ้น — ดูรายการสินค้า
+              {t.doneViewProducts}
             </button>
           )}
         </div>
