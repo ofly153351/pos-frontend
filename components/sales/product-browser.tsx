@@ -175,9 +175,9 @@ export function ProductBrowser({
   }, [products, search]);
 
   return (
-    <div className="rounded-[2rem] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-8 xl:flex xl:h-full xl:min-h-0 xl:flex-col">
+    <div className="rounded-[2rem] border border-violet-100 bg-white p-4 shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:p-6 md:flex md:h-full md:min-h-0 md:flex-col md:p-5 md:overflow-hidden xl:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="min-w-48 shrink-0 text-2xl font-semibold text-slate-950">
+        <h2 className="min-w-48 shrink-0 text-xl font-semibold text-slate-950 md:text-2xl">
           {dictionary.title}
         </h2>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
@@ -397,7 +397,7 @@ export function ProductBrowser({
 
       <div
         ref={gridRef}
-        className={`pretty-scroll mt-6 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1 ${productView === "grid" ? "grid content-start auto-rows-max gap-3" : "space-y-3"}`}
+        className={`pretty-scroll mt-5 md:mt-4 md:min-h-0 md:flex-1 md:overflow-y-auto md:pr-1 xl:mt-6 ${productView === "grid" ? "grid content-start auto-rows-max gap-3" : "space-y-3"}`}
         style={productView === "grid" ? gridStyle : undefined}
       >
         {pagedProducts.length > 0 ? (

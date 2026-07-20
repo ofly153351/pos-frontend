@@ -119,10 +119,10 @@ export function CartPanel({
     genericDiscountRows.length + (promoDiscountAmount > 0 ? 1 : 0);
 
   return (
-    <div className="xl:h-full xl:min-h-0">
-      <section className="flex h-full min-h-[74dvh] flex-col rounded-[2rem] border border-violet-100 bg-white shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh]">
+    <div className="md:h-full md:min-h-0">
+      <section className="flex h-full min-h-[74dvh] flex-col rounded-[2rem] border border-violet-100 bg-white shadow-[0_24px_60px_rgba(124,58,237,0.1)] sm:min-h-[78dvh] md:min-h-0">
         {/* Header */}
-        <div className="shrink-0 border-b border-violet-50 px-5 pb-3 pt-5">
+        <div className="shrink-0 border-b border-violet-50 px-4 pb-3 pt-4 md:px-5 md:pt-5">
           <div className="flex items-start justify-between gap-2">
             <div>
               <h2 className="text-xl font-bold text-slate-900">
@@ -413,9 +413,9 @@ export function CartPanel({
         </div>
 
         {/* ── Checkout button ── */}
-        <div className="shrink-0 border-t border-violet-50 px-4 pb-4 pt-3">
+        <div className="shrink-0 border-t border-violet-50 px-4 pb-4 pt-3 md:px-5">
           <button
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3.5 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-base font-bold text-white shadow-[0_8px_24px_rgba(124,58,237,0.3)] transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50 md:py-3.5"
             disabled={cart.length === 0 || isPending}
             onClick={onOpenCheckout}
             type="button"

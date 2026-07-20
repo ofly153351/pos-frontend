@@ -1905,7 +1905,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           />
         </div>
       ) : null}
-      <section className="grid gap-6 xl:h-[calc(100dvh-8rem)] xl:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
+      <section className="grid gap-4 md:h-[calc(100dvh-8rem)] md:grid-cols-[minmax(0,60fr)_minmax(0,40fr)] md:overflow-hidden xl:gap-6 xl:grid-cols-[minmax(0,65fr)_minmax(0,35fr)]">
         <ProductBrowser
           categories={categories}
           dictionary={dictionary}
