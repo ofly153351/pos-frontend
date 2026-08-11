@@ -539,6 +539,8 @@
     "statusUnpaidLabel": "ค้างชำระ",
     "unavailableProduct": "สินค้าที่ไม่สามารถขายได้",
     "categoryFilterAll": "ทั้งหมด",
+    "categoryFilterShowMore": "+{n} เพิ่มเติม",
+    "categoryFilterShowLess": "▲ ซ่อน",
     "promo": {
       "tab": "โปรโมชั่น",
       "all": "ทั้งหมด",

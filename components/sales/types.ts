@@ -168,6 +168,8 @@ export type SalesDictionary = {
   viewReceiptButton: string;
   printInvoiceButton: string;
   categoryFilterAll: string;
+  categoryFilterShowMore: string;
+  categoryFilterShowLess: string;
   promo: {
     tab: string;
     all: string;

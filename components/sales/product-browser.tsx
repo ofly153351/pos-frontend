@@ -97,6 +97,7 @@ export function ProductBrowser({
 }: ProductBrowserProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [page, setPage] = useState(1);
+  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
 
   const [cardSettingsOpen, setCardSettingsOpen] = useState(false);
   const [cardSettings, setCardSettings] = useState<CardSettings>(DEFAULT_CARD_SETTINGS);
@@ -303,7 +304,7 @@ export function ProductBrowser({
                 ? "border-violet-300 bg-violet-600 text-white shadow-sm"
                 : "border-violet-100 bg-violet-50 text-violet-700 hover:bg-violet-100"
             }`}
-            onClick={() => onCategoryFilterChange("")}
+            onClick={() => { onCategoryFilterChange(""); setCategoriesExpanded(false); }}
             type="button"
           >
             {dictionary.categoryFilterAll}
@@ -322,7 +323,8 @@ export function ProductBrowser({
               🏷 โปรโมชั่น ({promotionProductIds!.size})
             </button>
           ) : null}
-          {categories.map((category) => (
+          {/* Visible categories: first 6, or all when expanded */}
+          {(categoriesExpanded ? categories : categories.slice(0, 6)).map((category) => (
             <button
               className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
                 selectedCategory === category
@@ -336,6 +338,18 @@ export function ProductBrowser({
               {category}
             </button>
           ))}
+          {/* Expand/collapse toggle — only when there are more than 6 */}
+          {categories.length > 6 ? (
+            <button
+              className="rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-500 transition hover:border-violet-300 hover:bg-violet-50"
+              onClick={() => setCategoriesExpanded((v) => !v)}
+              type="button"
+            >
+              {categoriesExpanded
+                ? dictionary.categoryFilterShowLess
+                : dictionary.categoryFilterShowMore.replace("{n}", String(categories.length - 6))}
+            </button>
+          ) : null}
         </div>
       ) : null}
 

@@ -539,6 +539,8 @@
     "statusUnpaidLabel": "Unpaid",
     "unavailableProduct": "Product not available",
     "categoryFilterAll": "All",
+    "categoryFilterShowMore": "+{n} more",
+    "categoryFilterShowLess": "▲ Hide",
     "promo": {
       "tab": "Promotions",
       "all": "All",
