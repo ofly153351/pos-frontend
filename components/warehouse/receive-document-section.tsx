@@ -4,6 +4,7 @@ import { FileText } from "lucide-react";
 
 import type { Supplier } from "@/services/suppliers";
 import type { Warehouse as WarehouseType } from "@/types/warehouse";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { SummaryCard } from "./receive-cards";
 import { formatDateTimeLabel, formatNumber, type HeaderForm, type ReceiveDictionary } from "./receive-shared";
 
@@ -91,12 +92,18 @@ export function ReceiveDocumentSection({
               <span className="nums text-sm">{purchaseOrderNo || purchaseOrderId}</span>
             </div>
           ) : (
-            <select className={fieldClass()} onChange={(e) => onPurchaseOrderChange(e.target.value)} value="">
-              <option value="">{t.sourceDirect}</option>
-              {purchaseOrders.map((po) => (
-                <option key={po.id} value={po.id}>{po.order_number}</option>
-              ))}
-            </select>
+            <EntityCombobox
+              items={[
+                { id: "", label: t.sourceDirect },
+                ...purchaseOrders.map((po) => ({ id: po.id, label: po.order_number })),
+              ]}
+              value=""
+              onChange={onPurchaseOrderChange}
+              labels={{
+                placeholder: t.sourceDirect,
+                noResults: t.noPoMatch ?? t.placeholderSelectPo,
+              }}
+            />
           )}
         </label>
 

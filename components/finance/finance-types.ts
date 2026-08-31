@@ -45,6 +45,7 @@ export type ExpenseDictionary = {
     category: string;
     categoryPlaceholder: string;
     createCategory: string;
+    noCategoryMatch: string;
     newCategoryPlaceholder: string;
     addCategory: string;
     cancelCategory: string;

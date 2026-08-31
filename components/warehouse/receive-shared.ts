@@ -154,6 +154,7 @@ export type ReceiveDictionary = {
   sourceLabel: string;
   sourceFromPo: string;
   sourceDirect: string;
+  noPoMatch: string;
   labelPurchaseOrder: string;
   placeholderSelectPo: string;
   colDestination: string;

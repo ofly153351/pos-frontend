@@ -7,6 +7,7 @@ import { Loader2, Minus, Package, Plus, Search, ShoppingCart, X } from "lucide-r
 import { createPurchaseOrder, type CreatePOItemInput } from "@/services/purchases";
 import { listSuppliers, listSupplierProducts, type Supplier, type SupplierProduct } from "@/services/suppliers";
 import { toast } from "@/components/ui/toast";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { ScanButton } from "@/components/shared/scan-button";
 
 type PurchaseFormProps = {
@@ -15,6 +16,7 @@ type PurchaseFormProps = {
     editOrder: string;
     selectSupplier: string;
     selectSupplierFirst: string;
+    noSupplierMatch: string;
     selectProduct: string;
     searchPlaceholder?: string;
     addItem: string;
@@ -46,12 +48,6 @@ function formatTHB(amount: number) {
   }).format(amount);
 }
 
-function supplierInitials(name: string) {
-  const words = name.trim().split(/\s+/);
-  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
-
 export function PurchaseForm({ dictionary: d, onClose, onSuccess }: PurchaseFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -65,13 +61,15 @@ export function PurchaseForm({ dictionary: d, onClose, onSuccess }: PurchaseForm
   const productSearchRef = useRef<HTMLDivElement>(null);
   const scanFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  function triggerClose() { setIsClosing(true); }
+  function handleAnimationEnd() { if (isClosing) onClose(); }
+
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
       if (e.key === "Escape") triggerClose();
     }
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -83,9 +81,6 @@ export function PurchaseForm({ dictionary: d, onClose, onSuccess }: PurchaseForm
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  function triggerClose() { setIsClosing(true); }
-  function handleAnimationEnd() { if (isClosing) onClose(); }
 
   const { data: suppliers = [] } = useQuery<Supplier[]>({
     queryFn: async () => (await listSuppliers()).data ?? [],
@@ -254,16 +249,20 @@ export function PurchaseForm({ dictionary: d, onClose, onSuccess }: PurchaseForm
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {d.selectSupplier}
                 </label>
-                <select
-                  className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                  onChange={(e) => { setSupplierId(e.target.value); setProductSearch(""); }}
+                <EntityCombobox
+                  items={suppliers.filter((s) => s.is_active).map((s) => ({
+                    id: s.id,
+                    label: s.name,
+                    subtitle: [s.contact_person, s.phone].filter(Boolean).join(" · ") || undefined,
+                    keywords: [s.name, s.phone ?? "", s.contact_person ?? ""],
+                  }))}
                   value={supplierId}
-                >
-                  <option value="">— {d.selectSupplier} —</option>
-                  {suppliers.filter((s) => s.is_active).map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                  onChange={(id) => { setSupplierId(id); setProductSearch(""); }}
+                  labels={{
+                    placeholder: `— ${d.selectSupplier} —`,
+                    noResults: d.noSupplierMatch ?? d.selectSupplier,
+                  }}
+                />
               </div>
 
               {/* Product search */}

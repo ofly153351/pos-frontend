@@ -465,19 +465,13 @@ export function CheckoutSummaryModal({
                 placeholder="เลือกลูกค้า..."
               />
             ) : quotationMode ? (
-              <select
-                className="w-full rounded-lg border border-violet-200 bg-violet-50/30 px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                onChange={(e) => setSelectedCustomerId(e.target.value)}
+              <CustomerCombobox
+                customers={customers}
+                customerLevelDiscounts={customerLevelDiscounts}
                 value={selectedCustomerId}
-              >
-                <option value="">{dictionary.customerPlaceholder}</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.full_name} (L{c.level ?? 1} •{" "}
-                    {customerLevelDiscounts.find((r) => r.level === Number(c.level ?? 1))?.discount_percent ?? 0}%)
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedCustomerId}
+                placeholder={dictionary.customerPlaceholder}
+              />
             ) : (
               <CustomerCombobox
                 customers={customers}

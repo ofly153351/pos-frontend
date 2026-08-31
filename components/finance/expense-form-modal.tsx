@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Check, Receipt, X } from "lucide-react";
 
 import { toast } from "@/components/ui/toast";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { ApiError } from "@/services/api";
 import { createExpense, createExpenseCategory, updateExpense } from "@/services/expenses";
 import type { Expense, ExpenseCategory } from "@/types/expense";
@@ -189,13 +190,23 @@ export function ExpenseFormModal({ dictionary: t, categories, editing, onClose, 
                     {catError ? <p className="text-xs text-red-500">{catError}</p> : null}
                   </div>
                 ) : (
-                  <select value={categoryId} onChange={(e) => onCategorySelect(e.target.value)} className={`${errors.category_id ? inputError : inputNormal} appearance-none`}>
-                    <option value="">{t.form.categoryPlaceholder}</option>
-                    {allCategories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                    <option value={CREATE_CATEGORY_VALUE}>+ {t.form.createCategory}</option>
-                  </select>
+                  <div className={errors.category_id ? inputError : inputNormal}>
+                    <EntityCombobox
+                      items={allCategories.map((c) => ({ id: c.id, label: c.name }))}
+                      value={categoryId}
+                      onChange={onCategorySelect}
+                      clearable
+                      labels={{
+                        placeholder: t.form.categoryPlaceholder,
+                        noResults: t.form.noCategoryMatch ?? t.form.categoryPlaceholder,
+                      }}
+                      footerOption={{
+                        id: CREATE_CATEGORY_VALUE,
+                        label: `+ ${t.form.createCategory}`,
+                        onPick: () => onCategorySelect(CREATE_CATEGORY_VALUE),
+                      }}
+                    />
+                  </div>
                 )}
                 {!creatingCat && errors.category_id ? <p className="mt-1 text-xs text-red-500">{errors.category_id}</p> : null}
               </div>

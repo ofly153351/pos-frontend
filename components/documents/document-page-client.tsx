@@ -91,6 +91,8 @@ type DocumentDict = {
   createTitle: string;
   createSubtitle: string;
   selectCustomer: string;
+  customerSearchPlaceholder: string;
+  noCustomersFound: string;
   documentDate: string;
   optionalDueDate: string;
   addItem: string;

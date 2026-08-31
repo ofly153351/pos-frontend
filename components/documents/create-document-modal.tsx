@@ -12,41 +12,15 @@ import { toast } from "@/components/ui/toast";
 import { ScanButton } from "@/components/shared/scan-button";
 import type { CreateDocumentPayload, DocumentType } from "@/types/document";
 import type { Product } from "@/types/product";
-
-type ShippingAddress = {
-  id: string;
-  label: string;
-  recipient_name: string;
-  recipient_phone: string;
-  address: string;
-  sub_district: string;
-  district: string;
-  province: string;
-  postal_code: string;
-  note: string;
-  use_customer_address: boolean;
-  is_default: boolean;
-};
-
-type Customer = {
-  id: string;
-  full_name: string;
-  phone?: string | null;
-  address?: string | null;
-  shipping_contact?: string | null;
-  shipping_phone?: string | null;
-  shipping_address?: string | null;
-  shipping_province?: string | null;
-  shipping_district?: string | null;
-  shipping_postal_code?: string | null;
-  delivery_note?: string | null;
-  shipping_addresses?: ShippingAddress[];
-};
+import type { Customer, ShippingAddress } from "@/types/customer";
+import { CustomerCombobox } from "@/components/credit-sales/customer-combobox";
 
 type Dict = {
   createTitle: string;
   createSubtitle: string;
   selectCustomer: string;
+  customerSearchPlaceholder: string;
+  noCustomersFound: string;
   documentDate: string;
   optionalDueDate: string;
   validUntil?: string;
@@ -158,7 +132,9 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     queryKey: ["customers-simple", storeId],
     queryFn: async () => {
       const res = await authorizedApiRequest<Customer[]>(`/api/stores/${storeId}/customers`);
-      return res.data;
+      // API returns data:null when the store has no customers — normalize so
+      // the `= []` fallback (which only covers undefined) can't be bypassed.
+      return res.data ?? [];
     },
     enabled: !!storeId,
   });
@@ -460,16 +436,15 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {d.selectCustomer}
                 </label>
-                <select
-                  className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                <CustomerCombobox
+                  customers={customers}
                   value={customerId}
-                  onChange={(e) => handleCustomerChange(e.target.value)}
-                >
-                  <option value="">— {d.selectCustomer} —</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>{c.full_name}</option>
-                  ))}
-                </select>
+                  onChange={handleCustomerChange}
+                  labels={{
+                    placeholder: d.customerSearchPlaceholder,
+                    noResults: d.noCustomersFound,
+                  }}
+                />
               </div>
 
               {/* Shipping address picker — shown for DELIVERY_ORDER when customer has multi-addresses */}

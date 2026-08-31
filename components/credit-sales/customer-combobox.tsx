@@ -81,7 +81,14 @@ export function CustomerCombobox({
       e.preventDefault();
       if (results[active]) choose(results[active]);
     } else if (e.key === "Escape") {
-      setOpen(false);
+      // If the dropdown is open, Escape closes just the dropdown — stop the
+      // event from bubbling to document-level Escape handlers (e.g. parent
+      // modals that would close themselves over the picker).
+      if (open) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(false);
+      }
     }
   }
 
