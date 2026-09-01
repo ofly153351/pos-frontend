@@ -154,15 +154,31 @@ export function StockLevelsSection({
   const [draftLocationFilter, setDraftLocationFilter] = useState(locationFilter);
   const [draftNoLocationFilter, setDraftNoLocationFilter] = useState(noLocationFilter);
   const [optionSearch, setOptionSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"card" | "table">("table");
+  const [viewMode, setViewMode] = useState<"card" | "table">(() => {
+    // Restore the chosen view for the current session. Lazy initializer — runs on
+    // the client only after hydration (sessionStorage is unreachable during SSR,
+    // and this component mounts client-side behind auth).
+    try {
+      const saved = sessionStorage.getItem("pos-product-view");
+      if (saved === "card" || saved === "table") return saved;
+    } catch {
+      /* sessionStorage unavailable — keep default */
+    }
+    return "table";
+  });
   const importFileRef = useRef<HTMLInputElement>(null);
 
   // Auto-open detail view when navigated here with ?product=<id> (e.g. from inventory table).
-  useEffect(() => {
-    if (!initialDetailProductId || filteredProducts.length === 0) return;
+  // Fires per URL-id change (not on every filteredProducts frame) — "adjust state
+  // during render" pattern; setState-in-effect is forbidden by the React hooks lint.
+  const [handledDetailProductId, setHandledDetailProductId] = useState<string | null>(null);
+  if (initialDetailProductId && initialDetailProductId !== handledDetailProductId) {
     const target = filteredProducts.find((p) => p.id === initialDetailProductId);
-    if (target) setDetailProduct(target);
-  }, [initialDetailProductId, filteredProducts]);
+    if (target) {
+      setHandledDetailProductId(initialDetailProductId);
+      setDetailProduct(target);
+    }
+  }
 
   const barcodeLabels: BarcodeModalLabels = {
     title:               dictionary.table.barcodePreviewTitle,
@@ -226,15 +242,8 @@ export function StockLevelsSection({
   };
   const filterPanelRef = useRef<HTMLDivElement>(null);
 
-  // Restore the chosen view for the current session (set after mount to avoid SSR mismatch).
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem("pos-product-view");
-      if (saved === "card" || saved === "table") setViewMode(saved);
-    } catch {
-      /* sessionStorage unavailable — keep default */
-    }
-  }, []);
+  // NOTE: the session view-mode restore lives in the viewMode lazy initializer
+  // above (no separate mount effect needed).
 
   function changeViewMode(mode: "card" | "table") {
     setViewMode(mode);
@@ -266,11 +275,17 @@ export function StockLevelsSection({
     return () => window.removeEventListener("mousedown", handlePointerDown);
   }, [isFilterPanelOpen]);
 
+  // Panel visibility tracks open-state instantly on open (adjust during render);
+  // the 200ms delayed hide stays in an effect because it schedules external work
+  // (a timeout) rather than setting state synchronously.
+  const [prevFilterPanelOpen, setPrevFilterPanelOpen] = useState(isFilterPanelOpen);
+  if (prevFilterPanelOpen !== isFilterPanelOpen) {
+    setPrevFilterPanelOpen(isFilterPanelOpen);
+    if (isFilterPanelOpen) setIsFilterPanelVisible(true);
+  }
+
   useEffect(() => {
-    if (isFilterPanelOpen) {
-      setIsFilterPanelVisible(true);
-      return;
-    }
+    if (isFilterPanelOpen) return;
 
     const timeoutId = window.setTimeout(() => {
       setIsFilterPanelVisible(false);
@@ -279,15 +294,19 @@ export function StockLevelsSection({
     return () => window.clearTimeout(timeoutId);
   }, [isFilterPanelOpen]);
 
-  useEffect(() => {
-    if (isFilterPanelOpen) return;
+  // Draft filters mirror the applied filters whenever the panel is closed —
+  // "adjust state during render" pattern (setState-in-effect is forbidden).
+  const appliedFilterKey = `${productTypeFilter}\n${productUnitFilter}\n${productBrandFilter}\n${stockStatusFilter}\n${locationFilter}\n${noLocationFilter}`;
+  const [prevAppliedFilterKey, setPrevAppliedFilterKey] = useState(appliedFilterKey);
+  if (!isFilterPanelOpen && prevAppliedFilterKey !== appliedFilterKey) {
+    setPrevAppliedFilterKey(appliedFilterKey);
     setDraftProductTypeFilter(productTypeFilter);
     setDraftProductUnitFilter(productUnitFilter);
     setDraftProductBrandFilter(productBrandFilter);
     setDraftStockStatusFilter(stockStatusFilter);
     setDraftLocationFilter(locationFilter);
     setDraftNoLocationFilter(noLocationFilter);
-  }, [isFilterPanelOpen, productBrandFilter, productTypeFilter, productUnitFilter, stockStatusFilter, locationFilter, noLocationFilter]);
+  }
 
   const normalizedOptionSearch = optionSearch.trim().toLowerCase();
   const visibleTypes = useMemo(

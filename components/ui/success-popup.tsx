@@ -18,11 +18,16 @@ export default function SuccessPopup({
 }: SuccessPopupProps) {
   const [animClass, setAnimClass] = useState("");
 
+  // Reset the animation class whenever the popup message clears — "adjust
+  // state during render" pattern (setState-in-effect is forbidden).
+  const [prevMessage, setPrevMessage] = useState(message);
+  if (prevMessage !== message) {
+    setPrevMessage(message);
+    if (!message) setAnimClass("");
+  }
+
   useEffect(() => {
-    if (!message) {
-      setAnimClass("");
-      return;
-    }
+    if (!message) return;
 
     // Enter animation: opacity-0 scale-95 → opacity-100 scale-100
     const raf = requestAnimationFrame(() =>

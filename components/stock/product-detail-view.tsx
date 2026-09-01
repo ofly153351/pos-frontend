@@ -106,7 +106,14 @@ export function ProductDetailView({ product, dictionary, onClose, onEdit, onDele
   const [tab, setTab] = useState<Tab>("general");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  useEffect(() => { setTab("general"); setConfirmDelete(false); }, [product?.id]);
+  // Reset detail state when a different product is shown — "adjust state during
+  // render" pattern (setState-in-effect is forbidden by the React hooks lint).
+  const [prevProductId, setPrevProductId] = useState(product?.id);
+  if (prevProductId !== product?.id) {
+    setPrevProductId(product?.id);
+    setTab("general");
+    setConfirmDelete(false);
+  }
 
   useEffect(() => {
     if (!product) return;

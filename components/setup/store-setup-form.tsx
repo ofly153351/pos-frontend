@@ -43,7 +43,11 @@ export function StoreSetupForm({
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [resolvedStoreId, setResolvedStoreId] = useState("");
+  // Resolve the persisted store id once on first client render (lazy
+  // initializer — getCurrentStoreId reads localStorage, unreachable in SSR).
+  const [resolvedStoreId, setResolvedStoreId] = useState(() =>
+    typeof window === "undefined" ? "" : (getCurrentStoreId() ?? ""),
+  );
   const [pendingPlan, setPendingPlan] = useState<PendingPlanChoice | null>(() =>
     typeof window === "undefined" ? null : getPendingPlanChoice(),
   );
@@ -51,14 +55,6 @@ export function StoreSetupForm({
   const [address, setAddress] = useState("");
   const [currencyCode, setCurrencyCode] = useState("THB");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    const currentStoreId = getCurrentStoreId();
-
-    if (currentStoreId) {
-      setResolvedStoreId(currentStoreId);
-    }
-  }, []);
 
   async function applyPendingPlan(storeId: string) {
     if (!pendingPlan?.code) {

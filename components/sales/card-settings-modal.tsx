@@ -106,9 +106,15 @@ function SegControl<T extends string | number>({
 export function CardSettingsModal({ open, onClose, dictionary: d }: Props) {
   const [cfg, setCfg] = useState<CardSettings>(DEFAULT_CARD_SETTINGS);
 
-  useEffect(() => {
-    if (open) setCfg(loadCardSettings());
-  }, [open]);
+  // Load saved settings each time the modal (re)opens — "adjust state during
+  // render" pattern; setState-in-effect is forbidden by the React hooks lint.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setCfg(loadCardSettings());
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   useEffect(() => {
     if (!open) return;

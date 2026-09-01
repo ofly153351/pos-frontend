@@ -127,12 +127,17 @@ export function DateRangeFilter({
     [labels],
   );
 
-  useEffect(() => {
-    if (!open) return;
+  // Draft range mirrors the applied value each time the picker (re)opens —
+  // "adjust state during render" pattern (setState-in-effect is forbidden).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
     const current = value.custom?.from || value.custom?.to ? normalizeRange(value.custom?.from ?? "", value.custom?.to ?? "") : presetRange(value.preset);
     setDraftFrom(current.from ?? "");
     setDraftTo(current.to ?? current.from ?? "");
-  }, [open, value]);
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   useEffect(() => {
     function onDocMouseDown(e: MouseEvent) {

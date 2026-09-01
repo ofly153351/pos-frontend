@@ -122,20 +122,22 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
   const hasActiveFilters =
     !!search || !!paymentFilter || !!statusFilter || !!cashierFilter || !!amountMin || !!amountMax;
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
+  // Reset to page 1 when filters change — "adjust state during render" pattern
+  // (setState-in-effect is forbidden by the React hooks lint).
+  const activeFilterKey = `${search}\n${paymentFilter}\n${statusFilter}\n${cashierFilter}\n${amountMin}\n${amountMax}\n${dateFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(activeFilterKey);
+  if (prevFilterKey !== activeFilterKey) {
+    setPrevFilterKey(activeFilterKey);
     setCurrentPage(1);
-  }, [search, paymentFilter, statusFilter, cashierFilter, amountMin, amountMax, dateFilter]);
+  }
 
   const totalPages = Math.max(Math.ceil(filtered.length / pageSize), 1);
-  const pageStart = (currentPage - 1) * pageSize;
+  // Clamp current page when filtered list shrinks (during render, not in an effect).
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  if (safeCurrentPage !== currentPage) setCurrentPage(totalPages);
+  const pageStart = (safeCurrentPage - 1) * pageSize;
   const pageEnd = Math.min(pageStart + pageSize, filtered.length);
   const paginatedSales = filtered.slice(pageStart, pageEnd);
-
-  // Clamp current page when filtered list shrinks
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [totalPages, currentPage]);
 
   function clearFilters() {
     setSearch("");

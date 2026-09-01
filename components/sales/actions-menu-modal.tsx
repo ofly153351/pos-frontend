@@ -1,6 +1,7 @@
 "use client";
 
 import { listParkedBills } from "@/services/sales";
+import type { ParkedBill } from "@/services/sales";
 
 type Dict = {
   actionsLabel: string;
@@ -17,7 +18,7 @@ type Props = {
   onClose: () => void;
   onToggleNote: () => void;
   onHoldBill: () => void;
-  onOpenRestoreDrawer: (bills: any[]) => void;
+  onOpenRestoreDrawer: (bills: ParkedBill[]) => void;
   onClearCart: () => void;
   dictionary: Dict;
 };

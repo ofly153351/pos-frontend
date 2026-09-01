@@ -283,7 +283,7 @@ export function CatalogSetupSection({
   function exportCSV() {
     const rows: string[][] = [["name", "description", "status"]];
     const src = tab === "types" ? types : tab === "units" ? units : brands;
-    src.forEach(i => rows.push([i.name, (i as any).description ?? "", i.is_active ? "active" : "inactive"]));
+    src.forEach(i => rows.push([i.name, i.description ?? "", i.is_active ? "active" : "inactive"]));
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -784,7 +784,7 @@ export function CatalogSetupSection({
               <div className="min-w-0">
                 <h3 className="text-base font-bold text-slate-900">{d.deleteTitle}</h3>
                 <p className="mt-1.5 text-sm text-slate-500">
-                  {d.deleteMessage} <span className="font-semibold text-slate-700">"{delTarget.name}"</span>?
+                  {d.deleteMessage} <span className="font-semibold text-slate-700">&quot;{delTarget.name}&quot;</span>?
                 </p>
               </div>
             </div>

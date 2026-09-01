@@ -131,17 +131,16 @@ export function ProductsTable({
   const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
-  const [density, setDensity] = useState<Density>("comfortable");
-  const [changeCategoryOpen, setChangeCategoryOpen] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
-
-  // Restore density preference
-  useEffect(() => {
+  const [density, setDensity] = useState<Density>(() => {
+    // Restore density preference (lazy initializer, SSR-safe).
     try {
       const saved = localStorage.getItem("pos-table-density");
-      if (saved === "comfortable" || saved === "compact" || saved === "warehouse") setDensity(saved);
+      if (saved === "comfortable" || saved === "compact" || saved === "warehouse") return saved;
     } catch { /* ignore */ }
-  }, []);
+    return "comfortable";
+  });
+  const [changeCategoryOpen, setChangeCategoryOpen] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
   function changeDensity(d: Density) {
     setDensity(d);

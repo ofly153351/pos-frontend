@@ -135,9 +135,12 @@ const THEMES: ThemeConfig[] = [
 ];
 
 function RealtimeClock({ palette }: { palette: Palette }) {
-  const [now, setNow] = useState<Date | null>(null);
+  // Client-only component (customer-facing display screen) — seed the clock
+  // directly instead of a mount effect, then keep it ticking via interval.
+  const [now, setNow] = useState<Date | null>(() =>
+    typeof window === "undefined" ? null : new Date(),
+  );
   useEffect(() => {
-    setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);

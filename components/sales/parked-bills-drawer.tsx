@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { formatCurrency, formatDateTime } from "./utils/sales-calculations";
+import type { ParkedBill, ParkedBillItem } from "@/services/sales";
+
+// Item shape read defensively by the drawer total: the API sends `price`, but
+// older locally-held bills may still carry `base_price` — keep both optional.
+type DrawerBillItem = ParkedBillItem & { base_price?: number };
+type DrawerBill = Omit<ParkedBill, "items"> & { items?: DrawerBillItem[] };
 
 type Dict = {
   restoreBillDrawerTitle: string;
@@ -14,10 +20,10 @@ type Dict = {
 
 type Props = {
   isOpen: boolean;
-  bills: any[];
+  bills: DrawerBill[];
   cartLength: number;
   onClose: () => void;
-  onConfirmRestore: (bill: any) => void;
+  onConfirmRestore: (bill: DrawerBill) => void;
   dictionary: Dict;
 };
 
@@ -29,7 +35,7 @@ export function ParkedBillsDrawer({
   onConfirmRestore,
   dictionary,
 }: Props) {
-  const [confirmBill, setConfirmBill] = useState<any | null>(null);
+  const [confirmBill, setConfirmBill] = useState<DrawerBill | null>(null);
 
   if (!isOpen && !confirmBill) {
     return null;
@@ -62,7 +68,7 @@ export function ParkedBillsDrawer({
                 bills.map((bill) => {
                   const itemCount = bill.items?.length ?? 0;
                   const totalAmount = (bill.items ?? []).reduce(
-                    (sum: number, item: any) => {
+                    (sum: number, item: DrawerBillItem) => {
                       const price = Number(item.base_price ?? item.price ?? 0);
                       return sum + price * (item.quantity ?? 0);
                     },
@@ -104,7 +110,7 @@ export function ParkedBillsDrawer({
         const bill = confirmBill;
         const itemCount = bill.items?.length ?? 0;
         const totalAmount = (bill.items ?? []).reduce(
-          (sum: number, item: any) => sum + Number(item.base_price ?? item.price ?? 0) * (item.quantity ?? 0),
+          (sum: number, item: DrawerBillItem) => sum + Number(item.base_price ?? item.price ?? 0) * (item.quantity ?? 0),
           0,
         );
         return (

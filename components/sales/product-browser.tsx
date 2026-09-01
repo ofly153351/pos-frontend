@@ -100,11 +100,11 @@ export function ProductBrowser({
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);
 
   const [cardSettingsOpen, setCardSettingsOpen] = useState(false);
-  const [cardSettings, setCardSettings] = useState<CardSettings>(DEFAULT_CARD_SETTINGS);
+  // Instant render from local cache (lazy initializer — SSR-safe, loadCardSettings
+  // guards `typeof window`), then reconcile with the server (per-user, cross-device).
+  const [cardSettings, setCardSettings] = useState<CardSettings>(loadCardSettings);
 
   useEffect(() => {
-    // Instant render from local cache, then reconcile with the server (per-user, cross-device).
-    setCardSettings(loadCardSettings());
     const refresh = () => setCardSettings(loadCardSettings());
     window.addEventListener("pos-card-settings-changed", refresh);
     window.addEventListener("storage", refresh);

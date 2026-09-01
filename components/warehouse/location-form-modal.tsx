@@ -98,7 +98,7 @@ function Combobox({
                     <Plus className="h-2.5 w-2.5 text-violet-500" />
                   </span>
                   <span className="text-slate-400">New:</span>
-                  <span className="font-semibold">"{value}"</span>
+                  <span className="font-semibold">&quot;{value}&quot;</span>
                 </button>
               </li>
             )}

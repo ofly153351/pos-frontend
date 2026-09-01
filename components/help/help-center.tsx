@@ -268,7 +268,7 @@ function SearchResults({
   return (
     <div>
       <p className="mb-4 text-xs text-slate-500">
-        พบ {results.length} ผลลัพธ์สำหรับ "{query}"
+        พบ {results.length} ผลลัพธ์สำหรับ &quot;{query}&quot;
       </p>
       <div className="divide-y divide-violet-50 rounded-xl border border-violet-100 bg-white overflow-hidden">
         {results.map(({ cat, topic }) => (

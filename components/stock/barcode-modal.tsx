@@ -518,7 +518,7 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
                     </div>
                   </div>
                   {!flags.showPrice ? (
-                    <p className="text-[10px] text-amber-600">⚠ เปิด "ราคา" ด้วยเพื่อแสดงราคาขีดทับ</p>
+                    <p className="text-[10px] text-amber-600">⚠ เปิด &quot;ราคา&quot; ด้วยเพื่อแสดงราคาขีดทับ</p>
                   ) : null}
                 </div>
               ) : null}
