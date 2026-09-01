@@ -16,6 +16,10 @@ export type Warehouse = {
   // (the backend omits it for live rows), so `!!deleted_at` partitions Archived from
   // Active/Inactive in the management filters and drives the "Archived" badge.
   deleted_at?: string | null;
+  // source_store_id is set only on warehouses transferred from another store
+  // (backend omitempty). The warehouse LIST endpoint does not join the source
+  // store's name — that joined field exists only on inventory items.
+  source_store_id?: string;
 };
 
 export type CreateWarehouseInput = {
