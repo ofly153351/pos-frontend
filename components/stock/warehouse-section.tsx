@@ -303,12 +303,13 @@ function WarehouseComboBox({
 
   const selectedLabel = selected ? selected.name + (selected.code ? ` (${selected.code})` : "") : "";
 
-  // Sync search with selected warehouse when not actively typing
-  useEffect(() => {
-    if (!isTyping) {
-      setSearch(selectedLabel);
-    }
-  }, [selectedLabel, isTyping]);
+  // Sync search with selected warehouse when not actively typing —
+  // "adjust state during render" pattern instead of setState-in-effect.
+  const [prevSelectedLabel, setPrevSelectedLabel] = useState(selectedLabel);
+  if (!isTyping && prevSelectedLabel !== selectedLabel) {
+    setPrevSelectedLabel(selectedLabel);
+    setSearch(selectedLabel);
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -796,11 +797,9 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const whStart = (whPage - 1) * whPageSize;
   const whEnd = whStart + whPageSize;
   const whPageProducts = warehouseProducts.slice(whStart, whEnd);
-  const allProducts: Product[] = allProductsData?.data
-    ? Array.isArray(allProductsData.data)
-      ? allProductsData.data
-      : (allProductsData.data as any)?.items ?? []
-    : [];
+  // listProducts() normalizes its response: data is always a ProductListPage
+  // (the array branch is folded into { items } in services/products.ts).
+  const allProducts: Product[] = allProductsData?.data.items ?? [];
 
   const productIdsInWarehouse = new Set(warehouseProducts.map((wp) => wp.product_id));
   const excludeIds = useMemo(
@@ -1068,14 +1067,14 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
           </div>
         </div>
 
-        {/* Source info badge for transferred warehouses */}
-        {selectedWarehouse && (selectedWarehouse as any).source_store_id ? (
+        {/* Source info badge for warehouses transferred from another store.
+            The list endpoint sends source_store_id only (no joined store name),
+            so the badge shows the transferred label as-is. */}
+        {selectedWarehouse?.source_store_id ? (
           <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
               <ArrowRight className="h-3 w-3" />
-              {(selectedWarehouse as any).source_store_name
-                ? `${dictionary.warehouseTransferredLabel} ${(selectedWarehouse as any).source_store_name}`
-                : dictionary.warehouseTransferredLabel}
+              {dictionary.warehouseTransferredLabel}
             </span>
           </div>
         ) : null}
@@ -2137,8 +2136,10 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
                                 });
                                 await queryClient.invalidateQueries({ queryKey: ["warehouse-products", selectedWarehouseId] });
                                 setSuccessMessage(`${wp.product_name || ""} +${qty}`);
-                              } catch (err: any) {
-                                setReceiveError(err?.message || dictionary.nameRequired);
+                              } catch (err) {
+                                setReceiveError(
+                                  err instanceof Error ? err.message : dictionary.nameRequired,
+                                );
                               } finally {
                                 setIsReceivingProduct((prev) => ({ ...prev, [wp.product_id]: false }));
                               }
