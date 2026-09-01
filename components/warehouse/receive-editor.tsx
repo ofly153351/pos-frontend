@@ -318,6 +318,11 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   const qtyByProduct = receivedByProduct;
 
   const editorRows: EditorRowView[] = useMemo(() => {
+    // POS-005 (2A): on a CONFIRMED (or cancelled) receipt the PO's received_quantity
+    // already includes THIS receipt, so "receipt qty vs remaining" double-counts and
+    // flags the receipt against itself. Over-receipt verdicts are only meaningful
+    // while the document is still editable/approvable.
+    const overGate = status === "draft" || status === "pending_review";
     return Object.values(itemRows)
       .map((row) => {
         const po = poMap.get(row.productId);
@@ -328,7 +333,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
         const qty = Number(row.quantity || 0);
         const unit = Number(row.unitPrice || 0);
         const disc = Number(row.discountValue || 0);
-        const overReceipt = hasPo && productReceived > remaining;
+        const overReceipt = overGate && hasPo && productReceived > remaining;
         const loc = locationDataReady
           ? resolveLocation(row.locationId)
           : { locationName: "", status: "resolving" as LocationResolveStatus, warning: "" };
@@ -357,9 +362,12 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
         };
       })
       .sort((a, b) => a.productName.localeCompare(b.productName));
-  }, [itemRows, poMap, receivedByProduct, hasPo, t, resolveLocation, productEditHref, locationDataReady]);
+  }, [itemRows, poMap, receivedByProduct, hasPo, status, t, resolveLocation, productEditHref, locationDataReady]);
 
   const inspection = useMemo<{ counts: InspectionCounts; mismatches: InspectionMismatch[]; hasOver: boolean }>(() => {
+    // Same POS-005 gate: don't count over-receipt mismatches on confirmed/cancelled
+    // receipts (the PO aggregate already includes this receipt's own lines).
+    const overGate = status === "draft" || status === "pending_review";
     const productIds = new Set<string>([...poMap.keys(), ...Object.keys(receivedByProduct)]);
     let totalOrdered = 0, totalReceived = 0, complete = 0, short = 0, over = 0, notReceived = 0;
     const mismatches: InspectionMismatch[] = [];
@@ -373,12 +381,12 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
       const st = receiveRowStatus(hasPo, received, remaining);
       if (st === "complete") complete += 1;
       else if (st === "short") { short += 1; mismatches.push({ productId: pid, productName: editorRows.find((r) => r.productId === pid)?.productName ?? pid, ordered: remaining, received, difference: received - remaining, kind: "short" }); }
-      else if (st === "over") { over += 1; mismatches.push({ productId: pid, productName: editorRows.find((r) => r.productId === pid)?.productName ?? pid, ordered: remaining, received, difference: received - remaining, kind: "over" }); }
+      else if (st === "over" && overGate) { over += 1; mismatches.push({ productId: pid, productName: editorRows.find((r) => r.productId === pid)?.productName ?? pid, ordered: remaining, received, difference: received - remaining, kind: "over" }); }
       else if (st === "not_received") notReceived += 1;
     }
     const totalLines = Object.keys(itemRows).length;
     return { counts: { totalLines, totalOrdered, totalReceived, complete, short, over, notReceived }, mismatches, hasOver: over > 0 };
-  }, [poMap, receivedByProduct, hasPo, editorRows, itemRows]);
+  }, [poMap, receivedByProduct, hasPo, status, editorRows, itemRows]);
 
   const financials = useMemo(() => {
     let subtotal = 0, discount = 0;
