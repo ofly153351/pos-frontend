@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
+import { ApiError } from "@/services/api";
 import {
   cancelGoodsReceipt,
   confirmGoodsReceipt,
@@ -51,6 +52,11 @@ import { ReceiveStockPreview } from "./receive-stock-preview";
 import { ReceiveFinancialSummary } from "./receive-financial-summary";
 import { ReceiveActionBar } from "./receive-action-bar";
 
+// HTTP statuses the backend uses for confirm business-rule rejections (over-receipt vs
+// PO outstanding, item/location rules, status/idempotency conflicts) — the document is
+// fixable, so they surface as warnings rather than hard errors.
+const CONFIRM_WARNING_STATUSES = new Set([400, 409, 422]);
+
 type Props = { dictionary: ReceiveDictionary; locale: string; receiptId: string };
 
 export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
@@ -66,6 +72,9 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   const [scanFeedback, setScanFeedback] = useState<{ tone: "error" | "success"; value: string } | null>(null);
   const [headerErrors, setHeaderErrors] = useState<Partial<Record<keyof HeaderForm, string>>>({});
   const [error, setError] = useState("");
+  // Confirm rejections come from the API response (backend is the authoritative gate),
+  // shown as an amber warning — distinct from transport/permission hard errors.
+  const [warning, setWarning] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   // Stable confirm idempotency key (Phase W3 §12): reused across a retry/double-click of
   // the same confirm, regenerated only after a successful confirm.
@@ -539,8 +548,9 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
   function handleConfirm() {
     setIsConfirmOpen(false);
     setError("");
-    if (!hasItems) { setError(t.validationItemsRequired); return; }
-    if (hasBlockingError) { setError(blockingMessage); return; }
+    setWarning("");
+    // No client-state pre-checks: the confirm verdict comes from the API response —
+    // the backend validates items, locations and PO outstanding quantities itself.
     if (!confirmKeyRef.current) {
       confirmKeyRef.current = globalThis.crypto?.randomUUID?.() ?? `rc-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     }
@@ -567,8 +577,21 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
           queryClient.invalidateQueries({ queryKey: ["all-products"] }),                    // product pickers
           queryClient.invalidateQueries({ queryKey: ["reports", "inventory-value"] }),      // inventory value / cost totals
         ]);
+        // On a successful confirm (2xx response) leave the editor and land back on
+        // the purchase-orders tab — the user's next action lives there, not here.
+        router.push(`/${locale}/purchases?tab=purchase-orders`);
         toast.success(t.badgeConfirmed);
-      } catch (e) { const m = e instanceof Error ? e.message : t.stateSaving; setError(m); toast.error(m); }
+      } catch (e) {
+        // Alert text comes from the API response verbatim — never from client state.
+        const m = e instanceof Error ? e.message : t.stateSaving;
+        if (e instanceof ApiError && CONFIRM_WARNING_STATUSES.has(e.status)) {
+          setWarning(m);
+          toast.warning(m);
+        } else {
+          setError(m);
+          toast.error(m);
+        }
+      }
     });
   }
 
@@ -643,6 +666,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
       </div>
 
       {error ? <Alert onDismiss={() => setError("")} tone="error">{error}</Alert> : null}
+      {warning ? <Alert onDismiss={() => setWarning("")} tone="warning">{warning}</Alert> : null}
       {prereqError ? <Alert tone="error">{t.statePrereqError}</Alert> : null}
 
       <ReceiveDocumentSection

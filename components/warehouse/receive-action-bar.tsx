@@ -46,7 +46,10 @@ export function ReceiveActionBar({
   onPrint,
 }: ReceiveActionBarProps) {
   const spinner = busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null;
-  const confirmDisabled = busy || !hasItems || hasBlockingError;
+  // Confirm is NOT gated on hasBlockingError: those verdicts (over-receipt, location
+  // rules) come from the API response on confirm — the button must stay clickable so
+  // the backend can reject with a message. Submit keeps its client-side gate.
+  const confirmDisabled = busy || !hasItems;
 
   return (
     <div className="sticky bottom-0 z-20 -mx-2 mt-2 border-t border-violet-100 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:mx-0 sm:rounded-b-3xl">
