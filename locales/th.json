@@ -3028,7 +3028,15 @@
       "cycleRule": "รอบตรวจนับ",
       "cycleRulePlaceholder": "เช่น ทุกวันจันทร์ · เครื่องดื่ม",
       "blindCount": "นับแบบซ่อนจำนวนในระบบ",
-      "blindCountHelp": "ซ่อนจำนวนในระบบระหว่างการนับ"
+      "blindCountHelp": "ซ่อนจำนวนในระบบระหว่างการนับ",
+      "searchCountType": "ค้นหาประเภทการนับ...",
+      "noCountTypeMatch": "ไม่พบประเภทการนับที่ค้นหา",
+      "searchWarehouse": "ค้นหาคลัง...",
+      "noWarehouseMatch": "ไม่พบคลังที่ค้นหา",
+      "searchCategory": "ค้นหาหมวดหมู่...",
+      "noCategoryMatch": "ไม่พบหมวดหมู่ที่ค้นหา",
+      "searchLocation": "ค้นหาตำแหน่ง...",
+      "noLocationMatch": "ไม่พบตำแหน่งที่ค้นหา"
     },
     "preview": {
       "title": "รอบตรวจนับนี้จะรวม",

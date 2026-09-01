@@ -201,20 +201,22 @@ export function EntityCombobox({
             <>
               {results.map((it, i) => (
                 <button
-                  key={it.id}
+                  key={`${it.id}-${i}`}
                   type="button"
                   onMouseEnter={() => setActive(i)}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     choose(it.id);
                   }}
-                  className={`flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition ${
+                  className={`flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left transition ${
                     i === active ? "bg-violet-50" : "hover:bg-slate-50"
                   }`}
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium text-slate-900">{it.label}</span>
-                    <span className="block truncate text-xs text-slate-500">{it.subtitle || "—"}</span>
+                    {it.subtitle ? (
+                      <span className="block truncate text-xs text-slate-500">{it.subtitle}</span>
+                    ) : null}
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
                     {it.badge ? (

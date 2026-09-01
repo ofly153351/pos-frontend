@@ -146,6 +146,14 @@ export type CountDictionary = {
     cycleRulePlaceholder: string;
     blindCount: string;
     blindCountHelp: string;
+    searchCountType: string;
+    noCountTypeMatch: string;
+    searchWarehouse: string;
+    noWarehouseMatch: string;
+    searchCategory: string;
+    noCategoryMatch: string;
+    searchLocation: string;
+    noLocationMatch: string;
   };
   preview: {
     title: string;

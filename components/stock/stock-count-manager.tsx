@@ -25,6 +25,7 @@ import {
 
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { ScanButton } from "@/components/shared/scan-button";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { PageSizeDropdown } from "@/components/ui/page-size-dropdown";
 import { toast } from "@/components/ui/toast";
 import type { CountDictionary } from "@/components/stock/inventory-types";
@@ -480,10 +481,15 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     });
   }, [sessions, listSearch, listStatus, listWarehouse, listDateFrom, listDateTo]);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
+  // Reset to page 1 when filters change — "adjust state during render" pattern
+  // (https://react.dev/reference/react/useState#storing-information-from-previous-renders)
+  // instead of a setState-in-effect, which the React hooks lint forbids.
+  const listFilterKey = `${listSearch}\n${listStatus}\n${listWarehouse}\n${listDateFrom}\n${listDateTo}`;
+  const [prevListFilterKey, setPrevListFilterKey] = useState(listFilterKey);
+  if (prevListFilterKey !== listFilterKey) {
+    setPrevListFilterKey(listFilterKey);
     setListPage(1);
-  }, [listSearch, listStatus, listWarehouse, listDateFrom, listDateTo]);
+  }
 
   const listTotalPages = Math.max(1, Math.ceil(filteredSessions.length / listPageSize));
   const safeListPage = Math.min(listPage, listTotalPages);
@@ -1347,34 +1353,61 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label={t.create.countType} required>
-                <select value={fCountType} onChange={(e) => setFCountType(e.target.value as CountType)} className={inputCls}>
-                  {countTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
+                <EntityCombobox
+                  items={countTypeOptions.map((option) => ({ id: option.value, label: option.label }))}
+                  value={fCountType}
+                  onChange={(id) => setFCountType(id as CountType)}
+                  labels={{ placeholder: t.create.searchCountType, noResults: t.create.noCountTypeMatch }}
+                />
               </Field>
               <Field label={t.create.category}>
-                <select value={fCategory} onChange={(e) => setFCategory(e.target.value)} className={inputCls}>
-                  <option value="">{t.create.allCategories}</option>
-                  {(categoriesQuery.data ?? []).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-                </select>
+                <EntityCombobox
+                  items={[
+                    { id: "", label: t.create.allCategories },
+                    ...(categoriesQuery.data ?? []).map((category) => ({ id: category.id, label: category.name })),
+                  ]}
+                  value={fCategory}
+                  onChange={setFCategory}
+                  labels={{ placeholder: t.create.searchCategory, noResults: t.create.noCategoryMatch }}
+                />
               </Field>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label={t.create.warehouse}>
-                <select value={fWarehouse} onChange={(e) => { setFWarehouse(e.target.value); setFLocation(""); }} className={inputCls}>
-                  <option value="">{t.create.allWarehouses}</option>
-                  {(warehousesQuery.data ?? []).map((warehouse) => <option key={warehouse.id} value={warehouse.name}>{warehouse.name}</option>)}
-                </select>
+                <EntityCombobox
+                  items={[
+                    { id: "", label: t.create.allWarehouses },
+                    // The form filters by warehouse NAME, so two warehouses sharing
+                    // a name (e.g. a duplicated "คลังหลัก") are interchangeable —
+                    // dedupe by name or EntityCombobox renders duplicate keys/rows.
+                    ...Array.from(
+                      new Map(
+                        (warehousesQuery.data ?? []).map((warehouse) => [warehouse.name, { id: warehouse.name, label: warehouse.name }]),
+                      ).values(),
+                    ),
+                  ]}
+                  value={fWarehouse}
+                  onChange={(id) => {
+                    setFWarehouse(id);
+                    setFLocation("");
+                  }}
+                  labels={{ placeholder: t.create.searchWarehouse, noResults: t.create.noWarehouseMatch }}
+                />
               </Field>
               <Field label={t.create.location}>
-                <select value={fLocation} onChange={(e) => setFLocation(e.target.value)} className={inputCls}>
-                  <option value="">{t.create.selectLocation}</option>
-                  {activeLocations.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.warehouse_name ? `${l.warehouse_name} › ` : ""}{l.zone_name ? `${l.zone_name} › ` : ""}{l.name}{l.is_sale_point ? ` · ${t.create.salePoint}` : ""}
-                    </option>
-                  ))}
-                </select>
+                <EntityCombobox
+                  items={activeLocations.map((l) => ({
+                    id: l.id,
+                    label: l.name,
+                    subtitle: [l.warehouse_name, l.zone_name].filter(Boolean).join(" › ") || undefined,
+                    badge: l.is_sale_point ? t.create.salePoint : undefined,
+                    keywords: [l.name, l.warehouse_name ?? "", l.zone_name ?? ""],
+                  }))}
+                  value={fLocation}
+                  onChange={setFLocation}
+                  labels={{ placeholder: t.create.searchLocation, noResults: t.create.noLocationMatch }}
+                />
                 <p className="mt-1 text-[11px] text-slate-400">{t.create.locationHelp}</p>
               </Field>
             </div>
