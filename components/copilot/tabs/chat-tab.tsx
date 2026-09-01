@@ -10,6 +10,17 @@ import {
 import { useCopilot } from "../copilot-provider"
 import { getActivityLogs, type ActivityLogEntry } from "@/services/activity-logs"
 import { HELP_CATEGORIES, type HelpTopic } from "@/lib/help/help-topics"
+import {
+  asksToday,
+  extractEntityName,
+  scoreHelpTopic,
+  normLower,
+} from "@/lib/copilot/query-match"
+import { listProducts } from "@/services/products"
+import { getSaleById } from "@/services/sales"
+import { listCustomers } from "@/services/customers"
+import { listSales } from "@/services/sales"
+import type { Product } from "@/types/product"
 import type {
   CopilotOverview,
   CopilotAction,
@@ -587,6 +598,214 @@ function buildBestSellers(data: CopilotOverview, lang: Lang): SakuResponse {
 
 // ── Saku Response Engine ──
 
+// Entity lookups (QA cases 2-4): product/customer names inside questions.
+// Backend has no server-side search param on products/customers, so these do
+// bounded client-side scans with a short-lived module cache. All read-only
+// GETs through the user's own token — no data leaves the browser session.
+
+type CustomerRow = Awaited<ReturnType<typeof listCustomers>>["data"][number]
+
+const entityCache = new Map<string, { at: number; value: Product[] | CustomerRow[] }>()
+const ENTITY_CACHE_MS = 60_000
+
+async function loadProducts(): Promise<Product[]> {
+  const hit = entityCache.get("products") as { at: number; value: Product[] } | undefined
+  if (hit && Date.now() - hit.at < ENTITY_CACHE_MS) return hit.value
+  // Single page of 50 is enough to find QA-style named products; a bigger
+  // store question falls through to "not found in the first 50" honestly.
+  const res = await listProducts({ limit: 50, page: 1 })
+  const items: Product[] = res.data.items
+  entityCache.set("products", { at: Date.now(), value: items })
+  return items
+}
+
+async function loadCustomers(): Promise<CustomerRow[]> {
+  const hit = entityCache.get("customers") as { at: number; value: CustomerRow[] } | undefined
+  if (hit && Date.now() - hit.at < ENTITY_CACHE_MS) return hit.value
+  const res = await listCustomers()
+  const items: CustomerRow[] = res.data
+  entityCache.set("customers", { at: Date.now(), value: items })
+  return items
+}
+
+function normName(s: string): string {
+  return normLower(s).replace(/[\s\-_]+/g, "")
+}
+
+/**
+ * Find a product by loose name/code match: exact name, name-contains, SKU,
+ * barcode, or product code. QA ids like QA_PRODUCT_001 match via SKU/code.
+ */
+function findProduct(products: Product[], name: string): Product | null {
+  const n = normName(name)
+  if (!n) return null
+  const byExact = products.find((p) => normName(p.name) === n)
+  if (byExact) return byExact
+  const byCode = products.find(
+    (p) =>
+      normName(p.sku ?? "") === n ||
+      normName(p.barcode ?? "") === n ||
+      normName(p.product_code ?? "") === n,
+  )
+  if (byCode) return byCode
+  const byContains = products.find((p) => normName(p.name).includes(n) || n.includes(normName(p.name)))
+  if (byContains) return byContains
+  return null
+}
+
+/** Find a customer by loose name / member-code match. */
+function findCustomer(
+  customers: CustomerRow[],
+  name: string,
+): CustomerRow | null {
+  const n = normName(name)
+  if (!n) return null
+  return (
+    customers.find((c) => normName(c.full_name) === n) ??
+    customers.find((c) => normName(c.member_code ?? "") === n) ??
+    customers.find((c) => normName(c.full_name).includes(n) || n.includes(normName(c.full_name))) ??
+    null
+  )
+}
+
+/** Per-product sales count for a day window, from today's sales detail. */
+async function productSalesToday(product: Product): Promise<{ qty: number; bills: number; revenue: number } | null> {
+  const today = new Date().toISOString().slice(0, 10)
+  const list = await listSales({ dateFrom: today, dateTo: today })
+  const sales = list.data ?? []
+  // The list view does not embed items — fetch detail for today's completed
+  // bills only, capped so a busy day stays bounded.
+  const completed = sales.filter((s) => (s.status ?? "completed") === "completed").slice(0, 30)
+  let qty = 0
+  let bills = 0
+  let revenue = 0
+  for (const s of completed) {
+    const detail = await getSaleById(s.id)
+    const items = detail.data.items ?? []
+    const line = items.find((it) => it.product_id === product.id)
+    if (line) {
+      qty += line.quantity - (line.returned_quantity ?? 0)
+      bills += 1
+      revenue += (line.line_total ?? line.total_amount ?? 0)
+    }
+  }
+  return { qty, bills, revenue }
+}
+
+// ── Entity intent guards (QA cases 2-4) ──
+
+const DEBTOR_Q_WORDS = [
+  "ค้างชำระ", "ยอดค้าง", "ยังค้าง", "ค้างเงิน", "ค้างนาน", "ค้างเยอะ", "ค้างจ่าย",
+  "ใครค้าง", "บิลค้าง", "ติดเงิน", "ติดหนี้", "เป็นหนี้", "ลูกหนี้", "เก็บเงิน",
+  "ทวง", "เลยกำหนด", "เกินกำหนด", "กำหนดชำระ", "ยังไม่จ่าย", "ยังไม่ได้เก็บ",
+  "ปล่อยเชื่อ", "เครดิต", "overdue", "owe", "outstanding", "debtor",
+]
+
+const PRODUCT_Q_WORDS = [
+  "สินค้า", "คงเหลือ", "ตำแหน่ง", "กี่ชิ้น", "ขายกี่", "ยอดขาย", "สต็อก",
+  "stock", "sold", "how many", "where",
+]
+
+/** Debtor question about a specific customer (entity expected). */
+function isDebtorIntent(rawQ: string): boolean {
+  const q = normLower(rawQ)
+  return DEBTOR_Q_WORDS.some((w) => q.includes(w))
+}
+
+/** Product stock/sales question (entity expected). */
+function isProductIntent(rawQ: string): boolean {
+  const q = normLower(rawQ)
+  return PRODUCT_Q_WORDS.some((w) => q.includes(w))
+}
+
+/** QA case 4: "QA_CUSTOMER_001_EDIT ยังมียอดค้างชำระเท่าไหร่" → that customer's debt. */
+async function buildDebtorEntityResponse(
+  name: string,
+  data: CopilotOverview,
+  lang: Lang,
+): Promise<SakuResponse | null> {
+  const customers = await loadCustomers()
+  const customer = findCustomer(customers, name)
+  if (!customer) return null
+
+  const money = data.moneyIntelligence
+  const cust = money.agingCustomers.find((c) => normName(c.customerName) === normName(customer.full_name))
+  const items: ContextItem[] = []
+
+  const sections: SakuSection[] = [
+    sec('👤', customer.full_name,
+      cust
+        ? `${lang === 'en' ? 'Outstanding' : 'ยอดค้างชำระ'}: ${fmtMoney(cust.outstanding)}`
+        : (lang === 'en' ? 'No outstanding credit balance' : 'ไม่มียอดค้างชำระ'),
+      cust?.daysOverdue && cust.daysOverdue > 0
+        ? `${lang === 'en' ? `Overdue ${cust.daysOverdue}d` : `เกินกำหนด ${cust.daysOverdue} วัน`}`
+        : '',
+      customer.member_code ? `รหัส: ${customer.member_code}` : '',
+      customer.phone ? `${lang === 'en' ? 'Phone' : 'เบอร์'}: ${customer.phone}` : '',
+    ),
+  ]
+  if (cust) {
+    items.push({ index: 1, label: customer.full_name, type: 'customer', data: { name: customer.full_name, value: cust.outstanding } })
+  }
+
+  return {
+    sections,
+    followUps: [
+      { label: lang === 'en' ? '⚠️ If not collected?' : '⚠️ ถ้าไม่เก็บ?', query: lang === 'en' ? 'what happens if I dont collect' : 'ถ้าไม่เก็บเงินจะเกิดอะไรขึ้น' },
+      { label: lang === 'en' ? '👥 All debtors' : '👥 ลูกหนี้ทั้งหมด', query: lang === 'en' ? 'overdue debtors' : 'ลูกหนี้ค้างชำระ' },
+    ],
+    context: { lastTopic: 'aging', lastItems: items, lastItemType: 'customer' },
+  }
+}
+
+/** QA cases 2-3: stock/location + per-product sales for a named product. */
+async function buildProductEntityResponse(
+  name: string,
+  question: string,
+  data: CopilotOverview,
+  lang: Lang,
+): Promise<SakuResponse | null> {
+  const products = await loadProducts()
+  const product = findProduct(products, name)
+  if (!product) return null
+
+  const q = normLower(question)
+  const items: ContextItem[] = []
+  const sections: SakuSection[] = []
+
+  // Stock + location (QA case 3)
+  sections.push(sec('📦', product.name,
+    `${lang === 'en' ? 'Stock (sale-point)' : 'คงเหลือ (จุดขาย)'}: ${product.ready_stock ?? product.total_stock ?? 0}`,
+    `${lang === 'en' ? 'Storage' : 'สต็อกสำรอง'}: ${product.storage_stock ?? 0}`,
+    product.storage_location
+      ? `${lang === 'en' ? 'Location' : 'ตำแหน่ง'}: ${product.storage_location}`
+      : (lang === 'en' ? 'Location: not set' : 'ตำแหน่ง: ไม่ได้ตั้งค่า'),
+    product.sku ? `SKU: ${product.sku}` : '',
+  ))
+  items.push({ index: 1, label: product.name, type: 'product', data: { name: product.name, value: product.ready_stock ?? product.total_stock ?? 0 } })
+
+  // Per-product sales (QA case 2) — only when the question asks about sales
+  if (q.includes('ขาย') || q.includes('ยอด') || q.includes('sold') || q.includes('sales')) {
+    const salesInfo = await productSalesToday(product)
+    if (salesInfo) {
+      sections.push(sec('🛒', lang === 'en' ? 'Sold today' : 'ขายวันนี้',
+        `${lang === 'en' ? 'Qty' : 'จำนวน'}: ${salesInfo.qty} ${lang === 'en' ? 'pcs' : 'ชิ้น'}`,
+        `${lang === 'en' ? 'Bills' : 'บิล'}: ${salesInfo.bills}`,
+        salesInfo.revenue > 0 ? `${lang === 'en' ? 'Revenue' : 'ยอด'}: ${fmtMoney(salesInfo.revenue)}` : '',
+      ))
+    }
+  }
+
+  return {
+    sections,
+    followUps: [
+      { label: lang === 'en' ? '🛒 Reorder?' : '🛒 สั่งเพิ่มไหม', query: lang === 'en' ? 'should I reorder' : 'ต้องสั่งซื้อเพิ่มไหม' },
+      { label: lang === 'en' ? '📦 All stock' : '📦 สต็อกทั้งหมด', query: lang === 'en' ? 'stock status' : 'สินค้าใกล้หมด' },
+    ],
+    context: { lastTopic: 'stock', lastItems: items, lastItemType: 'product' },
+  }
+}
+
 function buildSakuResponse(
   input: string,
   data: CopilotOverview | undefined,
@@ -721,10 +940,16 @@ function buildSakuResponse(
     }
   }
 
+  // ── 6b. Debtor question with a customer entity (BEFORE generic sales) ──
+  // "QA_CUSTOMER_001_EDIT ยังมียอดค้างชำระเท่าไหร่" must not be swallowed by
+  // the ยอดขาย branch. Routed via async entity lookup in send(); when data
+  // is present the debtor entity answer wins over everything below.
+  // (handled in send() — this branch only records the marker)
+
   // ── 7. Sales (check before priorities so "ยอดขายวันนี้" works) ──
   if (q.includes('sales') || q.includes('revenue') ||
-      // "ยอด"/"ยอดขาย" → sales, but NOT growth phrasing ("เพิ่มยอดขาย", "ยอดโต" → opportunities).
-      (q.includes('ยอด') && !q.includes('โต') && !q.includes('เพิ่มยอด') && !q.includes('โอกาส')) ||
+      // "ยอด"/"ยอดขาย" → sales, but NOT growth phrasing (เพิ่มยอดขาย, ยอดโต → opportunities)
+      (q.includes('ยอด') && !q.includes('โต') && !q.includes('เพิ่มยอด') && !q.includes('โอกาส') && !q.includes('ค้าง')) ||
       q.includes('make') || q.includes('made') || q.includes('earn') || q.includes('takings') ||
       q.includes('เงินเข้า') || q.includes('รายรับ') || q.includes('ยอดวันนี้') ||
       (q.includes('ได้เงิน') && !q.includes('หนี้') && !q.includes('ทวง')) ||
@@ -733,22 +958,37 @@ function buildSakuResponse(
       (q.includes('ขาย') && !q.includes('ขาดทุน') && !q.includes('จัดซื้อ') &&
         !q.includes('ขายไม่ออก') && !q.includes('ขายไม่ได้') && !q.includes('ขายไม่ดี') && !q.includes('ขายไม่ค่อย') &&
         !q.includes('ขายแย่') && !q.includes('เพิ่มยอด') && !q.includes('โตขึ้น'))) {
-    const sections: SakuSection[] = [
-      sec('📊', lang === 'en' ? 'Sales (7d)' : 'ยอดขาย 7 วัน',
+    // QA case 1: "ยอดขายวันนี้" — answer TODAY first, 7-day second.
+    const askingToday = asksToday(input)
+    const sections: SakuSection[] = []
+
+    if (askingToday) {
+      const profitLabel = s.profitToday >= 0
+        ? (lang === 'en' ? 'Profit' : 'กำไร')
+        : (lang === 'en' ? 'Loss' : 'ขาดทุน')
+      sections.push(sec('📊', lang === 'en' ? 'Today' : 'วันนี้',
+        `${lang === 'en' ? 'Revenue' : 'ยอดขาย'}: ${fmtMoney(s.revenueToday)} (${pctStr(s.revenueTodayChange)})`,
+        `${profitLabel}: ${fmtMoney(Math.abs(s.profitToday))}`,
+        `${lang === 'en' ? 'Orders' : 'บิล'}: ${s.orders.toLocaleString()}`,
+      ))
+      sections.push(sec('📈', lang === 'en' ? '7-day context' : 'เทียบ 7 วัน',
+        `${lang === 'en' ? 'Revenue 7d' : 'ยอด 7 วัน'}: ${fmtMoney(s.revenue)} (${pctStr(s.revenueChange)})`,
+        `${lang === 'en' ? 'AOV' : 'ขายเฉลี่ย/บิล'}: ${fmtMoney(s.averageOrderValue)}`,
+      ))
+    } else {
+      sections.push(sec('📊', lang === 'en' ? 'Sales (7d)' : 'ยอดขาย 7 วัน',
         `${lang === 'en' ? 'Revenue' : 'ยอด'}: ${fmtMoney(s.revenue)} (${pctStr(s.revenueChange)})`,
         `${lang === 'en' ? 'Orders' : 'บิล'}: ${s.orders.toLocaleString()} | AOV: ${fmtMoney(s.averageOrderValue)}`,
-      ),
-    ]
-    const profitLabel = s.profitToday >= 0
-      ? (lang === 'en' ? 'Profit' : 'กำไร')
-      : (lang === 'en' ? 'Loss' : 'ขาดทุน')
-    const profitValue = s.profitToday >= 0 ? s.profitToday : Math.abs(s.profitToday)
-    const profitIcon = s.profitToday >= 0 ? '💰' : '⚠️'
-
-    sections.push(sec(profitIcon, lang === 'en' ? 'Today' : 'วันนี้',
-      `${lang === 'en' ? 'Revenue' : 'ขาย'}: ${fmtMoney(s.revenueToday)}`,
-      `${profitLabel}: ${fmtMoney(profitValue)}`,
-    ))
+      ))
+      const profitLabel = s.profitToday >= 0
+        ? (lang === 'en' ? 'Profit' : 'กำไร')
+        : (lang === 'en' ? 'Loss' : 'ขาดทุน')
+      const profitIcon = s.profitToday >= 0 ? '💰' : '⚠️'
+      sections.push(sec(profitIcon, lang === 'en' ? 'Today' : 'วันนี้',
+        `${lang === 'en' ? 'Revenue' : 'ขาย'}: ${fmtMoney(s.revenueToday)}`,
+        `${profitLabel}: ${fmtMoney(s.profitToday >= 0 ? s.profitToday : Math.abs(s.profitToday))}`,
+      ))
+    }
 
     return {
       sections,
@@ -1229,39 +1469,44 @@ function helpNorm(s: string): string {
   return s.toLowerCase().replace(THAI_TONE, '')
 }
 
-function searchHelpTopics(rawQ: string): { categoryTitle: string; topic: HelpTopic; score: number }[] {
-  // Strip filler on the raw (tone-marked) text FIRST, then normalise — stopwords
-  // such as "พิมพ์" carry tone marks that normalisation would otherwise erase,
-  // making the stopword fail to match.
-  const core = helpNorm(rawQ.toLowerCase().replace(HELP_STOPWORDS, ' '))
-    .replace(/\s+/g, ' ')
-    .trim()
-  const words = core.split(/\s+/).filter(w => w.length > 1)
+// Dictionary of content words from the help corpus itself — used to segment
+// Thai queries that have no spaces (QA case 5: "วิธีเพิ่มสินค้าใหม่พร้อมรูปภาพ…"
+// must surface "เพิ่มสินค้า" as a token instead of one giant glued token).
+const HELP_DICT = Array.from(
+  new Set(
+    HELP_CATEGORIES.flatMap((c) => [
+      c.title,
+      c.subtitle,
+      ...c.subtitle.split(/[,\s]+/),
+      ...c.topics.flatMap((t) => [t.title, ...(t.description ? [t.description] : [])]),
+    ]),
+  ),
+)
+  .map((w) => normLower(w))
+  .filter((w) => w.length >= 4)
 
+function searchHelpTopics(rawQ: string): { categoryTitle: string; topic: HelpTopic; score: number }[] {
+  // Score every topic with the segmentation-aware scorer, then keep the old
+  // word-split signal as a bonus so previously-passing queries keep passing.
   const results: { categoryTitle: string; topic: HelpTopic; score: number }[] = []
 
   for (const cat of HELP_CATEGORIES) {
     const catL = helpNorm(cat.title)
     const subL = helpNorm(cat.subtitle)
     for (const topic of cat.topics) {
-      let score = 0
       const titleL = helpNorm(topic.title)
       const descL = helpNorm(topic.description)
 
-      // Whole-core bonus only for cores long enough to be a real word — a 3-char
-      // core like "ขาย" would otherwise substring-match "ยอดขาย" and hijack ranking.
-      if (core.length >= 4 && titleL.includes(core)) score += 20
-      if (core.length >= 4 && descL.includes(core)) score += 10
+      let score = scoreHelpTopic(rawQ, topic, HELP_DICT)
 
+      // Legacy signal (kept): stripped core + space-split word matching.
+      const core = helpNorm(rawQ.toLowerCase().replace(HELP_STOPWORDS, ' '))
+        .replace(/\s+/g, ' ')
+        .trim()
+      const words = core.split(/\s+/).filter(w => w.length > 1)
       for (const w of words) {
         if (titleL.includes(w)) score += 5
         if (descL.includes(w)) score += 3
-        if (topic.steps?.some(s => helpNorm(s).includes(w))) score += 2
-        if (topic.tips?.some(t => helpNorm(t).includes(w))) score += 1
-        // Category-level match (weighted above a stray topic-title substring) —
-        // lets "ขายของยังไง" surface POS topics even when no single topic title
-        // contains the word. A topic whose OWN title also contains the word still
-        // outranks its siblings (gets +9 cat +5 title), so precise queries stay precise.
         if (catL.includes(w)) score += 9
         if (subL.includes(w)) score += 3
       }
@@ -1557,6 +1802,54 @@ export function ChatTab() {
             ? { ...m, sections: [sec('⚠️', '', lang === 'en' ? 'Could not load activity.' : 'โหลดบันทึกกิจกรรมไม่ได้')] }
             : m)))
         }
+      })()
+      return
+    }
+
+    // ── Entity questions (QA cases 2-4): a product/customer name embedded in
+    // the question. These need live lookups, so run async with a thinking
+    // bubble, mirroring the activity pattern. Falls through to the normal
+    // engine when no entity or no match is found.
+    const entityName = extractEntityName(q)
+    const isDebtorQ = isDebtorIntent(q)
+    const isProductQ = isProductIntent(q)
+    if (entityName && (isDebtorQ || isProductQ) && data) {
+      const thinkingId = `msg-${++msgId.current}-a`
+      const thinking: Message = {
+        id: thinkingId,
+        role: 'assistant',
+        content: '',
+        sections: [sec('⏳', '', lang === 'en' ? 'Looking it up…' : 'กำลังค้นหา…')],
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, userMsg, thinking])
+      setInput('')
+      void (async () => {
+        let response: SakuResponse | null = null
+        try {
+          if (isDebtorQ) {
+            response = await buildDebtorEntityResponse(entityName, data, lang)
+          }
+          if (!response && isProductQ) {
+            response = await buildProductEntityResponse(entityName, q, data, lang)
+          }
+        } catch {
+          response = null // fall through to the engine below
+        }
+        if (response) {
+          setConvCtx(response.context)
+          setMessages(prev => prev.map(m => (m.id === thinkingId
+            ? { ...m, sections: response!.sections, followUps: response!.followUps }
+            : m)))
+          return
+        }
+        // No entity match — route the question to the normal engine so the
+        // user still gets a domain answer (debtor summary / stock overview).
+        const fallback = buildSakuResponse(q, data, lang, convCtx)
+        setConvCtx(fallback.context)
+        setMessages(prev => prev.map(m => (m.id === thinkingId
+          ? { ...m, sections: fallback.sections, followUps: fallback.followUps }
+          : m)))
       })()
       return
     }
