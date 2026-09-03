@@ -613,6 +613,20 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     () => (receiptSettingsQuery.data?.payment_channels ?? []).filter((c) => c.enabled).map((c) => c.key),
     [receiptSettingsQuery.data],
   );
+  // C-01: the VAT toggle is seeded from the store's receipt settings (tax_mode +
+  // vat_rate), not hardcoded off — the server snapshots the effective policy at
+  // checkout; the UI must reflect the same policy. tax_mode "none" ⇒ VAT never
+  // applies and the toggle stays off.
+  const receiptTaxMode = receiptSettingsQuery.data?.tax_mode ?? "exclusive";
+  const settingsVatRate = Number(receiptSettingsQuery.data?.vat_rate ?? 7);
+  const vatAvailable = receiptTaxMode !== "none" && settingsVatRate > 0;
+  const vatSeededRef = useRef(false);
+  useEffect(() => {
+    if (!vatSeededRef.current && !receiptSettingsQuery.isLoading) {
+      vatSeededRef.current = true;
+      setApplyVat(vatAvailable);
+    }
+  }, [receiptSettingsQuery.isLoading, vatAvailable]);
   const [couponCode, setCouponCode] = useState("");
   const promoDiscountAmount = useMemo(() => {
     const active = (promotionsQuery.data ?? []).filter((p) => p.status === "active");
@@ -741,8 +755,18 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     appliedPromoDiscount,
   );
   const payableTotal = roundCurrency(Math.max(payableBeforePromo - appliedPromoDiscount, 0));
-  const vatAmount = applyVat ? roundCurrency(payableTotal * 0.07) : 0;
-  const settlementTotal = applyVat
+  const vatRateDecimal = settingsVatRate / 100;
+  const vatModeIsInclusive = receiptTaxMode === "inclusive";
+  // C-01: displayed VAT mirrors the server snapshot exactly — rate from settings,
+  // mode decides add-on vs carve-out. Exclusive: VAT on top of the payable base.
+  // Inclusive: prices already contain VAT → carve it out for the breakdown line and
+  // charge the base, matching taxcalc.ComputeVAT(base, r, true).
+  const vatAmount = applyVat
+    ? vatModeIsInclusive
+      ? roundCurrency((payableTotal * settingsVatRate) / (100 + settingsVatRate))
+      : roundCurrency(payableTotal * vatRateDecimal)
+    : 0;
+  const settlementTotal = applyVat && !vatModeIsInclusive
     ? Math.round(payableTotal + vatAmount)
     : Math.round(payableTotal);
   const isNetworkCustomerSelected = Boolean(selectedCustomerId);
@@ -1400,7 +1424,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
               : "" as const,
             discount_value: Number(item.discountValue || 0),
           })),
-          vat_rate: applyVat ? 7 : 0,
+          vat_rate: applyVat ? settingsVatRate : 0,
           notes: note.trim() || undefined,
         });
         setIsCheckoutSummaryOpen(false);
@@ -1501,7 +1525,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
               bill_discount: billDiscountAmount > 0 ? billDiscountAmount : undefined,
               promo_discount: appliedPromoDiscount > 0 ? appliedPromoDiscount : undefined,
               promotion_ids: appliedPromotionIds.length > 0 ? appliedPromotionIds : undefined,
-              vat_percent: applyVat ? 7 : 0,
+              vat_percent: applyVat ? settingsVatRate : 0,
               vat_included: false,
               location_id: selectedSaleLocationId || undefined,
             },
@@ -1561,7 +1585,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
             paid_amount: paidAmountValue,
             payment_method: paymentMethod,
             vat_included: false,
-            vat_percent: applyVat ? 7 : 0,
+            vat_percent: applyVat ? settingsVatRate : 0,
           },
           saleIdempotencyKeyRef.current,
         );
