@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Minus, Plus, Search, Trash2, X } from "lucide-react";
 
-import { authorizedApiRequest } from "@/services/api";
+import { authorizedApiRequest, ApiError } from "@/services/api";
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { listProducts } from "@/services/products";
 import { createDocument } from "@/services/documents";
@@ -324,9 +324,14 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   function handleSave() {
     setError("");
     if (!customerId) { setError(d.selectCustomer); return; }
-    if (items.some((it) => !it.description || it.quantity <= 0)) {
+    // Drop leftover empty draft rows (no product, no description) — the server
+    // rejects them with 422 otherwise. Only truly invalid lines (blank
+    // description, non-positive quantity) surface a client error.
+    const itemsToSubmit = items.filter((it) => (it.product_id && it.product_id.trim()) || it.description.trim() !== "");
+    if (itemsToSubmit.some((it) => !it.description.trim() || it.quantity <= 0)) {
       setError(d.description + " / " + d.quantity); return;
     }
+    if (itemsToSubmit.length === 0) { setError(d.createError); return; }
 
     const payload: CreateDocumentPayload = {
       type: docType,
@@ -343,7 +348,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       credit_term_days: creditTermDays || undefined,
       vat_rate: vatEnabled ? 7 : 0,
       notes: notes || undefined,
-      items: items.map((it) => ({
+      items: itemsToSubmit.map((it) => ({
         product_id: it.product_id,
         description: it.description,
         quantity: it.quantity,
@@ -358,8 +363,15 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
         await createDocument(payload);
         toast.success(d.createSuccess);
         onSuccess();
-      } catch {
-        setError(d.createError);
+      } catch (err) {
+        // Server 422 carries indexed line errors (items[0].unit_price). Surface
+        // the first field message so the user sees exactly what to fix rather
+        // than a generic "failed to create".
+        if (err instanceof ApiError && err.fields && err.fields.length > 0) {
+          setError(err.fields[0].message);
+        } else {
+          setError(d.createError);
+        }
       }
     });
   }
@@ -773,13 +785,18 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                   <span>{d.subtotal}</span>
                   <span className="nums">{fmt(subtotal)}</span>
                 </div>
-                <label className="flex cursor-pointer items-center justify-between">
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">{d.enableVat}</span>
-                  <div className={`relative h-5 w-9 rounded-full transition-colors ${vatEnabled ? "bg-violet-600" : "bg-slate-200"}`}
-                    onClick={() => setVatEnabled(!vatEnabled)}>
-                    <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${vatEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
-                  </div>
-                </label>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={vatEnabled}
+                    onClick={() => setVatEnabled((prev) => !prev)}
+                    className={`relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 ${vatEnabled ? "bg-violet-600" : "bg-slate-200"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${vatEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
                 {vatEnabled && (
                   <div className="flex justify-between text-sm text-slate-500">
                     <span>VAT 7%</span>
