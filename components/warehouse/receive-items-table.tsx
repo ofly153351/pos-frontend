@@ -23,7 +23,8 @@ export type EditorRowView = {
   ordered: number;
   prevReceived: number;
   remaining: number;
-  difference: number;
+  /** null = no PO verdict is applicable (confirmed/cancelled doc, or no PO link). */
+  difference: number | null;
   status: ReceiveRowStatus;
   lineTotal: number;
   overReceipt: boolean;
@@ -212,8 +213,8 @@ export function ReceiveItemsTable({
                           <p className="text-center font-semibold text-slate-900">{formatNumber(qty)}</p>
                         )}
                       </td>
-                      <td className={`px-3 py-3 text-right tabular-nums font-semibold ${row.difference < 0 ? "text-amber-600" : row.difference > 0 ? "text-violet-600" : "text-slate-500"}`}>
-                        {hasPo ? (row.difference > 0 ? `+${formatNumber(row.difference)}` : formatNumber(row.difference)) : "—"}
+                      <td className={`px-3 py-3 text-right tabular-nums font-semibold ${row.difference === null ? "text-slate-400" : row.difference < 0 ? "text-amber-600" : row.difference > 0 ? "text-violet-600" : "text-slate-500"}`}>
+                        {hasPo && row.difference !== null ? (row.difference > 0 ? `+${formatNumber(row.difference)}` : formatNumber(row.difference)) : "—"}
                       </td>
                       <td className="px-3 py-3 text-right">
                         {editable ? (

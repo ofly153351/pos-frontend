@@ -33,12 +33,13 @@ import {
   buildEditorRows,
   buildHeaderForm,
   buildHeaderPayload,
+  buildReceiveInspection,
   ensureArray,
   formatCurrency,
   formatNumber,
   normalizeGoodsReceiptDraft,
   receiveRowKey,
-  receiveRowStatus,
+  resolveReceiveQty,
   type HeaderForm,
   type LocationResolveStatus,
   type ReceiveDictionary,
@@ -47,7 +48,7 @@ import {
 import { ReceiveDocumentSection } from "./receive-document-section";
 import { ReceiveProductSearch } from "./receive-product-search";
 import { ReceiveItemsTable, type EditorRowView } from "./receive-items-table";
-import { ReceiveInspectionSummary, type InspectionCounts, type InspectionMismatch } from "./receive-inspection-summary";
+import { ReceiveInspectionSummary } from "./receive-inspection-summary";
 import { ReceiveStockPreview } from "./receive-stock-preview";
 import { ReceiveFinancialSummary } from "./receive-financial-summary";
 import { ReceiveActionBar } from "./receive-action-bar";
@@ -317,23 +318,32 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
 
   const qtyByProduct = receivedByProduct;
 
+  // POS-005 gate (kept from e03eed9 + H-01): PO comparisons (over/short/complete,
+  // difference, summary verdicts) are only meaningful while the document has NOT
+  // yet been counted into the PO aggregate — draft and pending_review. A confirmed
+  // (or cancelled) receipt's own lines are already inside PO.received_quantity, so
+  // judging it against the aggregate would count the document against itself.
+  const verdictsOn = status === "draft" || status === "pending_review";
+
   const editorRows: EditorRowView[] = useMemo(() => {
-    // POS-005 (2A): on a CONFIRMED (or cancelled) receipt the PO's received_quantity
-    // already includes THIS receipt, so "receipt qty vs remaining" double-counts and
-    // flags the receipt against itself. Over-receipt verdicts are only meaningful
-    // while the document is still editable/approvable.
-    const overGate = status === "draft" || status === "pending_review";
     return Object.values(itemRows)
       .map((row) => {
         const po = poMap.get(row.productId);
         const ordered = po?.ordered ?? 0;
         const prevReceived = po?.prevReceived ?? 0;
-        const remaining = Math.max(0, ordered - prevReceived);
         const productReceived = receivedByProduct[row.productId] ?? 0;
         const qty = Number(row.quantity || 0);
         const unit = Number(row.unitPrice || 0);
         const disc = Number(row.discountValue || 0);
-        const overReceipt = overGate && hasPo && productReceived > remaining;
+        const resolved = resolveReceiveQty({
+          hasPo,
+          verdictsOn,
+          confirmed: status === "confirmed",
+          ordered,
+          prevReceived,
+          received: productReceived,
+        });
+        const overReceipt = verdictsOn && hasPo && resolved.status === "over";
         const loc = locationDataReady
           ? resolveLocation(row.locationId)
           : { locationName: "", status: "resolving" as LocationResolveStatus, warning: "" };
@@ -348,12 +358,12 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
           hasPo,
           ordered,
           prevReceived,
-          remaining,
-          difference: hasPo ? productReceived - remaining : 0,
-          status: receiveRowStatus(hasPo, productReceived, remaining),
+          remaining: resolved.remainingBefore,
+          difference: resolved.difference,
+          status: resolved.status,
           lineTotal: qty * unit - disc,
           overReceipt,
-          error: overReceipt ? t.overReceiptInline.replace("{remaining}", String(remaining)) : "",
+          error: overReceipt ? t.overReceiptInline.replace("{remaining}", String(resolved.remainingBefore)) : "",
           locationId: row.locationId,
           locationName: loc.locationName,
           locationStatus: loc.status,
@@ -362,31 +372,25 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
         };
       })
       .sort((a, b) => a.productName.localeCompare(b.productName));
-  }, [itemRows, poMap, receivedByProduct, hasPo, status, t, resolveLocation, productEditHref, locationDataReady]);
+  }, [itemRows, poMap, receivedByProduct, hasPo, status, verdictsOn, t, resolveLocation, productEditHref, locationDataReady]);
 
-  const inspection = useMemo<{ counts: InspectionCounts; mismatches: InspectionMismatch[]; hasOver: boolean }>(() => {
-    // Same POS-005 gate: don't count over-receipt mismatches on confirmed/cancelled
-    // receipts (the PO aggregate already includes this receipt's own lines).
-    const overGate = status === "draft" || status === "pending_review";
-    const productIds = new Set<string>([...poMap.keys(), ...Object.keys(receivedByProduct)]);
-    let totalOrdered = 0, totalReceived = 0, complete = 0, short = 0, over = 0, notReceived = 0;
-    const mismatches: InspectionMismatch[] = [];
-    for (const pid of productIds) {
-      const po = poMap.get(pid);
-      const ordered = po?.ordered ?? 0;
-      const remaining = Math.max(0, ordered - (po?.prevReceived ?? 0));
-      const received = receivedByProduct[pid] ?? 0;
-      totalOrdered += remaining;
-      totalReceived += received;
-      const st = receiveRowStatus(hasPo, received, remaining);
-      if (st === "complete") complete += 1;
-      else if (st === "short") { short += 1; mismatches.push({ productId: pid, productName: editorRows.find((r) => r.productId === pid)?.productName ?? pid, ordered: remaining, received, difference: received - remaining, kind: "short" }); }
-      else if (st === "over" && overGate) { over += 1; mismatches.push({ productId: pid, productName: editorRows.find((r) => r.productId === pid)?.productName ?? pid, ordered: remaining, received, difference: received - remaining, kind: "over" }); }
-      else if (st === "not_received") notReceived += 1;
-    }
-    const totalLines = Object.keys(itemRows).length;
-    return { counts: { totalLines, totalOrdered, totalReceived, complete, short, over, notReceived }, mismatches, hasOver: over > 0 };
-  }, [poMap, receivedByProduct, hasPo, status, editorRows, itemRows]);
+  const rowNameByProduct = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const row of Object.values(itemRows)) m[row.productId] = row.productName;
+    return m;
+  }, [itemRows]);
+
+  const inspection = useMemo(() => {
+    const summary = buildReceiveInspection({
+      hasPo,
+      verdictsOn,
+      confirmed: status === "confirmed",
+      poMap,
+      receivedByProduct,
+      productName: (pid) => rowNameByProduct[pid] ?? pid,
+    });
+    return { counts: summary.counts, mismatches: summary.mismatches, hasOver: summary.hasOver };
+  }, [poMap, receivedByProduct, hasPo, status, verdictsOn, rowNameByProduct]);
 
   const financials = useMemo(() => {
     let subtotal = 0, discount = 0;
@@ -721,7 +725,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
           onLocationChange={setRowLocation}
           onRemove={removeRow}
         />
-        <ReceiveInspectionSummary dictionary={t} hasPo={hasPo} counts={inspection.counts} mismatches={inspection.mismatches} hasOver={inspection.hasOver} />
+        <ReceiveInspectionSummary dictionary={t} hasPo={hasPo} counts={inspection.counts} mismatches={inspection.mismatches} hasOver={inspection.hasOver} verdictsOn={verdictsOn} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">

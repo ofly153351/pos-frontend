@@ -1873,6 +1873,8 @@
       "inspectionTotalLines": "Total lines",
       "inspectionTotalOrdered": "Total ordered",
       "inspectionTotalReceived": "Total received",
+      "inspectionTotalRemaining": "Remaining after this document",
+      "inspectionTotalDifference": "Total difference",
       "inspectionComplete": "Complete",
       "inspectionShort": "Short",
       "inspectionOver": "Over received",

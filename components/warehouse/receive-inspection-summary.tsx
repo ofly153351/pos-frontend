@@ -2,7 +2,7 @@
 
 import { AlertTriangle, ClipboardCheck } from "lucide-react";
 
-import { formatNumber, type ReceiveDictionary } from "./receive-shared";
+import { formatNumber, formatSignedNumber, type ReceiveDictionary } from "./receive-shared";
 
 export type InspectionMismatch = {
   productId: string;
@@ -17,6 +17,8 @@ export type InspectionCounts = {
   totalLines: number;
   totalOrdered: number;
   totalReceived: number;
+  totalRemaining: number;
+  totalDifference: number;
   complete: number;
   short: number;
   over: number;
@@ -29,6 +31,8 @@ export type ReceiveInspectionSummaryProps = {
   counts: InspectionCounts;
   mismatches: InspectionMismatch[];
   hasOver: boolean;
+  /** draft|pending_review — only these states may show over/short verdicts (H-01/POS-005 gate). */
+  verdictsOn: boolean;
 };
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
@@ -40,7 +44,14 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
   );
 }
 
-export function ReceiveInspectionSummary({ dictionary: t, hasPo, counts, mismatches, hasOver }: ReceiveInspectionSummaryProps) {
+export function ReceiveInspectionSummary({
+  dictionary: t,
+  hasPo,
+  counts,
+  mismatches,
+  hasOver,
+  verdictsOn,
+}: ReceiveInspectionSummaryProps) {
   return (
     <section className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
@@ -48,24 +59,34 @@ export function ReceiveInspectionSummary({ dictionary: t, hasPo, counts, mismatc
         <h2 className="text-lg font-bold text-slate-900">{t.sectionInspection}</h2>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-7">
+      {/* Quantity totals — factual totals (ordered / this-doc received) render on every
+          PO-linked view; remaining/difference are document-vs-PO comparisons, so they
+          are shown only while the doc is not yet counted into the PO aggregate. */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         <Stat label={t.inspectionTotalLines} value={formatNumber(counts.totalLines)} />
         {hasPo ? <Stat label={t.inspectionTotalOrdered} value={formatNumber(counts.totalOrdered)} /> : null}
         <Stat label={t.inspectionTotalReceived} value={formatNumber(counts.totalReceived)} tone="text-violet-700" />
-        {hasPo ? <Stat label={t.inspectionComplete} value={formatNumber(counts.complete)} tone="text-emerald-600" /> : null}
-        {hasPo ? <Stat label={t.inspectionShort} value={formatNumber(counts.short)} tone="text-amber-600" /> : null}
-        {hasPo ? <Stat label={t.inspectionOver} value={formatNumber(counts.over)} tone="text-violet-600" /> : null}
-        {hasPo ? <Stat label={t.inspectionNotReceived} value={formatNumber(counts.notReceived)} tone="text-slate-500" /> : null}
+        {hasPo && verdictsOn ? <Stat label={t.inspectionTotalRemaining} value={formatNumber(counts.totalRemaining)} tone="text-slate-600" /> : null}
+        {hasPo && verdictsOn ? <Stat label={t.inspectionTotalDifference} value={formatSignedNumber(counts.totalDifference)} tone={counts.totalDifference < 0 ? "text-amber-600" : counts.totalDifference > 0 ? "text-violet-600" : "text-slate-500"} /> : null}
       </div>
 
-      {hasOver ? (
+      {hasPo && verdictsOn ? (
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-4">
+          <Stat label={t.inspectionComplete} value={formatNumber(counts.complete)} tone="text-emerald-600" />
+          <Stat label={t.inspectionShort} value={formatNumber(counts.short)} tone="text-amber-600" />
+          <Stat label={t.inspectionOver} value={formatNumber(counts.over)} tone="text-violet-600" />
+          <Stat label={t.inspectionNotReceived} value={formatNumber(counts.notReceived)} tone="text-slate-500" />
+        </div>
+      ) : null}
+
+      {hasPo && verdictsOn && hasOver ? (
         <div className="mt-4 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50/70 px-4 py-3 text-sm font-medium text-rose-800">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
           <span>{t.inspectionOverWarning}</span>
         </div>
       ) : null}
 
-      {mismatches.length > 0 ? (
+      {hasPo && verdictsOn && mismatches.length > 0 ? (
         <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-4">
           <p className="text-sm font-bold text-amber-800">{t.inspectionMismatchTitle.replace("{count}", String(mismatches.length))}</p>
           <ul className="mt-2 space-y-1.5">

@@ -1873,6 +1873,8 @@
       "inspectionTotalLines": "จำนวนรายการทั้งหมด",
       "inspectionTotalOrdered": "จำนวนที่สั่งทั้งหมด",
       "inspectionTotalReceived": "จำนวนที่รับจริงทั้งหมด",
+      "inspectionTotalRemaining": "คงเหลือหลังรับเอกสารนี้",
+      "inspectionTotalDifference": "ส่วนต่างรวม",
       "inspectionComplete": "รายการรับครบ",
       "inspectionShort": "รายการขาด",
       "inspectionOver": "รายการเกิน",

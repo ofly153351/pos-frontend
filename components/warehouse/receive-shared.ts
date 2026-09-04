@@ -172,6 +172,8 @@ export type ReceiveDictionary = {
   inspectionTotalLines: string;
   inspectionTotalOrdered: string;
   inspectionTotalReceived: string;
+  inspectionTotalRemaining: string;
+  inspectionTotalDifference: string;
   inspectionComplete: string;
   inspectionShort: string;
   inspectionOver: string;
@@ -462,4 +464,217 @@ export function receiveRowStatus(
   if (receivedForProduct > remainingForProduct) return "over";
   if (receivedForProduct < remainingForProduct) return "short";
   return "complete";
+}
+
+// ── H-01: single source of truth for PO-quantity comparisons ──────────────────
+// Definitions (backend/DB are the authority):
+//   ordered        = purchase_order_items.quantity  (จำนวนที่สั่ง)
+//   prevReceived   = purchase_order_items.received_quantity (รับแล้ว — only
+//                    CONFIRMED receipts bump it, so for a draft/pending_review
+//                    document it excludes THIS document's own lines)
+//   remainingBefore = ordered − prevReceived  (คงเหลือที่ PO ยังเป็นหนี้ ก่อน doc นี้)
+//   received       = qty rows in THIS document (รับจริง)
+//   remainingAfter = outstanding LEFT on the PO line once THIS document confirms
+//                    = max(0, remainingBefore − received)
+//   difference     = received − remainingBefore  (กี่หน่วยที่ doc นี้ เกิน/ขาด
+//                    เทียบกับยอดค้าง; 0 = ครบ, ลบ = ขาด, บวก = เกิน)
+//
+// A verdict (short/complete/over + difference) is only MEANINGFUL while the
+// document has not yet been counted into the PO aggregate (draft/pending_review).
+// On a CONFIRMED receipt, received_quantity already includes this doc's own
+// lines, so comparing the doc against remainingBefore would count the document
+// against itself (POS-005 class) → verdicts are suppressed and the row shows a
+// factual "received/not_received" state instead.
+
+export type ReceiveQtyResult = {
+  ordered: number;
+  prevReceived: number;
+  remainingBefore: number;
+  remainingAfter: number;
+  received: number;
+  status: ReceiveRowStatus;
+  /** null = no PO verdict is applicable (no PO link, or the doc is confirmed/cancelled). */
+  difference: number | null;
+};
+
+export type ReceiveQtyInput = {
+  hasPo: boolean;
+  /** true only while status is draft|pending_review (doc not yet in PO aggregate). */
+  verdictsOn: boolean;
+  /** true when the document itself is already confirmed. */
+  confirmed: boolean;
+  ordered: number;
+  prevReceived: number;
+  received: number;
+};
+
+export function resolveReceiveQty({
+  hasPo,
+  verdictsOn,
+  confirmed,
+  ordered,
+  prevReceived,
+  received,
+}: ReceiveQtyInput): ReceiveQtyResult {
+  const safeOrdered = Number.isFinite(ordered) ? Math.max(0, Math.floor(ordered)) : 0;
+  const safePrev = Number.isFinite(prevReceived) ? Math.max(0, Math.floor(prevReceived)) : 0;
+  const safeReceived = Number.isFinite(received) ? Math.max(0, Math.floor(received)) : 0;
+  const remainingBefore = hasPo ? Math.max(0, safeOrdered - safePrev) : 0;
+  const remainingAfter = Math.max(0, remainingBefore - safeReceived);
+
+  if (!hasPo) {
+    return {
+      ordered: safeOrdered,
+      prevReceived: safePrev,
+      remainingBefore: 0,
+      remainingAfter: 0,
+      received: safeReceived,
+      status: safeReceived > 0 ? "received" : "not_received",
+      difference: null,
+    };
+  }
+  if (!verdictsOn) {
+    // Confirmed/cancelled: the PO aggregate may already include this document's
+    // own lines, so over/short/complete against remainingBefore is meaningless.
+    // Confirmed rows were really received; cancelled rows were not.
+    return {
+      ordered: safeOrdered,
+      prevReceived: safePrev,
+      remainingBefore,
+      remainingAfter,
+      received: safeReceived,
+      status: confirmed && safeReceived > 0 ? "received" : "not_received",
+      difference: null,
+    };
+  }
+  const status = receiveRowStatus(true, safeReceived, remainingBefore);
+  return {
+    ordered: safeOrdered,
+    prevReceived: safePrev,
+    remainingBefore,
+    remainingAfter,
+    received: safeReceived,
+    status,
+    difference: safeReceived > 0 ? safeReceived - remainingBefore : null,
+  };
+}
+
+export type ReceiveInspectionInput = {
+  hasPo: boolean;
+  /** draft|pending_review — the only states where over/short verdicts are shown. */
+  verdictsOn: boolean;
+  confirmed: boolean;
+  /** PO lines keyed by product; only lines still outstanding count as "ยังไม่ได้รับ". */
+  poMap: ReadonlyMap<string, { ordered: number; prevReceived: number }>;
+  /** This document's received qty per product (rows in the editor). */
+  receivedByProduct: Readonly<Record<string, number>>;
+  /** Display name resolver for mismatch rows. */
+  productName: (productId: string) => string;
+};
+
+export type ReceiveInspectionSummary = {
+  counts: {
+    totalLines: number;
+    totalOrdered: number;
+    totalReceived: number;
+    totalRemaining: number;
+    totalDifference: number;
+    complete: number;
+    short: number;
+    over: number;
+    notReceived: number;
+  };
+  mismatches: {
+    productId: string;
+    productName: string;
+    ordered: number;
+    received: number;
+    difference: number;
+    kind: "short" | "over";
+  }[];
+  hasOver: boolean;
+};
+
+/**
+ * Pure H-01 summary computation shared by the editor memo and the regression
+ * tests, so the row table and the inspection card can never disagree.
+ *
+ * Scope = products present in this document + PO lines still outstanding
+ * (remainingBefore > 0). Lines the PO already fully received elsewhere are NOT
+ * part of this document's story and are excluded (they must not appear as
+ * "ยังไม่ได้รับ" on a mixed-receive PO).
+ */
+export function buildReceiveInspection({
+  hasPo,
+  verdictsOn,
+  confirmed,
+  poMap,
+  receivedByProduct,
+  productName,
+}: ReceiveInspectionInput): ReceiveInspectionSummary {
+  const productIds = new Set<string>(Object.keys(receivedByProduct));
+  for (const [pid, po] of poMap) {
+    const remainingBefore = Math.max(0, po.ordered - po.prevReceived);
+    if (remainingBefore > 0 || receivedByProduct[pid] !== undefined) productIds.add(pid);
+  }
+
+  const counts = {
+    totalLines: Object.keys(receivedByProduct).length,
+    totalOrdered: 0,
+    totalReceived: 0,
+    totalRemaining: 0,
+    totalDifference: 0,
+    complete: 0,
+    short: 0,
+    over: 0,
+    notReceived: 0,
+  };
+  const mismatches: ReceiveInspectionSummary["mismatches"] = [];
+
+  for (const pid of [...productIds].sort()) {
+    const po = poMap.get(pid);
+    const ordered = po?.ordered ?? 0;
+    const prevReceived = po?.prevReceived ?? 0;
+    const received = receivedByProduct[pid] ?? 0;
+    const r = resolveReceiveQty({ hasPo, verdictsOn, confirmed, ordered, prevReceived, received });
+    counts.totalOrdered += r.ordered;
+    counts.totalReceived += r.received;
+    counts.totalRemaining += r.remainingAfter;
+    if (r.difference !== null) counts.totalDifference += r.difference;
+
+    if (!verdictsOn) continue; // confirmed/cancelled: never emit PO verdict counts
+    switch (r.status) {
+      case "complete":
+        counts.complete += 1;
+        break;
+      case "short":
+        counts.short += 1;
+        mismatches.push({
+          productId: pid,
+          productName: productName(pid),
+          ordered: r.ordered, // real PO ordered — not remaining (H-01 "สั่ง 0" fix)
+          received: r.received,
+          difference: r.difference ?? 0,
+          kind: "short",
+        });
+        break;
+      case "over":
+        counts.over += 1;
+        mismatches.push({
+          productId: pid,
+          productName: productName(pid),
+          ordered: r.ordered,
+          received: r.received,
+          difference: r.difference ?? 0,
+          kind: "over",
+        });
+        break;
+      case "not_received":
+        counts.notReceived += 1;
+        break;
+      case "received":
+        break;
+    }
+  }
+  return { counts, mismatches, hasOver: counts.over > 0 };
 }
