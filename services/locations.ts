@@ -42,7 +42,14 @@ export type LocationProduct = {
   product_id: string;
   product_name: string;
   sku?: string;
+  barcode?: string;
   quantity: number;
+  // Master-data fields carried by GET /locations/:id/products so a stock-count
+  // sheet never has to join the whole catalog client-side (2026-09-04).
+  min_stock?: number;
+  cost_price?: number;
+  base_price?: number;
+  category_id?: string;
 };
 
 export type PaginatedLocationProducts = {

@@ -29,7 +29,8 @@ import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { PageSizeDropdown } from "@/components/ui/page-size-dropdown";
 import { toast } from "@/components/ui/toast";
 import type { CountDictionary } from "@/components/stock/inventory-types";
-import { listProducts, listProductTypes } from "@/services/products";
+import { buildCountCandidates, type CountCandidate } from "@/components/stock/count-candidates";
+import { listProductTypes } from "@/services/products";
 import { listWarehouses } from "@/services/warehouses";
 import { listLocations, listLocationProducts } from "@/services/locations";
 import { applyCountSession, deleteCountSession, listCountSessions, saveCountSession } from "@/services/stock-count";
@@ -128,13 +129,6 @@ function getVarianceSeverity(item: CountItem): VarianceSeverity {
   if (diff <= 5 && value <= 2000) return "medium";
   if (diff <= 10 || value <= 5000) return "high";
   return "critical";
-}
-
-function parseWarehouse(s?: string | null): { warehouse: string | null; zone: string | null } {
-  const raw = s?.trim();
-  if (!raw) return { warehouse: null, zone: null };
-  const parts = raw.split(/[·>/]/).map((x) => x.trim()).filter(Boolean);
-  return { warehouse: parts[0] ?? null, zone: parts[1] ?? null };
 }
 
 function variance(it: CountItem): number {
@@ -331,10 +325,6 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     }
   }
 
-  const productsQuery = useQuery({
-    queryKey: ["count", "products"],
-    queryFn: async () => (await listProducts({ limit: 9999, page: 1 })).data,
-  });
   const warehousesQuery = useQuery({
     queryKey: ["count", "warehouses"],
     queryFn: async () => (await listWarehouses()).data,
@@ -357,17 +347,22 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     () => (locationsQuery.data ?? []).find((l) => l.id === fLocation) ?? null,
     [locationsQuery.data, fLocation],
   );
-  // Per-location on-hand for THIS session's location → the authoritative system quantity for
-  // each counted product (NOT the store-wide aggregate).
-  const locationQtyQuery = useQuery({
+  // Display label of the single count location, stamped on every sheet row.
+  const sheetLocationLabel = useMemo(() => {
+    if (!selectedLocation) return "";
+    return [selectedLocation.warehouse_name, selectedLocation.zone_name, selectedLocation.name].filter(Boolean).join(" › ");
+  }, [selectedLocation]);
+  // The count-sheet candidate set comes from the BACKEND per-location stock list
+  // (GET /locations/:id/products → products with system stock > 0 at this location).
+  // Location is the anchor: it belongs to exactly one warehouse, so warehouse
+  // scoping is implicit. Never derive this client-side from the whole catalog —
+  // the catalog endpoint caps its limit and warehouse/zone matching against
+  // free-text storage_location strings is unreliable (user-directed 2026-09-04).
+  // Each row also carries the on-hand here, i.e. the authoritative system qty.
+  const candidatesQuery = useQuery({
     enabled: Boolean(fLocation),
-    queryKey: ["count", "location-qty", fLocation],
-    queryFn: async () => {
-      const items = (await listLocationProducts(fLocation, { limit: 5000 })).data.items;
-      const map = new Map<string, number>();
-      for (const it of items) map.set(it.product_id, it.quantity);
-      return map;
-    },
+    queryKey: ["count", "location-products", fLocation],
+    queryFn: async () => (await listLocationProducts(fLocation, { limit: 5000 })).data.items,
   });
 
   const active = sessions.find((s) => s.id === activeId) ?? null;
@@ -419,33 +414,28 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
     return session.items.find((item) => item.barcode.toLowerCase() === needle || item.sku.toLowerCase() === needle) ?? null;
   }
 
-  const candidates = useMemo(() => {
-    const all = productsQuery.data?.items ?? [];
-    return all.filter((product) => {
-      if (fCategory && product.product_type_id !== fCategory) return false;
-      if (fWarehouse) {
-        const parsed = parseWarehouse(product.storage_location);
-        if (parsed.warehouse !== fWarehouse) return false;
-        if (fZone && parsed.zone !== fZone) return false;
-      }
-      return true;
-    });
-  }, [productsQuery.data, fCategory, fWarehouse, fZone]);
+  // Candidate sheet rows = backend per-location stock list, narrowed only by the
+  // optional category scope (still a pure mapping — see buildCountCandidates).
+  const candidates = useMemo<CountCandidate[]>(
+    () => buildCountCandidates(candidatesQuery.data ?? [], { categoryId: fCategory, locationLabel: sheetLocationLabel }),
+    [candidatesQuery.data, fCategory, sheetLocationLabel],
+  );
 
   const filteredCandidates = useMemo(() => {
     const q = selectSearch.trim().toLowerCase();
-    return candidates.filter((product) => {
-      if (selectCategory && product.product_type_id !== selectCategory) return false;
-      const health = itemHealth(product.total_stock ?? 0, product.min_stock ?? 0);
-      const hasLocation = Boolean(product.storage_location?.trim());
+    return candidates.filter((candidate) => {
+      if (selectCategory && candidate.categoryId !== selectCategory) return false;
+      const health = itemHealth(candidate.quantity, candidate.minStock);
       if (selectStockFilter === "ready" && health !== "ready") return false;
       if (selectStockFilter === "low" && health !== "low") return false;
-      if (selectStockFilter === "out" && health !== "out") return false;
-      if (selectStockFilter === "unassigned" && hasLocation) return false;
+      // Every candidate is a product WITH stock at the count location, so nothing on
+      // this sheet can be out-of-stock-here or unassigned — both filters are empty.
+      if (selectStockFilter === "out") return false;
+      if (selectStockFilter === "unassigned") return false;
       if (!q) return true;
-      return product.name.toLowerCase().includes(q)
-        || (product.sku ?? "").toLowerCase().includes(q)
-        || (product.barcode ?? "").toLowerCase().includes(q);
+      return candidate.name.toLowerCase().includes(q)
+        || candidate.sku.toLowerCase().includes(q)
+        || candidate.barcode.toLowerCase().includes(q);
     });
   }, [candidates, selectSearch, selectCategory, selectStockFilter]);
 
@@ -537,19 +527,19 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   }
 
   function startCounting() {
-    const chosen = candidates.filter((product) => selectedIds.has(product.id));
+    const chosen = candidates.filter((candidate) => selectedIds.has(candidate.id));
     if (chosen.length === 0 || !fLocation || !selectedLocation) return;
-    // Authoritative system quantity is this session LOCATION's on-hand per product (0 if the
-    // product has no stock row there) — never the store-wide aggregate.
-    const locQty = locationQtyQuery.data ?? new Map<string, number>();
-    const items: CountItem[] = chosen.map((product) => ({
-      productId: product.id,
-      name: product.name,
-      sku: product.sku ?? "",
-      barcode: product.barcode ?? "",
-      systemQty: locQty.get(product.id) ?? 0,
-      minStock: product.min_stock ?? 0,
-      location: product.storage_location?.trim() ?? "",
+    // Every sheet row came from the backend per-location stock list, so
+    // candidate.quantity IS the authoritative system on-hand at this location —
+    // no separate lookup needed (never the store-wide aggregate).
+    const items: CountItem[] = chosen.map((candidate) => ({
+      productId: candidate.id,
+      name: candidate.name,
+      sku: candidate.sku,
+      barcode: candidate.barcode,
+      systemQty: candidate.quantity,
+      minStock: candidate.minStock,
+      location: sheetLocationLabel,
       counted: null,
       note: "",
       skipped: false,
@@ -557,18 +547,17 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
       varianceReasonOther: "",
       countUser: "",
       countedAt: null,
-      costBasis: product.cost_price ?? product.base_price ?? 0,
+      costBasis: candidate.costBasis,
       adjusted: false,
       adjustedAt: null,
       adjustedBy: "",
     }));
     const categoryName = fCategory ? (categoriesQuery.data ?? []).find((category) => category.id === fCategory)?.name ?? null : null;
-    const locName = `${selectedLocation.warehouse_name ? `${selectedLocation.warehouse_name} › ` : ""}${selectedLocation.zone_name ? `${selectedLocation.zone_name} › ` : ""}${selectedLocation.name}`;
     const session: CountSession = {
       id: newId(),
       name: fName.trim() || t.create.title,
       locationId: fLocation,
-      locationName: locName,
+      locationName: sheetLocationLabel,
       warehouseName: fWarehouse || selectedLocation.warehouse_name || null,
       zone: fZone || null,
       categoryId: fCategory || null,
@@ -1443,7 +1432,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
 
             <div className="flex gap-2 pt-1">
               <button type="button" onClick={backToList} className="h-11 flex-1 rounded-xl border border-violet-200 text-sm font-semibold text-slate-600 transition hover:bg-violet-50">{t.create.cancel}</button>
-              <button type="button" disabled={!fName.trim() || !fLocation || productsQuery.isPending} onClick={goToSelect} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-violet-600 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40">
+              <button type="button" disabled={!fName.trim() || !fLocation || candidatesQuery.isPending} onClick={goToSelect} className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-violet-600 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-40">
                 {t.create.continueToItems}
                 <ArrowRight className="h-4 w-4" />
               </button>
@@ -1462,7 +1451,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
               {fCountType === "cycle" && fCycleRule ? <PreviewRow label={t.preview.cycleRule} value={fCycleRule} /> : null}
             </dl>
             <div className="mt-4 rounded-xl border border-violet-100 bg-white p-4 text-center">
-              <p className="text-3xl font-black text-violet-700 tabular-nums">{productsQuery.isPending ? "—" : estimate}</p>
+              <p className="text-3xl font-black text-violet-700 tabular-nums">{candidatesQuery.isPending ? "—" : estimate}</p>
               <p className="mt-0.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{t.preview.products} · {t.preview.estimateUnit}</p>
             </div>
           </aside>
@@ -1527,27 +1516,27 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                 <tbody className="divide-y divide-slate-100">
                   {filteredCandidates.length === 0 ? (
                     <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-slate-500">{t.select.noProducts}</td></tr>
-                  ) : filteredCandidates.map((product) => {
-                    const checked = selectedIds.has(product.id);
-                    const health = itemHealth(product.total_stock ?? 0, product.min_stock ?? 0);
+                  ) : filteredCandidates.map((candidate) => {
+                    const checked = selectedIds.has(candidate.id);
+                    const health = itemHealth(candidate.quantity, candidate.minStock);
                     const label = health === "out" ? t.select.statusOut : health === "low" ? t.select.statusLow : t.select.statusReady;
                     return (
-                      <tr key={product.id} onClick={() => setSelectedIds((prev) => {
+                      <tr key={candidate.id} onClick={() => setSelectedIds((prev) => {
                         const next = new Set(prev);
-                        if (next.has(product.id)) next.delete(product.id); else next.add(product.id);
+                        if (next.has(candidate.id)) next.delete(candidate.id); else next.add(candidate.id);
                         return next;
                       })} className={`cursor-pointer ${checked ? "bg-violet-50/60" : "bg-white hover:bg-slate-50"}`}>
                         <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox" checked={checked} onChange={() => setSelectedIds((prev) => {
                             const next = new Set(prev);
-                            if (next.has(product.id)) next.delete(product.id); else next.add(product.id);
+                            if (next.has(candidate.id)) next.delete(candidate.id); else next.add(candidate.id);
                             return next;
                           })} className="h-5 w-5 rounded border-violet-300 text-violet-600 focus:ring-violet-400" />
                         </td>
-                        <td className="px-3 py-2.5"><p className="truncate text-sm font-semibold text-slate-800" title={product.name}>{product.name}</p><p className="truncate text-[11px] text-slate-400">{product.sku || "-"}</p></td>
-                        <td className="px-3 py-2.5 text-xs text-slate-500">{product.barcode || "—"}</td>
-                        <td className="px-3 py-2.5 text-right text-sm font-bold text-slate-700 tabular-nums">{product.total_stock ?? 0}</td>
-                        <td className="px-3 py-2.5"><span className="flex items-center gap-1 truncate text-xs leading-normal text-slate-500"><MapPin className="h-3 w-3 shrink-0 text-slate-400" />{product.storage_location?.trim() || t.select.unassigned}</span></td>
+                        <td className="px-3 py-2.5"><p className="truncate text-sm font-semibold text-slate-800" title={candidate.name}>{candidate.name}</p><p className="truncate text-[11px] text-slate-400">{candidate.sku || "-"}</p></td>
+                        <td className="px-3 py-2.5 text-xs text-slate-500">{candidate.barcode || "—"}</td>
+                        <td className="px-3 py-2.5 text-right text-sm font-bold text-slate-700 tabular-nums">{candidate.quantity}</td>
+                        <td className="px-3 py-2.5"><span className="flex items-center gap-1 truncate text-xs leading-normal text-slate-500"><MapPin className="h-3 w-3 shrink-0 text-slate-400" />{candidate.locationLabel || t.select.unassigned}</span></td>
                         <td className="px-3 py-2.5"><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${HEALTH_BADGE[health]}`}>{label}</span></td>
                       </tr>
                     );
