@@ -152,6 +152,7 @@ type CreditSalesDictionary = {
   paymentNoteLabel: string;
   paymentNotePlaceholder: string;
   paymentConfirmBtn: string;
+  paymentExactBtn: string;
   paymentAmountError: string;
   empty: string;
   emptyHint: string;
@@ -682,6 +683,33 @@ export function CreditSalesManager({
     setPayingSale(sale);
   }
 
+  // ─── Payment amount numpad (touch-friendly) ──────────────────────────────
+  // Money entered as up-to-2-decimal digits; Number() on submit does the real
+  // parsing/validation. Mirrors the POS checkout numpad input contract.
+  function payAmountPattern(value: string): boolean {
+    return /^\d*\.?\d{0,2}$/.test(value);
+  }
+  function onPayAmountInput(value: string) {
+    if (payAmountPattern(value)) setPayAmount(value.slice(0, 10));
+  }
+  function payNumpadDigit(d: string) {
+    setPayAmount((prev) => {
+      const next = prev + d;
+      if (!payAmountPattern(next) || next.length > 10) return prev;
+      return next;
+    });
+  }
+  function payNumpadClear() {
+    setPayAmount("");
+  }
+  function payNumpadBackspace() {
+    setPayAmount((prev) => prev.slice(0, -1));
+  }
+  function payNumpadExact() {
+    if (!payingSale) return;
+    setPayAmount(String(Math.max(0, payingSale.total_amount - payingSale.paid_amount)));
+  }
+
   // ─── Return goods (loan): prefill each line's full returnable quantity
   function returnableOf(item: CreditSaleItem): number {
     return Math.max(0, item.quantity - (item.returned_qty ?? 0));
@@ -933,7 +961,14 @@ export function CreditSalesManager({
                   const pct = sale.total_amount > 0 ? Math.min(100, (sale.paid_amount / sale.total_amount) * 100) : 0;
                   const totalQty = sale.items.reduce((n, i) => n + i.quantity, 0);
                   return (
-                    <tr key={sale.id} className="transition-colors hover:bg-slate-50">
+                    <tr
+                      key={sale.id}
+                      className="cursor-pointer transition-colors hover:bg-slate-50"
+                      onClick={() => {
+                        setActionError("");
+                        setViewSale(sale);
+                      }}
+                    >
                       <td className="whitespace-nowrap px-3 py-2.5 nums text-xs font-medium text-slate-700">
                         {sale.document_number}
                       </td>
@@ -981,20 +1016,13 @@ export function CreditSalesManager({
                       </td>
                       <td className="px-3 py-2.5">
                         <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-                            onClick={() => {
-                              setActionError("");
-                              setViewSale(sale);
-                            }}
-                            type="button"
-                          >
-                            {dictionary.viewBtn}
-                          </button>
                           {liveStatus !== "cancelled" && liveStatus !== "completed" ? (
                             <button
                               className="rounded-lg border border-slate-200 p-1.5 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
-                              onClick={() => handleCancelSale(sale.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelSale(sale.id);
+                              }}
                               title={dictionary.rowCancelTitle}
                               type="button"
                               aria-label={dictionary.rowCancelTitle}
@@ -1646,7 +1674,7 @@ export function CreditSalesManager({
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="max-h-[90vh] space-y-4 overflow-y-auto p-6">
               {/* Outstanding */}
               <div className="rounded-xl bg-slate-50 p-4 text-center">
                 <p className="text-sm text-slate-500">{dictionary.paymentOutstandingLabel}</p>
@@ -1665,14 +1693,55 @@ export function CreditSalesManager({
                   {dictionary.paymentAmountLabel} <span className="text-rose-500">*</span>
                 </label>
                 <input
-                  autoFocus
-                  className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-violet-500"
-                  min="0"
-                  onChange={(e) => setPayAmount(e.target.value)}
-                  step="0.01"
-                  type="number"
+                  className="w-full rounded-xl border-2 border-violet-400 bg-violet-50 px-4 py-3 text-center text-2xl font-bold tabular-nums text-slate-900 outline-none transition placeholder:text-slate-300 focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+                  inputMode="decimal"
+                  onChange={(e) => onPayAmountInput(e.target.value)}
+                  placeholder="0"
+                  type="text"
                   value={payAmount}
                 />
+
+                {/* Quick full-balance + touch numpad */}
+                <button
+                  className="mt-2 w-full rounded-xl border border-violet-300 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 active:scale-[0.99]"
+                  onClick={payNumpadExact}
+                  type="button"
+                >
+                  {dictionary.paymentExactBtn}
+                </button>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
+                    <button
+                      key={d}
+                      className="flex min-h-[3rem] items-center justify-center rounded-xl border border-slate-200 bg-white text-xl font-semibold text-slate-800 transition hover:border-violet-300 hover:bg-violet-50 active:scale-95"
+                      onClick={() => payNumpadDigit(d)}
+                      type="button"
+                    >
+                      {d}
+                    </button>
+                  ))}
+                  <button
+                    className="flex min-h-[3rem] items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-bold text-rose-500 transition hover:border-rose-200 hover:bg-rose-50 active:scale-95"
+                    onClick={payNumpadClear}
+                    type="button"
+                  >
+                    C
+                  </button>
+                  <button
+                    className="flex min-h-[3rem] items-center justify-center rounded-xl border border-slate-200 bg-white text-xl font-semibold text-slate-800 transition hover:border-violet-300 hover:bg-violet-50 active:scale-95"
+                    onClick={() => payNumpadDigit("0")}
+                    type="button"
+                  >
+                    0
+                  </button>
+                  <button
+                    className="flex min-h-[3rem] items-center justify-center rounded-xl border border-slate-200 bg-white text-xl text-slate-500 transition hover:border-slate-300 hover:bg-slate-50 active:scale-95"
+                    onClick={payNumpadBackspace}
+                    type="button"
+                  >
+                    ⌫
+                  </button>
+                </div>
               </div>
 
               {/* Method */}

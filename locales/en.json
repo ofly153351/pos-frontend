@@ -4132,6 +4132,7 @@
     "paymentNoteLabel": "Note",
     "paymentNotePlaceholder": "Note (optional)...",
     "paymentConfirmBtn": "Confirm Payment",
+    "paymentExactBtn": "Pay full balance",
     "paymentAmountError": "Please enter an amount",
     "empty": "No credit sales or loans yet",
     "emptyHint": "Click the button to create a new transaction",

@@ -4132,6 +4132,7 @@
     "paymentNoteLabel": "หมายเหตุ",
     "paymentNotePlaceholder": "หมายเหตุ (ไม่บังคับ)...",
     "paymentConfirmBtn": "รับชำระ",
+    "paymentExactBtn": "จ่ายเต็มยอด",
     "paymentAmountError": "กรุณากรอกจำนวนเงิน",
     "empty": "ยังไม่มีรายการขายเชื่อหรือยืมสินค้า",
     "emptyHint": "กดปุ่มเพื่อเริ่มสร้างรายการ",
