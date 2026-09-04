@@ -533,6 +533,7 @@
     "vatToggleLabel": "VAT 7%",
     "vatToggleOn": "Include VAT",
     "vatToggleOff": "Exclude VAT",
+    "vatToggleUpdateFailed": "Unable to save VAT status",
     "vatAmountLabel": "VAT 7%",
     "statusLabel": "Status",
     "statusPaidLabel": "Paid",

@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ProductBrowser } from "@/components/sales/product-browser";
 import type {
@@ -28,7 +28,7 @@ import { canManageStore, useStoreRole } from "@/lib/use-store-role";
 import { ApiError } from "@/services/api";
 import { listPromotions } from "@/services/promotions";
 import { listBankAccounts } from "@/services/stores";
-import { getReceiptSettings } from "@/services/receipt-settings";
+import { getReceiptSettings, updateReceiptSettings } from "@/services/receipt-settings";
 import {
   BILL_LEVEL_TYPES,
   evaluatePromotion,
@@ -127,6 +127,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   onCartStateChange,
   onHoldBillSuccess,
 }: SalesManagerProps, ref) {
+  const queryClient = useQueryClient();
   const [hasMounted, setHasMounted] = useState(false);
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
   // Phase W4B — POS sale-point location. Every sale deducts from exactly one active
@@ -175,7 +176,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   const [paidAmount, setPaidAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<SalePaymentMethod>("cash");
   const [selectedBankAccountId, setSelectedBankAccountId] = useState("");
-  const [applyVat, setApplyVat] = useState(false);
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isCheckoutSummaryOpen, setIsCheckoutSummaryOpen] = useState(false);
   const [invoiceDueDate, setInvoiceDueDate] = useState("");
@@ -609,24 +609,27 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     queryFn: async () => (await getReceiptSettings()).data,
     staleTime: 5 * 60 * 1000,
   });
+  const receiptSettingsMutation = useMutation({
+    mutationFn: updateReceiptSettings,
+    onSuccess: (settings) => {
+      queryClient.setQueryData(["receipt-settings-channels"], settings.data);
+      void queryClient.invalidateQueries({ queryKey: ["receipt-settings-channels"] });
+    },
+    onError: () => {
+      toast.error(dictionary.vatToggleUpdateFailed);
+    },
+  });
   const enabledPaymentChannels = useMemo(
     () => (receiptSettingsQuery.data?.payment_channels ?? []).filter((c) => c.enabled).map((c) => c.key),
     [receiptSettingsQuery.data],
   );
-  // C-01: the VAT toggle is seeded from the store's receipt settings (tax_mode +
-  // vat_rate), not hardcoded off — the server snapshots the effective policy at
-  // checkout; the UI must reflect the same policy. tax_mode "none" ⇒ VAT never
-  // applies and the toggle stays off.
-  const receiptTaxMode = receiptSettingsQuery.data?.tax_mode ?? "exclusive";
-  const settingsVatRate = Number(receiptSettingsQuery.data?.vat_rate ?? 7);
-  const vatAvailable = receiptTaxMode !== "none" && settingsVatRate > 0;
-  const vatSeededRef = useRef(false);
-  useEffect(() => {
-    if (!vatSeededRef.current && !receiptSettingsQuery.isLoading) {
-      vatSeededRef.current = true;
-      setApplyVat(vatAvailable);
-    }
-  }, [receiptSettingsQuery.isLoading, vatAvailable]);
+  // C-01: VAT on/off is persisted in store_receipt_settings.tax_mode and read from
+  // the query result. Do not mirror it into local component state: checkout math,
+  // header badge and API payload must all use the same DB-sourced value.
+  const receiptTaxMode = receiptSettingsQuery.data?.tax_mode ?? "none";
+  const settingsVatRate = Number(receiptSettingsQuery.data?.vat_rate ?? 0);
+  const vatModeIsInclusive = receiptTaxMode === "inclusive";
+  const applyVat = receiptTaxMode !== "none" && settingsVatRate > 0;
   const [couponCode, setCouponCode] = useState("");
   const promoDiscountAmount = useMemo(() => {
     const active = (promotionsQuery.data ?? []).filter((p) => p.status === "active");
@@ -756,7 +759,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   );
   const payableTotal = roundCurrency(Math.max(payableBeforePromo - appliedPromoDiscount, 0));
   const vatRateDecimal = settingsVatRate / 100;
-  const vatModeIsInclusive = receiptTaxMode === "inclusive";
   // C-01: displayed VAT mirrors the server snapshot exactly — rate from settings,
   // mode decides add-on vs carve-out. Exclusive: VAT on top of the payable base.
   // Inclusive: prices already contain VAT → carve it out for the breakdown line and
@@ -1041,7 +1043,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     setCouponCode("");
     setNote("");
     setPaidAmount("");
-    setApplyVat(false);
     setIsActionsMenuOpen(false);
     setIsCheckoutSummaryOpen(false);
     setDiscountEditorProductId(null);
@@ -1054,7 +1055,12 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   }
 
   useImperativeHandle(ref, () => ({
-    toggleVat: () => { setApplyVat((v) => !v); setIsPaidAmountTouched(false); },
+    toggleVat: () => {
+      if (receiptSettingsMutation.isPending) return;
+      const nextTaxMode = applyVat ? "none" : "exclusive";
+      receiptSettingsMutation.mutate({ tax_mode: nextTaxMode });
+      setIsPaidAmountTouched(false);
+    },
     holdBill: () => { setHoldBillLabel(""); setIsHoldingBill(true); },
     restoreBill: () => {
       void (async () => {
@@ -1754,7 +1760,8 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
         : bill.bill_discount_amount > 0 ? String(bill.bill_discount_amount) : "",
     );
     setBillDiscountType(bill.bill_discount_type ?? "amount");
-    setApplyVat(bill.applyVat ?? false);
+    // VAT is store-level persisted policy; restoring an old parked bill must not
+    // override the current DB setting.
     void deleteParkedBill(bill.id);
     setIsRestoreDrawerOpen(false);
     toast.success(dictionary.restoreBillConfirmLabel);
@@ -1815,6 +1822,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   if (
     !hasMounted ||
     isLoadingData ||
+    receiptSettingsQuery.isLoading ||
     (selectedSaleLocationId && !locationStockReady && !locationStockError)
   ) {
     return (
@@ -1843,10 +1851,17 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     );
   }
 
-  if (loadError) {
+  if (loadError || receiptSettingsQuery.isError) {
     return (
       <section className="grid place-items-center xl:h-[calc(100dvh-8rem)]">
-        <QueryErrorState locale={locale} onRetry={loadInitialData} className="max-w-md" />
+        <QueryErrorState
+          locale={locale}
+          onRetry={() => {
+            void loadInitialData();
+            void receiptSettingsQuery.refetch();
+          }}
+          className="max-w-md"
+        />
       </section>
     );
   }

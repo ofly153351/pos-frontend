@@ -161,6 +161,7 @@ export type SalesDictionary = {
   vatToggleLabel: string;
   vatToggleOff: string;
   vatToggleOn: string;
+  vatToggleUpdateFailed: string;
   statusLabel: string;
   statusPaidLabel: string;
   statusUnpaidLabel: string;

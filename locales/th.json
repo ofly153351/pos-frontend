@@ -533,6 +533,7 @@
     "vatToggleLabel": "VAT 7%",
     "vatToggleOn": "รวมภาษี",
     "vatToggleOff": "ไม่รวมภาษี",
+    "vatToggleUpdateFailed": "ไม่สามารถบันทึกสถานะ VAT ได้",
     "vatAmountLabel": "VAT 7%",
     "statusLabel": "สถานะ",
     "statusPaidLabel": "ชำระแล้ว",
