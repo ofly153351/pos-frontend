@@ -67,7 +67,7 @@ export interface Campaign {
   // Schedule
   startDate?: string; // ISO date string
   endDate?: string;
-  daysOfWeek: number[]; // 0=Sun … 6=Sat; empty = every day
+  daysOfWeek?: number[]; // 0=Sun … 6=Sat; absent/empty = every day
   happyHourStart?: string; // "HH:mm"
   happyHourEnd?: string;
 

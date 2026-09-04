@@ -77,7 +77,8 @@ export function isWithinSchedule(c: Campaign, now: Date): { ok: boolean; reason?
     const end = new Date(c.endDate);
     if (now > end) return { ok: false, reason: "expired" };
   }
-  if (c.daysOfWeek.length > 0 && !c.daysOfWeek.includes(now.getDay())) {
+  const days = c.daysOfWeek ?? [];
+  if (days.length > 0 && !days.includes(now.getDay())) {
     return { ok: false, reason: "wrong_day" };
   }
   if (c.happyHourStart && c.happyHourEnd) {

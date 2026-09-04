@@ -281,7 +281,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   function loadInitialData() {
     setLoadError(false);
     setIsLoadingData(true);
-    startTransition(async () => {
+    void (async () => {
       try {
         // Required POS data — products (catalog), customers and locations. A failure
         // here is fatal and shows the retryable error screen. All three are readable at
@@ -331,7 +331,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
       } finally {
         setIsLoadingData(false);
       }
-    });
+    })();
   }
 
   useEffect(() => {
@@ -957,7 +957,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
 
     let isCancelled = false;
 
-    startTransition(async () => {
+    void (async () => {
       try {
         const response = await calculateVat({
           discount_bill: customerDiscountAmount + billDiscountAmount,
@@ -984,7 +984,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           setVatSummary(null);
         }
       }
-    });
+    })();
 
     return () => {
       isCancelled = true;
@@ -994,7 +994,6 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
     billDiscountAmount,
     cart,
     customerDiscountAmount,
-    startTransition,
   ]);
 
   useEffect(() => {
