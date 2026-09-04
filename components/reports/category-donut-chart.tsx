@@ -44,7 +44,7 @@ export function CategoryDonutChart({
   return (
     <div>
       <div className="relative mx-auto" style={{ height: 180 }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={180}>
           <PieChart>
             <Pie data={slices} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={56} outerRadius={82} paddingAngle={2} stroke="none">
               {slices.map((s, i) => (

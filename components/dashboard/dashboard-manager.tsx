@@ -760,7 +760,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
                   </Link>
                 </div>
               ) : (
-                <ResponsiveContainer height="100%" width="100%">
+                <ResponsiveContainer height={260} width="100%">
                   <AreaChart data={chartData} margin={{ bottom: 4, left: 0, right: 4, top: 4 }}>
                     <defs>
                       <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">

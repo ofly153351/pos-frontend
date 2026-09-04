@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -787,6 +787,25 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardPro
     refetchInterval: 60_000,
   });
 
+  // Recharts ResponsiveContainer warns width(-1)/height(-1) when it mounts while its
+  // wrapper reports no positive size yet (its ResizeObserver fires after first paint).
+  // This movement wrapper has a CSS height (h-[260px] md:h-[280px]) that only exists
+  // once loading completes (the component early-returns a skeleton while isLoading).
+  // Measure it once mounted and feed the real px into the chart — no transient -1,
+  // still responsive to the md breakpoint.
+  const movementChartWrapRef = useRef<HTMLDivElement | null>(null);
+  const [movementChartHeight, setMovementChartHeight] = useState(260);
+  useEffect(() => {
+    if (isLoading) return;
+    const el = movementChartWrapRef.current;
+    if (!el) return;
+    const measure = () => setMovementChartHeight(el.clientHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isLoading]);
+
   const derived = useMemo(() => {
     const pendingCountSessions = countSessions.filter((session) => session.status === "draft" || session.status === "counting" || session.status === "review");
     const pendingApprovalSessions = countSessions.filter((session) => session.status === "review");
@@ -1003,13 +1022,13 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardPro
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
         <SectionCard title={t.movement.title}>
-          <div className="h-[260px] md:h-[280px]">
+          <div ref={movementChartWrapRef} className="h-[260px] md:h-[280px]">
             {movementIsEmpty ? (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-violet-200 bg-violet-50/60 px-4 text-center text-sm text-slate-500">
                 {t.movement.empty}
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer height={movementChartHeight} width="100%">
                 <ComposedChart data={movementData} margin={{ top: 12, right: 8, bottom: 0, left: -16 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ede9fe" />
                   <XAxis dataKey="dateLabel" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
