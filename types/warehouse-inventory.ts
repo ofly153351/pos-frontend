@@ -1,11 +1,14 @@
-// Warehouse-scoped inventory contract (Phase 0 read API).
+// Warehouse-scoped inventory contract (Phase 0 read API, option B 2026-09-04).
 //
 // Mirrors the backend GET /stores/:storeID/warehouses/:warehouseID/inventory/products.
-// All quantity fields are scoped to a SINGLE warehouse and split on location.is_sale_point:
-//   ready_stock   = พร้อมขาย   (sum of sale-point locations in this warehouse)
-//   storage_stock = พื้นที่จัดเก็บ (sum of non-sale-point locations in this warehouse)
-//   total_stock   = รวมในคลัง  (ready_stock + storage_stock)
-// These are NOT the deprecated store-wide product_view aggregates.
+// The scope deliberately differs per column so the page answers the replenishment
+// question ("จะโอนจากคลังนี้ไปเติมจุดขายไหม"):
+//   ready_stock   = พร้อมขาย   — stock at EVERY sale-point location of the STORE
+//                   (across all warehouses; NOT just this warehouse's sale points)
+//   storage_stock = ที่จัดเก็บ  — non-sale-point locations of the SELECTED warehouse only
+//   total_stock   = รวม        — ready_stock + storage_stock
+// These are NOT the deprecated store-wide product_view aggregates (they split the
+// WRONG way for this page).
 
 export type WarehouseStockStatus = "available" | "low_stock" | "out_of_stock";
 
