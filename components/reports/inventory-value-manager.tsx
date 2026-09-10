@@ -16,11 +16,9 @@ import {
 } from "lucide-react";
 
 import { getDashboard } from "@/services/dashboard";
-import { listProducts } from "@/services/products";
 import { getInventoryReport } from "@/services/finance";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QueryErrorState } from "@/components/ui/query-error-state";
-import type { Product } from "@/types/product";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import type { ReportsInventoryDictionary } from "@/components/reports/reports-types";
@@ -34,10 +32,9 @@ type DeadDays = 30 | 60 | 90;
 export function InventoryValueManager({ dictionary: t, locale }: Props) {
   const [deadDays, setDeadDays] = useState<DeadDays>(30);
 
-  const productsQuery = useQuery({
-    queryKey: ["reports", "inventory-value", "products"],
-    queryFn: async () => (await listProducts({ limit: 9999, page: 1 })).data,
-  });
+  // All inventory-value KPIs and category bars come from the same backend
+  // aggregate response. Do not fetch listProducts here: its limit is capped
+  // (currently 200), which makes SKU/value totals silently incomplete.
   const topQuery = useQuery({
     queryKey: ["reports", "inventory-value", "top-30d"],
     queryFn: async () => (await getDashboard({ period: "30d", top_limit: 10 })).data,
@@ -50,7 +47,6 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
     queryFn: async () => (await getInventoryReport(deadDays)).data,
   });
 
-  const products = useMemo<Product[]>(() => productsQuery.data?.items ?? [], [productsQuery.data]);
   const topProducts = useMemo(() => topQuery.data?.top_products ?? [], [topQuery.data]);
 
   // Denominator for each product's contribution %: prefer the period's true total
@@ -81,58 +77,35 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
     return (iso: string | null) => (iso ? df.format(new Date(iso)) : "—");
   }, [locale]);
 
-  // ── Active products are the basis for value, cost, SKU and units (sellable
-  //    inventory). Inactive/discontinued items are excluded. ──
-  const activeProducts = useMemo(() => products.filter((p) => p.is_active), [products]);
+  // All valuation KPIs use the one server aggregate snapshot; there is no
+  // client-side SKU/list cap anymore.
+  const snapshot = inventoryQuery.data?.snapshot;
+  const totals = {
+    cost: snapshot?.inventory_value ?? 0,
+    retail: snapshot?.retail_value ?? 0,
+    profit: (snapshot?.retail_value ?? 0) - (snapshot?.inventory_value ?? 0),
+    units: snapshot?.total_units ?? 0,
+    sku: snapshot?.active_sku_count ?? 0,
+    missingCost: snapshot?.missing_cost ?? 0,
+    costExceedsPrice: snapshot?.cost_exceeds_price ?? 0,
+  };
 
-  const totals = useMemo(() => {
-    let cost = 0;
-    let retail = 0;
-    let units = 0;
-    let missingCost = 0;
-    let costExceedsPrice = 0;
-    for (const p of activeProducts) {
-      const stock = p.total_stock ?? 0;
-      if (stock <= 0) continue;
-      const unitCost = p.cost_price ?? 0;
-      const unitPrice = p.base_price ?? 0;
-      cost += unitCost * stock;
-      retail += unitPrice * stock;
-      units += stock;
-      if (unitCost <= 0) missingCost += 1;
-      else if (unitPrice > 0 && unitCost > unitPrice) costExceedsPrice += 1;
-    }
-    return {
-      cost,
-      retail,
-      profit: retail - cost,
-      units,
-      sku: activeProducts.length,
-      missingCost,
-      costExceedsPrice,
-    };
-  }, [activeProducts]);
-
-  // ── Inventory value by category (retail basis), top N + "Others" ──
+  // Category values are also returned by the same backend aggregate response.
   const categoryRows = useMemo<CategoryValueRow[]>(() => {
-    const map = new Map<string, number>();
-    for (const p of activeProducts) {
-      const stock = p.total_stock ?? 0;
-      if (stock <= 0) continue;
-      const value = (p.base_price ?? 0) * stock;
-      const name = p.product_type_name?.trim() || t.category.uncategorized;
-      map.set(name, (map.get(name) ?? 0) + value);
-    }
-    let cats = [...map.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-    if (cats.length > TOP_CATEGORIES) {
-      const head = cats.slice(0, TOP_CATEGORIES);
-      const rest = cats.slice(TOP_CATEGORIES).reduce((sum, c) => sum + c.value, 0);
+    const raw = inventoryQuery.data?.category_breakdown ?? [];
+    const categories = raw.map((c) => ({
+      name: c.name.trim() || t.category.uncategorized,
+      value: c.total,
+    }));
+    if (categories.length > TOP_CATEGORIES) {
+      const head = categories.slice(0, TOP_CATEGORIES);
+      const rest = categories.slice(TOP_CATEGORIES).reduce((sum, c) => sum + c.value, 0);
       head.push({ name: t.category.others, value: rest });
-      cats = head;
+      return head.map((c) => ({ ...c, percent: (c.value / (snapshot?.retail_value || 1)) * 100 }));
     }
-    const denom = cats.reduce((sum, c) => sum + c.value, 0) || 1;
-    return cats.map((c) => ({ name: c.name, value: c.value, percent: (c.value / denom) * 100 }));
-  }, [activeProducts, t.category.others, t.category.uncategorized]);
+    const denom = categories.reduce((sum, c) => sum + c.value, 0) || 1;
+    return categories.map((c) => ({ ...c, percent: (c.value / denom) * 100 }));
+  }, [inventoryQuery.data?.category_breakdown, snapshot?.retail_value, t.category.others, t.category.uncategorized]);
 
   // ── Dead stock — backend aggregate over FULL sale history (no movement cap).
   //    count + tied capital are computed in SQL for the selected idle threshold;
@@ -145,7 +118,7 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
   const inventoryValueCost = inventoryQuery.data?.snapshot.inventory_value ?? 0;
   const deadCapitalShare = inventoryValueCost > 0 ? (deadStock.capital / inventoryValueCost) * 100 : 0;
 
-  const isLoading = productsQuery.isPending;
+  const isLoading = inventoryQuery.isPending;
 
   // Valuation looks suspicious when costs are missing (cost understated → profit
   // overstated) or some items cost more than they sell for, or profit is negative.
@@ -223,13 +196,12 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
     { key: 90, label: t.deadStock.filter90 },
   ];
 
-  if (productsQuery.isError || topQuery.isError || inventoryQuery.isError) {
+  if (topQuery.isError || inventoryQuery.isError) {
     return (
       <div className="w-full xl:px-2 2xl:px-4">
         <QueryErrorState
           locale={locale}
           onRetry={() => {
-            productsQuery.refetch();
             topQuery.refetch();
             inventoryQuery.refetch();
           }}

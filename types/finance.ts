@@ -113,11 +113,15 @@ export type ExecutiveSummary = {
 
 // Inventory Value & Dead Stock report — DB aggregates (no client-side movement scan).
 export type InventorySnapshot = {
-  inventory_value: number; // SUM(cost_price * total_stock) over in-stock active products
+  inventory_value: number;
+  retail_value: number;
+  total_units: number;
+  active_sku_count: number;
   in_stock: number;
   low_stock: number;
   out_of_stock: number;
   missing_cost: number;
+  cost_exceeds_price: number;
 };
 
 export type DeadStockItem = {
@@ -138,5 +142,6 @@ export type DeadStockStat = {
 
 export type InventoryReport = {
   snapshot: InventorySnapshot;
+  category_breakdown: PnlCategoryTotal[];
   dead_stock: DeadStockStat;
 };
