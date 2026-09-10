@@ -362,11 +362,20 @@ function AddMemberForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<StoreRole>("cashier");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  function handleSubmitError(err: unknown) {
+    setFieldErrors(err instanceof ApiError ? err.fieldMap() : {});
+    onSubmitError(err);
+  }
 
   const mutation = useMutation({
     mutationFn: () => addMember({ name: name.trim(), email: email.trim(), password, role }),
-    onSuccess,
-    onError: onSubmitError,
+    onSuccess: () => {
+      setFieldErrors({});
+      onSuccess();
+    },
+    onError: handleSubmitError,
   });
 
   // Close on Escape
@@ -397,6 +406,7 @@ function AddMemberForm({
           className="space-y-4 px-5 py-5"
           onSubmit={(e) => {
             e.preventDefault();
+            setFieldErrors({});
             mutation.mutate();
           }}
         >
@@ -406,21 +416,31 @@ function AddMemberForm({
             <label className="mb-1 block text-sm font-medium text-slate-700">{t.form.email}</label>
             <input
               className="w-full rounded-xl border border-violet-200 px-3 py-2.5 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, email: "" }));
+              }}
               required
               type="email"
               value={email}
             />
+            {fieldErrors.email ? <Alert tone="error" className="mt-1">{fieldErrors.email}</Alert> : null}
           </div>
 
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">{t.form.name}</label>
             <input
               className="w-full rounded-xl border border-violet-200 px-3 py-2.5 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, name: "" }));
+              }}
+              required
+              aria-invalid={Boolean(fieldErrors.name)}
               type="text"
               value={name}
             />
+            {fieldErrors.name ? <Alert tone="error" className="mt-1">{fieldErrors.name}</Alert> : null}
           </div>
 
           <div>
@@ -428,10 +448,16 @@ function AddMemberForm({
             <input
               autoComplete="new-password"
               className="w-full rounded-xl border border-violet-200 px-3 py-2.5 text-sm outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, password: "" }));
+              }}
+              required
+              aria-invalid={Boolean(fieldErrors.password)}
               type="password"
               value={password}
             />
+            {fieldErrors.password ? <Alert tone="error" className="mt-1">{fieldErrors.password}</Alert> : null}
             <p className="mt-1 text-xs text-slate-400">{t.form.passwordHint}</p>
           </div>
 
