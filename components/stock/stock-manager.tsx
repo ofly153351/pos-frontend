@@ -557,6 +557,7 @@ function resetProductForm() {
       <div className="w-full xl:px-2 2xl:px-4">
         <ProductFormDrawer
           closeLabel={formLabels.cancel}
+          error={error}
           formLabels={formLabels}
           formState={formState}
           isEditing={Boolean(editingProductId)}

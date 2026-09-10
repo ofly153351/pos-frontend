@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
+import { Alert } from "@/components/ui/alert";
 import type {
   ManagementDictionary,
   ProductFormLabels,
@@ -19,6 +20,7 @@ import type {
 
 type ProductFormDrawerProps = {
   closeLabel: string;
+  error?: string;
   formLabels: ProductFormLabels;
   formState: ProductInput;
   isOpen: boolean;
@@ -506,6 +508,7 @@ function POSPreviewCard({
 
 export function ProductFormDrawer({
   closeLabel,
+  error,
   formLabels,
   formState,
   isEditing,
@@ -604,6 +607,7 @@ export function ProductFormDrawer({
         </div>
       </div>
 
+      {error ? <Alert tone="error" className="mb-4">{error}</Alert> : null}
       <form onSubmit={onSubmit}>
         {/* Mobile / tablet preview — collapsible summary (hidden on desktop where the sticky panel shows) */}
         <div className="mb-4 lg:hidden">
