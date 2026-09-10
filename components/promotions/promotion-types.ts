@@ -55,7 +55,10 @@ export interface Campaign {
 
   // Scope
   scopeType: ScopeType;
-  scopeIds: string[]; // category/brand names or product SKUs
+  // Category/brand names or product SKUs for scoped promos. Undefined on legacy rows
+  // (stored before the scope picker) — treated as an empty scope everywhere
+  // (UI shows the plain scope label; the engine fails closed on non-store scopes).
+  scopeIds?: string[];
 
   // Conditions
   minAmount?: number;

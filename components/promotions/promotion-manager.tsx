@@ -208,7 +208,8 @@ function detectConflicts(form: Partial<Campaign>, campaigns: Campaign[], editing
     if (fScope === "store" || c.scopeType === "store") return true;
     if (fScope === c.scopeType) {
       const fIds = form.scopeIds ?? [];
-      return fIds.length === 0 || c.scopeIds.length === 0 || fIds.some((id) => c.scopeIds.includes(id));
+      const cIds = c.scopeIds ?? []; // legacy rows may omit scopeIds
+      return fIds.length === 0 || cIds.length === 0 || fIds.some((id) => cIds.includes(id));
     }
     return false;
   });
@@ -1519,7 +1520,7 @@ export function PromotionManager({ dictionary: dict, locale }: PromotionManagerP
                         </div>
                       </td>
                       <td className="px-4 py-3"><TypeBadge type={c.type} dict={dict} /></td>
-                      <td className="px-4 py-3 text-xs text-slate-600">{scopeLabel}{c.scopeIds.length > 0 ? ` (${c.scopeIds.length})` : ""}</td>
+                      <td className="px-4 py-3 text-xs text-slate-600">{scopeLabel}{((c.scopeIds ?? []).length > 0 ? ` (${(c.scopeIds ?? []).length})` : "")}</td>
                       <td className="px-4 py-3"><StatusBadge status={status} dict={dict} /></td>
                       <td className="px-4 py-3 text-right font-bold text-violet-600">#{c.priority}</td>
                       <td className="px-4 py-3 text-right nums text-slate-700">{c.usageCount.toLocaleString()}</td>

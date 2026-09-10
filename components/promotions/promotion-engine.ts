@@ -48,7 +48,7 @@ export function matchesScope(
   item: { id?: string | null; sku?: string | null; category?: string | null; brand?: string | null },
 ): boolean {
   if (c.scopeType === "store") return true;
-  const ids = c.scopeIds.map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const ids = (c.scopeIds ?? []).map((s) => s.trim().toLowerCase()).filter(Boolean);
   if (ids.length === 0) return false;
   if (c.scopeType === "products") {
     // scopeIds may hold product UUIDs (current ScopePicker behaviour) or SKUs (intended).
