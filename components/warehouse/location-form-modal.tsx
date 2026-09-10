@@ -173,7 +173,7 @@ export function LocationFormModal({
               onChange={(e) => setField("warehouse_id", e.target.value)}
             >
               <option value="">{dictionary.filterWarehousePlaceholder}</option>
-              {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+              {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name} ({w.code || w.id})</option>)}
             </select>
           </div>
 

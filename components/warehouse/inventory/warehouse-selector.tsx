@@ -82,7 +82,11 @@ export function WarehouseSelector({
                   <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-500">
                     {selected.code}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="shrink-0 rounded-md bg-amber-50 px-1.5 py-0.5 text-[11px] text-amber-700">
+                    {selected.id}
+                  </span>
+                )}
                 <span
                   className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                     selected.is_active
@@ -150,7 +154,7 @@ export function WarehouseSelector({
                       {w.id === value ? <Check className="h-4 w-4 text-violet-600" /> : null}
                     </span>
                     <span className="min-w-0 flex-1 truncate font-medium text-slate-700">{w.name}</span>
-                    {w.code ? <span className="shrink-0 text-[11px] text-slate-400">{w.code}</span> : null}
+                    <span className="shrink-0 text-[11px] text-slate-400">{w.code || w.id}</span>
                     {!w.is_active ? (
                       <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">
                         {dict.statusInactive}
