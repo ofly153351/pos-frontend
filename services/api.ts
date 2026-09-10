@@ -111,8 +111,8 @@ apiClient.interceptors.response.use(
       !authPaths.some((p) => error.config!.url!.startsWith(p))
     ) {
       clearAuthAndRedirect();
-      // Stall — don't let the error propagate into a retry/render loop
-      return new Promise<never>(() => {});
+      // Reject so TanStack Query can leave loading state and render its error/retry UI.
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   },
@@ -213,8 +213,9 @@ export async function authorizedApiRequest<T>(
     if (typeof window !== "undefined") {
       clearAuthAndRedirect();
     }
-    // Stall — redirect is in progress, don't throw to avoid retry/render loops
-    return new Promise<ApiResponse<T> & { data: T }>(() => {});
+    // Reject so callers (including TanStack Query) can leave loading state and
+    // render an error/retry UI while the redirect is being scheduled.
+    return Promise.reject(new ApiError("Authentication required", 401, "UNAUTHORIZED"));
   }
 
   const {
@@ -250,8 +251,8 @@ export async function authorizedRawRequest<T>(
     if (typeof window !== "undefined") {
       clearAuthAndRedirect();
     }
-    // Stall — redirect is in progress, don't throw to avoid retry/render loops
-    return new Promise<T>(() => {});
+    // Reject so raw-request callers also get a retryable auth error.
+    return Promise.reject(new ApiError("Authentication required", 401, "UNAUTHORIZED"));
   }
 
   const {

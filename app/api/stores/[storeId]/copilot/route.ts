@@ -1127,6 +1127,12 @@ async function backendGet<T>(
 export async function GET(request: Request, context: RouteContext) {
   const { storeId } = await context.params
   const authHeader = extractBearerToken(request)
+  if (!authHeader) {
+    return NextResponse.json(
+      { success: false, message: "Authentication required", error: { code: "UNAUTHORIZED" } },
+      { status: 401 },
+    )
+  }
 
   // ── 1. Parallel backend calls ──────────────────────────────────────────────
   const [
@@ -1162,7 +1168,7 @@ export async function GET(request: Request, context: RouteContext) {
       authHeader,
     ),
     backendGet<{ data: unknown[] } | unknown[]>(
-      `/api/v1/stores/${storeId}/warehouse/receipts?status=pending_review&limit=10`,
+      `/api/v1/warehouse/receipts?store_id=${encodeURIComponent(storeId)}&status=pending_review&limit=10`,
       authHeader,
     ),
     backendGet<RawAgingSummary>(
@@ -1178,7 +1184,7 @@ export async function GET(request: Request, context: RouteContext) {
       authHeader,
     ),
     backendGet<RawReceipt[]>(
-      `/api/v1/stores/${storeId}/warehouse/receipts?status=confirmed&limit=50`,
+      `/api/v1/warehouse/receipts?store_id=${encodeURIComponent(storeId)}&status=confirmed&limit=50`,
       authHeader,
     ),
   ])
