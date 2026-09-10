@@ -12,7 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
-import { listProducts } from "@/services/products";
+import { listLowStock } from "@/services/stock-alerts";
 import { listCountSessions } from "@/services/stock-count";
 
 export type NotificationLabels = {
@@ -56,22 +56,11 @@ export function NotificationDropdown({ labels, locale }: Props) {
         setHasError(true);
       });
 
-    listProducts({ limit: 500 })
+    listLowStock(10)
       .then((res) => {
-        const items = res.data?.items ?? [];
-        // Exclude inactive (disabled) products — they are not sellable, so they must
-        // not raise stock alerts. Mirrors inventory-manager getStatus(), which treats
-        // !is_active as "inactive" and excludes it from the low/out KPI counts.
-        const active = items.filter((p) => p.is_active);
-        setOutOfStock(active.filter((p) => (p.total_stock ?? 0) === 0).length);
-        setLowStock(
-          active.filter(
-            (p) =>
-              (p.total_stock ?? 0) > 0 &&
-              p.min_stock != null &&
-              (p.total_stock ?? 0) <= p.min_stock,
-          ).length,
-        );
+        const items = res.data ?? [];
+        setOutOfStock(items.filter((p) => p.quantity <= 0).length);
+        setLowStock(items.filter((p) => p.quantity > 0).length);
       })
       .catch((error) => {
         console.error("[NotificationDropdown] failed to load products", error);
