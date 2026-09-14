@@ -27,6 +27,11 @@ type Dict = {
   statusOverdue: string;
   statusCompleted: string;
   statusCancelled: string;
+  statusSent: string;
+  statusAccepted: string;
+  statusRejected: string;
+  statusExpired: string;
+  statusConverted: string;
   paymentUnpaid: string;
   paymentPartial: string;
   paymentPaid: string;
@@ -106,8 +111,13 @@ export function DocumentFilterBar({
           <option value="">{dict.allStatuses}</option>
           <option value="DRAFT">{dict.statusDraft}</option>
           <option value="PENDING">{dict.statusPending}</option>
+          <option value="SENT">{dict.statusSent}</option>
+          <option value="ACCEPTED">{dict.statusAccepted}</option>
+          <option value="REJECTED">{dict.statusRejected}</option>
+          <option value="EXPIRED">{dict.statusExpired}</option>
           <option value="OVERDUE">{dict.statusOverdue}</option>
           <option value="COMPLETED">{dict.statusCompleted}</option>
+          <option value="CONVERTED">{dict.statusConverted}</option>
           <option value="CANCELLED">{dict.statusCancelled}</option>
         </select>
 

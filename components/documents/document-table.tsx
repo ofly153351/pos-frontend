@@ -42,6 +42,11 @@ type Dict = {
   statusOverdue: string;
   statusCompleted: string;
   statusCancelled: string;
+  statusSent: string;
+  statusAccepted: string;
+  statusRejected: string;
+  statusExpired: string;
+  statusConverted: string;
   paymentUnpaid: string;
   paymentPartial: string;
   paymentPaid: string;
@@ -109,7 +114,7 @@ function fmtDate(s: string) {
   return new Intl.DateTimeFormat("th-TH", { dateStyle: "short" }).format(new Date(s));
 }
 
-const STATUS_OPTIONS: DocumentStatus[] = ["DRAFT", "PENDING", "OVERDUE", "COMPLETED", "CANCELLED"];
+const STATUS_OPTIONS: DocumentStatus[] = ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "CONVERTED", "CANCELLED"];
 
 export function DocumentTable({
   dict: d, documents, total, page, limit, isLoading,
@@ -159,9 +164,11 @@ export function DocumentTable({
   const from = (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
 
-  const statusLabel: Record<DocumentStatus, string> = {
-    DRAFT: d.statusDraft, PENDING: d.statusPending, OVERDUE: d.statusOverdue,
-    COMPLETED: d.statusCompleted, CANCELLED: d.statusCancelled,
+  const statusLabel: Record<string, string> = {
+    DRAFT: d.statusDraft, PENDING: d.statusPending, SENT: d.statusSent,
+    ACCEPTED: d.statusAccepted, REJECTED: d.statusRejected, EXPIRED: d.statusExpired,
+    OVERDUE: d.statusOverdue, COMPLETED: d.statusCompleted, CONVERTED: d.statusConverted,
+    CANCELLED: d.statusCancelled,
   };
 
   return (
@@ -301,10 +308,10 @@ export function DocumentTable({
                     </span>
                   </td>
                   <td className="px-3 py-2.5">
-                    <DocumentStatusBadge status={doc.status} dict={d} />
+                    <DocumentStatusBadge status={doc.status} dict={d} isQuotation={doc.type === "QUOTATION"} />
                   </td>
                   <td className="hidden px-3 py-2.5 lg:table-cell">
-                    <PaymentStatusBadge status={doc.payment_status} dict={d} />
+                    <PaymentStatusBadge status={doc.payment_status} dict={d} isQuotation={doc.type === "QUOTATION"} />
                   </td>
                   <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <DocumentRowActions

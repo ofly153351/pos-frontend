@@ -74,8 +74,11 @@ export async function convertToTaxInvoice(id: string): Promise<Document> {
   return res.data;
 }
 
-export async function convertToDeliveryOrder(id: string): Promise<Document> {
-  const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-do`, { method: "POST" });
+export async function convertToDeliveryOrder(id: string, deliveryDate?: string): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-do`, {
+    method: "POST",
+    body: deliveryDate ? { delivery_date: deliveryDate } : undefined,
+  });
   return res.data;
 }
 

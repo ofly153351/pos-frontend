@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, Printer, Share2, Truck, X } from "lucide-react";
+import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
@@ -21,6 +21,9 @@ type Dict = {
   email: string;
   share: string;
   comingSoon: string;
+  moreOptions: string;
+  print: string;
+  deliveryDate: string;
   pdfError: string;
   typeInvoice: string;
   typeReceipt: string;
@@ -28,7 +31,7 @@ type Dict = {
   typeQuotation: string;
   typeBill: string;
   typeCreditNote: string;
-  typeDeliveryOrder?: string;
+  typeDeliveryOrder: string;
   cancel: string;
   confirm: string;
   cancelDocument: string;
@@ -63,6 +66,9 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   const [isCancelling, startCancelTransition] = useTransition();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [deliveryDateModal, setDeliveryDateModal] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState("");
 
   const isPaid = paymentStatus === "PAID";
   const isCancelled = documentStatus === "CANCELLED";
@@ -159,9 +165,14 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
 
   function handleConvertToDO() {
     setCreateMenuOpen(false);
+    setDeliveryDateModal(true);
+  }
+
+  function confirmConvertToDO() {
+    setDeliveryDateModal(false);
     startConvertTransition(async () => {
       try {
-        await convertToDeliveryOrder(documentId);
+        await convertToDeliveryOrder(documentId, deliveryDate || undefined);
         toast.success("สร้างใบส่งของสำเร็จ");
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
@@ -358,52 +369,46 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   onClose={() => setConfirmCancel(false)}
                 />
               )}
-              {/* Copy selector — Original / Customer Copy / Company Copy / All copies.
-                  Drives preview, print, and PDF identically. */}
-              <select
-                value={copyIdx}
-                onChange={(e) => setCopyIdx(Number(e.target.value))}
-                title="เลือกชุดสำเนาที่จะพิมพ์"
-                className="rounded-lg border border-violet-200 bg-white px-2 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 focus:outline-none focus:ring-2 focus:ring-violet-300"
-              >
-                {copyChoices.map((c) => (
-                  <option key={c.idx} value={c.idx}>{c.th}</option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={isPdfLoading}
-                onClick={handleDownloadPdf}
-                title={dict.downloadPDF}
-                className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-40"
-              >
-                {isPdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => toast.info(dict.comingSoon)}
-                title={dict.email}
-                className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50"
-              >
-                <Mail className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => toast.info(dict.comingSoon)}
-                title={dict.share}
-                className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-              </button>
-              <button
-                type="button"
-                disabled={!html}
-                onClick={handlePrint}
-                className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-40"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                พิมพ์
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  aria-label={dict.moreOptions}
+                  title={dict.moreOptions}
+                  onClick={() => setMoreMenuOpen((open) => !open)}
+                  className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+                {moreMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setMoreMenuOpen(false)} />
+                    <div className="absolute right-0 top-full z-[61] mt-1 w-52 overflow-hidden rounded-lg border border-violet-100 bg-white p-1 shadow-lg">
+                      <select
+                        value={copyIdx}
+                        onChange={(e) => setCopyIdx(Number(e.target.value))}
+                        title="เลือกชุดสำเนาที่จะพิมพ์"
+                        className="mb-1 w-full rounded-md border border-violet-200 bg-white px-2 py-1.5 text-xs font-semibold text-violet-700"
+                      >
+                        {copyChoices.map((c) => (
+                          <option key={c.idx} value={c.idx}>{c.th}</option>
+                        ))}
+                      </select>
+                      <button type="button" disabled={isPdfLoading} onClick={handleDownloadPdf} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50">
+                        {isPdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 text-violet-600" />}{dict.downloadPDF}
+                      </button>
+                      <button type="button" onClick={() => toast.info(dict.comingSoon)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50">
+                        <Mail className="h-3.5 w-3.5 text-violet-600" />{dict.email}
+                      </button>
+                      <button type="button" onClick={() => toast.info(dict.comingSoon)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50">
+                        <Share2 className="h-3.5 w-3.5 text-violet-600" />{dict.share}
+                      </button>
+                      <button type="button" disabled={!html} onClick={handlePrint} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50 disabled:opacity-40">
+                        <Printer className="h-3.5 w-3.5 text-violet-600" />{dict.print}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={onClose}
@@ -425,6 +430,25 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
 
           {/* Document iframe */}
           {iframeBody}
+
+          {deliveryDateModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 px-4">
+              <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+                <h3 className="text-base font-bold text-slate-800">{dict.typeDeliveryOrder}</h3>
+                <p className="mt-1 text-sm text-slate-500">{dict.deliveryDate}</p>
+                <input
+                  type="date"
+                  value={deliveryDate}
+                  onChange={(e) => setDeliveryDate(e.target.value)}
+                  className="mt-3 w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                />
+                <div className="mt-4 flex justify-end gap-2">
+                  <button type="button" onClick={() => setDeliveryDateModal(false)} className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50">{dict.cancel}</button>
+                  <button type="button" onClick={confirmConvertToDO} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">{dict.confirm}</button>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </>

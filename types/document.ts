@@ -10,9 +10,15 @@ export type DocumentType =
 export type DocumentStatus =
   | "DRAFT"
   | "PENDING"
+  | "SENT"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "EXPIRED"
   | "OVERDUE"
   | "COMPLETED"
-  | "CANCELLED";
+  | "CONVERTED"
+  | "CANCELLED"
+  | (string & {});
 
 export type PaymentStatus =
   | "UNPAID"
@@ -45,6 +51,7 @@ export interface Document {
   document_date: string;
   due_date?: string;
   valid_until?: string;
+  price_validity_days?: number;
   items: DocumentItem[];
   subtotal: number;
   vat_rate: number;
@@ -57,6 +64,9 @@ export interface Document {
   store_tax_id?: string;
   created_at: string;
   updated_at: string;
+  delivery_lead_time_days?: number;
+  po_received_date?: string;
+  expected_delivery_date?: string;
 }
 
 export interface DocumentListItem {
@@ -123,7 +133,11 @@ export interface CreateDocumentPayload {
   document_date: string;
   due_date?: string;
   valid_until?: string;
+  price_validity_days?: number;
   delivery_date?: string;
+  delivery_lead_time_days?: number;
+  po_received_date?: string;
+  expected_delivery_date?: string;
   delivery_address?: string;
   delivery_contact?: string;
   delivery_phone?: string;

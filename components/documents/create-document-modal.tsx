@@ -24,6 +24,10 @@ type Dict = {
   documentDate: string;
   optionalDueDate: string;
   validUntil?: string;
+  priceValidityDays?: string;
+  deliveryTerms?: string;
+  deliveryLeadTimeDays?: string;
+  poReceivedDate?: string;
   description: string;
   productSearch: string;
   scanWithCamera: string;
@@ -104,7 +108,10 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const [docDate, setDocDate] = useState(today());
   const [dueDate, setDueDate] = useState("");
   const [vatEnabled, setVatEnabled] = useState(false);
-  const [validUntil, setValidUntil] = useState("");
+
+  const [priceValidityDays, setPriceValidityDays] = useState<number | "">("");
+  const [deliveryLeadTimeDays, setDeliveryLeadTimeDays] = useState<number | "">("");
+  const [poReceivedDate, setPoReceivedDate] = useState("");
   // Delivery order fields
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -338,7 +345,10 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       customer_id: customerId,
       document_date: docDate,
       due_date: dueDate || undefined,
-      valid_until: validUntil || undefined,
+
+      price_validity_days: docType === "QUOTATION" && priceValidityDays !== "" ? priceValidityDays : undefined,
+      delivery_lead_time_days: docType === "QUOTATION" && deliveryLeadTimeDays !== "" ? deliveryLeadTimeDays : undefined,
+      po_received_date: docType === "QUOTATION" ? (poReceivedDate || undefined) : undefined,
       delivery_date: deliveryDate || undefined,
       delivery_address: deliveryAddress || undefined,
       delivery_contact: deliveryContact || undefined,
@@ -509,17 +519,37 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               </div>
 
               {docType === "QUOTATION" && (
-                <div>
+                <div className="md:col-span-3 rounded-xl border border-violet-100 bg-violet-50/40 p-4">
+                  <div className="mb-3 text-sm font-semibold text-violet-800">{d.deliveryTerms}</div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div>
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {d.validUntil ?? "ยืนราคาถึง"}
+                    {d.priceValidityDays}
                   </label>
-                  <input
-                    type="date"
+                  <input type="number" min={0} step={1}
                     className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                    value={validUntil}
-                    onChange={(e) => setValidUntil(e.target.value)}
+                    value={priceValidityDays}
+                    onChange={(e) => setPriceValidityDays(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
                   />
                 </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{d.deliveryLeadTimeDays}</label>
+                  <input type="number" min={0} step={1}
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    value={deliveryLeadTimeDays}
+                    onChange={(e) => setDeliveryLeadTimeDays(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{d.poReceivedDate}</label>
+                  <input type="date"
+                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    value={poReceivedDate}
+                    onChange={(e) => setPoReceivedDate(e.target.value)}
+                  />
+                </div>
+                </div>
+              </div>
               )}
 
               {docType === "DELIVERY_ORDER" && (

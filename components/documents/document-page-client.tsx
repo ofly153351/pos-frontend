@@ -39,12 +39,17 @@ type DocumentDict = {
   typeQuotation: string;
   typeBill: string;
   typeCreditNote: string;
-  typeDeliveryOrder?: string;
+  typeDeliveryOrder: string;
   statusDraft: string;
   statusPending: string;
   statusOverdue: string;
   statusCompleted: string;
   statusCancelled: string;
+  statusSent: string;
+  statusAccepted: string;
+  statusRejected: string;
+  statusExpired: string;
+  statusConverted: string;
   paymentUnpaid: string;
   paymentPartial: string;
   paymentPaid: string;
@@ -76,6 +81,7 @@ type DocumentDict = {
   perPage: string;
   copy: string;
   moreOptions: string;
+  deliveryDate: string;
   previewTitle: string;
   documentNo: string;
   date: string;
@@ -95,6 +101,10 @@ type DocumentDict = {
   noCustomersFound: string;
   documentDate: string;
   optionalDueDate: string;
+  priceValidityDays: string;
+  deliveryTerms: string;
+  deliveryLeadTimeDays: string;
+  poReceivedDate: string;
   addItem: string;
   description: string;
   quantity: string;
@@ -185,10 +195,9 @@ function buildDocLabelMaps(d: DocumentDict) {
     DELIVERY_ORDER: d.typeDeliveryOrder ?? "ใบส่งของ",
   };
   const statusLabel: Record<string, string> = {
-    DRAFT: d.statusDraft,
-    PENDING: d.statusPending,
-    OVERDUE: d.statusOverdue,
-    COMPLETED: d.statusCompleted,
+    DRAFT: d.statusDraft, PENDING: d.statusPending, SENT: d.statusSent,
+    ACCEPTED: d.statusAccepted, REJECTED: d.statusRejected, EXPIRED: d.statusExpired,
+    OVERDUE: d.statusOverdue, COMPLETED: d.statusCompleted, CONVERTED: d.statusConverted,
     CANCELLED: d.statusCancelled,
   };
   const payLabel: Record<string, string> = {
@@ -333,8 +342,8 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
           fmtDateShort(doc.document_date),
           doc.due_date ? fmtDateShort(doc.due_date) : "-",
           String(doc.total_amount ?? 0),
-          statusLabel[doc.status] ?? doc.status,
-          payLabel[doc.payment_status] ?? doc.payment_status,
+          doc.type === "QUOTATION" && doc.status === "PENDING" ? "-" : (statusLabel[doc.status] ?? doc.status),
+          doc.type === "QUOTATION" ? "-" : (payLabel[doc.payment_status] ?? doc.payment_status),
         ]),
       ];
       const csv = "﻿" + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -375,8 +384,8 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
             <td>${escapeHtml(doc.customer_name || d.allCustomers)}</td>
             <td>${escapeHtml(fmtDateShort(doc.document_date))}</td>
             <td class="r">${escapeHtml(fmtCurrency(doc.total_amount ?? 0))}</td>
-            <td>${escapeHtml(statusLabel[doc.status] ?? doc.status)}</td>
-            <td>${escapeHtml(payLabel[doc.payment_status] ?? doc.payment_status)}</td>
+            <td>${escapeHtml(doc.type === "QUOTATION" && doc.status === "PENDING" ? "-" : (statusLabel[doc.status] ?? doc.status))}</td>
+            <td>${escapeHtml(doc.type === "QUOTATION" ? "-" : (payLabel[doc.payment_status] ?? doc.payment_status))}</td>
           </tr>`,
         )
         .join("");
