@@ -82,6 +82,16 @@ type DocumentDict = {
   copy: string;
   moreOptions: string;
   deliveryDate: string;
+  paymentMethod: string;
+  paymentReference: string;
+  paidAmount: string;
+  confirmPayment: string;
+  paymentCash: string;
+  paymentTransfer: string;
+  paymentQr: string;
+  paymentCard: string;
+  paymentSuccess: string;
+  paymentError: string;
   previewTitle: string;
   documentNo: string;
   date: string;
@@ -556,6 +566,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
             <DocumentPreviewPanel
               documentId={selectedDocId}
               documentNo={documents.find((doc) => doc.id === selectedDocId)?.document_no}
+              documentTotal={documents.find((doc) => doc.id === selectedDocId)?.total_amount}
               documentType={documents.find((doc) => doc.id === selectedDocId)?.type}
               paymentStatus={documents.find((doc) => doc.id === selectedDocId)?.payment_status}
               documentStatus={documents.find((doc) => doc.id === selectedDocId)?.status}

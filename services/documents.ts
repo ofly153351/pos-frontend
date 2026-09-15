@@ -64,6 +64,11 @@ export async function cancelDocument(id: string): Promise<void> {
   await updateDocumentStatus(id, { status: "CANCELLED" });
 }
 
+export async function payDeliveryOrder(id: string, payload: { payment_method: string; payment_reference?: string; paid_amount: number }): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/pay-delivery`, { method: "POST", body: payload });
+  return res.data;
+}
+
 export async function payInvoice(id: string): Promise<Document> {
   const res = await authorizedApiRequest<Document>(`${base()}/${id}/pay`, { method: "POST" });
   return res.data;
