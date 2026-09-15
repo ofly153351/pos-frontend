@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
+import { cancelDocument, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
@@ -198,11 +198,10 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   }
 
   function handlePayDO() {
-    if (!sourceDocumentId) return;
     startPayTransition(async () => {
       try {
-        await payInvoice(sourceDocumentId);
-        toast.success("ชำระแล้ว — สร้างใบกำกับภาษีสำเร็จ");
+        await updateDocumentPaymentStatus(documentId, "PAID");
+        toast.success("ชำระเงินใบส่งของแล้ว");
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
       } catch {
@@ -371,7 +370,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   )}
                 </div>
               )}
-              {documentType === "DELIVERY_ORDER" && sourceDocumentId && !isPaid && !isCancelled && (
+              {documentType === "DELIVERY_ORDER" && !isPaid && !isCancelled && (
                 <button
                   type="button"
                   disabled={isPaying}

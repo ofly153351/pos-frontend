@@ -69,6 +69,14 @@ export async function payInvoice(id: string): Promise<Document> {
   return res.data;
 }
 
+export async function updateDocumentPaymentStatus(id: string, paymentStatus: "UNPAID" | "PARTIAL" | "PAID"): Promise<void> {
+  await authorizedApiRequest(`${base()}/${id}/payment-status`, {
+    method: "PUT",
+    body: { payment_status: paymentStatus },
+    allowEmptyData: true,
+  });
+}
+
 export async function convertToTaxInvoice(id: string): Promise<Document> {
   const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-tax`, { method: "POST" });
   return res.data;
