@@ -77,6 +77,10 @@ export async function updateDocumentPaymentStatus(id: string, paymentStatus: "UN
   });
 }
 
+export async function completeDeliveryOrder(id: string): Promise<void> {
+  await updateDocumentStatus(id, { status: "COMPLETED" });
+}
+
 export async function convertToTaxInvoice(id: string): Promise<Document> {
   const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-tax`, { method: "POST" });
   return res.data;

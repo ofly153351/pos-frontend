@@ -83,6 +83,9 @@ type DocumentDict = {
   copy: string;
   moreOptions: string;
   deliveryDate: string;
+  completeDelivery: string;
+  deliveryCompleteSuccess: string;
+  deliveryCompleteError: string;
   previewTitle: string;
   documentNo: string;
   date: string;

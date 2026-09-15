@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
+import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
@@ -24,6 +24,9 @@ type Dict = {
   moreOptions: string;
   print: string;
   deliveryDate: string;
+  completeDelivery: string;
+  deliveryCompleteSuccess: string;
+  deliveryCompleteError: string;
   pdfError: string;
   typeInvoice: string;
   typeReceipt: string;
@@ -210,6 +213,19 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
     });
   }
 
+  function handleCompleteDelivery() {
+    startConvertTransition(async () => {
+      try {
+        await completeDeliveryOrder(documentId);
+        toast.success(dict.deliveryCompleteSuccess);
+        qc.invalidateQueries({ queryKey: ["documents"] });
+        onClose();
+      } catch {
+        toast.error(dict.deliveryCompleteError);
+      }
+    });
+  }
+
   function handleCancel() {
     setConfirmCancel(true);
   }
@@ -379,6 +395,12 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                 >
                   {isPaying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
                   ชำระแล้ว
+                </button>
+              )}
+              {documentType === "DELIVERY_ORDER" && documentStatus !== "COMPLETED" && !isCancelled && (
+                <button type="button" disabled={isConverting} onClick={handleCompleteDelivery} className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40">
+                  {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Truck className="h-3.5 w-3.5" />}
+                  {dict.completeDelivery}
                 </button>
               )}
               {!isCancelled && documentStatus !== "COMPLETED" && (
