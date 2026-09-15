@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
+import { cancelDocument, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
@@ -159,6 +159,20 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
         onClose();
       } catch {
         toast.error("ไม่สามารถแปลงเอกสารได้");
+      }
+    });
+  }
+
+  function handleConvertToReceipt() {
+    setCreateMenuOpen(false);
+    startConvertTransition(async () => {
+      try {
+        await convertDocument(documentId, "RECEIPT");
+        toast.success("สร้างใบเสร็จรับเงินสำเร็จ");
+        qc.invalidateQueries({ queryKey: ["documents"] });
+        onClose();
+      } catch {
+        toast.error("ไม่สามารถสร้างใบเสร็จรับเงินได้");
       }
     });
   }
@@ -333,6 +347,28 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                     )}
                   </div>
                 </>
+              )}
+              {documentType === "DELIVERY_ORDER" && !isCancelled && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    disabled={isConverting}
+                    onClick={() => setCreateMenuOpen((o) => !o)}
+                    className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
+                  >
+                    {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                    สร้างเอกสาร
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                  {createMenuOpen && (
+                    <div className="absolute right-0 top-full z-[61] mt-1 w-44 overflow-hidden rounded-lg border border-violet-100 bg-white shadow-lg">
+                      <button type="button" onClick={handleConvertToReceipt} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50">
+                        <FileText className="h-3.5 w-3.5 text-violet-500" />
+                        {dict.typeReceipt}
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
               {documentType === "DELIVERY_ORDER" && sourceDocumentId && !isPaid && !isCancelled && (
                 <button
