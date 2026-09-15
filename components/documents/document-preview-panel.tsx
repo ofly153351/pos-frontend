@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payDeliveryOrder, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
+import { cancelDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
@@ -24,16 +24,6 @@ type Dict = {
   moreOptions: string;
   print: string;
   deliveryDate: string;
-  paymentMethod: string;
-  paymentReference: string;
-  paidAmount: string;
-  confirmPayment: string;
-  paymentCash: string;
-  paymentTransfer: string;
-  paymentQr: string;
-  paymentCard: string;
-  paymentSuccess: string;
-  paymentError: string;
   pdfError: string;
   typeInvoice: string;
   typeReceipt: string;
@@ -53,7 +43,6 @@ type Dict = {
 type Props = {
   documentId: string;
   documentNo?: string;
-  documentTotal?: number;
   documentType?: DocumentType;
   paymentStatus?: string;      // "UNPAID" | "PARTIAL" | "PAID"
   documentStatus?: string;     // "PENDING" | "COMPLETED" | "CANCELLED" | ...
@@ -70,7 +59,7 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentNo, documentTotal, documentType, paymentStatus, documentStatus, sourceDocumentId, dict, onClose, onNavigate }: Props) {
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, sourceDocumentId, dict, onClose, onNavigate }: Props) {
   const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
@@ -80,9 +69,6 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentTotal, do
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [deliveryDateModal, setDeliveryDateModal] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState("");
-  const [paymentModal, setPaymentModal] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("CASH");
-  const [paymentReference, setPaymentReference] = useState("");
 
   const isPaid = paymentStatus === "PAID";
   const isCancelled = documentStatus === "CANCELLED";
@@ -197,20 +183,15 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentTotal, do
   }
 
   function handlePayDO() {
-    setPaymentModal(true);
-  }
-
-  function confirmPayDO() {
     if (!sourceDocumentId) return;
-    setPaymentModal(false);
     startPayTransition(async () => {
       try {
-        await payDeliveryOrder(documentId, { payment_method: paymentMethod, payment_reference: paymentReference || undefined, paid_amount: documentTotal ?? 0 });
-        toast.success(dict.paymentSuccess);
+        await payInvoice(sourceDocumentId);
+        toast.success("ชำระแล้ว — สร้างใบกำกับภาษีสำเร็จ");
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
       } catch {
-        toast.error(dict.paymentError);
+        toast.error("ไม่สามารถดำเนินการได้");
       }
     });
   }
@@ -449,30 +430,6 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentTotal, do
 
           {/* Document iframe */}
           {iframeBody}
-
-          {paymentModal && (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 px-4">
-              <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
-                <h3 className="text-base font-bold text-slate-800">{dict.confirmPayment}</h3>
-                <label className="mt-3 block text-xs font-semibold text-slate-500">{dict.paymentMethod}</label>
-                <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className="mt-1 w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm">
-                  <option value="CASH">{dict.paymentCash}</option>
-                  <option value="TRANSFER">{dict.paymentTransfer}</option>
-                  <option value="QR">{dict.paymentQr}</option>
-                  <option value="CARD">{dict.paymentCard}</option>
-                </select>
-                <label className="mt-3 block text-xs font-semibold text-slate-500">{dict.paidAmount}</label>
-                <div className="mt-1 rounded-xl bg-violet-50 px-4 py-2.5 text-right text-lg font-bold text-violet-700">{(documentTotal ?? 0).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</div>
-                {paymentMethod !== "CASH" && (
-                  <input value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} placeholder={dict.paymentReference} className="mt-3 w-full rounded-xl border border-violet-200 px-4 py-2.5 text-sm" />
-                )}
-                <div className="mt-4 flex justify-end gap-2">
-                  <button type="button" onClick={() => setPaymentModal(false)} className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50">{dict.cancel}</button>
-                  <button type="button" disabled={isPaying} onClick={confirmPayDO} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-40">{dict.confirm}</button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {deliveryDateModal && (
             <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/30 px-4">
