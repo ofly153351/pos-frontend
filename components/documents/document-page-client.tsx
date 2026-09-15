@@ -50,6 +50,7 @@ type DocumentDict = {
   statusRejected: string;
   statusExpired: string;
   statusConverted: string;
+  statusProcessing: string;
   paymentUnpaid: string;
   paymentPartial: string;
   paymentPaid: string;
@@ -342,7 +343,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
           fmtDateShort(doc.document_date),
           doc.due_date ? fmtDateShort(doc.due_date) : "-",
           String(doc.total_amount ?? 0),
-          doc.type === "QUOTATION" && doc.status === "PENDING" ? "-" : (statusLabel[doc.status] ?? doc.status),
+          doc.type === "QUOTATION" && doc.status === "PENDING" ? "-" : (doc.type === "DELIVERY_ORDER" && doc.status === "PENDING" ? d.statusProcessing : (statusLabel[doc.status] ?? doc.status)),
           doc.type === "QUOTATION" ? "-" : (payLabel[doc.payment_status] ?? doc.payment_status),
         ]),
       ];
@@ -384,7 +385,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
             <td>${escapeHtml(doc.customer_name || d.allCustomers)}</td>
             <td>${escapeHtml(fmtDateShort(doc.document_date))}</td>
             <td class="r">${escapeHtml(fmtCurrency(doc.total_amount ?? 0))}</td>
-            <td>${escapeHtml(doc.type === "QUOTATION" && doc.status === "PENDING" ? "-" : (statusLabel[doc.status] ?? doc.status))}</td>
+            <td>${escapeHtml(doc.type === "QUOTATION" && doc.status === "PENDING" ? "-" : (doc.type === "DELIVERY_ORDER" && doc.status === "PENDING" ? d.statusProcessing : (statusLabel[doc.status] ?? doc.status)))}</td>
             <td>${escapeHtml(doc.type === "QUOTATION" ? "-" : (payLabel[doc.payment_status] ?? doc.payment_status))}</td>
           </tr>`,
         )

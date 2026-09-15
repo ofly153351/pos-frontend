@@ -2183,6 +2183,7 @@
     "statusRejected": "ลูกค้าปฏิเสธ",
     "statusExpired": "หมดอายุ",
     "statusConverted": "เปลี่ยนเป็นเอกสารขายแล้ว",
+    "statusProcessing": "รอดำเนินการ",
     "paymentUnpaid": "ค้างชำระ",
     "paymentPartial": "ชำระบางส่วน",
     "paymentPaid": "ชำระแล้ว",

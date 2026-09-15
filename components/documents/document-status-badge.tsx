@@ -11,6 +11,7 @@ type DocDict = {
   statusRejected: string;
   statusExpired: string;
   statusConverted: string;
+  statusProcessing: string;
 };
 type PayDict = { paymentUnpaid: string; paymentPartial: string; paymentPaid: string };
 
@@ -33,14 +34,14 @@ const PAY_STATUS: Record<string, { className: string }> = {
   PAID: { className: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200" },
 };
 
-export function DocumentStatusBadge({ status, dict, isQuotation = false }: { status: DocumentStatus; dict: DocDict; isQuotation?: boolean }) {
+export function DocumentStatusBadge({ status, dict, isQuotation = false, isDeliveryOrder = false }: { status: DocumentStatus; dict: DocDict; isQuotation?: boolean; isDeliveryOrder?: boolean }) {
   if (isQuotation && status === "PENDING") {
     return <span className="inline-flex rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">-</span>;
   }
   const cfg = DOC_STATUS[status] ?? { className: "bg-slate-100 text-slate-600" };
   const labels: Record<string, string> = {
     DRAFT: dict.statusDraft,
-    PENDING: dict.statusPending,
+    PENDING: isDeliveryOrder ? dict.statusProcessing : dict.statusPending,
     SENT: dict.statusSent,
     ACCEPTED: dict.statusAccepted,
     REJECTED: dict.statusRejected,

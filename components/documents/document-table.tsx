@@ -47,6 +47,7 @@ type Dict = {
   statusRejected: string;
   statusExpired: string;
   statusConverted: string;
+  statusProcessing: string;
   paymentUnpaid: string;
   paymentPartial: string;
   paymentPaid: string;
@@ -308,7 +309,7 @@ export function DocumentTable({
                     </span>
                   </td>
                   <td className="px-3 py-2.5">
-                    <DocumentStatusBadge status={doc.status} dict={d} isQuotation={doc.type === "QUOTATION"} />
+                    <DocumentStatusBadge status={doc.status} dict={d} isQuotation={doc.type === "QUOTATION"} isDeliveryOrder={doc.type === "DELIVERY_ORDER"} />
                   </td>
                   <td className="hidden px-3 py-2.5 lg:table-cell">
                     <PaymentStatusBadge status={doc.payment_status} dict={d} isQuotation={doc.type === "QUOTATION"} />

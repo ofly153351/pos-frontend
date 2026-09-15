@@ -32,6 +32,7 @@ type Dict = {
   statusRejected: string;
   statusExpired: string;
   statusConverted: string;
+  statusProcessing: string;
   paymentUnpaid: string;
   paymentPartial: string;
   paymentPaid: string;

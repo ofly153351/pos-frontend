@@ -2183,6 +2183,7 @@
     "statusRejected": "Rejected",
     "statusExpired": "Expired",
     "statusConverted": "Converted",
+    "statusProcessing": "Processing",
     "paymentUnpaid": "Unpaid",
     "paymentPartial": "Partial",
     "paymentPaid": "Paid",
