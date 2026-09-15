@@ -53,7 +53,7 @@ type Props = {
 };
 
 // A4 types open as a full drawer; all others use the inline panel card.
-const A4_TYPES: DocumentType[] = ["INVOICE", "TAX_INVOICE", "BILL", "QUOTATION", "CREDIT_NOTE", "DELIVERY_ORDER"];
+const A4_TYPES: DocumentType[] = ["INVOICE", "TAX_INVOICE", "BILL", "QUOTATION", "CREDIT_NOTE", "DELIVERY_ORDER", "RECEIPT"];
 
 function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
@@ -167,10 +167,11 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
     setCreateMenuOpen(false);
     startConvertTransition(async () => {
       try {
-        await convertDocument(documentId, "RECEIPT");
+        const receipt = await convertDocument(documentId, "RECEIPT");
         toast.success("สร้างใบเสร็จรับเงินสำเร็จ");
         qc.invalidateQueries({ queryKey: ["documents"] });
-        onClose();
+        if (onNavigate) onNavigate(receipt.id);
+        else onClose();
       } catch {
         toast.error("ไม่สามารถสร้างใบเสร็จรับเงินได้");
       }
