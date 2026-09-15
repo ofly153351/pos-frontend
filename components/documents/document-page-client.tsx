@@ -559,7 +559,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
               documentType={documents.find((doc) => doc.id === selectedDocId)?.type}
               paymentStatus={documents.find((doc) => doc.id === selectedDocId)?.payment_status}
               documentStatus={documents.find((doc) => doc.id === selectedDocId)?.status}
-              sourceDocumentId={documents.find((doc) => doc.id === selectedDocId)?.source_document_id}
+
               dict={d}
               onClose={() => setSelectedDocId(null)}
               onNavigate={(id) => setSelectedDocId(id)}

@@ -46,7 +46,7 @@ type Props = {
   documentType?: DocumentType;
   paymentStatus?: string;      // "UNPAID" | "PARTIAL" | "PAID"
   documentStatus?: string;     // "PENDING" | "COMPLETED" | "CANCELLED" | ...
-  sourceDocumentId?: string;   // for DELIVERY_ORDER → linked INVOICE id
+
   dict: Dict;
   onClose: () => void;
   onNavigate?: (id: string) => void; // jump to another document in the lineage
@@ -59,7 +59,7 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, sourceDocumentId, dict, onClose, onNavigate }: Props) {
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, dict, onClose, onNavigate }: Props) {
   const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
