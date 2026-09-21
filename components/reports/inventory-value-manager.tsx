@@ -22,15 +22,19 @@ import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { CategoryValueBars, type CategoryValueRow } from "@/components/reports/category-value-bars";
 import type { ReportsInventoryDictionary } from "@/components/reports/reports-types";
+import type { InventoryValueManagerKpiItem } from "./types";
+import type { InventoryValueManagerProps } from "./types";
+import type { InventoryValueManagerDeadDays } from "./types";
 
-type Props = { dictionary: ReportsInventoryDictionary; locale: string };
+
+
 
 const TOP_CATEGORIES = 6;
 
-type DeadDays = 30 | 60 | 90;
 
-export function InventoryValueManager({ dictionary: t, locale }: Props) {
-  const [deadDays, setDeadDays] = useState<DeadDays>(30);
+
+export function InventoryValueManager({ dictionary: t, locale }: InventoryValueManagerProps) {
+  const [deadDays, setDeadDays] = useState<InventoryValueManagerDeadDays>(30);
 
   // All inventory-value KPIs and category bars come from the same backend
   // aggregate response. Do not fetch listProducts here: its limit is capped
@@ -143,22 +147,9 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
     };
   })();
 
-  type KpiItem = {
-    label: string;
-    value: string;
-    icon: LucideIcon;
-    iconBg: string;
-    iconColor: string;
-    emphasis?: boolean;
-    warning?: boolean;
-    warningHint?: string;
-    valueTone?: "default" | "danger";
-    hint?: string;
-  };
-
   // When expected profit is negative the figure is misleading — swap that slot
   // for a Risk Summary card that frames it as a risk + points to the issue count.
-  const profitOrRiskCard: KpiItem = profitNegative
+  const profitOrRiskCard: InventoryValueManagerKpiItem = profitNegative
     ? {
         label: t.kpi.riskTitle,
         value: t.kpi.riskHigh,
@@ -182,7 +173,7 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
         warningHint: t.kpi.abnormalHint,
       };
 
-  const KPIS: KpiItem[] = [
+  const KPIS: InventoryValueManagerKpiItem[] = [
     { label: t.kpi.totalCost, value: money(totals.cost), icon: Coins, iconBg: "bg-violet-100", iconColor: "text-violet-600", warning: valuationSuspect, warningHint: t.kpi.abnormalHint },
     { label: t.kpi.retailValue, value: money(totals.retail), icon: Wallet, iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
     profitOrRiskCard,
@@ -190,7 +181,7 @@ export function InventoryValueManager({ dictionary: t, locale }: Props) {
     { label: t.kpi.totalUnits, value: `${int(totals.units)} ${t.kpi.unitsSuffix}`, icon: Boxes, iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },
   ];
 
-  const DEAD_FILTERS: Array<{ key: DeadDays; label: string }> = [
+  const DEAD_FILTERS: Array<{ key: InventoryValueManagerDeadDays; label: string }> = [
     { key: 30, label: t.deadStock.filter30 },
     { key: 60, label: t.deadStock.filter60 },
     { key: 90, label: t.deadStock.filter90 },

@@ -48,6 +48,10 @@ import type {
   ScopeType,
 } from "./promotion-types";
 import { ScopePicker } from "./scope-picker";
+import type { PromotionManagerPreviewRow } from "./types";
+import type { PromotionManagerEditorProps } from "./types";
+import type { PromotionManagerPromotionManagerProps } from "./types";
+
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -506,9 +510,9 @@ function CampaignCard({ campaign, onEdit, onDelete, onDuplicate, onToggle, dict 
 
 // ── Enhanced Live Preview panel ──────────────────────────────────────────────
 
-type PreviewRow = { label: string; value: React.ReactNode; accent?: boolean };
 
-function PreviewSection({ rows }: { rows: PreviewRow[] }) {
+
+function PreviewSection({ rows }: { rows: PromotionManagerPreviewRow[] }) {
   if (rows.length === 0) return null;
   return (
     <dl className="space-y-1.5">
@@ -582,24 +586,24 @@ function LivePreviewPanel({ form, dict }: { form: Partial<Campaign>; dict: Promo
     : null;
 
   // Sections of the preview
-  const identitySection: PreviewRow[] = [];
+  const identitySection: PromotionManagerPreviewRow[] = [];
   if (form.type) identitySection.push({ label: d.summaryType, value: <TypeBadge type={form.type} dict={dict} /> });
   if (discountValue) identitySection.push({ label: d.discountValue, value: discountValue, accent: true });
 
-  const scopeSection: PreviewRow[] = [
+  const scopeSection: PromotionManagerPreviewRow[] = [
     { label: d.summaryScope, value: scopeText },
   ];
   if (cylText) scopeSection.push({ label: dict.typeConfig.cylinderTypes, value: cylText });
 
-  const condSection: PreviewRow[] = conditionParts.length > 0
+  const condSection: PromotionManagerPreviewRow[] = conditionParts.length > 0
     ? [{ label: d.conditionsSummary, value: conditionParts.join(" · ") }]
     : [];
 
-  const schedSection: PreviewRow[] = [
+  const schedSection: PromotionManagerPreviewRow[] = [
     { label: d.scheduleSummary, value: schedText },
   ];
 
-  const limitsSection: PreviewRow[] = [
+  const limitsSection: PromotionManagerPreviewRow[] = [
     { label: d.summaryPriority, value: `#${form.priority ?? 1}`, accent: true },
     ...(limitText ? [{ label: d.limitsSummary, value: limitText }] : []),
     { label: sd.stackable, value: form.stackable ?? true
@@ -855,18 +859,9 @@ function ImpactSummaryPanel({ form, dict, scopeNames }: { form: Partial<Campaign
 
 // ── Single-page Promotion Editor ─────────────────────────────────────────────
 
-type EditorProps = {
-  form: Partial<Campaign>;
-  onChange: (patch: Partial<Campaign>) => void;
-  onSave: () => void;
-  onCancel: () => void;
-  campaigns: Campaign[];
-  editingId: string | null;
-  dict: PromotionDictionary;
-  isPending: boolean;
-};
 
-function PromotionEditor({ form, onChange, onSave, onCancel, campaigns, editingId, dict, isPending }: EditorProps) {
+
+function PromotionEditor({ form, onChange, onSave, onCancel, campaigns, editingId, dict, isPending }: PromotionManagerEditorProps) {
   const conflicts = useMemo(() => detectConflicts(form, campaigns, editingId), [form, campaigns, editingId]);
   const [scopeNames, setScopeNames] = useState<Record<string, string>>({});
   const days = DAY_KEYS.map((k, i) => ({ key: k, label: dict.scheduleStep.days[k], value: i }));
@@ -1241,12 +1236,9 @@ function PromotionEditor({ form, onChange, onSave, onCancel, campaigns, editingI
 
 // ── Main export ──────────────────────────────────────────────────────────────
 
-type PromotionManagerProps = {
-  dictionary: PromotionDictionary;
-  locale: Locale;
-};
 
-export function PromotionManager({ dictionary: dict, locale }: PromotionManagerProps) {
+
+export function PromotionManager({ dictionary: dict, locale }: PromotionManagerPromotionManagerProps) {
   const queryClient = useQueryClient();
   const campaignsQuery = useQuery({ queryKey: ["promotions"], queryFn: async () => (await listPromotions()).data });
   const campaigns = useMemo<Campaign[]>(() => campaignsQuery.data ?? [], [campaignsQuery.data]);

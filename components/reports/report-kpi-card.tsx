@@ -1,34 +1,13 @@
 import type { ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
+import type { ReportKpiCardReportKpiCardProps } from "./types";
+export type { ReportKpiCardReportKpiCardProps as ReportKpiCardProps } from "./types";
+
 
 // Reusable KPI tile for the Reports & Finance module.
 // Mirrors the dashboard card pattern (rounded-2xl, violet border, soft shadow,
 // lift-on-hover) so every report page stays visually consistent.
-export type ReportKpiCardProps = {
-  label: string;
-  value: string;
-  icon: ReactNode;
-  /** Tailwind background class for the icon chip, e.g. "bg-violet-100". */
-  iconBg: string;
-  /** Tailwind text-color class for the icon, e.g. "text-violet-600". */
-  iconColor: string;
-  /** Optional secondary line below the value. */
-  hint?: string;
-  /** Highlight the card (used for the headline metric, e.g. expected profit). */
-  emphasis?: boolean;
-  /** Flag the number as abnormal/suspicious — amber border + ⚠ next to label. */
-  warning?: boolean;
-  /** Tooltip explaining the warning (also used as the ⚠ aria-label). */
-  warningHint?: string;
-  /** Colour the value red when the figure is genuinely bad (e.g. negative profit). */
-  valueTone?: "default" | "danger";
-  /** Optional node rendered below the hint (e.g. a trend badge). */
-  footer?: ReactNode;
-  /** Extra classes for the outer article (e.g. grid col-span passthrough). */
-  className?: string;
-  /** Show a skeleton placeholder in place of the value (hides hint/footer). */
-  loading?: boolean;
-};
+
 
 export function ReportKpiCard({
   label,
@@ -44,7 +23,7 @@ export function ReportKpiCard({
   footer,
   className,
   loading = false,
-}: ReportKpiCardProps) {
+}: ReportKpiCardReportKpiCardProps) {
   const borderClass = warning
     ? "border-amber-300 ring-1 ring-amber-100"
     : emphasis

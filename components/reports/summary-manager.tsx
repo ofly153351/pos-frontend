@@ -36,11 +36,15 @@ import { RevenueProfitLineChart, type RevenueProfitDatum } from "@/components/re
 import { SalesByHourChart } from "@/components/reports/sales-by-hour-chart";
 import { DashboardHero, type HeroPeriod } from "@/components/shared/dashboard-hero";
 import type { SummaryDictionary } from "@/components/reports/summary-types";
+import type { SummaryManagerKpiItem } from "./types";
 import { resolvePaymentLabel, canonicalPaymentKey, outstandingNote } from "@/lib/payment-method";
+import type { SummaryManagerProps } from "./types";
+import type { SummaryManagerTab } from "./types";
 
-type Props = { dictionary: SummaryDictionary; locale: string };
 
-type Tab = HeroPeriod;
+
+
+
 
 const DAY_MS = 86_400_000;
 const TOP_RANKED = 5;
@@ -84,8 +88,8 @@ function csvCell(v: string | number) {
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-export function SummaryManager({ dictionary: t, locale }: Props) {
-  const [tab, setTab] = useState<Tab>("30d");
+export function SummaryManager({ dictionary: t, locale }: SummaryManagerProps) {
+  const [tab, setTab] = useState<SummaryManagerTab>("30d");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [applied, setApplied] = useState<GetPnlParams>({ period: "30d" });
@@ -228,18 +232,7 @@ export function SummaryManager({ dictionary: t, locale }: Props) {
     : "";
 
   // ── KPI row (6 sales metrics) ──
-  type KpiItem = {
-    label: string;
-    value: string;
-    icon: LucideIcon;
-    iconBg: string;
-    iconColor: string;
-    hint?: string;
-    emphasis?: boolean;
-    warning?: boolean;
-    valueTone?: "default" | "danger";
-  };
-  const KPIS: KpiItem[] = data
+  const KPIS: SummaryManagerKpiItem[] = data
     ? [
         // Row 1 — money flow: revenue → cost → discount → profit
         { label: t.kpi.revenue, value: money(data.revenue), icon: Wallet, iconBg: "bg-violet-100", iconColor: "text-violet-600" },

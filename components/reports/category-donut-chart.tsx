@@ -2,11 +2,14 @@
 
 import { useMemo } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import type { CategoryDonutChartDonutDatum } from "./types";
+export type { CategoryDonutChartDonutDatum as DonutDatum } from "./types";
+
 
 // Sales-by-category donut. Solid violet ramp (no gradients, per the design
 // system). Slices + a compact legend with share %. Total revenue sits in the
 // centre. Touch-friendly: shares are always visible in the legend, not hover-only.
-export type DonutDatum = { name: string; value: number };
+
 
 const SLICE_COLORS = ["#7c3aed", "#8b5cf6", "#a78bfa", "#c4b5fd", "#6d28d9", "#ddd6fe"];
 const TOP_SLICES = 6;
@@ -18,7 +21,7 @@ export function CategoryDonutChart({
   othersLabel,
   uncategorizedLabel,
 }: {
-  rows: DonutDatum[];
+  rows: CategoryDonutChartDonutDatum[];
   currency: (value: number) => string;
   emptyLabel: string;
   othersLabel: string;

@@ -17,14 +17,16 @@ import { BarTrendChart, type BarTrendDatum } from "@/components/reports/bar-tren
 import { ExpenseFormModal } from "@/components/finance/expense-form-modal";
 import type { ExpenseDictionary } from "@/components/finance/finance-types";
 import type { Expense } from "@/types/expense";
+import type { ExpenseManagerKpiItem, ExpenseManagerProps } from "./types";
 
-type Props = { dictionary: ExpenseDictionary; locale: string };
+
+
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-export function ExpenseManager({ dictionary: t, locale }: Props) {
+export function ExpenseManager({ dictionary: t, locale }: ExpenseManagerProps) {
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
@@ -146,8 +148,7 @@ export function ExpenseManager({ dictionary: t, locale }: Props) {
 
   const summaryLoading = summaryQuery.isPending;
 
-  type KpiItem = { label: string; value: string; icon: LucideIcon; iconBg: string; iconColor: string; hint?: string };
-  const KPIS: KpiItem[] = summary
+  const KPIS: ExpenseManagerKpiItem[] = summary
     ? [
         { label: t.kpi.monthlyTotal, value: money(summary.monthly_total), icon: Wallet, iconBg: "bg-violet-100", iconColor: "text-violet-600" },
         { label: t.kpi.count, value: `${int(summary.monthly_count)} ${t.kpi.countSuffix}`, icon: Hash, iconBg: "bg-indigo-100", iconColor: "text-indigo-600" },

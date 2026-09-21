@@ -32,9 +32,12 @@ import { RevenueCostProfitBars, type RcpRow } from "@/components/finance/revenue
 import { RevenueProfitLineChart, type RevenueProfitDatum } from "@/components/reports/revenue-profit-line-chart";
 import { DashboardHero, type HeroPeriod } from "@/components/shared/dashboard-hero";
 import type { PnlDictionary } from "@/components/finance/pnl-types";
+import type { PnlManagerFlowStep, PnlManagerInsight, PnlManagerKpiItem } from "./types";
 import { resolvePaymentLabel, canonicalPaymentKey, outstandingNote } from "@/lib/payment-method";
+import type { PnlManagerProps } from "./types";
 
-type Props = { dictionary: PnlDictionary; locale: string };
+
+
 
 // Display-only insight thresholds (do not affect any financial calculation).
 const HEALTHY_MARGIN = 10; // net margin ≥ 10% reads as healthy
@@ -73,7 +76,7 @@ function rankClass(i: number) {
   return "bg-violet-50 text-violet-600";
 }
 
-export function PnlManager({ dictionary: t, locale }: Props) {
+export function PnlManager({ dictionary: t, locale }: PnlManagerProps) {
   const [tab, setTab] = useState<HeroPeriod>("30d");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
@@ -222,18 +225,7 @@ export function PnlManager({ dictionary: t, locale }: Props) {
     : "";
 
   // ── KPI cards ──
-  type KpiItem = {
-    label: string;
-    value: string;
-    icon: LucideIcon;
-    iconBg: string;
-    iconColor: string;
-    hint?: string;
-    emphasis?: boolean;
-    warning?: boolean;
-    valueTone?: "default" | "danger";
-  };
-  const KPIS: KpiItem[] = [
+  const KPIS: PnlManagerKpiItem[] = [
     {
       label: t.kpi.netRevenue,
       value: money(calc.netRevenue),
@@ -289,16 +281,7 @@ export function PnlManager({ dictionary: t, locale }: Props) {
   ];
 
   // ── Profit-flow steps (Revenue → COGS → Gross Profit → Opex → Net Profit) ──
-  type FlowStep = {
-    key: string;
-    label: string;
-    value: number;
-    icon: LucideIcon;
-    tone: "revenue" | "cost" | "profit";
-    result?: boolean;
-    badge?: string;
-  };
-  const flowSteps: FlowStep[] = [
+  const flowSteps: PnlManagerFlowStep[] = [
     { key: "rev", label: t.kpi.netRevenue, value: calc.netRevenue, icon: Wallet, tone: "revenue" },
     { key: "cogs", label: t.statement.cogs, value: -calc.cogs, icon: Boxes, tone: "cost" },
     {
@@ -323,8 +306,7 @@ export function PnlManager({ dictionary: t, locale }: Props) {
   ];
 
   // ── Business insights (read-only, derived from existing figures) ──
-  type Insight = { key: string; tone: "danger" | "warning" | "success" | "info"; title: string; desc: string };
-  const insights: Insight[] = [];
+  const insights: PnlManagerInsight[] = [];
   if (report && !pnlQuery.isPending) {
     if (isLoss) {
       insights.push({ key: "loss", tone: "danger", title: t.insights.lossTitle, desc: t.insights.lossDesc });

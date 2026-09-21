@@ -18,37 +18,20 @@ import {
 } from "@/services/products";
 import { ScanButton } from "@/components/shared/scan-button";
 import type { PromotionDictionary } from "./promotion-types";
+import type { ScopePickerPickerItem } from "./types";
+import type { ScopePickerGenericPickerDict } from "./types";
+import type { ScopePickerGenericPickerProps } from "./types";
+
 
 // ── Shared item shape ─────────────────────────────────────────────────────────
 
-type PickerItem = { id: string; name: string; sub?: string };
+
 
 // ── Generic multi-select dropdown ─────────────────────────────────────────────
 
-type GenericPickerDict = {
-  searchPlaceholder: string;
-  /** Must contain the literal string "{count}" */
-  selectedCount: string;
-  clearAll: string;
-  noResults: string;
-  loading: string;
-  loadMore: string;
-};
 
-type GenericPickerProps = {
-  items: PickerItem[];
-  selectedIds: string[];
-  onChange: (ids: string[]) => void;
-  /** Called whenever the id→name map derived from `items` changes */
-  onNamesChange?: (map: Record<string, string>) => void;
-  isLoading?: boolean;
-  hasMore?: boolean;
-  onLoadMore?: () => void;
-  /** When set, renders a mobile camera-scan button next to the search input. Only the
-   *  product picker passes this — category/brand searches have no barcode to scan. */
-  scanTitle?: string;
-  dict: GenericPickerDict;
-};
+
+
 
 function GenericPicker({
   items,
@@ -60,7 +43,7 @@ function GenericPicker({
   onLoadMore,
   scanTitle,
   dict,
-}: GenericPickerProps) {
+}: ScopePickerGenericPickerProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -353,7 +336,7 @@ export function ScopeCategoryPicker({
     staleTime: 5 * 60 * 1000,
   });
 
-  const items: PickerItem[] = useMemo(
+  const items: ScopePickerPickerItem[] = useMemo(
     () =>
       (q.data ?? [])
         .filter((c: ProductType) => c.is_active)
@@ -404,7 +387,7 @@ export function ScopeBrandPicker({
     staleTime: 5 * 60 * 1000,
   });
 
-  const items: PickerItem[] = useMemo(
+  const items: ScopePickerPickerItem[] = useMemo(
     () =>
       (q.data ?? [])
         .filter((b: ProductBrand) => b.is_active)
@@ -440,7 +423,7 @@ export function ScopeBrandPicker({
 
 const PRODUCT_PAGE_SIZE = 100;
 
-function productToItem(p: Product): PickerItem {
+function productToItem(p: Product): ScopePickerPickerItem {
   const parts: string[] = [];
   if (p.sku) parts.push(p.sku);
   if (p.barcode) parts.push(p.barcode);
@@ -467,7 +450,7 @@ export function ScopeProductPicker({
   onNamesChange?: (map: Record<string, string>) => void;
   dict: PromotionDictionary;
 }) {
-  const [allItems, setAllItems] = useState<PickerItem[]>([]);
+  const [allItems, setAllItems] = useState<ScopePickerPickerItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);

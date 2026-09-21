@@ -1,15 +1,14 @@
 "use client";
 
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { RevenueProfitLineChartRevenueProfitDatum } from "./types";
+export type { RevenueProfitLineChartRevenueProfitDatum as RevenueProfitDatum } from "./types";
+
 
 // Sales-performance trend: revenue as a filled area (gives the chart dashboard
 // presence) with gross profit as an overlaid line. Built on the project's
 // existing Recharts dependency. Touch-friendly: values surface in the tooltip.
-export type RevenueProfitDatum = {
-  label: string;
-  revenue: number;
-  profit: number;
-};
+
 
 export function RevenueProfitLineChart({
   data,
@@ -19,7 +18,7 @@ export function RevenueProfitLineChart({
   profitLabel,
   height = 300,
 }: {
-  data: RevenueProfitDatum[];
+  data: RevenueProfitLineChartRevenueProfitDatum[];
   currency: (value: number) => string;
   emptyLabel: string;
   revenueLabel: string;

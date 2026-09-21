@@ -9,25 +9,20 @@ import { ApiError } from "@/services/api";
 import { createExpense, createExpenseCategory, updateExpense } from "@/services/expenses";
 import type { Expense, ExpenseCategory } from "@/types/expense";
 import type { ExpenseDictionary } from "@/components/finance/finance-types";
+import type { ExpenseFormModalProps } from "./types";
+import type { ExpenseFormModalFormErrors } from "./types";
 
-type Props = {
-  dictionary: ExpenseDictionary;
-  categories: ExpenseCategory[];
-  editing: Expense | null;
-  onClose: () => void;
-  onSaved: () => void;
-  /** Called after a new category is created so the parent can refetch its list. */
-  onCategoryCreated?: () => void;
-};
+
+
 
 const PAYMENT_METHODS = ["cash", "bank_transfer", "promptpay", "credit_card", "debit_card", "cheque"] as const;
 const CREATE_CATEGORY_VALUE = "__create__";
-type FormErrors = Partial<Record<"expense_date" | "category_id" | "description" | "amount", string>>;
 
-export function ExpenseFormModal({ dictionary: t, categories, editing, onClose, onSaved, onCategoryCreated }: Props) {
+
+export function ExpenseFormModal({ dictionary: t, categories, editing, onClose, onSaved, onCategoryCreated }: ExpenseFormModalProps) {
   const isEdit = editing !== null;
   const [isPending, startTransition] = useTransition();
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [errors, setErrors] = useState<ExpenseFormModalFormErrors>({});
 
   const [date, setDate] = useState(() => (editing ? editing.expense_date.slice(0, 10) : new Date().toISOString().slice(0, 10)));
   const [categoryId, setCategoryId] = useState(() => editing?.category_id ?? "");
@@ -86,8 +81,8 @@ export function ExpenseFormModal({ dictionary: t, categories, editing, onClose, 
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  function validate(): FormErrors {
-    const e: FormErrors = {};
+  function validate(): ExpenseFormModalFormErrors {
+    const e: ExpenseFormModalFormErrors = {};
     if (!date) e.expense_date = t.form.errDate;
     if (!categoryId) e.category_id = t.form.errCategory;
     if (!description.trim()) e.description = t.form.errDescription;
@@ -123,7 +118,7 @@ export function ExpenseFormModal({ dictionary: t, categories, editing, onClose, 
         onClose();
       } catch (err) {
         if (err instanceof ApiError && err.fields?.length) {
-          setErrors(err.fieldMap() as FormErrors);
+          setErrors(err.fieldMap() as ExpenseFormModalFormErrors);
         } else {
           toast.error(err instanceof ApiError ? err.message : t.toast.error);
         }

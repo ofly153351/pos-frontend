@@ -1,13 +1,13 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import type { BarTrendChartBarTrendDatum } from "./types";
+export type { BarTrendChartBarTrendDatum as BarTrendDatum } from "./types";
+
 
 // Reusable vertical bar-trend chart (e.g. 6-month expense trend). Built on the
 // project's existing Recharts dependency. The most recent bar is highlighted.
-export type BarTrendDatum = {
-  label: string;
-  value: number;
-};
+
 
 export function BarTrendChart({
   data,
@@ -15,7 +15,7 @@ export function BarTrendChart({
   emptyLabel,
   height = 200,
 }: {
-  data: BarTrendDatum[];
+  data: BarTrendChartBarTrendDatum[];
   currency: (value: number) => string;
   emptyLabel: string;
   height?: number;

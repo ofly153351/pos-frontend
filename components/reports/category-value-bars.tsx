@@ -1,18 +1,11 @@
+import type { CategoryValueBarsCategoryValueRow } from "./types";
+export type { CategoryValueBarsCategoryValueRow as CategoryValueRow } from "./types";
 // Reusable ranked horizontal-bar list for category breakdowns (inventory value,
 // and later P&L / expense breakdowns). Values + percentages are always visible
 // (no hover) so it stays touch-friendly on Android POS / tablet. Solid violet
 // shades — no gradients — per the POS design system.
 
-export type CategoryValueRow = {
-  name: string;
-  value: number;
-  percent: number;
-  /** "outstanding" renders the row in amber + a note — used for ขายเชื่อ/ค้างชำระ,
-   *  which is money NOT yet collected (so it reads differently from real tenders). */
-  accent?: "outstanding";
-  /** Optional sub-note shown under the label (e.g. "ยังไม่ได้รับเงิน"). */
-  note?: string;
-};
+
 
 // Solid violet ramp by rank (darkest = largest). Index past the ramp falls back
 // to the lightest shade.
@@ -29,7 +22,7 @@ export function CategoryValueBars({
   currency,
   emptyLabel,
 }: {
-  rows: CategoryValueRow[];
+  rows: CategoryValueBarsCategoryValueRow[];
   currency: (value: number) => string;
   emptyLabel: string;
 }) {

@@ -1,14 +1,12 @@
+import type { RevenueCostProfitBarsRcpRow } from "./types";
+export type { RevenueCostProfitBarsRcpRow as RcpRow } from "./types";
 // Revenue vs Cost vs Profit comparison — three horizontal bars sized against the
 // largest magnitude. Pure CSS (no Recharts), values always visible so it stays
 // touch-friendly on Android POS / tablet. Profit turns red when negative.
 
-export type RcpRow = {
-  label: string;
-  value: number;
-  tone: "revenue" | "cost" | "profit";
-};
 
-const TONE_BAR: Record<RcpRow["tone"], string> = {
+
+const TONE_BAR: Record<RevenueCostProfitBarsRcpRow["tone"], string> = {
   revenue: "bg-violet-500",
   cost: "bg-rose-400",
   profit: "bg-emerald-500",
@@ -19,7 +17,7 @@ export function RevenueCostProfitBars({
   currency,
   emptyLabel,
 }: {
-  rows: RcpRow[];
+  rows: RevenueCostProfitBarsRcpRow[];
   currency: (value: number) => string;
   emptyLabel: string;
 }) {
