@@ -13,70 +13,28 @@ import type { Product, ProductType } from "@/types/product";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { StockReceiveModal } from "@/components/stock/stock-receive-modal";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ProductsTableProductsTableProps } from "./types";
+import type { ProductsTableDensity } from "./types";
+import type { ProductsTableHealth } from "./types";
 
-type ProductsTableProps = {
-  emptyState: string;
-  isPending: boolean;
-  loadingLabel: string;
-  lowStockLabel: string;
-  outOfStockLabel: string;
-  managementDictionary: ManagementDictionary;
-  onDelete: (productId: string) => void;
-  onDeleteMany: (productIds: string[]) => void;
-  onEdit: (product: Product) => void;
-  onAdjustStock: (product: Product) => void;
-  onExport: (selectedIds: string[]) => void;
-  /** Open the (single) Barcode Center for one product. */
-  onBarcode?: (product: Product) => void;
-  /** Open the Barcode Center in batch mode for many products. */
-  onBulkBarcode?: (products: Product[]) => void;
-  /** Open the Product Detail page (whole-row click). */
-  onRowClick?: (product: Product) => void;
-  /** When false, the per-row Adjust-stock action is hidden (product master list). */
-  showStockActions?: boolean;
-  products: Product[];
-  productTypes?: ProductType[];
-  onBulkEnable?: (ids: string[]) => void;
-  onBulkDisable?: (ids: string[]) => void;
-  onBulkCategoryChange?: (ids: string[], categoryId: string) => void;
-  receiveDictionary: {
-    receiveStockTitle: string;
-    receiveStock: string;
-    receiveStockConfirm: string;
-    receiveStockSuccess: string;
-    quantityToAdd: string;
-    productName: string;
-    currentStock: string;
-    note?: string;
-    cancel: string;
-    saving: string;
-    historyTab?: string;
-    historyEmpty?: string;
-    historyProduct?: string;
-    historyQty?: string;
-    historyDate?: string;
-    historyNote?: string;
-    historyOperator?: string;
-    historyLoadError?: string;
-  };
-  tableDictionary: StockManagerDictionary["table"];
-};
 
-// ── Density ───────────────────────────────────────────────────────────────────
 
-type Density = "comfortable" | "compact" | "warehouse";
-const DENSITY: Record<Density, { rowPad: string; img: string; nameText: string }> = {
+
+// ── ProductsTableDensity ───────────────────────────────────────────────────────────────────
+
+
+const DENSITY: Record<ProductsTableDensity, { rowPad: string; img: string; nameText: string }> = {
   comfortable: { rowPad: "py-4", img: "h-12 w-12", nameText: "text-sm md:text-[15px]" },
   compact: { rowPad: "py-2.5", img: "h-10 w-10", nameText: "text-sm" },
   warehouse: { rowPad: "py-1.5", img: "h-9 w-9", nameText: "text-[13px]" },
 };
-const DENSITY_ICON: Record<Density, typeof Rows2> = { comfortable: Rows2, compact: Rows3, warehouse: Rows4 };
+const DENSITY_ICON: Record<ProductsTableDensity, typeof Rows2> = { comfortable: Rows2, compact: Rows3, warehouse: Rows4 };
 
 // ── Stock helpers ─────────────────────────────────────────────────────────────
 
-type Health = "ready" | "low" | "out" | "unknown";
 
-function getStockHealth(p: Product): Health {
+
+function getStockHealth(p: Product): ProductsTableHealth {
   const s = p.total_stock;
   if (s == null) return "unknown";
   if (s <= 0) return "out";
@@ -92,7 +50,7 @@ function getStockPercent(p: Product): number {
   return 100;
 }
 
-const HEALTH_BAR: Record<Exclude<Health, "unknown">, string> = {
+const HEALTH_BAR: Record<Exclude<ProductsTableHealth, "unknown">, string> = {
   ready: "bg-emerald-500", low: "bg-amber-500", out: "bg-rose-400",
 };
 
@@ -125,13 +83,13 @@ export function ProductsTable({
   onBulkCategoryChange,
   receiveDictionary,
   tableDictionary,
-}: ProductsTableProps) {
+}: ProductsTableProductsTableProps) {
   const t = tableDictionary;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmDeleteIds, setConfirmDeleteIds] = useState<string[] | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isReceiveModalOpen, setIsReceiveModalOpen] = useState(false);
-  const [density, setDensity] = useState<Density>(() => {
+  const [density, setDensity] = useState<ProductsTableDensity>(() => {
     // Restore density preference (lazy initializer, SSR-safe).
     try {
       const saved = localStorage.getItem("pos-table-density");
@@ -142,7 +100,7 @@ export function ProductsTable({
   const [changeCategoryOpen, setChangeCategoryOpen] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
-  function changeDensity(d: Density) {
+  function changeDensity(d: ProductsTableDensity) {
     setDensity(d);
     try { localStorage.setItem("pos-table-density", d); } catch { /* ignore */ }
   }
@@ -202,11 +160,11 @@ export function ProductsTable({
   return (
     <>
       <section className="rounded-2xl bg-white shadow-sm">
-        {/* Density toolbar */}
+        {/* ProductsTableDensity toolbar */}
         <div className="flex items-center justify-end gap-2 border-b border-slate-100 px-4 py-2">
           <span className="text-xs font-semibold text-slate-400">{t.densityLabel}</span>
           <div className="inline-flex items-center gap-0.5 rounded-lg border border-slate-200 p-0.5">
-            {(["comfortable", "compact", "warehouse"] as Density[]).map((d) => {
+            {(["comfortable", "compact", "warehouse"] as ProductsTableDensity[]).map((d) => {
               const Icon = DENSITY_ICON[d];
               const label = d === "comfortable" ? t.densityComfortable : d === "compact" ? t.densityCompact : t.densityWarehouse;
               return (

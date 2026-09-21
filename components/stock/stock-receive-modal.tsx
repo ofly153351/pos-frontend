@@ -6,33 +6,10 @@ import { X } from "lucide-react";
 
 import { addStock, listMovements, type StockMovement } from "@/services/stock-movements";
 import type { Product } from "@/types/product";
+import type { StockReceiveModalStockReceiveModalProps } from "./types";
 
-type StockReceiveModalProps = {
-  dictionary: {
-    receiveStockTitle?: string;
-    receiveStock?: string;
-    receiveStockConfirm?: string;
-    receiveStockSuccess?: string;
-    quantityToAdd?: string;
-    productName?: string;
-    currentStock?: string;
-    note?: string;
-    cancel?: string;
-    saving?: string;
-    historyTab?: string;
-    historyEmpty?: string;
-    historyProduct?: string;
-    historyQty?: string;
-    historyDate?: string;
-    historyNote?: string;
-    historyOperator?: string;
-    historyLoadError?: string;
-  };
-  onClose: () => void;
-  onComplete: () => void;
-  products: Product[];
-  selectedIds: Set<string>;
-};
+
+
 
 export function StockReceiveModal({
   dictionary,
@@ -40,7 +17,7 @@ export function StockReceiveModal({
   onComplete,
   products,
   selectedIds,
-}: StockReceiveModalProps) {
+}: StockReceiveModalStockReceiveModalProps) {
   const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<"receive" | "history">("receive");

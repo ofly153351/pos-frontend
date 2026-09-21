@@ -11,6 +11,10 @@ import {
   transferStockLocation,
   type StockTransferReason,
 } from "@/services/warehouses";
+import type { LocationTransferDrawerLocationTransferDict } from "./types";
+import type { LocationTransferDrawerProps } from "./types";
+export type { LocationTransferDrawerLocationTransferDict as LocationTransferDict } from "./types";
+
 
 // Canonical W4A reason codes (stable; sent to the backend, NOT the localized label).
 const REASONS: StockTransferReason[] = [
@@ -21,31 +25,11 @@ const REASONS: StockTransferReason[] = [
   "OTHER",
 ];
 
-export type LocationTransferDict = {
-  ltTitle: string; ltProduct: string; ltSource: string; ltSourceQty: string;
-  ltDestination: string; ltAmount: string; ltReason: string; ltNote: string;
-  ltSelectSource: string; ltSelectDestination: string; ltConfirm: string;
-  ltSubmitting: string; ltCancel: string; ltSuccess: string; ltForbidden: string;
-  ltSalePointTag: string; ltStorageTag: string; ltDefaultSaleHint: string;
-  ltReadyLabel: string; ltWarehouseStockLabel: string; ltTotalLabel: string; ltPreviewTitle: string;
-  ltReasonReplenish: string; ltReasonReturnStorage: string; ltReasonRebalance: string;
-  ltReasonReorganize: string; ltReasonOther: string;
-  ltValSourceRequired: string; ltValDestRequired: string; ltValSameLocation: string;
-  ltValInsufficient: string; ltValReasonRequired: string; ltValNoteRequired: string; ltNoSourceStock: string;
-};
 
-type Props = {
-  open: boolean;
-  productId: string;
-  productName: string;
-  presetSourceLocationId?: string;
-  canManage: boolean;
-  dict: LocationTransferDict;
-  onClose: () => void;
-  onSuccess: (message: string) => void;
-};
 
-function reasonLabel(d: LocationTransferDict, r: StockTransferReason) {
+
+
+function reasonLabel(d: LocationTransferDrawerLocationTransferDict, r: StockTransferReason) {
   switch (r) {
     case "REPLENISH_SALE_POINT": return d.ltReasonReplenish;
     case "RETURN_TO_STORAGE": return d.ltReasonReturnStorage;
@@ -57,7 +41,7 @@ function reasonLabel(d: LocationTransferDict, r: StockTransferReason) {
 
 export function LocationTransferDrawer({
   open, productId, productName, presetSourceLocationId, canManage, dict, onClose, onSuccess,
-}: Props) {
+}: LocationTransferDrawerProps) {
   const queryClient = useQueryClient();
   const [sourceId, setSourceId] = useState("");
   const [destId, setDestId] = useState("");

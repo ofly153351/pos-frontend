@@ -6,6 +6,11 @@ import { Barcode, Eye, MapPin, Pencil, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Product } from "@/types/product";
+import type { ProductCardGridProductCardLabels } from "./types";
+import type { ProductCardGridProductCardGridProps } from "./types";
+import type { ProductCardGridStockHealth } from "./types";
+export type { ProductCardGridProductCardLabels as ProductCardLabels } from "./types";
+
 
 /**
  * ProductCardGrid — Card view for the Product List (master data).
@@ -20,33 +25,9 @@ import type { Product } from "@/types/product";
  * the grid's `auto-rows-fr`, progress bars / prices / action icons line up per row.
  */
 
-export type ProductCardLabels = {
-  sku: string;
-  category: string;
-  brand: string;
-  stock: string;
-  stockReady: string;
-  lowStock: string;
-  outOfStock: string;
-  statusActive: string;
-  statusInactive: string;
-  locationUnassigned: string;
-  viewAction: string;
-  barcodeAction: string;
-  editAction: string;
-  deleteAction: string;
-};
 
-type ProductCardGridProps = {
-  products: Product[];
-  isPending: boolean;
-  emptyState: string;
-  labels: ProductCardLabels;
-  onView: (product: Product) => void;
-  onBarcode: (product: Product) => void;
-  onEdit: (product: Product) => void;
-  onDelete: (productId: string) => void;
-};
+
+
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -57,9 +38,9 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
-type StockHealth = "ready" | "low" | "out" | "unknown";
 
-function getStockHealth(product: Product): StockHealth {
+
+function getStockHealth(product: Product): ProductCardGridStockHealth {
   const stock = product.total_stock;
   if (stock == null) return "unknown";
   if (stock <= 0) return "out";
@@ -81,7 +62,7 @@ function getStockPercent(product: Product): number {
   return 100;
 }
 
-const HEALTH_STYLES: Record<Exclude<StockHealth, "unknown">, { dot: string; text: string; bg: string; bar: string }> = {
+const HEALTH_STYLES: Record<Exclude<ProductCardGridStockHealth, "unknown">, { dot: string; text: string; bg: string; bar: string }> = {
   ready: { dot: "bg-emerald-500", text: "text-emerald-700", bg: "bg-emerald-100", bar: "bg-emerald-500" },
   low: { dot: "bg-amber-500", text: "text-amber-700", bg: "bg-amber-100", bar: "bg-amber-500" },
   out: { dot: "bg-rose-500", text: "text-rose-700", bg: "bg-rose-100", bar: "bg-rose-400" },
@@ -96,7 +77,7 @@ export function ProductCardGrid({
   onBarcode,
   onEdit,
   onDelete,
-}: ProductCardGridProps) {
+}: ProductCardGridProductCardGridProps) {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Denser grid: up to 6 columns on very large screens.

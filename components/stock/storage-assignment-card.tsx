@@ -5,6 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 
 import { listLocations, type Location } from "@/services/locations";
 import { listWarehouses } from "@/services/warehouses";
+import type { StorageAssignmentCardStorageAssignmentLabels } from "./types";
+export type { StorageAssignmentCardStorageAssignmentLabels as StorageAssignmentLabels } from "./types";
+
 
 /**
  * StorageAssignmentCard
@@ -19,20 +22,7 @@ import { listWarehouses } from "@/services/warehouses";
  * locations (valid receiving destinations) are selectable.
  */
 
-export type StorageAssignmentLabels = {
-  hint: string;
-  warehouseLabel: string;
-  zoneLabel: string;
-  locationLabel: string;
-  optionalLabel: string;
-  placeholder: string;
-  selectWarehouseFirst: string;
-  noWarehouses: string;
-  noLocations: string;
-  currentLabel: string;
-  clearLabel: string;
-  unavailableLabel: string;
-};
+
 
 const selectClass =
   "w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-slate-700 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
@@ -86,7 +76,7 @@ export function StorageAssignmentCard({
 }: {
   value: string;
   onChange: (locationId: string, label: string) => void;
-  labels: StorageAssignmentLabels;
+  labels: StorageAssignmentCardStorageAssignmentLabels;
 }) {
   // The cascading pickers intentionally start blank on edit (we never pre-seed
   // them from `value`): pre-selecting would require syncing state from a prop in

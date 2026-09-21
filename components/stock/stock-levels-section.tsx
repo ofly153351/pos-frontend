@@ -17,64 +17,13 @@ import type {
 } from "@/components/stock/types";
 import type { Product, ProductBrand, ProductType, ProductUnit } from "@/types/product";
 import type { Location } from "@/services/locations";
+import type { StockLevelsSectionProductStockStatus } from "./types";
+import type { StockLevelsSectionStockLevelsSectionProps } from "./types";
 
-type ProductStockStatus =
-  | "all"
-  | "active"
-  | "inactive"
-  | "low_stock"
-  | "out_of_stock";
 
-type StockLevelsSectionProps = {
-  dictionary: StockManagerDictionary;
-  /** Stock mode (Inventory page): show stock-mutating actions and force table view.
-   * Default false = Product master-data list (read-only stock, card/table toggle). */
-  allowStockActions?: boolean;
-  /** When set, auto-opens the ProductDetailView for the product with this ID once products load. */
-  initialDetailProductId?: string;
-  emptyState: string;
-  error: string;
-  filteredProducts: Product[];
-  isPending: boolean;
-  loadingLabel: string;
-  managementDictionary: ManagementDictionary;
-  onPageChange: (page: number) => void;
-  onPageSizeChange: (size: number) => void;
-  onDelete: (productId: string) => void;
-  onDeleteMany: (productIds: string[]) => void;
-  onEdit: (product: Product) => void;
-  onAdjustStock: (product: Product) => void;
-  onOpenCreateModal: () => void;
-  onProductBrandFilterChange: (brandId: string) => void;
-  onProductTypeFilterChange: (productTypeId: string) => void;
-  onProductUnitFilterChange: (productUnitId: string) => void;
-  onSearchChange: (value: string) => void;
-  onStockStatusFilterChange: (status: ProductStockStatus) => void;
-  sortBy: "created_at" | "updated_at";
-  onSortChange: (sort: "created_at" | "updated_at") => void;
-  paginationCurrentPage: number;
-  paginationPageSize: number;
-  paginationTotalItems: number;
-  paginationTotalPages: number;
-  productBrandFilter: string;
-  productBrands: ProductBrand[];
-  productTypeFilter: string;
-  productTypes: ProductType[];
-  productUnitFilter: string;
-  productUnits: ProductUnit[];
-  search: string;
-  stockStatusFilter: ProductStockStatus;
-  statusCounts: { all: number; active: number; low_stock: number; out_of_stock: number; inactive: number };
-  locations: Location[];
-  locationFilter: string;
-  noLocationFilter: boolean;
-  onLocationFilterChange: (id: string) => void;
-  onNoLocationFilterChange: (v: boolean) => void;
-  summaryStats: { total: number; ready: number; low: number; out: number; value: number };
-  onBulkEnable: (ids: string[]) => void;
-  onBulkDisable: (ids: string[]) => void;
-  onBulkCategoryChange: (ids: string[], categoryId: string) => void;
-};
+
+
+
 
 export function StockLevelsSection({
   dictionary,
@@ -122,7 +71,7 @@ export function StockLevelsSection({
   stockStatusFilter,
   statusCounts,
   summaryStats,
-}: StockLevelsSectionProps) {
+}: StockLevelsSectionStockLevelsSectionProps) {
   const startPage = Math.max(paginationCurrentPage - 2, 1);
   const endPage = Math.min(startPage + 4, paginationTotalPages);
   const pageNumbers = Array.from(
@@ -150,7 +99,7 @@ export function StockLevelsSection({
   const [draftProductTypeFilter, setDraftProductTypeFilter] = useState(productTypeFilter);
   const [draftProductUnitFilter, setDraftProductUnitFilter] = useState(productUnitFilter);
   const [draftProductBrandFilter, setDraftProductBrandFilter] = useState(productBrandFilter);
-  const [draftStockStatusFilter, setDraftStockStatusFilter] = useState<ProductStockStatus>(stockStatusFilter);
+  const [draftStockStatusFilter, setDraftStockStatusFilter] = useState<StockLevelsSectionProductStockStatus>(stockStatusFilter);
   const [draftLocationFilter, setDraftLocationFilter] = useState(locationFilter);
   const [draftNoLocationFilter, setDraftNoLocationFilter] = useState(noLocationFilter);
   const [optionSearch, setOptionSearch] = useState("");
@@ -321,7 +270,7 @@ export function StockLevelsSection({
     () => productBrands.filter((brand) => brand.name.toLowerCase().includes(normalizedOptionSearch)),
     [productBrands, normalizedOptionSearch],
   );
-  const stockStatusOptions: Array<{ label: string; value: ProductStockStatus }> = [
+  const stockStatusOptions: Array<{ label: string; value: StockLevelsSectionProductStockStatus }> = [
     { label: dictionary.filters.allStatuses, value: "all" },
     { label: dictionary.filters.activeStatus, value: "active" },
     { label: dictionary.filters.inactiveStatus, value: "inactive" },

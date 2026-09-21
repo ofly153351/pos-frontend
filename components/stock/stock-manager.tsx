@@ -29,8 +29,10 @@ import { ApiError } from "@/services/api";
 import { friendlyMessage } from "@/lib/form-errors";
 import { toast } from "@/components/ui/toast";
 import type { Product, ProductBrand, ProductInput, ProductType, ProductUnit } from "@/types/product";
+import type { StockManagerProductStockStatus } from "./types";
 
-type ProductStockStatus = "all" | "active" | "inactive" | "low_stock" | "out_of_stock";
+
+
 
 function isLowStockProduct(product: Product) {
   const stock = product.total_stock ?? 0;
@@ -147,7 +149,7 @@ export function StockManager({
   const [selectedProductTypeId, setSelectedProductTypeId] = useState("");
   const [selectedProductUnitId, setSelectedProductUnitId] = useState("");
   const [selectedProductBrandId, setSelectedProductBrandId] = useState("");
-  const [selectedStockStatus, setSelectedStockStatus] = useState<ProductStockStatus>("all");
+  const [selectedStockStatus, setSelectedStockStatus] = useState<StockManagerProductStockStatus>("all");
   const [selectedLocationId, setSelectedLocationId] = useState("");
   const [selectedNoLocation, setSelectedNoLocation] = useState(false);
   const [error, setError] = useState("");

@@ -1,18 +1,10 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import type { ConfirmDialogConfirmDialogProps } from "./types";
 
-type ConfirmDialogProps = {
-  cancelLabel?: string;
-  children: ReactNode;
-  confirmLabel?: string;
-  danger?: boolean;
-  icon?: ReactNode;
-  isOpen: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-  title: string;
-};
+
+
 
 export function ConfirmDialog({
   cancelLabel = "Cancel",
@@ -24,7 +16,7 @@ export function ConfirmDialog({
   onCancel,
   onConfirm,
   title,
-}: ConfirmDialogProps) {
+}: ConfirmDialogConfirmDialogProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {

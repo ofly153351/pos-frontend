@@ -12,13 +12,17 @@ import { getProductStockByLocation } from "@/services/warehouse-inventory";
 import { getCurrentStoreId } from "@/lib/store-storage";
 import type { InventoryAdjustDictionary } from "@/components/stock/inventory-types";
 import type { Product } from "@/types/product";
+import type { StockAdjustDrawerAdjustType } from "./types";
+import type { StockAdjustDrawerLocationOption } from "./types";
+import type { StockAdjustDrawerProps } from "./types";
 
-type AdjustType = "receive" | "decrease" | "set";
+
+
 
 // Stable reason codes per mode (must match the backend's per-operation reason-code sets:
 // opAdd / opSubtract / opSetActual). The label shown comes from dict.reasonLabels[code];
 // the CODE is what is sent and validated server-side.
-const REASON_CODES: Record<AdjustType, string[]> = {
+const REASON_CODES: Record<StockAdjustDrawerAdjustType, string[]> = {
   receive: ["FOUND_EXTRA", "RETURN_TO_STOCK", "OPENING_BALANCE", "DATA_CORRECTION", "OTHER"],
   decrease: ["DAMAGED", "LOST", "EXPIRED", "INTERNAL_USE", "WRITE_OFF", "DATA_CORRECTION", "OTHER"],
   set: ["SPOT_COUNT", "SYSTEM_MISMATCH", "DATA_CORRECTION", "OTHER"],
@@ -39,21 +43,13 @@ let lockedLocationMemo: { key: string; locationId: string } | null = null;
 
 // One enriched, selectable location candidate: active location metadata + this product's
 // live on-hand quantity AT that location (never an aggregate).
-type LocationOption = Location & { quantity: number; isDefault: boolean };
 
-type Props = {
-  product: Product | null;
-  // When provided (Warehouse entry point) the candidate locations are restricted to this
-  // warehouse. Absent (Inventory entry point) → every active location in the store.
-  warehouseId?: string;
-  dict: InventoryAdjustDictionary;
-  onClose: () => void;
-  onSuccess: () => void;
-};
 
-export function StockAdjustDrawer({ product, warehouseId, dict, onClose, onSuccess }: Props) {
+
+
+export function StockAdjustDrawer({ product, warehouseId, dict, onClose, onSuccess }: StockAdjustDrawerProps) {
   const queryClient = useQueryClient();
-  const [type, setType] = useState<AdjustType>("receive");
+  const [type, setType] = useState<StockAdjustDrawerAdjustType>("receive");
   const [qty, setQty] = useState(0);
   const [reasonCode, setReasonCode] = useState("");
   const [note, setNote] = useState("");
@@ -109,7 +105,7 @@ export function StockAdjustDrawer({ product, warehouseId, dict, onClose, onSucce
   // context when present, restricted to the locations relevant to this product (it already
   // has a stock row there, or it is the product's default location). Each is annotated with
   // the product's live quantity at that location.
-  const candidates = useMemo<LocationOption[]>(() => {
+  const candidates = useMemo<StockAdjustDrawerLocationOption[]>(() => {
     const activeWh = new Set((warehousesQuery.data ?? []).filter((w) => w.is_active).map((w) => w.id));
     return (locationsQuery.data ?? [])
       .filter((l) => l.is_active && activeWh.has(l.warehouse_id))
@@ -182,18 +178,18 @@ export function StockAdjustDrawer({ product, warehouseId, dict, onClose, onSucce
     diff !== 0 &&
     (Math.abs(diff) >= HIGH_VARIANCE_ABS || (current > 0 && Math.abs(diff) >= current * HIGH_VARIANCE_PCT));
 
-  const TYPES: Array<{ key: AdjustType; label: string; icon: typeof Equal; tone: string }> = [
+  const TYPES: Array<{ key: StockAdjustDrawerAdjustType; label: string; icon: typeof Equal; tone: string }> = [
     { key: "receive", label: dict.typeReceive, icon: ArrowUpCircle, tone: "emerald" },
     { key: "decrease", label: dict.typeDecrease, icon: ArrowDownCircle, tone: "rose" },
     { key: "set", label: dict.typeSet, icon: Equal, tone: "violet" },
   ];
 
-  function chooseType(key: AdjustType) {
+  function chooseType(key: StockAdjustDrawerAdjustType) {
     setType(key);
     setReasonCode(""); // reason codes differ per mode
   }
 
-  function locationContext(l: LocationOption) {
+  function locationContext(l: StockAdjustDrawerLocationOption) {
     const zone = l.zone_name ? `${l.zone_name} › ` : "";
     const code = l.code ? ` (${l.code})` : "";
     return `${l.warehouse_name ?? ""} › ${zone}${l.name}${code}`.replace(/^ › /, "");

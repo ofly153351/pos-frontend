@@ -15,17 +15,13 @@ import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { StockManagerDictionary } from "@/components/stock/types";
 import type { Product } from "@/types/product";
+import type { ProductDetailViewTab } from "./types";
+import type { ProductDetailViewProductDetailViewProps } from "./types";
 
-type Tab = "general" | "barcode" | "inventory" | "movements";
 
-type ProductDetailViewProps = {
-  product: Product | null;
-  dictionary: StockManagerDictionary;
-  onClose: () => void;
-  onEdit: (product: Product) => void;
-  onDelete: (productId: string) => void;
-  onBarcode: (product: Product) => void;
-};
+
+
+
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -100,10 +96,10 @@ function StatPill({ icon, label, value, tone }: { icon: ReactNode; label: string
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ProductDetailView({ product, dictionary, onClose, onEdit, onDelete, onBarcode }: ProductDetailViewProps) {
+export function ProductDetailView({ product, dictionary, onClose, onEdit, onDelete, onBarcode }: ProductDetailViewProductDetailViewProps) {
   const t = dictionary.table;
   const f = dictionary.form;
-  const [tab, setTab] = useState<Tab>("general");
+  const [tab, setTab] = useState<ProductDetailViewTab>("general");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Reset detail state when a different product is shown — "adjust state during
@@ -171,7 +167,7 @@ export function ProductDetailView({ product, dictionary, onClose, onEdit, onDele
         : { label: t.statusReady, cls: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" };
   const stockTone = health === "out" ? "bg-rose-100 text-rose-600" : health === "low" ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600";
 
-  const TABS: Array<{ key: Tab; label: string; icon: typeof Info }> = [
+  const TABS: Array<{ key: ProductDetailViewTab; label: string; icon: typeof Info }> = [
     { key: "general", label: t.detailTabGeneral, icon: Info },
     { key: "barcode", label: t.detailTabBarcode, icon: BarcodeIcon },
     { key: "inventory", label: t.detailTabInventory, icon: Package },

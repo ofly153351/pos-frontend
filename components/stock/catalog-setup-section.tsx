@@ -35,28 +35,21 @@ import {
 } from "@/services/products";
 import type { CategoriesDictionary, ManagementDictionary, UnitsDictionary } from "@/components/stock/types";
 import type { ProductBrand, ProductType, ProductUnit } from "@/types/product";
+import type { CatalogSetupSectionTab } from "./types";
+import type { CatalogSetupSectionStatusFilter } from "./types";
+import type { CatalogSetupSectionPageSize } from "./types";
+import type { CatalogSetupSectionBaseItem } from "./types";
+import type { CatalogSetupSectionCatalogSetupSectionProps } from "./types";
+export type { CatalogSetupSectionCatalogSetupSectionProps as CatalogSetupSectionProps } from "./types";
 
-type Tab = "types" | "units" | "brands";
-type StatusFilter = "all" | "active" | "inactive";
-type PageSize = 10 | 25 | 50 | 100;
 
-type BaseItem = {
-  id: string;
-  name: string;
-  description?: string | null;
-  is_active: boolean;
-  updated_at?: string;
-  product_count: number;
-};
 
-export type CatalogSetupSectionProps = {
-  activeLabel: string;
-  cancelLabel: string;
-  categoriesDictionary: CategoriesDictionary;
-  managementDictionary: ManagementDictionary;
-  totalProducts: number;
-  unitsDictionary: UnitsDictionary;
-};
+
+
+
+
+
+
 
 const AVATAR_COLORS = [
   "bg-violet-100 text-violet-700",
@@ -89,14 +82,14 @@ export function CatalogSetupSection({
   managementDictionary,
   totalProducts,
   unitsDictionary,
-}: CatalogSetupSectionProps) {
+}: CatalogSetupSectionCatalogSetupSectionProps) {
   const qc = useQueryClient();
   const [mounted, setMounted] = useState(false);
-  const [tab, setTab] = useState<Tab>("types");
+  const [tab, setTab] = useState<CatalogSetupSectionTab>("types");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<CatalogSetupSectionStatusFilter>("all");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState<PageSize>(10);
+  const [pageSize, setPageSize] = useState<CatalogSetupSectionPageSize>(10);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Type modal
@@ -154,7 +147,7 @@ export function CatalogSetupSection({
     queryKey: ["stock", "product-brands"],
   });
 
-  function toBase<T extends { id: string; name: string; description?: string | null; is_active: boolean; product_count?: number; updated_at?: string }>(items: T[]): BaseItem[] {
+  function toBase<T extends { id: string; name: string; description?: string | null; is_active: boolean; product_count?: number; updated_at?: string }>(items: T[]): CatalogSetupSectionBaseItem[] {
     return items.map(i => ({
       id: i.id,
       name: i.name,
@@ -167,7 +160,7 @@ export function CatalogSetupSection({
 
   const allFiltered = (() => {
     const kw = search.trim().toLowerCase();
-    let base: BaseItem[] =
+    let base: CatalogSetupSectionBaseItem[] =
       tab === "types" ? toBase(types) :
       tab === "units" ? toBase(units) :
       toBase(brands);
@@ -249,7 +242,7 @@ export function CatalogSetupSection({
     } finally { setDelTarget(null); }
   }
 
-  function openEdit(item: BaseItem) {
+  function openEdit(item: CatalogSetupSectionBaseItem) {
     if (tab === "types") { const t = types.find(x => x.id === item.id); if (t) openEditType(t); }
     else if (tab === "units") { const u = units.find(x => x.id === item.id); if (u) openEditUnit(u); }
     else { const b = brands.find(x => x.id === item.id); if (b) openEditBrand(b); }
@@ -354,13 +347,13 @@ export function CatalogSetupSection({
 
   return (
     <div className="space-y-4">
-      {/* ── Tab bar ─────────────────────────────────────────── */}
+      {/* ── CatalogSetupSectionTab bar ─────────────────────────────────────────── */}
       <div className="rounded-2xl border border-violet-100 bg-white shadow-sm">
         <div className="flex items-center gap-1.5 px-4 py-3">
           {([
-            { key: "types" as Tab, label: d.tabTypes, count: types.length, Icon: LayoutGrid },
-            { key: "units" as Tab, label: d.tabUnits, count: units.length, Icon: Ruler },
-            { key: "brands" as Tab, label: d.tabBrands, count: brands.length, Icon: Tag },
+            { key: "types" as CatalogSetupSectionTab, label: d.tabTypes, count: types.length, Icon: LayoutGrid },
+            { key: "units" as CatalogSetupSectionTab, label: d.tabUnits, count: units.length, Icon: Ruler },
+            { key: "brands" as CatalogSetupSectionTab, label: d.tabBrands, count: brands.length, Icon: Tag },
           ] as const).map(({ key, label, count, Icon }) => (
             <button
               key={key}
@@ -405,7 +398,7 @@ export function CatalogSetupSection({
             </div>
             <select
               className="rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-              onChange={e => setStatusFilter(e.target.value as StatusFilter)}
+              onChange={e => setStatusFilter(e.target.value as CatalogSetupSectionStatusFilter)}
               value={statusFilter}
             >
               <option value="all">{d.statusAll}</option>
@@ -617,10 +610,10 @@ export function CatalogSetupSection({
               </div>
               <select
                 className="rounded-lg border border-violet-100 bg-white px-3 py-1.5 text-sm text-slate-600 outline-none focus:border-violet-400"
-                onChange={e => { setPageSize(Number(e.target.value) as PageSize); setPage(1); }}
+                onChange={e => { setPageSize(Number(e.target.value) as CatalogSetupSectionPageSize); setPage(1); }}
                 value={pageSize}
               >
-                {([10, 25, 50, 100] as PageSize[]).map(n => (
+                {([10, 25, 50, 100] as CatalogSetupSectionPageSize[]).map(n => (
                   <option key={n} value={n}>{n} {d.perPage}</option>
                 ))}
               </select>

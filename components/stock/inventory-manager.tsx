@@ -34,8 +34,12 @@ import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import type { InventoryDictionary } from "@/components/stock/inventory-types";
 import type { Product } from "@/types/product";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
+import type { InventoryManagerProps } from "./types";
+import type { InventoryManagerStatus } from "./types";
+import type { InventoryManagerMovementKind } from "./types";
 
-type Props = { dictionary: InventoryDictionary; locale: string; initialStatus?: string };
+
+
 
 // Map a ?status= query param (from notification deep-links) to a filter tab.
 function statusToTab(status?: string): "all" | "ready" | "low" | "out" {
@@ -71,10 +75,10 @@ function totalStock(p: Product): number {
   return p.warehouse_stock ?? salePointStock(p) + storageStock(p);
 }
 
-// ── Status system (4 states) ──────────────────────────────────────────────────
-type Status = "ready" | "low" | "out" | "inactive";
+// ── InventoryManagerStatus system (4 states) ──────────────────────────────────────────────────
 
-function getStatus(p: Product): Status {
+
+function getStatus(p: Product): InventoryManagerStatus {
   if (!p.is_active) return "inactive";
   const s = salePointStock(p);
   if (s <= 0) return "out";
@@ -90,7 +94,7 @@ function getStockPercent(p: Product): number {
   return 100;
 }
 
-const STATUS_BAR: Record<Status, string> = {
+const STATUS_BAR: Record<InventoryManagerStatus, string> = {
   ready: "bg-emerald-500", low: "bg-amber-500", out: "bg-rose-500", inactive: "bg-slate-300",
 };
 
@@ -100,9 +104,9 @@ function productValue(p: Product): number {
 }
 
 // ── Movement type → label / tone / icon ──────────────────────────────────────
-type MovementKind = "receive" | "sale" | "adjust" | "transfer" | "countCorrection" | "return";
 
-function movementKind(type: string): MovementKind {
+
+function movementKind(type: string): InventoryManagerMovementKind {
   const k = (type ?? "").toLowerCase();
   if (k.includes("count")) return "countCorrection";
   if (k.includes("receive") || k.includes("add") || k === "in") return "receive";
@@ -113,7 +117,7 @@ function movementKind(type: string): MovementKind {
   return "adjust";
 }
 
-const MOVEMENT_TONE: Record<MovementKind, string> = {
+const MOVEMENT_TONE: Record<InventoryManagerMovementKind, string> = {
   receive: "bg-emerald-100 text-emerald-700",
   sale: "bg-indigo-100 text-indigo-700",
   adjust: "bg-amber-100 text-amber-700",
@@ -122,7 +126,7 @@ const MOVEMENT_TONE: Record<MovementKind, string> = {
   return: "bg-rose-100 text-rose-700",
 };
 
-const MOVEMENT_ICON: Record<MovementKind, typeof PackagePlus> = {
+const MOVEMENT_ICON: Record<InventoryManagerMovementKind, typeof PackagePlus> = {
   receive: PackagePlus,
   sale: ShoppingCart,
   adjust: SlidersHorizontal,
@@ -142,7 +146,7 @@ function localizeNote(note: string | undefined, locale: string): string {
   return s;
 }
 
-export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
+export function InventoryManager({ dictionary, locale, initialStatus }: InventoryManagerProps) {
   const t = dictionary;
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -194,7 +198,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
     return { totalSku: productsQuery.data?.total ?? products.length, availableUnits, value, low, out };
   }, [products, productsQuery.data]);
 
-  // Status counts for filter tabs
+  // InventoryManagerStatus counts for filter tabs
   const counts = useMemo(() => {
     let ready = 0, low = 0, out = 0;
     for (const p of products) {
@@ -219,8 +223,8 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
     });
   }, [products, search, tab]);
 
-  function statusBadge(st: Status) {
-    const map: Record<Status, { label: string; cls: string; dot: string }> = {
+  function statusBadge(st: InventoryManagerStatus) {
+    const map: Record<InventoryManagerStatus, { label: string; cls: string; dot: string }> = {
       ready: { label: t.status.ready, cls: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
       low: { label: t.status.low, cls: "bg-amber-100 text-amber-700", dot: "bg-amber-500" },
       out: { label: t.status.out, cls: "bg-rose-100 text-rose-700", dot: "bg-rose-500" },
@@ -390,7 +394,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Props) {
                       </td>
                       {/* Min stock */}
                       <td className="hidden px-3 py-3 text-sm font-medium text-slate-500 sm:table-cell">{p.min_stock != null ? p.min_stock : "—"}</td>
-                      {/* Status */}
+                      {/* InventoryManagerStatus */}
                       <td className="px-4 py-3"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${sb.cls}`}><span className={`h-1.5 w-1.5 rounded-full ${sb.dot}`} />{sb.label}</span></td>
                       {/* Stock value */}
                       <td className="hidden px-4 py-3 text-right text-sm font-bold tabular-nums text-slate-800 md:table-cell">{formatCurrency(productValue(p))}</td>

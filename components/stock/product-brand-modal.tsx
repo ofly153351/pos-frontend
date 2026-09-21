@@ -3,25 +3,10 @@
 import { useEffect } from "react";
 
 import type { UnitsDictionary } from "@/components/stock/types";
+import type { ProductBrandModalProductBrandModalProps } from "./types";
 
-type ProductBrandModalProps = {
-  activeLabel: string;
-  cancelLabel: string;
-  description: string;
-  error: string;
-  isActive: boolean;
-  isOpen: boolean;
-  isPending: boolean;
-  name: string;
-  onActiveChange: (checked: boolean) => void;
-  onClose: () => void;
-  onDescriptionChange: (value: string) => void;
-  onNameChange: (value: string) => void;
-  onSubmit: () => void;
-  submitLabel: string;
-  title: string;
-  unitsDictionary: UnitsDictionary;
-};
+
+
 
 export function ProductBrandModal({
   activeLabel,
@@ -40,7 +25,7 @@ export function ProductBrandModal({
   submitLabel,
   title,
   unitsDictionary,
-}: ProductBrandModalProps) {
+}: ProductBrandModalProductBrandModalProps) {
   useEffect(() => {
     if (!isOpen) return;
     function handleKeyDown(event: KeyboardEvent) {

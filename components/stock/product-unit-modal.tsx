@@ -3,26 +3,10 @@
 import { useEffect } from "react";
 
 import type { UnitsDictionary } from "@/components/stock/types";
+import type { ProductUnitModalProductUnitModalProps } from "./types";
 
-type ProductUnitModalProps = {
-  activeLabel: string;
-  cancelLabel: string;
-  description: string;
-  error: string;
-  isActive: boolean;
-  isEditing: boolean;
-  isOpen: boolean;
-  isPending: boolean;
-  name: string;
-  onActiveChange: (checked: boolean) => void;
-  onClose: () => void;
-  onDescriptionChange: (value: string) => void;
-  onNameChange: (value: string) => void;
-  onSubmit: () => void;
-  submitLabel: string;
-  title: string;
-  unitsDictionary: UnitsDictionary;
-};
+
+
 
 export function ProductUnitModal({
   activeLabel,
@@ -42,7 +26,7 @@ export function ProductUnitModal({
   submitLabel,
   title,
   unitsDictionary,
-}: ProductUnitModalProps) {
+}: ProductUnitModalProductUnitModalProps) {
   useEffect(() => {
     if (!isOpen) {
       return;

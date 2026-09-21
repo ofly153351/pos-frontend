@@ -42,33 +42,38 @@ import type {
   CountType,
   VarianceReason,
 } from "@/types/stock-count";
+import type { StockCountManagerCountRowStatus } from "./types";
+import type { StockCountManagerCountMode } from "./types";
+import type { StockCountManagerReviewDisplayMode } from "./types";
+import type { StockCountManagerStockFilter } from "./types";
+import type { StockCountManagerCountFilterTab } from "./types";
+import type { StockCountManagerVarianceSeverity } from "./types";
+import type { StockCountManagerQuickScanEntry } from "./types";
+import type { StockCountManagerProps } from "./types";
+import type { StockCountManagerView } from "./types";
+import type { StockCountManagerListStatusFilter } from "./types";
+
 
 // Stock-count worksheet types (CountStatus/CountType/VarianceReason) live in
 // @/types/stock-count (imported above) and are shared with the service layer.
-type CountRowStatus = "match" | "short" | "over" | "notCounted" | "skipped";
-type CountMode = "table" | "quick";
-type ReviewDisplayMode = "variance" | "all";
-type StockFilter = "all" | "ready" | "low" | "out" | "unassigned";
-type CountFilterTab = "all" | "notCounted" | "counted" | "variance";
-type VarianceSeverity = "low" | "medium" | "high" | "critical";
 
-type QuickScanEntry = {
-  productId: string;
-  name: string;
-  qty: number;
-  time: string;
-  status: CountRowStatus;
-};
+
+
+
+
+
+
+
 
 // CountAuditEntry, CountItem and CountSession are imported from @/types/stock-count.
 
-type Props = { dictionary: CountDictionary; locale: string; autoStart?: boolean; initialStatus?: string };
-type View = "list" | "wizard";
+
+
 // "pending" is a meta-filter spanning draft + counting (unfinished sessions),
 // used by the notification deep-link ?status=pending.
-type ListStatusFilter = CountStatus | "all" | "pending";
 
-function mapInitialListStatus(status?: string): ListStatusFilter {
+
+function mapInitialListStatus(status?: string): StockCountManagerListStatusFilter {
   if (status === "pending") return "pending";
   if (status === "review") return "review";
   return "all";
@@ -85,7 +90,7 @@ const REASON_OPTIONS: VarianceReason[] = [
   "other",
 ];
 
-const STATUS_BADGE: Record<CountRowStatus, string> = {
+const STATUS_BADGE: Record<StockCountManagerCountRowStatus, string> = {
   match: "bg-emerald-100 text-emerald-700",
   short: "bg-rose-100 text-rose-700",
   over: "bg-indigo-100 text-indigo-700",
@@ -106,14 +111,14 @@ const HEALTH_BADGE: Record<"ready" | "low" | "out", string> = {
   out: "bg-rose-100 text-rose-700",
 };
 
-const SEVERITY_BADGE: Record<VarianceSeverity, string> = {
+const SEVERITY_BADGE: Record<StockCountManagerVarianceSeverity, string> = {
   low: "bg-slate-100 text-slate-600",
   medium: "bg-amber-100 text-amber-700",
   high: "bg-orange-100 text-orange-700",
   critical: "bg-rose-100 text-rose-700",
 };
 
-const ROW_STATUS_BG: Record<CountRowStatus, string> = {
+const ROW_STATUS_BG: Record<StockCountManagerCountRowStatus, string> = {
   match: "bg-emerald-50/60",
   short: "bg-rose-50/60",
   over: "bg-amber-50/60",
@@ -121,7 +126,7 @@ const ROW_STATUS_BG: Record<CountRowStatus, string> = {
   skipped: "bg-slate-50/60",
 };
 
-function getVarianceSeverity(item: CountItem): VarianceSeverity {
+function getVarianceSeverity(item: CountItem): StockCountManagerVarianceSeverity {
   const diff = Math.abs(variance(item));
   if (diff === 0) return "low";
   const value = diff * (item.costBasis || 0);
@@ -139,7 +144,7 @@ function hasVariance(it: CountItem): boolean {
   return !it.skipped && it.counted != null && it.counted !== it.systemQty;
 }
 
-function rowStatus(it: CountItem): CountRowStatus {
+function rowStatus(it: CountItem): StockCountManagerCountRowStatus {
   if (it.skipped) return "skipped";
   if (it.counted == null) return "notCounted";
   const diff = it.counted - it.systemQty;
@@ -214,7 +219,7 @@ function normalizeSession(s: Partial<CountSession> & { id: string; name: string;
   };
 }
 
-export function StockCountManager({ dictionary, locale, autoStart = false, initialStatus }: Props) {
+export function StockCountManager({ dictionary, locale, autoStart = false, initialStatus }: StockCountManagerProps) {
   const t = dictionary;
   const [sessions, setSessions] = useState<CountSession[]>([]);
   // Mirrors `sessions` so persist() can diff against the latest committed value
@@ -223,7 +228,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   const [activeId, setActiveId] = useState<string | null>(null);
   // ?new=1 (from inventory "Start Count") opens the new-session wizard directly;
   // all wizard form fields already default to the same empty values openNewWizard() sets.
-  const [view, setView] = useState<View>(autoStart ? "wizard" : "list");
+  const [view, setView] = useState<StockCountManagerView>(autoStart ? "wizard" : "list");
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [confirmApply, setConfirmApply] = useState(false);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
@@ -247,10 +252,10 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectSearch, setSelectSearch] = useState("");
   const [selectCategory, setSelectCategory] = useState("");
-  const [selectStockFilter, setSelectStockFilter] = useState<StockFilter>("all");
+  const [selectStockFilter, setSelectStockFilter] = useState<StockCountManagerStockFilter>("all");
 
   const [listSearch, setListSearch] = useState("");
-  const [listStatus, setListStatus] = useState<ListStatusFilter>(mapInitialListStatus(initialStatus));
+  const [listStatus, setListStatus] = useState<StockCountManagerListStatusFilter>(mapInitialListStatus(initialStatus));
   const [listWarehouse, setListWarehouse] = useState("all");
   const [listDateFrom, setListDateFrom] = useState("");
   const [listDateTo, setListDateTo] = useState("");
@@ -258,16 +263,16 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   const [listPageSize, setListPageSize] = useState(10);
 
   const [scan, setScan] = useState("");
-  const [countMode, setCountMode] = useState<CountMode>("table");
+  const [countMode, setCountMode] = useState<StockCountManagerCountMode>("table");
   const [quickCode, setQuickCode] = useState("");
   const [quickQty, setQuickQty] = useState("");
   const [quickFoundId, setQuickFoundId] = useState<string | null>(null);
   const [lastQuickSaved, setLastQuickSaved] = useState<string>("");
-  const [reviewDisplayMode, setReviewDisplayMode] = useState<ReviewDisplayMode>("variance");
+  const [reviewDisplayMode, setReviewDisplayMode] = useState<StockCountManagerReviewDisplayMode>("variance");
 
   const [excludeApply, setExcludeApply] = useState<Set<string>>(new Set());
-  const [countFilter, setCountFilter] = useState<CountFilterTab>("all");
-  const [quickScanHistory, setQuickScanHistory] = useState<QuickScanEntry[]>([]);
+  const [countFilter, setCountFilter] = useState<StockCountManagerCountFilterTab>("all");
+  const [quickScanHistory, setQuickScanHistory] = useState<StockCountManagerQuickScanEntry[]>([]);
 
   const dtf = useMemo(
     () => new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-US", { dateStyle: "medium", timeStyle: "short" }),
@@ -1116,7 +1121,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-violet-400" />
               <input value={listSearch} onChange={(e) => setListSearch(e.target.value)} placeholder={t.list.searchPlaceholder} className="h-10 w-full rounded-xl border border-violet-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
             </div>
-            <select value={listStatus} onChange={(e) => setListStatus(e.target.value as ListStatusFilter)} className={inputCls}>
+            <select value={listStatus} onChange={(e) => setListStatus(e.target.value as StockCountManagerListStatusFilter)} className={inputCls}>
               <option value="all">{t.list.allStatuses}</option>
               <option value="pending">{t.list.pending}</option>
               <option value="draft">{t.status.draft}</option>
@@ -1469,7 +1474,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
               <option value="">{t.create.allCategories}</option>
               {(categoriesQuery.data ?? []).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
             </select>
-            <select value={selectStockFilter} onChange={(e) => setSelectStockFilter(e.target.value as StockFilter)} className="h-11 rounded-xl border border-violet-200 bg-white px-3 text-sm font-semibold text-violet-700 outline-none focus:border-violet-400">
+            <select value={selectStockFilter} onChange={(e) => setSelectStockFilter(e.target.value as StockCountManagerStockFilter)} className="h-11 rounded-xl border border-violet-200 bg-white px-3 text-sm font-semibold text-violet-700 outline-none focus:border-violet-400">
               <option value="all">{t.select.allStockStatuses}</option>
               <option value="ready">{t.select.statusReady}</option>
               <option value="low">{t.select.statusLow}</option>
@@ -1576,7 +1581,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
               { label: t.summary.notCounted, value: summary.remaining, tone: "text-slate-500" },
             ];
 
-          const filterTabs: { key: CountFilterTab; label: string; count: number }[] = [
+          const filterTabs: { key: StockCountManagerCountFilterTab; label: string; count: number }[] = [
             { key: "all", label: t.countFilter.all, count: filterCounts.all },
             { key: "notCounted", label: t.countFilter.notCounted, count: filterCounts.notCounted },
             { key: "counted", label: t.countFilter.counted, count: filterCounts.counted },

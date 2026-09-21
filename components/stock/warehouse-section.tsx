@@ -53,136 +53,18 @@ import type {
   WarehouseProduct,
 } from "@/types/warehouse";
 import type { Product } from "@/types/product";
+import type { WarehouseSectionWarehouseSectionDictionary } from "./types";
+import type { WarehouseSectionWarehouseSectionProps } from "./types";
+import type { WarehouseSectionWarehouseFormState } from "./types";
 
-type WarehouseSectionDictionary = {
-  title: string;
-  helper: string;
-  empty: string;
-  nameLabel: string;
-  codeLabel: string;
-  addressLabel: string;
-  phoneLabel: string;
-  contactNameLabel: string;
-  activeLabel: string;
-  inactiveLabel: string;
-  createButton: string;
-  editLabel: string;
-  deleteLabel: string;
-  createTitle: string;
-  editTitle: string;
-  saveButton: string;
-  cancel: string;
-  nameRequired: string;
-  deleteConfirm: string;
-  deleteConfirmTitle: string;
-  productsLabel: string;
-  addProductLabel: string;
-  searchProductLabel: string;
-  noProductsLabel: string;
-  addLabel: string;
-  noProductsInWarehouseLabel: string;
-  addStandaloneLabel: string;
-  fromStockLabel: string;
-  newProductLabel: string;
-  standaloneNameLabel: string;
-  standaloneSkuLabel: string;
-  standaloneBarcodeLabel: string;
-  standalonePriceLabel: string;
-  standaloneUnitLabel: string;
-  standaloneTypeLabel: string;
-  standaloneNameRequired: string;
-  totalStockLabel: string;
-  totalValueLabel: string;
-  manageLabel: string;
-  exportLabel: string;
-  perPageLabel: string;
-  prevLabel: string;
-  nextLabel: string;
-  showingLabel: string;
-  fromLabel: string;
-  itemsLabel: string;
-  barcodeTitle: string;
-  printLabel: string;
-  closeLabel: string;
-  invalidBarcodeLabel: string;
-  noBarcodeLabel: string;
-  barcodeTooltip: string;
-  tableImageCol: string;
-  tableDetailsCol: string;
-  tableBarcodeCol: string;
-  tableCategoryCol: string;
-  tablePriceCol: string;
-  tableStockCol: string;
-  tableActionsCol: string;
-  qtyLabel: string;
-  saveLabel: string;
-  outOfStockLabel: string;
-  lowStockLabel: string;
-  editQtyTitle: string;
-  exportBarcodeLabel: string;
-  receiveStockLabel: string;
-  addDisabledMessage: string;
-  removeHasStockMessage: string;
-  locationDeleteBlockedMessage: string;
-  receiveStockTitle: string;
-  transferLabel: string;
-  transferTitle: string;
-  transferQtyLabel: string;
-  transferDestLabel: string;
-  transferToStockLabel: string;
-  transferToWarehouseLabel: string;
-  transferNoteLabel: string;
-  transferConfirmLabel: string;
-  selectDestWarehouseLabel: string;
-  currentStoreLabel: string;
-  selectTargetStoreLabel: string;
-  crossStoreWarehouseInfo: string;
-  availableQtyLabel: string;
-  noteLabel: string;
-  warehouseTransferredLabel: string;
-  locationsLabel: string;
-  manageLocationsLabel: string;
-  backToWarehousesLabel: string;
-  locationNameLabel: string;
-  locationCodeLabel: string;
-  locationSalePointLabel: string;
-  locationStorageLabel: string;
-  locationActiveLabel: string;
-  locationInactiveLabel: string;
-  addLocationLabel: string;
-  createLocationTitle: string;
-  editLocationTitle: string;
-  locationNameRequired: string;
-  locationDeleteConfirm: string;
-  noLocationsLabel: string;
-  locationSalePointHint: string;
-  // Phase W4A — canonical location-aware transfer drawer keys.
-  ltTitle: string; ltProduct: string; ltSource: string; ltSourceQty: string;
-  ltDestination: string; ltAmount: string; ltReason: string; ltNote: string;
-  ltSelectSource: string; ltSelectDestination: string; ltConfirm: string;
-  ltSubmitting: string; ltCancel: string; ltSuccess: string; ltForbidden: string;
-  ltSalePointTag: string; ltStorageTag: string; ltDefaultSaleHint: string;
-  ltReadyLabel: string; ltWarehouseStockLabel: string; ltTotalLabel: string; ltPreviewTitle: string;
-  ltReasonReplenish: string; ltReasonReturnStorage: string; ltReasonRebalance: string;
-  ltReasonReorganize: string; ltReasonOther: string;
-  ltValSourceRequired: string; ltValDestRequired: string; ltValSameLocation: string;
-  ltValInsufficient: string; ltValReasonRequired: string; ltValNoteRequired: string; ltNoSourceStock: string;
-};
 
-type WarehouseSectionProps = {
-  dictionary: WarehouseSectionDictionary;
-};
 
-type WarehouseFormState = {
-  name: string;
-  code: string;
-  address: string;
-  phone: string;
-  contact_name: string;
-  is_active: boolean;
-};
 
-const initialFormState: WarehouseFormState = {
+
+
+
+
+const initialFormState: WarehouseSectionWarehouseFormState = {
   name: "",
   code: "",
   address: "",
@@ -383,7 +265,7 @@ function WarehouseComboBox({
   );
 }
 
-export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
+export function WarehouseSection({ dictionary }: WarehouseSectionWarehouseSectionProps) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const params = useParams();
@@ -395,7 +277,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionProps) {
   const [isPending, startTransition] = useTransition();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<WarehouseFormState>(initialFormState);
+  const [form, setForm] = useState<WarehouseSectionWarehouseFormState>(initialFormState);
   const [error, setError] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 

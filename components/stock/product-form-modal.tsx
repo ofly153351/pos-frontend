@@ -17,32 +17,13 @@ import type {
   ProductType,
   ProductUnit,
 } from "@/types/product";
+import type { ProductFormModalProductFormDrawerProps } from "./types";
+import type { ProductFormModalProductFieldProps } from "./types";
 
-type ProductFormDrawerProps = {
-  closeLabel: string;
-  error?: string;
-  formLabels: ProductFormLabels;
-  formState: ProductInput;
-  isOpen: boolean;
-  isPending: boolean;
-  isEditing: boolean;
-  managementDictionary: ManagementDictionary;
-  onClose: () => void;
-  onFormStateChange: (updater: (current: ProductInput) => ProductInput) => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  productBrands: ProductBrand[];
-  productTypes: ProductType[];
-  quickActionLabel: string;
-  supplierOptions: { id: string; name: string }[];
-  unitOptions: ProductUnit[];
-};
 
-type ProductFieldProps = {
-  badgeTone?: "optional" | "required";
-  badgeText?: string;
-  children: ReactNode;
-  label: string;
-};
+
+
+
 
 const inputClass =
   "w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100";
@@ -141,7 +122,7 @@ function ProductField({
   badgeTone = "optional",
   children,
   label,
-}: ProductFieldProps) {
+}: ProductFormModalProductFieldProps) {
   return (
     <label className="block">
       <span className="mb-1 flex items-center gap-2 text-sm font-medium text-slate-700">
@@ -522,7 +503,7 @@ export function ProductFormDrawer({
   quickActionLabel,
   supplierOptions,
   unitOptions,
-}: ProductFormDrawerProps) {
+}: ProductFormModalProductFormDrawerProps) {
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {

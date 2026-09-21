@@ -3,12 +3,10 @@
 import { useEffect } from "react";
 import { MapPin, X } from "lucide-react";
 import type { Product } from "@/types/product";
+import type { StockAdjustModalProps } from "./types";
 
-type Props = {
-  product: Product | null;
-  onClose: () => void;
-  onSuccess: () => void;
-};
+
+
 
 // DEPRECATED / BLOCKED (location-aware stock remediation).
 //
@@ -23,7 +21,7 @@ type Props = {
 // (สินค้าคงคลัง), which adjusts +/- as a delta and sets an actual count against a specific
 // location with an optimistic-lock guard. This component is kept (same props) only so
 // existing callers compile; it performs NO stock mutation and only directs the user there.
-export function StockAdjustModal({ product, onClose }: Props) {
+export function StockAdjustModal({ product, onClose }: StockAdjustModalProps) {
   useEffect(() => {
     if (!product) return;
     function onKey(e: KeyboardEvent) {

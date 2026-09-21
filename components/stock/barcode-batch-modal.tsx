@@ -24,13 +24,10 @@ import {
 import { exportSheetPdf } from "@/lib/label-raster";
 import type { Product } from "@/types/product";
 import type { BarcodeModalLabels } from "@/components/stock/barcode-modal";
+import type { BarcodeBatchModalBarcodeBatchModalProps } from "./types";
 
-type BarcodeBatchModalProps = {
-  products: Product[] | null;
-  labels: BarcodeModalLabels;
-  storeName?: string | null;
-  onClose: () => void;
-};
+
+
 
 const TEMPLATES: Array<{ key: PrintTemplate; labelKey: keyof BarcodeModalLabels }> = [
   { key: "small",  labelKey: "templateSmall"  },
@@ -69,7 +66,7 @@ function toBatchProduct(p: Product): BatchProduct {
   };
 }
 
-export function BarcodeBatchModal({ products, labels, storeName, onClose }: BarcodeBatchModalProps) {
+export function BarcodeBatchModal({ products, labels, storeName, onClose }: BarcodeBatchModalBarcodeBatchModalProps) {
   const [template, setTemplate]       = useState<PrintTemplate>("medium");
   const [printerMode, setPrinterMode] = useState<PrinterMode>("label");
   const [a4Layout, setA4Layout]       = useState<A4LayoutId>("4x10");

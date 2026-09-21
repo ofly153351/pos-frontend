@@ -3,23 +3,10 @@
 import { useEffect } from "react";
 
 import type { ManagementDictionary } from "@/components/stock/types";
+import type { ProductTypeModalProductTypeModalProps } from "./types";
 
-type ProductTypeModalProps = {
-  cancelLabel: string;
-  description: string;
-  error: string;
-  isActive: boolean;
-  isOpen: boolean;
-  isPending: boolean;
-  isEditing: boolean;
-  managementDictionary: ManagementDictionary;
-  name: string;
-  onActiveChange: (checked: boolean) => void;
-  onClose: () => void;
-  onDescriptionChange: (value: string) => void;
-  onNameChange: (value: string) => void;
-  onSubmit: () => void;
-};
+
+
 
 export function ProductTypeModal({
   cancelLabel,
@@ -36,7 +23,7 @@ export function ProductTypeModal({
   onDescriptionChange,
   onNameChange,
   onSubmit,
-}: ProductTypeModalProps) {
+}: ProductTypeModalProductTypeModalProps) {
   useEffect(() => {
     if (!isOpen) {
       return;

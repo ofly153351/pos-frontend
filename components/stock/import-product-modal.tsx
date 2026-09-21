@@ -14,6 +14,11 @@ import {
 } from "@/services/products";
 import { toast } from "@/components/ui/toast";
 import type { ImportProductDictionary } from "@/components/stock/types";
+import type { ImportProductModalPreviewRow } from "./types";
+import type { ImportProductModalRowResult } from "./types";
+import type { ImportProductModalStep } from "./types";
+import type { ImportProductModalProps } from "./types";
+
 
 // ─── Template ─────────────────────────────────────────────────────────────────
 
@@ -60,23 +65,9 @@ const COL_DESC     = "คำอธิบาย (Description)";
 
 // ─── Preview row ──────────────────────────────────────────────────────────────
 
-type PreviewRow = {
-  rowNum: number;
-  name: string;
-  sku: string;
-  barcode: string;
-  price: string;
-  cost: string;
-  stock: string;
-  minStock: string;
-  unit: string;
-  category: string;
-  brand: string;
-  description: string;
-  error?: string; // validation error before import
-};
 
-function parsePreviewRows(dataRows: Record<string, string>[], dict: ImportProductDictionary): PreviewRow[] {
+
+function parsePreviewRows(dataRows: Record<string, string>[], dict: ImportProductDictionary): ImportProductModalPreviewRow[] {
   return dataRows.map((row, i) => {
     const g = (col: string) => String(row[col] ?? "").trim();
     const name = g(COL_NAME);
@@ -191,26 +182,21 @@ class LookupCache {
 
 // ─── Result ───────────────────────────────────────────────────────────────────
 
-type RowResult = { row: number; name: string; status: "ok" | "error"; error?: string };
+
 
 // ─── Steps ───────────────────────────────────────────────────────────────────
 
-type Step = "idle" | "preview" | "importing" | "done";
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-type Props = {
-  onClose: () => void;
-  onSuccess: () => void;
-  importFileRef: React.RefObject<HTMLInputElement | null>;
-  dictionary: ImportProductDictionary;
-};
 
-export function ImportProductModal({ onClose, onSuccess, importFileRef, dictionary: t }: Props) {
-  const [step, setStep]           = useState<Step>("idle");
-  const [preview, setPreview]     = useState<PreviewRow[]>([]);
+
+export function ImportProductModal({ onClose, onSuccess, importFileRef, dictionary: t }: ImportProductModalProps) {
+  const [step, setStep]           = useState<ImportProductModalStep>("idle");
+  const [preview, setPreview]     = useState<ImportProductModalPreviewRow[]>([]);
   const [rawRows, setRawRows]     = useState<Record<string, string>[]>([]);
-  const [results, setResults]     = useState<RowResult[]>([]);
+  const [results, setResults]     = useState<ImportProductModalRowResult[]>([]);
   const [progress, setProgress]   = useState({ done: 0, total: 0 });
 
   function downloadTemplate() {
@@ -268,7 +254,7 @@ export function ImportProductModal({ onClose, onSuccess, importFileRef, dictiona
     const cache = new LookupCache(t);
     await cache.load();
 
-    const rowResults: RowResult[] = [];
+    const rowResults: ImportProductModalRowResult[] = [];
 
     for (let i = 0; i < rawRows.length; i++) {
       const row = rawRows[i];

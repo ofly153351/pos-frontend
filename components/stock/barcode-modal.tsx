@@ -27,81 +27,20 @@ import {
 } from "@/lib/label";
 import { exportLabelPng, exportSheetPdf } from "@/lib/label-raster";
 import type { Product } from "@/types/product";
+import type { BarcodeModalBarcodeModalLabels } from "./types";
+import type { BarcodeModalBarcodeModalProps } from "./types";
+export type { BarcodeModalBarcodeModalLabels as BarcodeModalLabels } from "./types";
+
 
 // ── Label types ───────────────────────────────────────────────────────────────
 
-export type BarcodeModalLabels = {
-  title: string;
-  printLabel: string;
-  downloadPng: string;
-  downloadPdf: string;
-  copyCode: string;
-  copied: string;
-  exporting: string;
-  noBarcodeLabel: string;
-  invalidBarcodeLabel: string;
-  templateLabel: string;
-  templateSmall: string;
-  templateMedium: string;
-  templateLarge: string;
-  templateShelf: string;
-  templateQr: string;
-  barcodeTypeLabel: string;
-  barcodeTypeCode128: string;
-  barcodeTypeEan13: string;
-  barcodeTypeEan8: string;
-  barcodeTypeUpca: string;
-  barcodeTypeQr: string;
-  contentOptionsLabel: string;
-  showName: string;
-  showSku: string;
-  showPrice: string;
-  showBarcodeNumber: string;
-  showCategory: string;
-  showBrand: string;
-  showLocation: string;
-  showStoreName: string;
-  showSalePrice: string;
-  origPriceInput: string;
-  salePriceInput: string;
-  quantityLabel: string;
-  printerModeLabel: string;
-  printerLabel: string;
-  printerA4: string;
-  printer58mm: string;
-  printer80mm: string;
-  a4LayoutLabel: string;
-  previewLabel: string;
-  infoTemplate: string;
-  infoSize: string;
-  infoType: string;
-  infoMode: string;
-  infoQuantity: string;
-  infoPages: string;
-  pagesUnit: string;
-  labelsUnit: string;
-  pagesWillPrint: string;     // "{n} pages will be printed"
-  sampleNote: string;         // "Showing {shown} of {total} labels"
-  labelPrinterNote: string;
-  closeLabel: string;
-  // batch mode
-  batchTitle: string;
-  batchProducts: string;          // "{n} products"
-  batchQtyPerProduct: string;
-  batchPrintAll: string;
-  batchTotalLabels: string;       // "{n} labels total"
-};
 
-type BarcodeModalProps = {
-  product: Product | null;
-  labels: BarcodeModalLabels;
-  storeName?: string | null;
-  onClose: () => void;
-};
+
+
 
 // ── Static config ─────────────────────────────────────────────────────────────
 
-const BARCODE_TYPES: Array<{ value: BarcodeType; labelKey: keyof BarcodeModalLabels }> = [
+const BARCODE_TYPES: Array<{ value: BarcodeType; labelKey: keyof BarcodeModalBarcodeModalLabels }> = [
   { value: "code128", labelKey: "barcodeTypeCode128" },
   { value: "ean13",   labelKey: "barcodeTypeEan13"   },
   { value: "ean8",    labelKey: "barcodeTypeEan8"    },
@@ -109,7 +48,7 @@ const BARCODE_TYPES: Array<{ value: BarcodeType; labelKey: keyof BarcodeModalLab
   { value: "qr",      labelKey: "barcodeTypeQr"      },
 ];
 
-const TEMPLATES: Array<{ key: PrintTemplate; labelKey: keyof BarcodeModalLabels }> = [
+const TEMPLATES: Array<{ key: PrintTemplate; labelKey: keyof BarcodeModalBarcodeModalLabels }> = [
   { key: "small",  labelKey: "templateSmall"  },
   { key: "medium", labelKey: "templateMedium" },
   { key: "large",  labelKey: "templateLarge"  },
@@ -117,7 +56,7 @@ const TEMPLATES: Array<{ key: PrintTemplate; labelKey: keyof BarcodeModalLabels 
   { key: "qr",     labelKey: "templateQr"     },
 ];
 
-const PRINTER_MODES: Array<{ value: PrinterMode; labelKey: keyof BarcodeModalLabels }> = [
+const PRINTER_MODES: Array<{ value: PrinterMode; labelKey: keyof BarcodeModalBarcodeModalLabels }> = [
   { value: "label", labelKey: "printerLabel"  },
   { value: "a4",    labelKey: "printerA4"     },
   { value: "58mm",  labelKey: "printer58mm"   },
@@ -126,7 +65,7 @@ const PRINTER_MODES: Array<{ value: PrinterMode; labelKey: keyof BarcodeModalLab
 
 const QUICK_QTY = [1, 5, 10, 20, 50, 100];
 
-const CONTENT_FLAG_KEYS: Array<{ flag: keyof LabelContentFlags; labelKey: keyof BarcodeModalLabels }> = [
+const CONTENT_FLAG_KEYS: Array<{ flag: keyof LabelContentFlags; labelKey: keyof BarcodeModalBarcodeModalLabels }> = [
   { flag: "showName",          labelKey: "showName"          },
   { flag: "showSku",           labelKey: "showSku"           },
   { flag: "showPrice",         labelKey: "showPrice"         },
@@ -156,7 +95,7 @@ function ScaledHtml({ html, widthPx, heightPx, scale }: { html: string; widthPx:
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeModalProps) {
+export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeModalBarcodeModalProps) {
   const [barcodeType, setBarcodeType] = useState<BarcodeType>("code128");
   const [template, setTemplate]       = useState<PrintTemplate>("medium");
   const [printerMode, setPrinterMode] = useState<PrinterMode>("label");
