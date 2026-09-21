@@ -9,38 +9,13 @@ import { listSuppliers, listSupplierProducts, type Supplier, type SupplierProduc
 import { toast } from "@/components/ui/toast";
 import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { ScanButton } from "@/components/shared/scan-button";
+import type { PurchaseFormPurchaseFormProps } from "./types";
+import type { PurchaseFormLineItem } from "./types";
 
-type PurchaseFormProps = {
-  dictionary: {
-    createOrder: string;
-    editOrder: string;
-    selectSupplier: string;
-    selectSupplierFirst: string;
-    noSupplierMatch: string;
-    selectProduct: string;
-    searchPlaceholder?: string;
-    addItem: string;
-    product: string;
-    quantity: string;
-    unitCost: string;
-    totalCost: string;
-    note: string;
-    save: string;
-    saving: string;
-    cancel: string;
-    requestFailed: string;
-    noProducts?: string;
-  };
-  onClose: () => void;
-  onSuccess: () => void;
-};
 
-type LineItem = {
-  product_id: string;
-  product_name: string;
-  quantity: number;
-  unit_cost: number;
-};
+
+
+
 
 function formatTHB(amount: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -48,12 +23,12 @@ function formatTHB(amount: number) {
   }).format(amount);
 }
 
-export function PurchaseForm({ dictionary: d, onClose, onSuccess }: PurchaseFormProps) {
+export function PurchaseForm({ dictionary: d, onClose, onSuccess }: PurchaseFormPurchaseFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [supplierId, setSupplierId] = useState("");
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<LineItem[]>([]);
+  const [items, setItems] = useState<PurchaseFormLineItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [isClosing, setIsClosing] = useState(false);

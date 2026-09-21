@@ -12,45 +12,14 @@ import { ReceiveModal } from "@/components/purchasing/receive-modal";
 import { cancelPurchaseOrder, listPurchaseOrders, type PurchaseOrder } from "@/services/purchases";
 import { toast } from "@/components/ui/toast";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
+import type { PurchaseListStatusFilter } from "./types";
+import type { PurchaseListDict } from "./types";
+import type { PurchaseListKpiCardProps } from "./types";
 
-type StatusFilter = "all" | "pending" | "partial" | "completed" | "cancelled";
 
-type Dict = {
-  purchaseOrders: string;
-  createOrder: string;
-  orderNumber: string;
-  supplierName: string;
-  date: string;
-  totalCost: string;
-  status: string;
-  pending: string;
-  partial: string;
-  completed: string;
-  cancelled: string;
-  receiveStock: string;
-  cancelOrder: string;
-  emptyOrders: string;
-  loading: string;
-  tableActions: string;
-  receiveConfirm: string;
-  receiveQuantity: string;
-  product: string;
-  quantity: string;
-  unitCost: string;
-  cancel: string;
-  saving: string;
-  stockUpdated: string;
-  filterAll: string;
-  searchOrders: string;
-  itemsUnit: string;
-  kpiTotalOrders: string;
-  kpiTotalValue: string;
-  viewOrder: string;
-  emptyFilteredOrders: string;
-  confirmCancelOrder: string;
-  requestFailed: string;
-  noProducts?: string;
-};
+
+
+
 
 const STATUS_BADGE: Record<string, string> = {
   pending:   "bg-amber-100 text-amber-700 ring-1 ring-amber-200/60",
@@ -59,7 +28,7 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "bg-slate-100 text-slate-500 ring-1 ring-slate-200/60",
 };
 
-const FILTER_TABS: { key: StatusFilter; color: string }[] = [
+const FILTER_TABS: { key: PurchaseListStatusFilter; color: string }[] = [
   { key: "all",       color: "" },
   { key: "pending",   color: "text-amber-600" },
   { key: "partial",   color: "text-violet-600" },
@@ -111,8 +80,8 @@ function formatDate(dateStr: string) {
   return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(dateStr));
 }
 
-type KpiCardProps = { icon: React.ReactNode; label: string; value: string; accent?: string };
-function KpiCard({ icon, label, value, accent }: KpiCardProps) {
+
+function KpiCard({ icon, label, value, accent }: PurchaseListKpiCardProps) {
   return (
     <ReportKpiCard
       label={label}
@@ -124,12 +93,12 @@ function KpiCard({ icon, label, value, accent }: KpiCardProps) {
   );
 }
 
-const statusLabels = (d: Dict): Record<StatusFilter, string> => ({
+const statusLabels = (d: PurchaseListDict): Record<PurchaseListStatusFilter, string> => ({
   all: d.filterAll, pending: d.pending, partial: d.partial,
   completed: d.completed, cancelled: d.cancelled,
 });
 
-export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dict; onCreateOrder: () => void }) {
+export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: PurchaseListDict; onCreateOrder: () => void }) {
   const queryClient = useQueryClient();
   const router = useRouter();
   const params = useParams();
@@ -137,7 +106,7 @@ export function PurchaseList({ dictionary: d, onCreateOrder }: { dictionary: Dic
   // Receiving is one workflow: open the single-page Goods Receiving editor with this PO preloaded.
   const goReceive = (poId: string) => router.push(`/${locale}/warehouse/receive/new?po=${poId}`);
   const [receivePO, setReceivePO] = useState<PurchaseOrder | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<PurchaseListStatusFilter>("all");
   const [search, setSearch] = useState("");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 

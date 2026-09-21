@@ -4,26 +4,12 @@ import { useEffect, useState, useTransition } from "react";
 import { X } from "lucide-react";
 
 import { receiveStock, type PurchaseOrder } from "@/services/purchases";
+import type { ReceiveModalReceiveModalProps } from "./types";
 
-type ReceiveModalProps = {
-  dictionary: {
-    receiveStock: string;
-    receiveConfirm: string;
-    receiveQuantity: string;
-    product: string;
-    quantity: string;
-    unitCost: string;
-    totalCost: string;
-    cancel: string;
-    saving: string;
-    stockUpdated: string;
-    [key: string]: string;
-  };
-  onClose: () => void;
-  purchaseOrder: PurchaseOrder;
-};
 
-export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModalProps) {
+
+
+export function ReceiveModal({ dictionary, onClose, purchaseOrder }: ReceiveModalReceiveModalProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [quantities, setQuantities] = useState<Record<string, number>>({});

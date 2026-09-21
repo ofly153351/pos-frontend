@@ -27,23 +27,10 @@ import {
   type WsDict,
 } from "./workspace-shared";
 import { EmptyState, LoadingRows } from "./workspace-ui";
+import type { OverviewTabProps } from "./../types";
 
-type Props = {
-  dict: WsDict;
-  locale: string;
-  pos: PurchaseOrder[];
-  posLoading: boolean;
-  posError: boolean;
-  onRetryPos: () => void;
-  pendingReview: GoodsReceiptDraft[];
-  pendingReviewTotal: number;
-  pendingLoading: boolean;
-  confirmed: GoodsReceiptDraft[];
-  confirmedLoading: boolean;
-  /** Epoch ms for the first day of the current month (stable per mount). */
-  monthStart: number;
-  nav: WorkspaceNav;
-};
+
+
 
 const RECENT_LIMIT = 5;
 
@@ -67,7 +54,7 @@ export function OverviewTab({
   confirmedLoading,
   monthStart,
   nav,
-}: Props) {
+}: OverviewTabProps) {
   const kpis = useMemo(() => {
     let open = 0;
     let notReceived = 0;

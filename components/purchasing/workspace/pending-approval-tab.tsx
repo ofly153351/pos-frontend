@@ -8,18 +8,12 @@ import { QueryErrorState } from "@/components/ui/query-error-state";
 
 import { formatDate, type WorkspaceNav, type WsDict } from "./workspace-shared";
 import { EmptyState, LoadingRows, SupplierText } from "./workspace-ui";
+import type { PendingApprovalTabProps } from "./../types";
 
-type Props = {
-  dict: WsDict;
-  locale: string;
-  items: GoodsReceiptDraft[];
-  loading: boolean;
-  error: boolean;
-  onRetry: () => void;
-  nav: WorkspaceNav;
-};
 
-export function PendingApprovalTab({ dict, locale, items, loading, error, onRetry, nav }: Props) {
+
+
+export function PendingApprovalTab({ dict, locale, items, loading, error, onRetry, nav }: PendingApprovalTabProps) {
   const [search, setSearch] = useState("");
 
   const visible = useMemo(() => {

@@ -15,19 +15,12 @@ import {
   type WsDict,
 } from "./workspace-shared";
 import { EmptyState, LoadingRows, ProgressBar, SupplierText } from "./workspace-ui";
+import type { PendingReceivingTabProps } from "./../types";
 
-type Props = {
-  dict: WsDict;
-  locale: string;
-  canOperate: boolean;
-  pos: PurchaseOrder[];
-  loading: boolean;
-  error: boolean;
-  onRetry: () => void;
-  nav: WorkspaceNav;
-};
 
-export function PendingReceivingTab({ dict, locale, canOperate, pos, loading, error, onRetry, nav }: Props) {
+
+
+export function PendingReceivingTab({ dict, locale, canOperate, pos, loading, error, onRetry, nav }: PendingReceivingTabProps) {
   const [search, setSearch] = useState("");
   const [supplierId, setSupplierId] = useState("");
 

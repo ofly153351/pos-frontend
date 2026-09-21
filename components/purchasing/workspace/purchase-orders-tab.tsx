@@ -19,22 +19,15 @@ import {
   type WsDict,
 } from "./workspace-shared";
 import { EmptyState, LoadingRows, PoBadge, ProgressBar, SupplierText } from "./workspace-ui";
+import type { PurchaseOrdersTabStatusFilter } from "./../types";
+import type { PurchaseOrdersTabProps } from "./../types";
 
-type StatusFilter = "all" | PurchaseOrderStatus;
 
-const STATUS_FILTERS: StatusFilter[] = ["all", "pending", "partial", "completed", "cancelled"];
 
-type Props = {
-  dict: WsDict;
-  locale: string;
-  canOperate: boolean;
-  canManage: boolean;
-  pos: PurchaseOrder[];
-  loading: boolean;
-  error: boolean;
-  onRetry: () => void;
-  nav: WorkspaceNav;
-};
+
+const STATUS_FILTERS: PurchaseOrdersTabStatusFilter[] = ["all", "pending", "partial", "completed", "cancelled"];
+
+
 
 export function PurchaseOrdersTab({
   dict,
@@ -46,13 +39,13 @@ export function PurchaseOrdersTab({
   error,
   onRetry,
   nav,
-}: Props) {
+}: PurchaseOrdersTabProps) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("all");
+  const [status, setStatus] = useState<PurchaseOrdersTabStatusFilter>("all");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  const statusLabel = useMemo<Record<StatusFilter, string>>(
+  const statusLabel = useMemo<Record<PurchaseOrdersTabStatusFilter, string>>(
     () => ({
       all: dict.filterAllStatuses,
       pending: dict.poPending,

@@ -21,166 +21,21 @@ import { friendlyMessage } from "@/lib/form-errors";
 import { SkeletonListItem } from "@/components/ui/skeleton";
 import { AddSupplierModal } from "./add-supplier-modal";
 import { QueryErrorState } from "@/components/ui/query-error-state";
+import type { SupplierManagerStatusFilter } from "./types";
+import type { SupplierManagerSortBy } from "./types";
+import type { SupplierManagerSupplierUI } from "./types";
+import type { SupplierManagerSupplierManagerProps } from "./types";
+import type { SupplierManagerEditFormData } from "./types";
+
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type StatusFilter = "all" | "active" | "inactive";
-type SortBy = "recent" | "name_asc";
 
-type SupplierUI = {
-  allSuppliers: string;
-  countUnit: string;
-  sortRecent: string;
-  sortNameAZ: string;
-  loadMore: string;
-  searchPlaceholder: string;
-  filterAll: string;
-  filterActive: string;
-  filterInactive: string;
-  noResults: string;
-  noResultsSub: string;
-  lastTx: string;
-  creditDaysPrefix: string;
-  daysSuffix: string;
-  selectHint: string;
-  selectSub: string;
-  codeLabel: string;
-  callBtn: string;
-  lineBtn: string;
-  kpiTotal: string;
-  kpiOutstanding: string;
-  kpiCreditLimit: string;
-  kpiRemaining: string;
-  kpiAllTime: string;
-  kpiNoDue: string;
-  kpiNoLimit: string;
-  kpiOrders: string;
-  kpiLastOrder: string;
-  kpiNoOrders: string;
-  sectionContact: string;
-  sectionPayment: string;
-  sectionAddress: string;
-  sectionNotes: string;
-  primaryContact: string;
-  noInfo: string;
-  purchaseHistory: string;
-  viewAll: string;
-  colDocNo: string;
-  colDate: string;
-  colAmount: string;
-  colStatus: string;
-  emptyHistory: string;
-  badgeActive: string;
-  badgeInactive: string;
-  addSupplierBtn: string;
-};
 
-type SupplierManagerProps = {
-  dictionary: {
-    title: string;
-    createSupplier: string;
-    editSupplier: string;
-    supplierName: string;
-    supplierPhone: string;
-    contactPerson: string;
-    address: string;
-    taxId: string;
-    note: string;
-    supplierIsActive: string;
-    save: string;
-    saving: string;
-    cancel: string;
-    deleteConfirm: string;
-    deleteLabel: string;
-    successCreated: string;
-    successUpdated: string;
-    successDeleted: string;
-    loading: string;
-    emptySuppliers: string;
-    requestFailed: string;
-    tableActions: string;
-    supplierProducts: string;
-    addProduct: string;
-    editProduct: string;
-    removeProduct: string;
-    noProducts: string;
-    searchProduct: string;
-    supplierSKU: string;
-    supplierPrice: string;
-    productName: string;
-    productSKU: string;
-    confirmRemoveProduct: string;
-    productRemoved: string;
-    productAdded: string;
-    productUpdated: string;
-    selectExistingProduct: string;
-    createNewProduct: string;
-    productNameRequired: string;
-    basePrice: string;
-    supplierUI: SupplierUI;
-    addSupplierModal: {
-      subtitle: string;
-      timeHint: string;
-      activateNow: string;
-      sectionContact: string;
-      companyName: string;
-      companyNamePlaceholder: string;
-      contactNamePlaceholder: string;
-      phonePlaceholder: string;
-      lineId: string;
-      lineIdPlaceholder: string;
-      email: string;
-      emailPlaceholder: string;
-      sectionLogo: string;
-      logoOptional: string;
-      logoUploadText: string;
-      logoUploadHint: string;
-      logoRemove: string;
-      logoErrType: string;
-      logoErrSize: string;
-      sectionFinancial: string;
-      paymentMethodLabel: string;
-      promptpay: string;
-      bankAccount: string;
-      promptpayNumber: string;
-      promptpayNumberPlaceholder: string;
-      promptpayHint: string;
-      bankNameLabel: string;
-      bankAccountNumber: string;
-      bankAccountName: string;
-      bankAccountNumberPlaceholder: string;
-      bankAccountNamePlaceholder: string;
-      selectBankPlaceholder: string;
-      creditTerm: string;
-      creditCash: string;
-      creditCustom: string;
-      creditCustomLabel: string;
-      creditCustomPlaceholder: string;
-      creditSuffix: string;
-      addressPlaceholder: string;
-      notesPlaceholder: string;
-      saveSupplier: string;
-      cancelConfirmTitle: string;
-      cancelConfirmBody: string;
-      backToForm: string;
-      confirmCancel: string;
-      errCompanyName: string;
-      errContactName: string;
-      errPhone: string;
-      errEmail: string;
-      errPromptpay: string;
-      errBankName: string;
-      errBankAccountNumber: string;
-      errBankAccountName: string;
-      errCreditTerm: string;
-      errCustomDays: string;
-      taxId: string;
-      taxIdPlaceholder: string;
-      errTaxId: string;
-      sectionAdditional: string;
-    };
-  };
-};
+
+
+
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -238,7 +93,7 @@ function InitialsAvatar({ name, logoUrl, size }: { name: string; logoUrl?: strin
   );
 }
 
-function StatusBadge({ isActive, ui }: { isActive: boolean; ui: SupplierUI }) {
+function StatusBadge({ isActive, ui }: { isActive: boolean; ui: SupplierManagerSupplierUI }) {
   return isActive ? (
     <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200/50">
       {ui.badgeActive}
@@ -250,7 +105,7 @@ function StatusBadge({ isActive, ui }: { isActive: boolean; ui: SupplierUI }) {
   );
 }
 
-function StatusBadgeOnDark({ isActive, ui }: { isActive: boolean; ui: SupplierUI }) {
+function StatusBadgeOnDark({ isActive, ui }: { isActive: boolean; ui: SupplierManagerSupplierUI }) {
   return isActive ? (
     <span className="inline-flex items-center rounded-full bg-emerald-400/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-300/40">
       {ui.badgeActive}
@@ -290,7 +145,7 @@ function SupplierCard({
   supplier: Supplier;
   isSelected: boolean;
   onClick: () => void;
-  ui: SupplierUI;
+  ui: SupplierManagerSupplierUI;
 }) {
   return (
     <button
@@ -415,7 +270,7 @@ function SupplierDetail({
 }: {
   supplier: Supplier;
   pos: PurchaseOrder[];
-  ui: SupplierUI;
+  ui: SupplierManagerSupplierUI;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -634,25 +489,7 @@ function SupplierDetail({
 
 // ── Edit supplier modal ───────────────────────────────────────────────────────
 
-type EditFormData = {
-  name: string;
-  phone: string;
-  contact_person: string;
-  email: string;
-  line_id: string;
-  address: string;
-  tax_id: string;
-  note: string;
-  is_active: boolean;
-  payment_method: "promptpay" | "bank_account" | "";
-  promptpay_number: string;
-  bank_name: string;
-  bank_account_number: string;
-  bank_account_name: string;
-  credit_days: number | "";
-  logo?: File;
-  remove_logo: boolean;
-};
+
 
 const THAI_BANKS = [
   "ธนาคารกรุงเทพ (BBL)", "ธนาคารกสิกรไทย (KBANK)", "ธนาคารกรุงไทย (KTB)",
@@ -670,13 +507,13 @@ function EditSupplierModal({
   onSuccess,
 }: {
   supplier: Supplier;
-  dict: SupplierManagerProps["dictionary"];
+  dict: SupplierManagerSupplierManagerProps["dictionary"];
   onClose: () => void;
   onSuccess: () => void;
 }) {
   const m = dict.addSupplierModal;
   const [isPending, startTransition] = useTransition();
-  const [form, setForm] = useState<EditFormData>({
+  const [form, setForm] = useState<SupplierManagerEditFormData>({
     name: supplier.name,
     phone: supplier.phone ?? "",
     contact_person: supplier.contact_person ?? "",
@@ -720,7 +557,7 @@ function EditSupplierModal({
     if (fileRef.current) fileRef.current.value = "";
   }
 
-  function set<K extends keyof EditFormData>(k: K, v: EditFormData[K]) {
+  function set<K extends keyof SupplierManagerEditFormData>(k: K, v: SupplierManagerEditFormData[K]) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
@@ -951,15 +788,15 @@ function EditSupplierModal({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function SupplierManager({ dictionary }: SupplierManagerProps) {
+export function SupplierManager({ dictionary }: SupplierManagerSupplierManagerProps) {
   const ui = dictionary.supplierUI;
   const queryClient = useQueryClient();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [sortBy, setSortBy] = useState<SortBy>("recent");
+  const [statusFilter, setStatusFilter] = useState<SupplierManagerStatusFilter>("all");
+  const [sortBy, setSortBy] = useState<SupplierManagerSortBy>("recent");
   const [visibleCount, setVisibleCount] = useState(20);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -1053,7 +890,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
         <div className="relative">
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            onChange={(e) => setStatusFilter(e.target.value as SupplierManagerStatusFilter)}
             className="appearance-none rounded-xl border border-violet-200 bg-white py-2 pl-3 pr-8 text-sm font-medium text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
           >
             <option value="all">{ui.filterAll}</option>
@@ -1089,7 +926,7 @@ export function SupplierManager({ dictionary }: SupplierManagerProps) {
             <div className="flex items-center gap-1">
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortBy)}
+                onChange={(e) => setSortBy(e.target.value as SupplierManagerSortBy)}
                 className="appearance-none rounded-lg border-0 bg-transparent py-1 pl-2 pr-6 text-xs font-medium text-slate-600 outline-none focus:ring-0"
               >
                 <option value="recent">{ui.sortRecent}</option>

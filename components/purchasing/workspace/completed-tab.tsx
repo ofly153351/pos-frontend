@@ -9,32 +9,19 @@ import { QueryErrorState } from "@/components/ui/query-error-state";
 
 import { formatDate, formatTHB, type WorkspaceNav, type WsDict } from "./workspace-shared";
 import { EmptyState, LoadingRows, RecordTypeBadge, SupplierText } from "./workspace-ui";
+import type { CompletedTabRecordKind } from "./../types";
+import type { CompletedTabCompletedRow } from "./../types";
+import type { CompletedTabTypeFilter } from "./../types";
+import type { CompletedTabProps } from "./../types";
 
-type RecordKind = "po" | "receipt";
 
-type CompletedRow = {
-  kind: RecordKind;
-  id: string;
-  number: string;
-  supplier?: string;
-  warehouse?: string;
-  date?: string;
-  ts: number;
-  value: number;
-};
 
-type TypeFilter = "all" | RecordKind;
 
-type Props = {
-  dict: WsDict;
-  locale: string;
-  pos: PurchaseOrder[];
-  confirmed: GoodsReceiptDraft[];
-  loading: boolean;
-  error: boolean;
-  onRetry: () => void;
-  nav: WorkspaceNav;
-};
+
+
+
+
+
 
 function tsOf(value?: string | null): number {
   if (!value) return 0;
@@ -42,12 +29,12 @@ function tsOf(value?: string | null): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
-export function CompletedTab({ dict, locale, pos, confirmed, loading, error, onRetry, nav }: Props) {
+export function CompletedTab({ dict, locale, pos, confirmed, loading, error, onRetry, nav }: CompletedTabProps) {
   const [search, setSearch] = useState("");
-  const [type, setType] = useState<TypeFilter>("all");
+  const [type, setType] = useState<CompletedTabTypeFilter>("all");
 
-  const rows = useMemo<CompletedRow[]>(() => {
-    const out: CompletedRow[] = [];
+  const rows = useMemo<CompletedTabCompletedRow[]>(() => {
+    const out: CompletedTabCompletedRow[] = [];
     for (const po of pos) {
       if (po.status !== "completed") continue;
       const date = po.received_at ?? po.updated_at;
@@ -90,7 +77,7 @@ export function CompletedTab({ dict, locale, pos, confirmed, loading, error, onR
 
   const isFiltered = type !== "all" || search.trim() !== "";
 
-  const typeTabs: { key: TypeFilter; label: string }[] = [
+  const typeTabs: { key: CompletedTabTypeFilter; label: string }[] = [
     { key: "all", label: dict.filterAllTypes },
     { key: "po", label: dict.recordPo },
     { key: "receipt", label: dict.recordReceipt },

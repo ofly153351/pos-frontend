@@ -21,125 +21,29 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { createSupplier, type Supplier } from "@/services/suppliers";
 import { toast } from "@/components/ui/toast";
+import type { AddSupplierModalPaymentMethod } from "./types";
+import type { AddSupplierModalCreditOption } from "./types";
+import type { AddSupplierModalFormState } from "./types";
+import type { AddSupplierModalFormErrors } from "./types";
+import type { AddSupplierModalAddSupplierDict } from "./types";
+import type { AddSupplierModalProps } from "./types";
+export type { AddSupplierModalAddSupplierDict as AddSupplierDict } from "./types";
+
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type PaymentMethod = "promptpay" | "bank_account";
-type CreditOption = 0 | 7 | 15 | 30 | 45 | "custom";
 
-interface FormState {
-  companyName: string;
-  contactName: string;
-  phone: string;
-  lineId: string;
-  email: string;
-  taxId: string;
-  logoFile: File | null;
-  logoPreviewUrl: string;
-  logoError: string;
-  paymentMethod: PaymentMethod;
-  promptpayNumber: string;
-  bankName: string;
-  bankAccountNumber: string;
-  bankAccountName: string;
-  creditTerm: CreditOption;
-  customDays: string;
-  address: string;
-  notes: string;
-  isActive: boolean;
-}
 
-interface FormErrors {
-  companyName?: string;
-  contactName?: string;
-  phone?: string;
-  email?: string;
-  taxId?: string;
-  promptpayNumber?: string;
-  bankName?: string;
-  bankAccountNumber?: string;
-  bankAccountName?: string;
-  creditTerm?: string;
-  customDays?: string;
-}
 
-export type AddSupplierDict = {
-  createSupplier: string;
-  contactPerson: string;
-  supplierPhone: string;
-  address: string;
-  note: string;
-  save: string;
-  saving: string;
-  cancel: string;
-  successCreated: string;
-  requestFailed: string;
-  addSupplierModal: {
-    subtitle: string;
-    timeHint: string;
-    activateNow: string;
-    sectionContact: string;
-    sectionAdditional: string;
-    companyName: string;
-    companyNamePlaceholder: string;
-    contactNamePlaceholder: string;
-    phonePlaceholder: string;
-    lineId: string;
-    lineIdPlaceholder: string;
-    email: string;
-    emailPlaceholder: string;
-    taxId: string;
-    taxIdPlaceholder: string;
-    errTaxId: string;
-    sectionLogo: string;
-    logoOptional: string;
-    logoUploadText: string;
-    logoUploadHint: string;
-    logoRemove: string;
-    logoErrType: string;
-    logoErrSize: string;
-    sectionFinancial: string;
-    paymentMethodLabel: string;
-    promptpay: string;
-    bankAccount: string;
-    promptpayNumber: string;
-    promptpayNumberPlaceholder: string;
-    promptpayHint: string;
-    bankNameLabel: string;
-    bankAccountNumber: string;
-    bankAccountName: string;
-    bankAccountNumberPlaceholder: string;
-    bankAccountNamePlaceholder: string;
-    selectBankPlaceholder: string;
-    creditTerm: string;
-    creditCash: string;
-    creditCustom: string;
-    creditCustomLabel: string;
-    creditCustomPlaceholder: string;
-    creditSuffix: string;
-    addressPlaceholder: string;
-    notesPlaceholder: string;
-    saveSupplier: string;
-    cancelConfirmTitle: string;
-    cancelConfirmBody: string;
-    backToForm: string;
-    confirmCancel: string;
-    errCompanyName: string;
-    errContactName: string;
-    errPhone: string;
-    errEmail: string;
-    errPromptpay: string;
-    errBankName: string;
-    errBankAccountNumber: string;
-    errBankAccountName: string;
-    errCreditTerm: string;
-    errCustomDays: string;
-  };
-};
+
+
+
+
+
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const CREDIT_OPTIONS: CreditOption[] = [0, 7, 15, 30, 45, "custom"];
+const CREDIT_OPTIONS: AddSupplierModalCreditOption[] = [0, 7, 15, 30, 45, "custom"];
 
 const THAI_BANKS = [
   { code: "SCB",   name: "ธนาคารไทยพาณิชย์ (SCB)" },
@@ -153,7 +57,7 @@ const THAI_BANKS = [
   { code: "LH",    name: "ธนาคารแลนด์ แอนด์ เฮ้าส์ (LH)" },
 ];
 
-const INITIAL_FORM: FormState = {
+const INITIAL_FORM: AddSupplierModalFormState = {
   companyName: "",
   contactName: "",
   phone: "",
@@ -233,18 +137,14 @@ const inputError  = `${inputBase} border-rose-300 bg-rose-50/70`;
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface Props {
-  dictionary: AddSupplierDict;
-  onClose: () => void;
-  onSuccess?: (supplier: Supplier) => void;
-}
 
-export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props) {
+
+export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: AddSupplierModalProps) {
   const m = dict.addSupplierModal;
   const queryClient = useQueryClient();
 
-  const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [form, setForm] = useState<AddSupplierModalFormState>(INITIAL_FORM);
+  const [errors, setErrors] = useState<AddSupplierModalFormErrors>({});
   const [saving, setSaving] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -293,7 +193,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
     );
   }, [form]);
 
-  function set<K extends keyof FormState>(key: K, value: FormState[K]) {
+  function set<K extends keyof AddSupplierModalFormState>(key: K, value: AddSupplierModalFormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
     setErrors((e) => ({ ...e, [key]: undefined }));
   }
@@ -340,8 +240,8 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
 
   // ── Validation ───────────────────────────────────────────────────────────────
 
-  function validate(): FormErrors {
-    const e: FormErrors = {};
+  function validate(): AddSupplierModalFormErrors {
+    const e: AddSupplierModalFormErrors = {};
     if (form.companyName.trim().length < 2) e.companyName = m.errCompanyName;
     if (form.contactName.trim().length < 2) e.contactName = m.errContactName;
     if (!isValidThaiPhone(form.phone)) e.phone = m.errPhone;
@@ -361,8 +261,8 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
     return e;
   }
 
-  function scrollToFirstError(errs: FormErrors) {
-    const keys = Object.keys(errs) as (keyof FormErrors)[];
+  function scrollToFirstError(errs: AddSupplierModalFormErrors) {
+    const keys = Object.keys(errs) as (keyof AddSupplierModalFormErrors)[];
     if (!keys.length) return;
     const el = bodyRef.current?.querySelector(`[aria-describedby="err-${keys[0]}"]`) as HTMLElement | null;
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -413,7 +313,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
 
   // ── Pill label ────────────────────────────────────────────────────────────────
 
-  function creditLabel(c: CreditOption) {
+  function creditLabel(c: AddSupplierModalCreditOption) {
     if (c === 0) return m.creditCash;
     if (c === "custom") return m.creditCustom;
     return `${c} ${m.creditSuffix}`;
@@ -595,7 +495,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: Props
                     <div>
                       <FieldLabel required>{m.paymentMethodLabel}</FieldLabel>
                       <div className="flex gap-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-                        {(["promptpay", "bank_account"] as PaymentMethod[]).map((method) => (
+                        {(["promptpay", "bank_account"] as AddSupplierModalPaymentMethod[]).map((method) => (
                           <button
                             key={method}
                             type="button"

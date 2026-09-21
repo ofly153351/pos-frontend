@@ -10,20 +10,19 @@ import { QueryErrorState } from "@/components/ui/query-error-state";
 
 import { formatDate, formatTHB, template, type WorkspaceNav, type WsDict } from "./workspace-shared";
 import { EmptyState, LoadingRows, ReceiptBadge, SupplierText } from "./workspace-ui";
+import type { GoodsReceiptsTabStatusFilter } from "./../types";
+import type { GoodsReceiptsTabProps } from "./../types";
 
-type StatusFilter = "all" | GoodsReceiptStatus;
 
-const STATUS_FILTERS: StatusFilter[] = ["all", "draft", "pending_review", "confirmed", "cancelled"];
+
+
+const STATUS_FILTERS: GoodsReceiptsTabStatusFilter[] = ["all", "draft", "pending_review", "confirmed", "cancelled"];
 const PAGE_SIZE = 20;
 
-type Props = {
-  dict: WsDict;
-  locale: string;
-  nav: WorkspaceNav;
-};
 
-export function GoodsReceiptsTab({ dict, locale, nav }: Props) {
-  const [status, setStatus] = useState<StatusFilter>("all");
+
+export function GoodsReceiptsTab({ dict, locale, nav }: GoodsReceiptsTabProps) {
+  const [status, setStatus] = useState<GoodsReceiptsTabStatusFilter>("all");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
@@ -41,7 +40,7 @@ export function GoodsReceiptsTab({ dict, locale, nav }: Props) {
 
   const pageData = query.data;
 
-  const statusLabel = useMemo<Record<StatusFilter, string>>(
+  const statusLabel = useMemo<Record<GoodsReceiptsTabStatusFilter, string>>(
     () => ({
       all: dict.filterAllStatuses,
       draft: dict.rcDraft,
@@ -65,7 +64,7 @@ export function GoodsReceiptsTab({ dict, locale, nav }: Props) {
     );
   }, [pageData, search]);
 
-  function changeStatus(next: StatusFilter) {
+  function changeStatus(next: GoodsReceiptsTabStatusFilter) {
     setStatus(next);
     setPage(1);
   }

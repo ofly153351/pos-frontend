@@ -27,17 +27,17 @@ import { PendingReceivingTab } from "./pending-receiving-tab";
 import { GoodsReceiptsTab } from "./goods-receipts-tab";
 import { PendingApprovalTab } from "./pending-approval-tab";
 import { CompletedTab } from "./completed-tab";
+import type { PurchasingWorkspaceFormDict } from "./../types";
+import type { PurchasingWorkspaceProps } from "./../types";
+
 
 const RECEIPTS_SUMMARY_LIMIT = 200;
 
-type FormDict = React.ComponentProps<typeof PurchaseForm>["dictionary"];
 
-type Props = {
-  dict: WsDict;
-  formDict: FormDict;
-};
 
-export function PurchasingWorkspace({ dict, formDict }: Props) {
+
+
+export function PurchasingWorkspace({ dict, formDict }: PurchasingWorkspaceProps) {
   const params = useParams();
   const locale = (params?.locale as string) || "th";
   const router = useRouter();
