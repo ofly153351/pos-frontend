@@ -1,15 +1,12 @@
 "use client";
 
 import { Loader2, Truck } from "lucide-react";
+import type { PostInvoiceModalProps } from "./types";
 
-type Props = {
-  docId: string | null;
-  isPending: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-};
 
-export function PostInvoiceModal({ docId, isPending, onConfirm, onClose }: Props) {
+
+
+export function PostInvoiceModal({ docId, isPending, onConfirm, onClose }: PostInvoiceModalProps) {
   if (!docId) {
     return null;
   }

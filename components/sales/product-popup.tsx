@@ -3,14 +3,12 @@
 import { X } from "lucide-react";
 import type { Product } from "@/types/product";
 import { formatAmount } from "./utils/sales-calculations";
+import type { ProductPopupProps } from "./types";
 
-type Props = {
-  product: Product | null;
-  visible: boolean;
-  onClose: () => void;
-};
 
-export function ProductPopup({ product, visible, onClose }: Props) {
+
+
+export function ProductPopup({ product, visible, onClose }: ProductPopupProps) {
   if (!product) {
     return null;
   }

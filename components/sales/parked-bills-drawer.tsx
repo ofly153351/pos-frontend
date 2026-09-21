@@ -4,28 +4,20 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { formatCurrency, formatDateTime } from "./utils/sales-calculations";
 import type { ParkedBill, ParkedBillItem } from "@/services/sales";
+import type { ParkedBillsDrawerDrawerBillItem } from "./types";
+import type { ParkedBillsDrawerDrawerBill } from "./types";
+import type { ParkedBillsDrawerDict } from "./types";
+import type { ParkedBillsDrawerProps } from "./types";
+
 
 // Item shape read defensively by the drawer total: the API sends `price`, but
 // older locally-held bills may still carry `base_price` — keep both optional.
-type DrawerBillItem = ParkedBillItem & { base_price?: number };
-type DrawerBill = Omit<ParkedBill, "items"> & { items?: DrawerBillItem[] };
 
-type Dict = {
-  restoreBillDrawerTitle: string;
-  closeReceiptButton: string;
-  noParkedBillsLabel: string;
-  productCountLabel: string;
-  restoreBillConfirmLabel: string;
-};
 
-type Props = {
-  isOpen: boolean;
-  bills: DrawerBill[];
-  cartLength: number;
-  onClose: () => void;
-  onConfirmRestore: (bill: DrawerBill) => void;
-  dictionary: Dict;
-};
+
+
+
+
 
 export function ParkedBillsDrawer({
   isOpen,
@@ -34,8 +26,8 @@ export function ParkedBillsDrawer({
   onClose,
   onConfirmRestore,
   dictionary,
-}: Props) {
-  const [confirmBill, setConfirmBill] = useState<DrawerBill | null>(null);
+}: ParkedBillsDrawerProps) {
+  const [confirmBill, setConfirmBill] = useState<ParkedBillsDrawerDrawerBill | null>(null);
 
   if (!isOpen && !confirmBill) {
     return null;
@@ -68,7 +60,7 @@ export function ParkedBillsDrawer({
                 bills.map((bill) => {
                   const itemCount = bill.items?.length ?? 0;
                   const totalAmount = (bill.items ?? []).reduce(
-                    (sum: number, item: DrawerBillItem) => {
+                    (sum: number, item: ParkedBillsDrawerDrawerBillItem) => {
                       const price = Number(item.base_price ?? item.price ?? 0);
                       return sum + price * (item.quantity ?? 0);
                     },
@@ -110,7 +102,7 @@ export function ParkedBillsDrawer({
         const bill = confirmBill;
         const itemCount = bill.items?.length ?? 0;
         const totalAmount = (bill.items ?? []).reduce(
-          (sum: number, item: DrawerBillItem) => sum + Number(item.base_price ?? item.price ?? 0) * (item.quantity ?? 0),
+          (sum: number, item: ParkedBillsDrawerDrawerBillItem) => sum + Number(item.base_price ?? item.price ?? 0) * (item.quantity ?? 0),
           0,
         );
         return (

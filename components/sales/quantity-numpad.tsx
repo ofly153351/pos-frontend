@@ -1,25 +1,11 @@
 "use client";
+import type { QuantityNumpadDict } from "./types";
+import type { QuantityNumpadProps } from "./types";
 
-type Dict = {
-  quantityNumpadTitle: string;
-  quantityNumpadClear: string;
-  quantityNumpadBackspace: string;
-  quantityNumpadCancel: string;
-  quantityNumpadApply: string;
-};
 
-type Props = {
-  value: string;
-  isOpen: boolean;
-  onInputChange: (v: string) => void;
-  onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onDigit: (d: string) => void;
-  onClear: () => void;
-  onBackspace: () => void;
-  onCancel: () => void;
-  onApply: () => void;
-  dictionary: Dict;
-};
+
+
+
 
 export function QuantityNumpad({
   value,
@@ -32,7 +18,7 @@ export function QuantityNumpad({
   onCancel,
   onApply,
   dictionary,
-}: Props) {
+}: QuantityNumpadProps) {
   return (
     <div
       className={`fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300 sm:items-center ${

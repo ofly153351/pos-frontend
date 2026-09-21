@@ -16,17 +16,14 @@ import { SalesManager } from "@/components/sales/sales-manager";
 import type { SalesManagerHandle } from "@/components/sales/sales-manager";
 import { ScanButton } from "@/components/shared/scan-button";
 import type { SalesDictionary } from "@/components/sales/types";
+import type { CashierModalCashierModalProps } from "./types";
+
 
 const CLOSE_DURATION = 220;
 
-type CashierModalProps = {
-  dictionary: SalesDictionary;
-  locale: string;
-  navLabels: NavLabels;
-  onClose: () => void;
-};
 
-export function CashierModal({ dictionary, locale, navLabels, onClose }: CashierModalProps) {
+
+export function CashierModal({ dictionary, locale, navLabels, onClose }: CashierModalCashierModalProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const actionsMenuRef = useRef<HTMLDivElement>(null);

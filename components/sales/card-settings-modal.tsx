@@ -13,44 +13,14 @@ import {
   type CardSettings,
 } from "@/lib/card-settings";
 import { updateCardSettings } from "@/services/card-settings";
+import type { CardSettingsModalCardSettingsDictionary } from "./types";
+import type { CardSettingsModalProps } from "./types";
+export type { CardSettingsModalCardSettingsDictionary as CardSettingsDictionary } from "./types";
 
-export type CardSettingsDictionary = {
-  title: string;
-  subtitle: string;
-  namePos: string;
-  nameBottom: string;
-  nameTop: string;
-  imageFit: string;
-  imageFitHint: string;
-  fitCover: string;
-  fitContain: string;
-  aspect: string;
-  nameLines: string;
-  nameLinesHint: string;
-  line1: string;
-  line2: string;
-  line3: string;
-  cardSize: string;
-  sizeSm: string;
-  sizeMd: string;
-  sizeLg: string;
-  stockBadge: string;
-  promoBadge: string;
-  show: string;
-  hide: string;
-  previewTitle: string;
-  livePreview: string;
-  reset: string;
-  save: string;
-  saved: string;
-  resetDone: string;
-};
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  dictionary: CardSettingsDictionary;
-};
+
+
+
 
 const SAMPLE: (ProductCardItem & { qty: number; promo?: string })[] = [
   { id: "1", name: "โค้ก 1.25L", price: 35, stock: 23, qty: 0, promo: "ลด 10%" },
@@ -103,7 +73,7 @@ function SegControl<T extends string | number>({
   );
 }
 
-export function CardSettingsModal({ open, onClose, dictionary: d }: Props) {
+export function CardSettingsModal({ open, onClose, dictionary: d }: CardSettingsModalProps) {
   const [cfg, setCfg] = useState<CardSettings>(DEFAULT_CARD_SETTINGS);
 
   // Load saved settings each time the modal (re)opens — "adjust state during

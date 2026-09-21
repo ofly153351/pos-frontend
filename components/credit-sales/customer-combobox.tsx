@@ -4,14 +4,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search, User } from "lucide-react";
 
 import type { Customer } from "@/types/customer";
+import type { CustomerComboboxCustomerComboboxLabels } from "./types";
+export type { CustomerComboboxCustomerComboboxLabels as CustomerComboboxLabels } from "./types";
+
 
 // Cap rendered rows so a large customer book never mounts as one giant list.
 const MAX_RESULTS = 50;
 
-export type CustomerComboboxLabels = {
-  placeholder: string;
-  noResults: string;
-};
+
 
 // Searchable customer picker (name / phone / member code) — replaces the plain
 // native <select> so a shop with hundreds of customers can type-ahead instead of
@@ -25,7 +25,7 @@ export function CustomerCombobox({
   customers: Customer[];
   value: string;
   onChange: (id: string) => void;
-  labels: CustomerComboboxLabels;
+  labels: CustomerComboboxCustomerComboboxLabels;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);

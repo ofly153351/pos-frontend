@@ -2,32 +2,20 @@
 
 import { useRef } from "react";
 import { AlertTriangle, FileText, Loader2, Printer, RotateCcw, X } from "lucide-react";
+import type { ReceiptPreviewModalDict } from "./types";
+import type { ReceiptPreviewModalReceiptPreviewStatus } from "./types";
+import type { ReceiptPreviewModalProps } from "./types";
+export type { ReceiptPreviewModalReceiptPreviewStatus as ReceiptPreviewStatus } from "./types";
 
-type Dict = {
-  receiptPreviewLoading: string;
-  receiptPreviewError: string;
-  receiptPreviewRetryButton: string;
-  receiptPreviewTitle: string;
-  printReceiptNowButton: string;
-  closeReceiptButton: string;
-};
+
+
 
 // Explicit lifecycle so the modal can never stall on the loading state: a failed
 // fetch lands on "error" (not a permanent spinner), and Print/Tax-invoice stay
 // disabled until the receipt HTML is actually ready ("success").
-export type ReceiptPreviewStatus = "loading" | "success" | "error";
 
-type Props = {
-  isOpen: boolean;
-  status: ReceiptPreviewStatus;
-  html: string;
-  onClose: () => void;
-  onPrint: (frameWindow: Window) => void;
-  onRetry: () => void;
-  dictionary: Dict;
-  onCreateTaxInvoice?: () => void;
-  isTaxInvoicePending?: boolean;
-};
+
+
 
 export function ReceiptPreviewModal({
   isOpen,
@@ -39,7 +27,7 @@ export function ReceiptPreviewModal({
   dictionary,
   onCreateTaxInvoice,
   isTaxInvoicePending,
-}: Props) {
+}: ReceiptPreviewModalProps) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
 
   if (!isOpen) {

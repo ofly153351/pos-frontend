@@ -3,42 +3,13 @@
 import type { SaleDiscountType } from "@/types/sale";
 import type { CartItem } from "./utils/sales-calculations";
 import { formatAmount, getCartLine } from "./utils/sales-calculations";
+import type { DiscountEditorModalDict } from "./types";
+import type { DiscountEditorModalProps } from "./types";
 
-type Dict = {
-  closeReceiptButton: string;
-  discountTypeLabel: string;
-  discountAmountLabel: string;
-  discountPercentLabel: string;
-  discountValueLabel: string;
-  quantityNumpadClear: string;
-  quantityNumpadBackspace: string;
-  quantityNumpadApply: string;
-  discountScopeLabel: string;
-  discountScopeWholeLine: string;
-  discountScopePerUnit: string;
-  discountPreviewUnitPriceLabel: string;
-  discountPreviewQtyLabel: string;
-  discountPreviewLineSubtotalLabel: string;
-  discountPreviewLineDiscountLabel: string;
-  discountPreviewPerUnitDiscountLabel: string;
-  discountPreviewTotalDiscountLabel: string;
-  discountPreviewAfterDiscountLabel: string;
-};
 
-type Props = {
-  item: CartItem | null;
-  onClose: () => void;
-  onDiscountTypeChange: (productId: string, type: SaleDiscountType) => void;
-  onDiscountScopeChange: (productId: string, scope: "line" | "unit") => void;
-  onInputChange: (v: string) => void;
-  onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onDigit: (d: string) => void;
-  onDecimal: () => void;
-  onClear: () => void;
-  onBackspace: () => void;
-  onApply: () => void;
-  dictionary: Dict;
-};
+
+
+
 
 export function DiscountEditorModal({
   item,
@@ -53,7 +24,7 @@ export function DiscountEditorModal({
   onBackspace,
   onApply,
   dictionary,
-}: Props) {
+}: DiscountEditorModalProps) {
   if (!item) {
     return null;
   }

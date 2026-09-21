@@ -4,74 +4,19 @@ import { ChevronDown, Trash2, Ticket } from "lucide-react";
 import type { SaleDiscountType } from "@/types/sale";
 import type { Product } from "@/types/product";
 import { formatAmount, getCartLine } from "./utils/sales-calculations";
+import type { CartPanelCartItem } from "./types";
+import type { CartPanelCartSummary } from "./types";
+import type { CartPanelDict } from "./types";
+import type { CartPanelProps } from "./types";
 
-type CartItem = {
-  discountScope: "line" | "unit";
-  discountType: SaleDiscountType;
-  discountValue: string;
-  product: Product;
-  quantity: number;
-};
 
-type CartSummary = {
-  subtotal: number;
-  discountAmount: number;
-};
 
-type Dict = {
-  cartTitle: string;
-  netTotalLabel: string;
-  discountBillLabel: string;
-  couponLabel: string;
-  totalDiscountLabel: string;
-  itemDiscountLabel: string;
-  customerDiscountLabel: string;
-  promo: { discountLabel: string };
-  summary: { subtotalLabel: string };
-  notePlaceholder: string;
-  emptyCart: string;
-  discountTypeLabel: string;
-  discountBadgePerUnit: string;
-  removeItemButton: string;
-  checkoutButton: string;
-  latestItemBadge: string;
-};
 
-type Props = {
-  cart: CartItem[];
-  recentProductId: string | null;
-  cartSummary: CartSummary;
-  settlementTotal: number;
-  vatAmount: number;
-  applyVat: boolean;
-  billDiscount: string;
-  billDiscountType: "amount" | "percent";
-  couponCode: string;
-  totalDiscountAmount: number;
-  itemDiscountAmount: number;
-  customerDiscountAmount: number;
-  billDiscountAmount: number;
-  promoDiscountAmount: number;
-  promoBreakdown: Array<{ name: string; amount: number }>;
-  showNoteField: boolean;
-  note: string;
-  isPending: boolean;
-  isBillDiscountFieldOpen: boolean;
-  cartScrollRef: React.RefObject<HTMLDivElement | null>;
-  dictionary: Dict;
-  onClearCart: () => void;
-  onToggleBillDiscountField: () => void;
-  onBillDiscountTypeChange: (type: "amount" | "percent") => void;
-  onCouponChange: (v: string) => void;
-  onOpenAmountNumpad: (field: "bill_discount" | "paid_amount") => void;
-  onNoteChange: (v: string) => void;
-  onOpenDiscountEditor: (productId: string) => void;
-  onUpdateQuantity: (productId: string, qty: number) => void;
-  onOpenQuantityNumpad: (productId: string, current: number, max: number) => void;
-  onOpenCheckout: () => void;
-  onLongPressStart: (product: Product) => void;
-  onLongPressEnd: () => void;
-};
+
+
+
+
+
 
 export function CartPanel({
   cart,
@@ -107,7 +52,7 @@ export function CartPanel({
   onOpenCheckout,
   onLongPressStart,
   onLongPressEnd,
-}: Props) {
+}: CartPanelProps) {
   // Itemised discount breakdown — display only; the math (totalDiscountAmount /
   // settlementTotal) is computed upstream and unchanged. Each row shows only when > 0.
   const genericDiscountRows = [

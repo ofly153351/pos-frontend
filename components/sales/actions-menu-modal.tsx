@@ -2,26 +2,13 @@
 
 import { listParkedBills } from "@/services/sales";
 import type { ParkedBill } from "@/services/sales";
+import type { ActionsMenuModalDict } from "./types";
+import type { ActionsMenuModalProps } from "./types";
 
-type Dict = {
-  actionsLabel: string;
-  closeReceiptButton: string;
-  noteLabel: string;
-  holdBillLabel: string;
-  restoreBillLabel: string;
-  clearCartButton: string;
-};
 
-type Props = {
-  isOpen: boolean;
-  showNoteField: boolean;
-  onClose: () => void;
-  onToggleNote: () => void;
-  onHoldBill: () => void;
-  onOpenRestoreDrawer: (bills: ParkedBill[]) => void;
-  onClearCart: () => void;
-  dictionary: Dict;
-};
+
+
+
 
 export function ActionsMenuModal({
   isOpen,
@@ -32,7 +19,7 @@ export function ActionsMenuModal({
   onOpenRestoreDrawer,
   onClearCart,
   dictionary,
-}: Props) {
+}: ActionsMenuModalProps) {
   if (!isOpen) {
     return null;
   }

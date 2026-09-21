@@ -15,6 +15,8 @@ import {
   type CardSettings,
 } from "@/lib/card-settings";
 import { fetchCardSettings } from "@/services/card-settings";
+import type { ProductBrowserProductBrowserProps } from "./types";
+
 
 const PAGE_SIZE_LIST = 15;
 
@@ -26,40 +28,7 @@ import type { PromoChip } from "@/components/sales/promo-display";
 import type { Campaign } from "@/components/promotions/promotion-types";
 import type { Product } from "@/types/product";
 
-type ProductBrowserProps = {
-  categories: string[];
-  dictionary: SalesDictionary;
-  error: string;
-  hideSearch?: boolean;
-  onAddToCart: (product: Product) => void;
-  onCategoryFilterChange: (category: string) => void;
-  onProductViewChange: (mode: ProductViewMode) => void;
-  onSearchChange: (value: string) => void;
-  /** Camera scan: decoded barcode/SKU → parent resolves & adds to cart. */
-  onScanDetected?: (code: string) => void;
-  productView: ProductViewMode;
-  products: Product[];
-  /** Sentinel value for the promotion tab (e.g. "__promo__"). */
-  promoCategory?: string;
-  /** IDs of products covered by at least one active promotion. */
-  promotionProductIds?: Set<string>;
-  /** Sub-chips (one per product-targeting promo), shown under the promo tab. */
-  promoChips?: PromoChip[];
-  /** Store-wide / bill-level promos, shown as an info strip under the promo tab. */
-  promoStoreWide?: Campaign[];
-  /** Selected promo sub-chip id (null = all promo products). */
-  selectedPromoId?: string | null;
-  onPromoSelect?: (promoId: string | null) => void;
-  /** productId → short promo badge label rendered on each card. */
-  productPromoLabels?: Map<string, string>;
-  search: string;
-  selectedCategory: string;
-  getCartQuantity: (productId: string) => number;
-  /** Compact selector/label rendered in the toolbar row (Cases C / D). Null hides it. */
-  salePointSlot?: ReactNode;
-  /** Replaces the product grid with a blocking state (Case A: no sale points). */
-  salePointBlocker?: ReactNode;
-};
+
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("th-TH", {
@@ -94,7 +63,7 @@ export function ProductBrowser({
   hideSearch = false,
   salePointSlot,
   salePointBlocker,
-}: ProductBrowserProps) {
+}: ProductBrowserProductBrowserProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [page, setPage] = useState(1);
   const [categoriesExpanded, setCategoriesExpanded] = useState(false);

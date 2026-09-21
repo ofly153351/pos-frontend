@@ -21,89 +21,23 @@ import {
   type DisplayItem,
   type DisplayState,
 } from "@/lib/customer-display";
+import type { CustomerDisplayDict } from "./types";
+import type { CustomerDisplayPaletteMode } from "./types";
+import type { CustomerDisplayThemeConfig } from "./types";
 
-type Dict = {
-  welcomeTitle: string;
-  welcomeSub: string;
-  waitingForSale: string;
-  items: string;
-  qty: string;
-  vat: string;
-  total: string;
-  payTitle: string;
-  payScanQr: string;
-  payCash: string;
-  amountDue: string;
-  successTitle: string;
-  successThanks: string;
-  change: string;
-  fullscreen: string;
-  pieces: string;
-  statusWelcome: string;
-  statusReceiving: string;
-  statusReadyToPay: string;
-  statusSuccess: string;
-  generalCustomer: string;
-  memberLabel: string;
-  memberLevel: string;
-  appliedPromotions: string;
-  subtotalBeforeDiscount: string;
-  itemDiscount: string;
-  memberDiscount: string;
-  promoDiscount: string;
-  billDiscount: string;
-  coupon: string;
-  promoAndCouponDiscount: string;
-  received: string;
-  processingPayment: string;
-  levelSilver: string;
-  levelGold: string;
-  levelPlatinum: string;
-  levelVip: string;
-  levelGeneral: string;
-  methodCash: string;
-  methodCard: string;
-  methodPromptPay: string;
-  methodTransfer: string;
-  methodQr: string;
-  methodBankTransfer: string;
-  methodOther: string;
-  bankTransferTitle: string;
-  bankTransferInstruction: string;
-  /** "กรุณาตรวจสอบรายการก่อนชำระเงิน" — shown in right panel when no member/promo active */
-  reviewItems: string;
-  /** "ลดทั้งรายการ" — label for whole-line fixed-amount discount */
-  wholeLineDiscount: string;
-  /** "ลด" — prefix for per-unit discount ("ลด ฿5.00/ชิ้น") */
-  perUnitDiscountPrefix: string;
-  /** "รวมส่วนลด" — total discount sub-row for per-unit case */
-  totalItemDiscount: string;
-  /** "ส่วนลด" — prefix for percentage discount ("ส่วนลด 10%") */
-  percentDiscountLabel: string;
-  /** Column header for the product name column */
-  productColumn: string;
-  /** Column header for the unit price column */
-  unitPrice: string;
-  /** Column header for the line total column */
-  colTotal: string;
-};
 
-type Palette = "light" | "dark";
 
-type ThemeConfig = {
-  id: string;
-  label: string;
-  gradient: string;
-  stickyBg: string;
-  palette: Palette;
-};
+
+
+
+
 
 // tx: pick class based on palette
-function tx(palette: Palette, dark: string, light: string) {
+function tx(palette: CustomerDisplayPaletteMode, dark: string, light: string) {
   return palette === "dark" ? dark : light;
 }
 
-const THEMES: ThemeConfig[] = [
+const THEMES: CustomerDisplayThemeConfig[] = [
   {
     id: "violet",
     label: "ม่วงระบบ",
@@ -134,7 +68,7 @@ const THEMES: ThemeConfig[] = [
   },
 ];
 
-function RealtimeClock({ palette }: { palette: Palette }) {
+function RealtimeClock({ palette }: { palette: CustomerDisplayPaletteMode }) {
   // Client-only component (customer-facing display screen) — seed the clock
   // directly instead of a mount effect, then keep it ticking via interval.
   const [now, setNow] = useState<Date | null>(() =>
@@ -174,7 +108,7 @@ function baht(v: number) {
   );
 }
 
-function getLevelName(level: number | undefined, dict: Dict): string {
+function getLevelName(level: number | undefined, dict: CustomerDisplayDict): string {
   switch (level) {
     case 2:
       return dict.levelSilver;
@@ -189,7 +123,7 @@ function getLevelName(level: number | undefined, dict: Dict): string {
   }
 }
 
-function getMethodLabel(method: string | undefined, dict: Dict): string {
+function getMethodLabel(method: string | undefined, dict: CustomerDisplayDict): string {
   switch (method) {
     case "cash":
       return dict.methodCash;
@@ -212,7 +146,7 @@ export function CustomerDisplay({
   locale,
   storeName,
 }: {
-  dict: Dict;
+  dict: CustomerDisplayDict;
   /** Route locale ("th" | "en") — drives the root lang attribute. */
   locale?: string;
   storeName: string;
@@ -414,7 +348,7 @@ export function CustomerDisplay({
 
 /* ─── Welcome ──────────────────────────────────────────────────────────────── */
 
-function WelcomeScreen({ dict, palette }: { dict: Dict; palette: Palette }) {
+function WelcomeScreen({ dict, palette }: { dict: CustomerDisplayDict; palette: CustomerDisplayPaletteMode }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 px-10 text-center">
       <div className={["flex h-28 w-28 items-center justify-center rounded-[2rem] ring-1", tx(palette, "bg-white/10 ring-white/20", "bg-slate-900/8 ring-slate-900/15")].join(" ")}>
@@ -437,10 +371,10 @@ function SellingScreen({
   stickyBg,
   palette,
 }: {
-  dict: Dict;
+  dict: CustomerDisplayDict;
   state: Extract<DisplayState, { phase: "selling" }>;
   stickyBg: string;
-  palette: Palette;
+  palette: CustomerDisplayPaletteMode;
 }) {
   // Ref array for individual item DOM nodes — used for auto-scroll.
   const itemEls = useRef<(HTMLDivElement | null)[]>([]);
@@ -591,8 +525,8 @@ function ItemRow({
   item: DisplayItem;
   isHighlighted: boolean;
   itemRef?: (el: HTMLDivElement | null) => void;
-  dict: Dict;
-  palette: Palette;
+  dict: CustomerDisplayDict;
+  palette: CustomerDisplayPaletteMode;
 }) {
   const disc = item.discount;
   const hasDisc = !!disc && disc.totalDiscount > 0;
@@ -697,10 +631,10 @@ function CustomerPanel({
   isMember,
   palette,
 }: {
-  dict: Dict;
+  dict: CustomerDisplayDict;
   state: Extract<DisplayState, { phase: "selling" }>;
   isMember: boolean;
-  palette: Palette;
+  palette: CustomerDisplayPaletteMode;
 }) {
   return (
     <div className={["flex items-start gap-3 rounded-xl px-4 py-3 ring-1", tx(palette, "bg-white/[0.06] ring-white/10", "bg-slate-900/[0.06] ring-slate-900/10")].join(" ")}>
@@ -739,9 +673,9 @@ function PromotionsPanel({
   state,
   palette,
 }: {
-  dict: Dict;
+  dict: CustomerDisplayDict;
   state: Extract<DisplayState, { phase: "selling" }>;
-  palette: Palette;
+  palette: CustomerDisplayPaletteMode;
 }) {
   const rows: string[] = [];
   if (state.customerDiscount > 0 && state.customerDiscountPercent > 0) {
@@ -783,10 +717,10 @@ function BillSummary({
   hasAnyDiscount,
   palette,
 }: {
-  dict: Dict;
+  dict: CustomerDisplayDict;
   state: Extract<DisplayState, { phase: "selling" }>;
   hasAnyDiscount: boolean;
-  palette: Palette;
+  palette: CustomerDisplayPaletteMode;
 }) {
   return (
     <div className={["rounded-xl px-5 py-4 ring-1", tx(palette, "bg-white/[0.06] ring-white/10", "bg-slate-900/[0.06] ring-slate-900/10")].join(" ")}>
@@ -867,7 +801,7 @@ function SummaryRow({
   value: string;
   dim?: boolean;
   accent?: boolean;
-  palette: Palette;
+  palette: CustomerDisplayPaletteMode;
 }) {
   return (
     <div
@@ -893,9 +827,9 @@ function PaymentScreen({
   state,
   palette,
 }: {
-  dict: Dict;
+  dict: CustomerDisplayDict;
   state: Extract<DisplayState, { phase: "payment" }>;
-  palette: Palette;
+  palette: CustomerDisplayPaletteMode;
 }) {
   const isQr = Boolean(state.qr);
   const isCash = state.method === "cash";
@@ -961,9 +895,9 @@ function SuccessScreen({
   state,
   palette,
 }: {
-  dict: Dict;
+  dict: CustomerDisplayDict;
   state: Extract<DisplayState, { phase: "success" }>;
-  palette: Palette;
+  palette: CustomerDisplayPaletteMode;
 }) {
   const isCash = state.method === "cash";
   const methodLabel = getMethodLabel(state.method, dict);
@@ -1019,7 +953,7 @@ function SuccessRow({
   value: string;
   bold?: boolean;
   accent?: boolean;
-  palette: Palette;
+  palette: CustomerDisplayPaletteMode;
 }) {
   return (
     <div className="flex items-center justify-between text-base">

@@ -72,38 +72,20 @@ import { DiscountEditorModal } from "./discount-editor-modal";
 import { CartPanel } from "./cart-panel";
 import { ProductPopup } from "./product-popup";
 import { useNumpad } from "./use-numpad";
+import type { SalesManagerCartItem } from "./types";
+import type { SalesManagerSalesManagerHandle } from "./types";
+import type { SalesManagerSalesManagerProps } from "./types";
+export type { SalesManagerSalesManagerHandle as SalesManagerHandle } from "./types";
+
 
 // Sentinel category value selecting the promotion tab (vs. a product-type name).
 const PROMO_CATEGORY = "__promo__";
 
-type CartItem = {
-  discountScope: "line" | "unit";
-  discountType: SaleDiscountType;
-  discountValue: string;
-  product: Product;
-  quantity: number;
-};
 
-export type SalesManagerHandle = {
-  toggleVat: () => void;
-  holdBill: () => void;
-  restoreBill: () => void;
-  toggleNote: () => void;
-  clearCartExternal: () => void;
-  openActions: () => void;
-  /** Resolve a camera-scanned code and add it to the cart (fullscreen modal). */
-  scanCode: (code: string) => void;
-};
 
-type SalesManagerProps = {
-  dictionary: SalesDictionary;
-  locale?: string;
-  onCartItemsChange?: (count: number) => void;
-  externalSearch?: string;
-  onExternalSearchChange?: (value: string) => void;
-  onCartStateChange?: (state: { applyVat: boolean; showNoteField: boolean }) => void;
-  onHoldBillSuccess?: () => void;
-};
+
+
+
 
 const productViewStorageKey = "pos-sales-product-view";
 
@@ -118,7 +100,7 @@ function errorMessage(err: unknown): string {
   return "Request failed";
 }
 
-export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(function SalesManager({
+export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesManagerSalesManagerProps>(function SalesManager({
   dictionary,
   locale = "en",
   onCartItemsChange,
@@ -126,7 +108,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   onExternalSearchChange,
   onCartStateChange,
   onHoldBillSuccess,
-}: SalesManagerProps, ref) {
+}: SalesManagerSalesManagerProps, ref) {
   const queryClient = useQueryClient();
   const [hasMounted, setHasMounted] = useState(false);
   const [rawProducts, setRawProducts] = useState<Product[]>([]);
@@ -152,7 +134,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
   // (resilient), but checkout is blocked for a selected member so a missing tier
   // discount can never be silently applied as 0% (see submitSale).
   const [discountsError, setDiscountsError] = useState(false);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<SalesManagerCartItem[]>([]);
   // Product id of the most recently added / edited cart line. Drives a persistent
   // "ล่าสุด" highlight in the cart so the cashier always sees the last item touched.
   const [recentProductId, setRecentProductId] = useState<string | null>(null);
@@ -1744,7 +1726,7 @@ export const SalesManager = forwardRef<SalesManagerHandle, SalesManagerProps>(fu
           quantity,
         };
       })
-      .filter((line: CartItem) => line.quantity > 0);
+      .filter((line: SalesManagerCartItem) => line.quantity > 0);
     setCart(items);
     setRecentProductId(null);
     if (restoreReduced) {

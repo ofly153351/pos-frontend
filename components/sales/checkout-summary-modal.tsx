@@ -17,83 +17,24 @@ import {
 } from "lucide-react";
 import type { Customer, CustomerLevelDiscount } from "@/types/customer";
 import { formatCurrency, formatAmount } from "./utils/sales-calculations";
+import type { CheckoutSummaryModalDict } from "./types";
+import type { CheckoutSummaryModalCartSummary } from "./types";
+import type { CheckoutSummaryModalQuickCashOption } from "./types";
+import type { CheckoutSummaryModalCustomerComboboxProps } from "./types";
+import type { CheckoutSummaryModalBankAccountSummary } from "./types";
+import type { CheckoutSummaryModalProps } from "./types";
 
-type Dict = {
-  checkoutSectionTitle: string;
-  closeReceiptButton: string;
-  saleModeAriaLabel: string;
-  saleModeCashLabel: string;
-  saleModeCashDescription: string;
-  saleModeInvoiceLabel: string;
-  saleModeInvoiceDescription: string;
-  saleModeQuotationLabel: string;
-  saleModeQuotationDescription: string;
-  quoteValidUntilLabel: string;
-  dayUnitLabel: string;
-  quotationValidUntilPrefix: string;
-  clearDateButton: string;
-  invoiceDueDateLabel: string;
-  invoiceDueDatePrefix: string;
-  createQuotationButton: string;
-  customerLabel: string;
-  customerPlaceholder: string;
-  customerTypeLabel: string;
-  customerSettlementLabel: string;
-  customerSettlementCashNow: string;
-  customerSettlementInvoice: string;
-  paymentMethodLabel: string;
-  paymentMethodCashLabel: string;
-  paymentMethodCard: string;
-  paymentMethodPromptPay: string;
-  paymentMethodQrLabel: string;
-  paymentMethodBankTransferLabel: string;
-  paymentMethodCreditCardLabel: string;
-  paymentMethodDebitCardLabel: string;
-  bankAccountLabel: string;
-  bankAccountNone: string;
-  bankTransferInstructions: string;
-  bankTransferAccountNo: string;
-  bankTransferAccountName: string;
-  bankTransferBankName: string;
-  customerPaymentLabel: string;
-  changeLabel: string;
-  quickCashLabel: string;
-  quickCashExactAmountLabel: string;
-  noteLabel: string;
-  notePlaceholder: string;
-  discountBillLabel: string;
-  customerDiscountLabel: string;
-  vatAmountLabel: string;
-  summary: {
-    subtotalLabel: string;
-    discountLabel: string;
-    totalLabel: string;
-  };
-  totalPaidLabel: string;
-  confirmPaymentButton: string;
-  promo?: { tab: string };
-};
 
-type CartSummary = {
-  subtotal: number;
-  discountAmount: number;
-};
 
-type QuickCashOption = {
-  amount: number;
-  isExact: boolean;
-};
+
+
+
+
 
 // ── Customer Combobox ────────────────────────────────────────────────────────
-type CustomerComboboxProps = {
-  customers: Customer[];
-  customerLevelDiscounts: CustomerLevelDiscount[];
-  value: string;
-  onChange: (id: string) => void;
-  placeholder: string;
-};
 
-function CustomerCombobox({ customers, customerLevelDiscounts, value, onChange, placeholder }: CustomerComboboxProps) {
+
+function CustomerCombobox({ customers, customerLevelDiscounts, value, onChange, placeholder }: CheckoutSummaryModalCustomerComboboxProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -212,63 +153,9 @@ function getDueDatePresetOptions() {
   }));
 }
 
-type BankAccountSummary = {
-  id: string;
-  bank_name: string;
-  account_no: string;
-  account_name: string;
-  is_active: boolean;
-  is_default: boolean;
-};
 
-type Props = {
-  isOpen: boolean;
-  customers: Customer[];
-  customerLevelDiscounts: CustomerLevelDiscount[];
-  cartSummary: CartSummary;
-  settlementTotal: number;
-  vatAmount: number;
-  applyVat: boolean;
-  selectedCustomerId: string;
-  setSelectedCustomerId: (id: string) => void;
-  customerSettlementMode: "cash_now" | "invoice";
-  setCustomerSettlementMode: (mode: "cash_now" | "invoice") => void;
-  invoiceDueDate: string;
-  setInvoiceDueDate: (v: string) => void;
-  paymentMethod: string;
-  setPaymentMethod: (v: string) => void;
-  selectedBankAccountId: string;
-  setSelectedBankAccountId: (id: string) => void;
-  bankAccounts: BankAccountSummary[];
-  paidAmount: string;
-  note: string;
-  setNote: (v: string) => void;
-  billDiscountAmount: number;
-  billDiscountPercent: number;
-  billDiscountType: "amount" | "percent";
-  customerDiscountAmount: number;
-  customerDiscountPercent: number;
-  promoDiscountAmount: number;
-  promoNames?: string[];
-  changeAmount: number;
-  isPending: boolean;
-  isCreatingQuotation: boolean;
-  quotationMode: boolean;
-  setQuotationMode: (v: boolean) => void;
-  quotationValidUntil: string;
-  setQuotationValidUntil: (v: string) => void;
-  quickCashOptions: QuickCashOption[];
-  lastQuickCashAmount: number | null;
-  customerTypeLabel: string;
-  cartLength: number;
-  enabledPaymentChannels?: string[];
-  onClose: () => void;
-  onSubmit: () => void;
-  onCreateQuotation: () => void;
-  onApplyQuickCash: (amount: number, isExact?: boolean) => void;
-  onPaidAmountChange: (v: string) => void;
-  dictionary: Dict;
-};
+
+
 
 export function CheckoutSummaryModal({
   isOpen,
@@ -317,7 +204,7 @@ export function CheckoutSummaryModal({
   onApplyQuickCash,
   onPaidAmountChange,
   dictionary,
-}: Props) {
+}: CheckoutSummaryModalProps) {
   const [dueDatePresetOptions] = useState(() => getDueDatePresetOptions());
 
   useEffect(() => {

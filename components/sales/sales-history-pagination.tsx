@@ -3,13 +3,11 @@
 import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageSizeDropdown } from "@/components/ui/page-size-dropdown";
+import type { SalesHistoryPaginationSalesHistoryPaginationDict } from "./types";
+export type { SalesHistoryPaginationSalesHistoryPaginationDict as SalesHistoryPaginationDict } from "./types";
 
-export type SalesHistoryPaginationDict = {
-  pageShowing: string;
-  pageOf: string;
-  pageRecords: string;
-  pagePerPage: string;
-};
+
+
 
 /**
  * Pagination footer for the sales-history table.
@@ -29,7 +27,7 @@ export function SalesHistoryPagination({
   page: number;
   pageSize: number;
   pageSizeOptions: number[];
-  dict: SalesHistoryPaginationDict;
+  dict: SalesHistoryPaginationSalesHistoryPaginationDict;
   onPageChange: (p: number) => void;
   onPageSizeChange: (n: number) => void;
 }) {

@@ -1,30 +1,14 @@
 "use client";
+import type { AmountNumpadAmountNumpadField } from "./types";
+import type { AmountNumpadDict } from "./types";
+import type { AmountNumpadProps } from "./types";
 
-type AmountNumpadField = "bill_discount" | "paid_amount";
 
-type Dict = {
-  discountBillLabel: string;
-  customerPaymentLabel: string;
-  quantityNumpadClear: string;
-  quantityNumpadBackspace: string;
-  quantityNumpadCancel: string;
-  quantityNumpadApply: string;
-};
 
-type Props = {
-  field: AmountNumpadField;
-  value: string;
-  isOpen: boolean;
-  onInputChange: (v: string) => void;
-  onInputKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
-  onDigit: (d: string) => void;
-  onDecimal: () => void;
-  onClear: () => void;
-  onBackspace: () => void;
-  onCancel: () => void;
-  onApply: () => void;
-  dictionary: Dict;
-};
+
+
+
+
 
 export function AmountNumpad({
   field,
@@ -39,7 +23,7 @@ export function AmountNumpad({
   onCancel,
   onApply,
   dictionary,
-}: Props) {
+}: AmountNumpadProps) {
   return (
     <div
       className={`fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 px-4 py-6 transition-opacity duration-300 sm:items-center ${

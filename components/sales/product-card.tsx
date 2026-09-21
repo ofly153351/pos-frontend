@@ -4,31 +4,19 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 
 import { resolveCardImageHeight, type CardSettings } from "@/lib/card-settings";
+import type { ProductCardProductCardItem } from "./types";
+import type { ProductCardProductCardLabels } from "./types";
+import type { ProductCardProductCardProps } from "./types";
+export type { ProductCardProductCardItem as ProductCardItem } from "./types";
+export type { ProductCardProductCardLabels as ProductCardLabels } from "./types";
+
 
 // Minimal shape the card needs — works for real products and preview samples.
-export type ProductCardItem = {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-  image?: string | null;
-};
 
-export type ProductCardLabels = {
-  stock: string; // e.g. "สต็อก"
-  outOfStock: string; // e.g. "หมด"
-  add: string; // add-to-cart aria/title
-};
 
-type ProductCardProps = {
-  item: ProductCardItem;
-  config: CardSettings;
-  qtyInCart: number;
-  onAdd: () => void;
-  labels: ProductCardLabels;
-  /** Short promo label ("ลด 10%", "ซื้อ 3 แถม 1"). Rendered when config.showPromoBadge. */
-  promoLabel?: string | null;
-};
+
+
+
 
 // ── Literal class maps — Tailwind scanner sees every class, no safelist needed ──
 const CLAMP: Record<CardSettings["lines"], string> = {
@@ -114,7 +102,7 @@ function baht(value: number) {
   }).format(value);
 }
 
-function stockBadge(item: ProductCardItem, labels: ProductCardLabels) {
+function stockBadge(item: ProductCardProductCardItem, labels: ProductCardProductCardLabels) {
   if (item.stock === 0) {
     return { txt: labels.outOfStock, cls: "bg-rose-100 text-rose-700" };
   }
@@ -127,7 +115,7 @@ function stockBadge(item: ProductCardItem, labels: ProductCardLabels) {
   };
 }
 
-export function ProductCard({ item, config, qtyInCart, onAdd, labels, promoLabel }: ProductCardProps) {
+export function ProductCard({ item, config, qtyInCart, onAdd, labels, promoLabel }: ProductCardProductCardProps) {
   const outOfStock = item.stock === 0;
   const inCart = qtyInCart > 0;
   const badge = stockBadge(item, labels);

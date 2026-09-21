@@ -5,28 +5,19 @@ import { Search } from "lucide-react";
 
 import type { Product } from "@/types/product";
 import { ScanButton } from "@/components/shared/scan-button";
+import type { ProductComboboxProductPick } from "./types";
+import type { ProductComboboxProductComboboxLabels } from "./types";
+export type { ProductComboboxProductPick as ProductPick } from "./types";
+export type { ProductComboboxProductComboboxLabels as ProductComboboxLabels } from "./types";
+
 
 // Cap the number of rendered rows so a 1000+ product catalog never mounts as one
 // giant DOM list — search narrows it, and broad queries show the first slice only.
 const MAX_RESULTS = 50;
 
-export type ProductPick = {
-  product_id: string;
-  product_name: string;
-  unit?: string;
-  price: number;
-  quantity: number;
-  total: number;
-};
 
-export type ProductComboboxLabels = {
-  searchPlaceholder: string;
-  skuLabel: string;
-  stockLabel: string;
-  noProductsFound: string;
-  stockExceeded: string; // uses {count} — shown when stock is 0 or already maxed in the cart
-  scanWithCamera?: string;
-};
+
+
 
 function baht(n: number): string {
   return `฿${n.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -53,8 +44,8 @@ export function ProductCombobox({
   cartQtyOf,
 }: {
   products: Product[];
-  labels: ProductComboboxLabels;
-  onAdd: (pick: ProductPick) => void;
+  labels: ProductComboboxProductComboboxLabels;
+  onAdd: (pick: ProductComboboxProductPick) => void;
   // Current quantity of a product already in the transaction — lets the picker
   // warn (instead of silently clamping) when the item is already at its stock cap.
   cartQtyOf?: (productId: string) => number;

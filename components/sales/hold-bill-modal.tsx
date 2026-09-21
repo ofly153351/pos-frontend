@@ -1,23 +1,13 @@
 "use client";
+import type { HoldBillModalDict } from "./types";
+import type { HoldBillModalProps } from "./types";
 
-type Dict = {
-  holdBillLabel: string;
-  holdBillPlaceholderLabel: string;
-  holdBillCancelLabel: string;
-  holdBillConfirmLabel: string;
-  emptyCart: string;
-};
 
-type Props = {
-  isOpen: boolean;
-  label: string;
-  onLabelChange: (v: string) => void;
-  onCancel: () => void;
-  onConfirm: () => void;
-  dictionary: Dict;
-};
 
-export function HoldBillModal({ isOpen, label, onLabelChange, onCancel, onConfirm, dictionary }: Props) {
+
+
+
+export function HoldBillModal({ isOpen, label, onLabelChange, onCancel, onConfirm, dictionary }: HoldBillModalProps) {
   if (!isOpen) {
     return null;
   }

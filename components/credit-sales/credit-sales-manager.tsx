@@ -47,177 +47,19 @@ import type {
 import { CustomerCombobox } from "@/components/credit-sales/customer-combobox";
 import { ProductCombobox, type ProductPick } from "@/components/credit-sales/product-combobox";
 import { CreditStatementModal } from "@/components/credit-sales/credit-statement-modal";
+import type { CreditSalesManagerCreditSalesDictionary } from "./types";
+import type { CreditSalesManagerBillModalDictionary } from "./types";
+import type { CreditSalesManagerCreditSalesManagerProps } from "./types";
+import type { CreditSalesManagerDraftItem } from "./types";
+
 
 // ─── Dictionary type ───────────────────────────────────────────────────────
-type CreditSalesDictionary = {
-  title: string;
-  subtitle: string;
-  newBtn: string;
-  kpiTotalPending: string;
-  kpiOverdue: string;
-  kpiLoanItems: string;
-  kpiThisMonth: string;
-  filterAll: string;
-  filterCredit: string;
-  filterLoan: string;
-  filterStatusAll: string;
-  tableDocNo: string;
-  tableCustomer: string;
-  tableType: string;
-  tableAmountQty: string;
-  tablePaidProgress: string;
-  tableRemaining: string;
-  tableDueDate: string;
-  tableStatus: string;
-  tableActions: string;
-  viewBtn: string;
-  statusPending: string;
-  statusPartial: string;
-  statusCompleted: string;
-  statusOverdue: string;
-  statusCancelled: string;
-  typeCredit: string;
-  typeLoan: string;
-  createTitle: string;
-  tabCredit: string;
-  tabLoan: string;
-  customerLabel: string;
-  customerRequired: string;
-  customerPlaceholder: string;
-  dueDateLabel: string;
-  dueDateRequired: string;
-  productsLabel: string;
-  addProductBtn: string;
-  productNamePlaceholder: string;
-  searchPlaceholder: string;
-  scanWithCamera: string;
-  skuLabel: string;
-  stockLabel: string;
-  priceLabel: string;
-  unitLabel: string;
-  noProductsFound: string;
-  createSubtitle: string;
-  creditDesc: string;
-  loanDesc: string;
-  dueDateOptional: string;
-  noItemsYet: string;
-  noItemsHint: string;
-  pricePlaceholder: string;
-  qtyPlaceholder: string;
-  colName: string;
-  colPrice: string;
-  colQty: string;
-  colTotal: string;
-  noteLabel: string;
-  notePlaceholder: string;
-  summaryQtyLabel: string;
-  summaryAmountLabel: string;
-  pieces: string;
-  cancelBtn: string;
-  saveBtn: string;
-  saving: string;
-  noItemsError: string;
-  noCustomerError: string;
-  detailCustomerLabel: string;
-  detailCreatedByLabel: string;
-  detailCreatedAtLabel: string;
-  detailDueDateLabel: string;
-  detailTotalLabel: string;
-  detailPaidLabel: string;
-  detailRemainingLabel: string;
-  detailItemsTitle: string;
-  detailPayHistoryTitle: string;
-  detailNoPayments: string;
-  closeBtn: string;
-  printBillBtn: string;
-  cancelSaleBtn: string;
-  receivePaymentBtn: string;
-  returnGoodsBtn: string;
-  returnTitle: string;
-  returnSubtitle: string;
-  returnColReturnable: string;
-  returnColReturnQty: string;
-  returnSubmitBtn: string;
-  returnSaving: string;
-  returnSuccess: string;
-  returnNothingError: string;
-  paymentMethodReturn: string;
-  cancelConfirm: string;
-  paymentTitle: string;
-  paymentOutstandingLabel: string;
-  paymentAmountLabel: string;
-  paymentMethodLabel: string;
-  paymentMethodCash: string;
-  paymentMethodTransfer: string;
-  paymentNoteLabel: string;
-  paymentNotePlaceholder: string;
-  paymentConfirmBtn: string;
-  paymentExactBtn: string;
-  paymentAmountError: string;
-  empty: string;
-  emptyHint: string;
-  loading: string;
-  createdSuccess: string;
-  paymentSuccess: string;
-  cancelSuccess: string;
-  cancelFailed: string;
-  noCustomersFound: string;
-  stockExceeded: string;
-  summaryItemsLabel: string;
-  itemsUnit: string;
-  colRemove: string;
-  errInsufficientStock: string;
-  errProductInactive: string;
-  errInvalidItem: string;
-  errProductNotFound: string;
-  errOverpayment: string;
-  errSaveFailed: string;
-  errDiscountCap: string;
-  colDiscount: string;
-  discountUnitAmount: string;
-  discountUnitPercent: string;
-  billDiscountLabel: string;
-  billDiscountPlaceholder: string;
-  vatSectionTitle: string;
-  vatToggleLabel: string;
-  vatRateLabel: string;
-  vatIncludedLabel: string;
-  vatExclusiveLabel: string;
-  sumSubtotal: string;
-  sumLineDiscount: string;
-  sumLevelDiscount: string;
-  sumBillDiscount: string;
-  sumAfterDiscount: string;
-  sumVat: string;
-  sumGrandTotal: string;
-  listSearchPlaceholder: string;
-  filterDateFrom: string;
-  filterDateTo: string;
-  filterClear: string;
-  rowCancelTitle: string;
-  dashTitle: string;
-  dashTotalValue: string;
-  dashCollected: string;
-  dashCollectionRate: string;
-  dashThisMonthValue: string;
-};
+
 
 // Subset of the `creditStatement` i18n section consumed by the bill preview modal.
-type BillModalDictionary = {
-  title: string;
-  print: string;
-  close: string;
-  loading: string;
-  notFound: string;
-};
 
-type CreditSalesManagerProps = {
-  dictionary: CreditSalesDictionary;
-  billDictionary: BillModalDictionary;
-  locale: string;
-  prefilledCustomerId?: string;
-  prefilledCustomerName?: string;
-};
+
+
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 const STATUS_CLASSES: Record<CreditSaleStatus, string> = {
@@ -238,7 +80,7 @@ const TYPE_CLASSES: Record<CreditSaleType, string> = {
 // Translate a create/payment API error into a readable, localized message. A
 // backend 422 carries the specific reason in err.fields[].message; the generic
 // top-level "validation failed" is never surfaced to the user.
-function mapCreditError(err: unknown, d: CreditSalesDictionary): string {
+function mapCreditError(err: unknown, d: CreditSalesManagerCreditSalesDictionary): string {
   let raw = "";
   if (err instanceof ApiError) {
     raw = (err.fields?.[0]?.message || err.message || "").toLowerCase();
@@ -286,18 +128,9 @@ function fmtBaht2(n: number): string {
 //   percent → discount_value is a % (≤100) applied per unit
 //   amount  → user enters baht-off-the-whole-line; we convert to a per-unit amount
 //             (capped at the unit price) on submit, exactly as POS does.
-type DraftItem = {
-  id: string;
-  product_id: string;
-  product_name: string;
-  unit?: string;
-  price: number;
-  quantity: number;
-  discountType: "amount" | "percent";
-  discountValue: number;
-};
 
-function perUnitDiscount(it: DraftItem): number {
+
+function perUnitDiscount(it: CreditSalesManagerDraftItem): number {
   if (!it.discountValue || it.discountValue <= 0 || it.quantity <= 0) return 0;
   if (it.discountType === "percent") {
     return (it.price * Math.min(100, it.discountValue)) / 100;
@@ -306,16 +139,16 @@ function perUnitDiscount(it: DraftItem): number {
   return Math.min(it.price, it.discountValue / it.quantity);
 }
 
-function lineDiscountAmount(it: DraftItem): number {
+function lineDiscountAmount(it: CreditSalesManagerDraftItem): number {
   return perUnitDiscount(it) * it.quantity;
 }
 
-function lineNet(it: DraftItem): number {
+function lineNet(it: CreditSalesManagerDraftItem): number {
   return Math.max(0, it.price * it.quantity - lineDiscountAmount(it));
 }
 
 // Translate a draft line into the API item shape (discount sent only when > 0).
-function toApiItem(it: DraftItem): {
+function toApiItem(it: CreditSalesManagerDraftItem): {
   product_id: string;
   quantity: number;
   discount_type?: "amount" | "percent";
@@ -338,7 +171,7 @@ export function CreditSalesManager({
   billDictionary,
   locale,
   prefilledCustomerId,
-}: CreditSalesManagerProps) {
+}: CreditSalesManagerCreditSalesManagerProps) {
   const queryClient = useQueryClient();
   const [success, setSuccess] = useState("");
   const [actionError, setActionError] = useState("");
@@ -376,7 +209,7 @@ export function CreditSalesManager({
   const [createType, setCreateType] = useState<CreditSaleType>("credit");
   const [createCustomerId, setCreateCustomerId] = useState("");
   const [createDueDate, setCreateDueDate] = useState("");
-  const [createItems, setCreateItems] = useState<DraftItem[]>([]);
+  const [createItems, setCreateItems] = useState<CreditSalesManagerDraftItem[]>([]);
   const [createNote, setCreateNote] = useState("");
   // Bill-level discount + VAT (default: VAT 7% exclusive — preserves prior behaviour
   // where credit sales silently inherited the store's 7% rate, now editable).

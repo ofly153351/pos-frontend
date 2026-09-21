@@ -5,22 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Printer, X } from "lucide-react";
 
 import { getCreditSaleBillUrl } from "@/services/credit-sales";
+import type { CreditStatementModalBillModalDict } from "./types";
+import type { CreditStatementModalProps } from "./types";
+
 
 // Labels come from the `creditStatement` i18n section (structural subset).
-type BillModalDict = {
-  title: string;
-  print: string;
-  close: string;
-  loading: string;
-  notFound: string;
-};
 
-type Props = {
-  creditSaleId: string;
-  open: boolean;
-  onClose: () => void;
-  dict: BillModalDict;
-};
+
+
 
 // Fetches the billing-notice HTML (rendered by the shared document template on the
 // backend). The auth cookie rides along on the same-origin request.
@@ -38,7 +30,7 @@ async function fetchBillHtml(creditSaleId: string, signal?: AbortSignal): Promis
 // Shows the billing notice (ใบวางบิล) in an iframe for in-place preview + print —
 // no new tab, no client-side A4 layout. Data flows through TanStack Query (no manual
 // effect/setState), refetching fresh each time the modal opens.
-export function CreditStatementModal({ creditSaleId, open, onClose, dict }: Props) {
+export function CreditStatementModal({ creditSaleId, open, onClose, dict }: CreditStatementModalProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const { data: html, isLoading, isError } = useQuery({
