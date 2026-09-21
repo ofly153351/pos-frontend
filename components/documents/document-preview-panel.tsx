@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ArrowRight, Ban, ChevronDown, FileDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
+import { ArrowRight, Ban, ChevronDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getDocumentPdfBlob, getRelatedDocuments } from "@/services/documents";
+import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getRelatedDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
@@ -17,7 +17,6 @@ type Dict = {
   viewFull: string;
   loading: string;
   relatedDocs: string;
-  downloadPDF: string;
   email: string;
   share: string;
   comingSoon: string;
@@ -27,7 +26,6 @@ type Dict = {
   completeDelivery: string;
   deliveryCompleteSuccess: string;
   deliveryCompleteError: string;
-  pdfError: string;
   typeInvoice: string;
   typeReceipt: string;
   typeTaxInvoice: string;
@@ -98,25 +96,6 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
     enabled: !!documentId,
     staleTime: 30_000,
   });
-
-  const [isPdfLoading, startPdfTransition] = useTransition();
-  function handleDownloadPdf() {
-    startPdfTransition(async () => {
-      try {
-        const blob = await getDocumentPdfBlob(documentId, copyIdx);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${documentNo || documentId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } catch {
-        toast.error(dict.pdfError);
-      }
-    });
-  }
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -427,6 +406,16 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   onClose={() => setConfirmCancel(false)}
                 />
               )}
+              <button
+                type="button"
+                aria-label={dict.print}
+                title={dict.print}
+                disabled={!html}
+                onClick={handlePrint}
+                className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-40"
+              >
+                <Printer className="h-4 w-4" />
+              </button>
               <div className="relative">
                 <button
                   type="button"
@@ -451,17 +440,11 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                           <option key={c.idx} value={c.idx}>{c.th}</option>
                         ))}
                       </select>
-                      <button type="button" disabled={isPdfLoading} onClick={handleDownloadPdf} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50">
-                        {isPdfLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 text-violet-600" />}{dict.downloadPDF}
-                      </button>
                       <button type="button" onClick={() => toast.info(dict.comingSoon)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50">
                         <Mail className="h-3.5 w-3.5 text-violet-600" />{dict.email}
                       </button>
                       <button type="button" onClick={() => toast.info(dict.comingSoon)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50">
                         <Share2 className="h-3.5 w-3.5 text-violet-600" />{dict.share}
-                      </button>
-                      <button type="button" disabled={!html} onClick={handlePrint} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50 disabled:opacity-40">
-                        <Printer className="h-3.5 w-3.5 text-violet-600" />{dict.print}
                       </button>
                     </div>
                   </>
