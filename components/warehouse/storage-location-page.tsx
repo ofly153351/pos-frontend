@@ -56,6 +56,8 @@ import {
 } from "./storage-location-types";
 import { LocationFormModal } from "./location-form-modal";
 import { LocationDetailDrawer } from "./location-detail-drawer";
+import type { StorageLocationPageStatusFilter, StorageLocationPageZoneFloorTarget } from "./types";
+
 
 export type { StorageLocationDictionary };
 
@@ -63,7 +65,7 @@ export type { StorageLocationDictionary };
 const PAGE_SIZE = 12;
 
 // §10 lifecycle filter — Active / Inactive / Archived. Archived is absent by default.
-type StatusFilter = "active" | "inactive" | "archived";
+
 
 export function StorageLocationPage({ dictionary, locale }: { dictionary: StorageLocationDictionary; locale: string }) {
   const router = useRouter();
@@ -74,7 +76,7 @@ export function StorageLocationPage({ dictionary, locale }: { dictionary: Storag
   const [selectedFloor, setSelectedFloor] = useState<string | null>(null);
   const [searchQuery, setSearchQuery]     = useState("");
   const [page, setPage]                   = useState(1);
-  const [statusFilter, setStatusFilter]   = useState<StatusFilter>("active");
+  const [statusFilter, setStatusFilter]   = useState<StorageLocationPageStatusFilter>("active");
 
   const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [expandedZones, setExpandedZones]     = useState<Set<string>>(new Set());
@@ -90,13 +92,9 @@ export function StorageLocationPage({ dictionary, locale }: { dictionary: Storag
   const [isPending, startTransition]          = useTransition();
 
   // ── Zone / Floor CRUD state ────────────────────────────────────────────────
-  type ZoneFloorTarget =
-    | { kind: "zone";  zoneName: string }
-    | { kind: "floor"; zoneName: string; floorName: string };
-
-  const [renameTarget, setRenameTarget]  = useState<ZoneFloorTarget | null>(null);
+  const [renameTarget, setRenameTarget]  = useState<StorageLocationPageZoneFloorTarget | null>(null);
   const [renameInput, setRenameInput]    = useState("");
-  const [deleteTarget, setDeleteTarget]  = useState<ZoneFloorTarget | null>(null);
+  const [deleteTarget, setDeleteTarget]  = useState<StorageLocationPageZoneFloorTarget | null>(null);
   const [isZFPending, startZFTransition] = useTransition();
 
   // ── Floor drag-and-drop order ──────────────────────────────────────────────
@@ -108,7 +106,7 @@ export function StorageLocationPage({ dictionary, locale }: { dictionary: Storag
   const lastDragOver  = useRef<string | null>(null);
   const saveTimer     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  function startRename(target: ZoneFloorTarget) {
+  function startRename(target: StorageLocationPageZoneFloorTarget) {
     setRenameTarget(target);
     setRenameInput(target.kind === "zone" ? target.zoneName : target.floorName);
   }
@@ -483,7 +481,7 @@ export function StorageLocationPage({ dictionary, locale }: { dictionary: Storag
   const selectedWarehouse = warehouses.find((w) => w.id === selectedWarehouseId);
 
   // §10 lifecycle filter tabs — reuse existing status labels (no new locale keys needed).
-  const statusTabs: { key: StatusFilter; label: string }[] = [
+  const statusTabs: { key: StorageLocationPageStatusFilter; label: string }[] = [
     { key: "active",   label: dictionary.infoActive },
     { key: "inactive", label: dictionary.statusInactive },
     { key: "archived", label: dictionary.statusArchived },

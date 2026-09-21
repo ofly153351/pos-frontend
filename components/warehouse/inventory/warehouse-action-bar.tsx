@@ -13,39 +13,29 @@ import {
 } from "lucide-react";
 
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseActionBarWarehouseActionHandlers } from "./types";
+import type { WarehouseActionBarWarehouseActionGates } from "./types";
+import type { WarehouseActionBarWarehouseAction } from "./types";
+import type { WarehouseActionBarProps } from "./types";
+export type { WarehouseActionBarWarehouseActionHandlers as WarehouseActionHandlers } from "./types";
+export type { WarehouseActionBarWarehouseActionGates as WarehouseActionGates } from "./types";
+export type { WarehouseActionBarWarehouseAction as WarehouseAction } from "./types";
 
-export type WarehouseActionHandlers = {
-  onReceive: () => void;
-  onTransfer: () => void;
-  onAdjust: () => void;
-  onCount: () => void;
-  onManageWarehouse: () => void;
-  onStorageLocations: () => void;
-  onProducts: () => void;
-  onExport: () => void;
-};
 
-export type WarehouseActionGates = {
-  canManage: boolean;
-  canReceive: boolean;
-};
 
-export type WarehouseAction = {
-  key: string;
-  label: string;
-  icon: LucideIcon;
-  onClick: () => void;
-  primary?: boolean;
-};
+
+
+
+
 
 // Single source of truth for the toolbar — reused by the desktop bar and the mobile
 // action sheet so role gating and ordering never drift apart.
 export function buildWarehouseActions(
   dict: WarehouseInventoryDictionary,
-  handlers: WarehouseActionHandlers,
-  gates: WarehouseActionGates,
-): WarehouseAction[] {
-  const actions: WarehouseAction[] = [];
+  handlers: WarehouseActionBarWarehouseActionHandlers,
+  gates: WarehouseActionBarWarehouseActionGates,
+): WarehouseActionBarWarehouseAction[] {
+  const actions: WarehouseActionBarWarehouseAction[] = [];
 
   if (gates.canReceive) {
     actions.push({ key: "receive", label: dict.actionReceive, icon: PackagePlus, onClick: handlers.onReceive, primary: true });
@@ -67,11 +57,9 @@ export function buildWarehouseActions(
   return actions;
 }
 
-type Props = {
-  actions: WarehouseAction[];
-};
 
-export function WarehouseActionBar({ actions }: Props) {
+
+export function WarehouseActionBar({ actions }: WarehouseActionBarProps) {
   return (
     <div className="hidden flex-wrap items-center gap-2 md:flex">
       {actions.map(({ key, label, icon: Icon, onClick, primary }) => (

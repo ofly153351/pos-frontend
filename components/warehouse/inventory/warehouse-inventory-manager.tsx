@@ -36,13 +36,10 @@ import { useDebouncedValue } from "./use-debounced-value";
 import { formatNumber } from "./utils";
 import { statusLabel } from "./status-chip";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseInventoryManagerProps } from "./types";
 
-type Props = {
-  dictionary: WarehouseInventoryDictionary;
-  transferDict: LocationTransferDict;
-  adjustDict: InventoryAdjustDictionary;
-  locale: string;
-};
+
+
 
 const PAGE_SIZE = 20;
 
@@ -54,7 +51,7 @@ const defaultFilters: WarehouseFiltersState = {
   sort: "name",
 };
 
-export function WarehouseInventoryManager({ dictionary: dict, transferDict, adjustDict, locale }: Props) {
+export function WarehouseInventoryManager({ dictionary: dict, transferDict, adjustDict, locale }: WarehouseInventoryManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

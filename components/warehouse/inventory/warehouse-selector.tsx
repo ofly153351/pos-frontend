@@ -6,16 +6,10 @@ import { Check, ChevronsUpDown, MapPin, Search, Warehouse as WarehouseIcon } fro
 import type { Warehouse } from "@/types/warehouse";
 import { formatNumber } from "./utils";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseSelectorProps } from "./types";
 
-type Props = {
-  warehouses: Warehouse[];
-  value: string;
-  onChange: (id: string) => void;
-  dict: WarehouseInventoryDictionary;
-  locationCount: number;
-  productCount: number | null;
-  disabled?: boolean;
-};
+
+
 
 export function WarehouseSelector({
   warehouses,
@@ -25,7 +19,7 @@ export function WarehouseSelector({
   locationCount,
   productCount,
   disabled,
-}: Props) {
+}: WarehouseSelectorProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);

@@ -3,37 +3,19 @@
 import { AlertTriangle, ClipboardCheck } from "lucide-react";
 
 import { formatNumber, formatSignedNumber, type ReceiveDictionary } from "./receive-shared";
+import type { ReceiveInspectionSummaryInspectionMismatch } from "./types";
+import type { ReceiveInspectionSummaryInspectionCounts } from "./types";
+import type { ReceiveInspectionSummaryReceiveInspectionSummaryProps } from "./types";
+export type { ReceiveInspectionSummaryInspectionMismatch as InspectionMismatch } from "./types";
+export type { ReceiveInspectionSummaryInspectionCounts as InspectionCounts } from "./types";
+export type { ReceiveInspectionSummaryReceiveInspectionSummaryProps as ReceiveInspectionSummaryProps } from "./types";
 
-export type InspectionMismatch = {
-  productId: string;
-  productName: string;
-  ordered: number;
-  received: number;
-  difference: number;
-  kind: "short" | "over";
-};
 
-export type InspectionCounts = {
-  totalLines: number;
-  totalOrdered: number;
-  totalReceived: number;
-  totalRemaining: number;
-  totalDifference: number;
-  complete: number;
-  short: number;
-  over: number;
-  notReceived: number;
-};
 
-export type ReceiveInspectionSummaryProps = {
-  dictionary: ReceiveDictionary;
-  hasPo: boolean;
-  counts: InspectionCounts;
-  mismatches: InspectionMismatch[];
-  hasOver: boolean;
-  /** draft|pending_review — only these states may show over/short verdicts (H-01/POS-005 gate). */
-  verdictsOn: boolean;
-};
+
+
+
+
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
@@ -51,7 +33,7 @@ export function ReceiveInspectionSummary({
   mismatches,
   hasOver,
   verdictsOn,
-}: ReceiveInspectionSummaryProps) {
+}: ReceiveInspectionSummaryReceiveInspectionSummaryProps) {
   return (
     <section className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">

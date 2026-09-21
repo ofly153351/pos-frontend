@@ -6,20 +6,16 @@ import type { WarehouseInventoryProduct } from "@/types/warehouse-inventory";
 import { formatNumber } from "./utils";
 import { StatusChip } from "./status-chip";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseProductCardsProps } from "./types";
 
-type Props = {
-  dict: WarehouseInventoryDictionary;
-  items: WarehouseInventoryProduct[];
-  onViewLocations: (item: WarehouseInventoryProduct) => void;
-  onTransfer: (item: WarehouseInventoryProduct) => void;
-  canTransfer: boolean;
-};
+
+
 
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || "—";
 }
 
-export function WarehouseProductCards({ dict, items, onViewLocations, onTransfer, canTransfer }: Props) {
+export function WarehouseProductCards({ dict, items, onViewLocations, onTransfer, canTransfer }: WarehouseProductCardsProps) {
   return (
     <ul className="space-y-2.5">
       {items.map((item) => (

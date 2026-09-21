@@ -7,26 +7,15 @@ import { toast } from "@/components/ui/toast";
 import { createWarehouse, updateWarehouse } from "@/services/warehouses";
 import type { Warehouse } from "@/types/warehouse";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseFormProps } from "./types";
+import type { WarehouseFormFormState } from "./types";
 
-type Props = {
-  open: boolean;
-  mode: "create" | "edit";
-  warehouse: Warehouse | null;
-  dict: WarehouseInventoryDictionary;
-  onClose: () => void;
-  onSaved: (warehouse: Warehouse) => void;
-};
 
-type FormState = {
-  name: string;
-  code: string;
-  contact_name: string;
-  phone: string;
-  address: string;
-  is_active: boolean;
-};
 
-const emptyForm: FormState = {
+
+
+
+const emptyForm: WarehouseFormFormState = {
   name: "",
   code: "",
   contact_name: "",
@@ -35,8 +24,8 @@ const emptyForm: FormState = {
   is_active: true,
 };
 
-export function WarehouseForm({ open, mode, warehouse, dict, onClose, onSaved }: Props) {
-  const [form, setForm] = useState<FormState>(emptyForm);
+export function WarehouseForm({ open, mode, warehouse, dict, onClose, onSaved }: WarehouseFormProps) {
+  const [form, setForm] = useState<WarehouseFormFormState>(emptyForm);
   const [nameError, setNameError] = useState(false);
   const [saving, setSaving] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -72,7 +61,7 @@ export function WarehouseForm({ open, mode, warehouse, dict, onClose, onSaved }:
 
   if (!open) return null;
 
-  const patch = (p: Partial<FormState>) => setForm((f) => ({ ...f, ...p }));
+  const patch = (p: Partial<WarehouseFormFormState>) => setForm((f) => ({ ...f, ...p }));
 
   async function handleSubmit() {
     if (!form.name.trim()) {

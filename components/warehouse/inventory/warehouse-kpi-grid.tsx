@@ -7,14 +7,12 @@ import { SkeletonKPICard } from "@/components/ui/skeleton";
 import type { WarehouseInventorySummary } from "@/types/warehouse-inventory";
 import { formatCurrency, formatNumber } from "./utils";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseKpiGridProps } from "./types";
 
-type Props = {
-  dict: WarehouseInventoryDictionary;
-  summary: WarehouseInventorySummary | undefined;
-  loading: boolean;
-};
 
-export function WarehouseKpiGrid({ dict, summary, loading }: Props) {
+
+
+export function WarehouseKpiGrid({ dict, summary, loading }: WarehouseKpiGridProps) {
   if (loading || !summary) {
     return (
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

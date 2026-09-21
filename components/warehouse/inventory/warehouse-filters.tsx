@@ -8,23 +8,14 @@ import type {
   WarehouseStockStatus,
 } from "@/types/warehouse-inventory";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseFiltersWarehouseFiltersState } from "./types";
+import type { WarehouseFiltersProps } from "./types";
+export type { WarehouseFiltersWarehouseFiltersState as WarehouseFiltersState } from "./types";
 
-export type WarehouseFiltersState = {
-  search: string;
-  categoryId: string;
-  stockStatus: WarehouseStockStatus | "";
-  locationType: WarehouseLocationType | "";
-  sort: WarehouseInventorySort | "";
-};
 
-type Props = {
-  dict: WarehouseInventoryDictionary;
-  value: WarehouseFiltersState;
-  categories: { id: string; name: string }[];
-  onChange: (patch: Partial<WarehouseFiltersState>) => void;
-  onReset: () => void;
-  hasActiveFilters: boolean;
-};
+
+
+
 
 const selectClass =
   "h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100";
@@ -36,7 +27,7 @@ export function WarehouseFilters({
   onChange,
   onReset,
   hasActiveFilters,
-}: Props) {
+}: WarehouseFiltersProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100">

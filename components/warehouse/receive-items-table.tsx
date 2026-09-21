@@ -10,32 +10,13 @@ import {
   type ReceiveDictionary,
   type ReceiveRowStatus,
 } from "./receive-shared";
+import type { ReceiveItemsTableEditorRowView } from "./types";
+import type { ReceiveItemsTableReceiveItemsTableProps } from "./types";
+export type { ReceiveItemsTableEditorRowView as EditorRowView } from "./types";
+export type { ReceiveItemsTableReceiveItemsTableProps as ReceiveItemsTableProps } from "./types";
 
-export type EditorRowView = {
-  key: string;
-  productId: string;
-  productName: string;
-  sku: string;
-  quantity: string;
-  unitPrice: string;
-  discountValue: string;
-  hasPo: boolean;
-  ordered: number;
-  prevReceived: number;
-  remaining: number;
-  /** null = no PO verdict is applicable (confirmed/cancelled doc, or no PO link). */
-  difference: number | null;
-  status: ReceiveRowStatus;
-  lineTotal: number;
-  overReceipt: boolean;
-  error: string;
-  // Per-line receiving location: chosen id + resolved label/status for the picker.
-  locationId: string;
-  locationName: string;
-  locationStatus: LocationResolveStatus;
-  locationWarning: string;
-  productEditHref: string;
-};
+
+
 
 const STATUS_STYLE: Record<ReceiveRowStatus, string> = {
   complete: "bg-emerald-100 text-emerald-700",
@@ -45,19 +26,7 @@ const STATUS_STYLE: Record<ReceiveRowStatus, string> = {
   received: "bg-emerald-100 text-emerald-700",
 };
 
-export type ReceiveItemsTableProps = {
-  dictionary: ReceiveDictionary;
-  rows: EditorRowView[];
-  hasPo: boolean;
-  editable: boolean;
-  locationOptions: { id: string; label: string }[];
-  onQtyChange: (key: string, value: string) => void;
-  onQtyBlur: (key: string) => void;
-  onStep: (key: string, delta: number) => void;
-  onUnitCostChange: (key: string, value: string) => void;
-  onLocationChange: (key: string, value: string) => void;
-  onRemove: (key: string) => void;
-};
+
 
 function statusLabel(t: ReceiveDictionary, status: ReceiveRowStatus) {
   switch (status) {
@@ -77,7 +46,7 @@ function LocationCell({
   onChange,
 }: {
   t: ReceiveDictionary;
-  row: EditorRowView;
+  row: ReceiveItemsTableEditorRowView;
   editable: boolean;
   options: { id: string; label: string }[];
   onChange: (key: string, value: string) => void;
@@ -147,7 +116,7 @@ export function ReceiveItemsTable({
   onUnitCostChange,
   onLocationChange,
   onRemove,
-}: ReceiveItemsTableProps) {
+}: ReceiveItemsTableReceiveItemsTableProps) {
   return (
     <section className="overflow-hidden rounded-3xl border border-violet-100 bg-white shadow-sm">
       <div className="flex items-center gap-3 border-b border-violet-100 px-6 py-4">

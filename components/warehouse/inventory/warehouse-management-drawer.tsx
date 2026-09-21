@@ -18,23 +18,13 @@ import { DeletionDialog } from "@/components/warehouse/deletion-dialog";
 import { DrawerShell } from "./drawer-shell";
 import { formatNumber } from "./utils";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseManagementDrawerStatusFilter } from "./types";
+import type { WarehouseManagementDrawerProps } from "./types";
 
-type StatusFilter = "active" | "inactive" | "archived";
 
-type Props = {
-  open: boolean;
-  warehouses: Warehouse[];
-  selectedWarehouseId: string;
-  statsByWarehouse: Map<string, { zones: number; locations: number }>;
-  dict: WarehouseInventoryDictionary;
-  locale: string;
-  onClose: () => void;
-  onSelect: (id: string) => void;
-  onCreate: () => void;
-  onEdit: (w: Warehouse) => void;
-  onViewStorage: (w: Warehouse) => void;
-  onChanged: () => void;
-};
+
+
+
 
 export function WarehouseManagementDrawer({
   open,
@@ -49,12 +39,12 @@ export function WarehouseManagementDrawer({
   onEdit,
   onViewStorage,
   onChanged,
-}: Props) {
+}: WarehouseManagementDrawerProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [menuId, setMenuId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<StatusFilter>("active");
+  const [filter, setFilter] = useState<WarehouseManagementDrawerStatusFilter>("active");
 
   // Archived rows are excluded from the live list (backend default), so fetch them on demand
   // only when the Archived tab is active. Returns live + archived; keep just the archived.
@@ -100,7 +90,7 @@ export function WarehouseManagementDrawer({
     }
   }
 
-  const tabs: { key: StatusFilter; label: string; count?: number }[] = [
+  const tabs: { key: WarehouseManagementDrawerStatusFilter; label: string; count?: number }[] = [
     { key: "active", label: dict.statusActive, count: activeList.length },
     { key: "inactive", label: dict.statusInactive, count: inactiveList.length },
     {

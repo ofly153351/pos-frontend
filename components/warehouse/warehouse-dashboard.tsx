@@ -43,209 +43,34 @@ import type {
   WarehouseDashboardData,
   WarehousePeriod,
 } from "@/types/warehouse-dashboard";
+import type { WarehouseDashboardCountStatus } from "./types";
+import type { WarehouseDashboardWarehouseDashboardDictionary } from "./types";
+import type { WarehouseDashboardLocalCountItem } from "./types";
+import type { WarehouseDashboardLocalCountSession } from "./types";
+import type { WarehouseDashboardActionCenterItem } from "./types";
+import type { WarehouseDashboardVarianceRow } from "./types";
+import type { WarehouseDashboardStatusRow } from "./types";
+import type { WarehouseDashboardTimelineRow } from "./types";
+import type { WarehouseDashboardWarehouseDashboardProps } from "./types";
 
-type CountStatus = "draft" | "counting" | "review" | "completed" | "cancelled";
 
-type WarehouseDashboardDictionary = {
-  title: string;
-  subtitle: string;
-  refresh: string;
-  actionCenter: {
-    title: string;
-    subtitle: string;
-    open: string;
-    viewAll?: string;
-    items: {
-      lowStock: string;
-      outOfStock: string;
-      pendingTransfer: string;
-      pendingCount: string;
-      pendingApproval: string;
-    };
-    helpers: {
-      lowStock: string;
-      outOfStock: string;
-      pendingTransfer: string;
-      pendingCount: string;
-      pendingApproval: string;
-    };
-  };
-  kpi: {
-    inventoryValue: string;
-    availableStock: string;
-    reservedStock: string;
-    damagedStock: string;
-    inTransitStock: string;
-    helpers: {
-      inventoryValue: string;
-      availableStock: string;
-      reservedStock: string;
-      damagedStock: string;
-      inTransitStock: string;
-    };
-  };
-  movement: {
-    title: string;
-    periods: {
-      sevenDays: string;
-      thirtyDays: string;
-      threeMonths: string;
-    };
-    legends: {
-      receive: string;
-      issue: string;
-      transfer: string;
-      total: string;
-    };
-    empty: string;
-  };
-  alerts: {
-    title: string;
-    subtitle: string;
-    critical: string;
-    warning: string;
-    info: string;
-    viewAll: string;
-    noAlerts: string;
-    items: {
-      lowStock: string;
-      pendingTransfer: string;
-      pendingCount: string;
-      pendingApproval: string;
-    };
-    stockLevel: string;
-  };
-  variance: {
-    title: string;
-    viewCount: string;
-    headers: {
-      product: string;
-      systemQty: string;
-      countQty: string;
-      variance: string;
-    };
-    noData: string;
-    noDeadStock?: string;
-  };
-  statusDistribution: {
-    title: string;
-    subtitle: string;
-    labels: {
-      available: string;
-      reserved: string;
-      damaged: string;
-      inTransit: string;
-      counting: string;
-    };
-    helpers: {
-      available: string;
-      reserved: string;
-      damaged: string;
-      inTransit: string;
-      counting: string;
-    };
-  };
-  recentActivity: {
-    title: string;
-    subtitle: string;
-    noData: string;
-    reference: string;
-    types: {
-      receive: string;
-      transfer: string;
-      adjustment: string;
-      count: string;
-      approval: string;
-      sale: string;
-      issue: string;
-      return: string;
-    };
-    messages: {
-      receive: string;
-      transfer: string;
-      adjustment: string;
-      count: string;
-      approval: string;
-      sale: string;
-      issue: string;
-      return: string;
-    };
-  };
-  summary: {
-    inventoryValue: string;
-    availableStock: string;
-    reservedStock: string;
-    damagedStock: string;
-    inTransitStock: string;
-    activeAlerts: string;
-  };
-  units: {
-    items: string;
-  };
-};
 
-type LocalCountItem = {
-  productId: string;
-  name: string;
-  systemQty: number;
-  counted: number | null;
-  skipped: boolean;
-  varianceReason?: string;
-};
 
-type LocalCountSession = {
-  id: string;
-  name: string;
-  status: CountStatus;
-  createdAt: string;
-  completedAt?: string | null;
-  items: LocalCountItem[];
-};
 
-type ActionCenterItem = {
-  key: string;
-  label: string;
-  value: number;
-  helper: string;
-  href: string;
-  tone: "critical" | "warning" | "info";
-  icon: ReactNode;
-};
 
-type VarianceRow = {
-  key: string;
-  product: string;
-  systemQty: number;
-  countQty: number;
-  variance: number;
-  sessionName: string;
-  absVariance: number;
-};
 
-type StatusRow = {
-  key: string;
-  label: string;
-  value: number;
-  helper: string;
-  tone: string;
-  bar: string;
-};
 
-type TimelineRow = {
-  id: string;
-  kind: "IN" | "OUT" | "SALE" | "TRANSFER" | "ADJUST" | "RETURN" | "COUNT" | "APPROVAL";
-  title: string;
-  detail: string;
-  reference: string;
-  createdAt: string;
-  tone: string;
-  icon: ReactNode;
-};
 
-type WarehouseDashboardProps = {
-  dictionary: WarehouseDashboardDictionary;
-  locale: Locale;
-};
+
+
+
+
+
+
+
+
+
+
 
 function toLocaleTag(locale: Locale) {
   return locale === "th" ? "th-TH" : "en-US";
@@ -280,20 +105,20 @@ function formatDateTime(value: string, locale: Locale) {
   }).format(date);
 }
 
-function variance(item: LocalCountItem) {
+function variance(item: WarehouseDashboardLocalCountItem) {
   return item.counted == null ? 0 : item.counted - item.systemQty;
 }
 
-function normalizeSessions(raw: unknown): LocalCountSession[] {
+function normalizeSessions(raw: unknown): WarehouseDashboardLocalCountSession[] {
   if (!Array.isArray(raw)) return [];
 
   return raw
-    .map((session): LocalCountSession | null => {
+    .map((session): WarehouseDashboardLocalCountSession | null => {
       if (!session || typeof session !== "object") return null;
       const s = session as Record<string, unknown>;
       const items = Array.isArray(s.items)
         ? s.items
-            .map((item): LocalCountItem | null => {
+            .map((item): WarehouseDashboardLocalCountItem | null => {
               if (!item || typeof item !== "object") return null;
               const it = item as Record<string, unknown>;
               return {
@@ -305,19 +130,19 @@ function normalizeSessions(raw: unknown): LocalCountSession[] {
                 varianceReason: typeof it.varianceReason === "string" ? it.varianceReason : "",
               };
             })
-            .filter((item): item is LocalCountItem => Boolean(item))
+            .filter((item): item is WarehouseDashboardLocalCountItem => Boolean(item))
         : [];
 
       return {
         id: String(s.id ?? ""),
         name: String(s.name ?? ""),
-        status: String(s.status ?? "draft") as CountStatus,
+        status: String(s.status ?? "draft") as WarehouseDashboardCountStatus,
         createdAt: String(s.createdAt ?? new Date().toISOString()),
         completedAt: typeof s.completedAt === "string" ? s.completedAt : null,
         items,
       };
     })
-    .filter((session): session is LocalCountSession => Boolean(session));
+    .filter((session): session is WarehouseDashboardLocalCountSession => Boolean(session));
 }
 
 function SectionCard({ title, action, children, compact }: { title: ReactNode; action?: ReactNode; children: ReactNode; compact?: boolean }) {
@@ -361,7 +186,7 @@ function CompactActionCenter({
   viewAllLabel,
   locale,
 }: {
-  items: ActionCenterItem[];
+  items: WarehouseDashboardActionCenterItem[];
   title: string;
   viewAllLabel?: string;
   locale: Locale;
@@ -407,7 +232,7 @@ function AlertsSection({
 }: {
   alerts: Array<{ id: string; severity: "critical" | "warning" | "info"; title: string; detail: string; href: string }>;
   locale: Locale;
-  t: WarehouseDashboardDictionary["alerts"];
+  t: WarehouseDashboardWarehouseDashboardDictionary["alerts"];
 }) {
   const criticalCount = alerts.filter((alert) => alert.severity === "critical").length;
   const warningCount = alerts.filter((alert) => alert.severity === "warning").length;
@@ -472,7 +297,7 @@ function AlertsSection({
   );
 }
 
-function VarianceSection({ rows, locale, t }: { rows: VarianceRow[]; locale: Locale; t: WarehouseDashboardDictionary["variance"] }) {
+function VarianceSection({ rows, locale, t }: { rows: WarehouseDashboardVarianceRow[]; locale: Locale; t: WarehouseDashboardWarehouseDashboardDictionary["variance"] }) {
   return (
     <SectionCard compact title={t.title} action={<Link href={`/${locale}/inventory/counts`} className="text-xs font-semibold text-violet-600">{t.viewCount}</Link>}>
       {rows.length ? (
@@ -514,7 +339,7 @@ function VarianceSection({ rows, locale, t }: { rows: VarianceRow[]; locale: Loc
   );
 }
 
-function StatusDistributionSection({ rows, locale, t }: { rows: StatusRow[]; locale: Locale; t: WarehouseDashboardDictionary["statusDistribution"] }) {
+function StatusDistributionSection({ rows, locale, t }: { rows: WarehouseDashboardStatusRow[]; locale: Locale; t: WarehouseDashboardWarehouseDashboardDictionary["statusDistribution"] }) {
   const maxValue = Math.max(...rows.map((row) => row.value), 1);
 
   return (
@@ -545,7 +370,7 @@ function StatusDistributionSection({ rows, locale, t }: { rows: StatusRow[]; loc
   );
 }
 
-function RecentActivitySection({ rows, locale, t }: { rows: TimelineRow[]; locale: Locale; t: WarehouseDashboardDictionary["recentActivity"] }) {
+function RecentActivitySection({ rows, locale, t }: { rows: WarehouseDashboardTimelineRow[]; locale: Locale; t: WarehouseDashboardWarehouseDashboardDictionary["recentActivity"] }) {
   return (
     <SectionCard title={t.title}>
       <div className="space-y-3">
@@ -610,7 +435,7 @@ function buildAlertRows(
   pendingApprovals: number,
   pendingTransfers: number,
   locale: Locale,
-  t: WarehouseDashboardDictionary["alerts"],
+  t: WarehouseDashboardWarehouseDashboardDictionary["alerts"],
 ) {
   const rows: Array<{ id: string; severity: "critical" | "warning" | "info"; title: string; detail: string; href: string }> = lowStockAlerts.map((alert) => ({
     id: alert.product_id,
@@ -658,13 +483,13 @@ function buildAlertRows(
 
 function buildTimelineRows(
   activity: RecentActivity[],
-  countSessions: LocalCountSession[],
+  countSessions: WarehouseDashboardLocalCountSession[],
   locale: Locale,
-  t: WarehouseDashboardDictionary["recentActivity"],
+  t: WarehouseDashboardWarehouseDashboardDictionary["recentActivity"],
 ) {
   const allowed = new Set(["IN", "OUT", "SALE", "TRANSFER", "ADJUST", "RETURN"]);
 
-  const rows: TimelineRow[] = activity
+  const rows: WarehouseDashboardTimelineRow[] = activity
     .filter((item) => allowed.has(item.type))
     .map((item) => {
       const absQty = Math.abs(Number(item.quantity_change ?? 0));
@@ -718,7 +543,7 @@ function buildTimelineRows(
 
       return {
         id: item.id,
-        kind: item.type as TimelineRow["kind"],
+        kind: item.type as WarehouseDashboardTimelineRow["kind"],
         title,
         detail,
         reference: item.reference_id,
@@ -728,8 +553,8 @@ function buildTimelineRows(
       };
     });
 
-  const countRows: TimelineRow[] = countSessions.flatMap((session) => {
-    const output: TimelineRow[] = [];
+  const countRows: WarehouseDashboardTimelineRow[] = countSessions.flatMap((session) => {
+    const output: WarehouseDashboardTimelineRow[] = [];
 
     if (session.status === "review") {
       output.push({
@@ -765,14 +590,14 @@ function buildTimelineRows(
     .slice(0, 6);
 }
 
-export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardProps) {
+export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardWarehouseDashboardProps) {
   const t = dictionary;
   const [period, setPeriod] = useState<WarehousePeriod>("7d");
   const countSessionsQuery = useQuery({
     queryKey: ["count", "sessions"],
     queryFn: async () => (await listCountSessions()).data,
   });
-  const countSessions = useMemo<LocalCountSession[]>(
+  const countSessions = useMemo<WarehouseDashboardLocalCountSession[]>(
     () => normalizeSessions(countSessionsQuery.data ?? []),
     [countSessionsQuery.data],
   );
@@ -859,7 +684,7 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardPro
   const pendingTransfers = Number(data?.kpi.pending_transfer_requests ?? 0);
   const movementIsEmpty = !data?.movement_chart?.some((point) => (point.issue_value ?? 0) || (point.receive_value ?? 0) || (point.transfer_value ?? 0) || (point.total_value ?? 0));
 
-  const actionItems: ActionCenterItem[] = [
+  const actionItems: WarehouseDashboardActionCenterItem[] = [
     {
       key: "low-stock",
       label: t.actionCenter.items.lowStock,

@@ -5,6 +5,8 @@ import { Check, ChevronDown, Plus, X } from "lucide-react";
 import type { Warehouse } from "@/types/warehouse";
 import type { Location } from "@/services/locations";
 import type { StorageLocationDictionary, LocationForm, DerivedZone } from "./storage-location-types";
+import type { LocationFormModalProps } from "./types";
+
 
 // ── Combobox ──────────────────────────────────────────────────────────────────
 function Combobox({
@@ -110,24 +112,12 @@ function Combobox({
 }
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
-type Props = {
-  isOpen: boolean;
-  onClose: () => void;
-  editingLocation: Location | null;
-  form: LocationForm;
-  setField: <K extends keyof LocationForm>(key: K, value: LocationForm[K]) => void;
-  formError: string;
-  isPending: boolean;
-  onSave: () => void;
-  warehouses: Warehouse[];
-  tree: DerivedZone[];
-  dictionary: StorageLocationDictionary;
-};
+
 
 export function LocationFormModal({
   isOpen, onClose, editingLocation, form, setField, formError, isPending, onSave,
   warehouses, tree, dictionary,
-}: Props) {
+}: LocationFormModalProps) {
   useEffect(() => {
     if (!isOpen) return;
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };

@@ -10,19 +10,14 @@ import type { WarehouseInventoryProduct } from "@/types/warehouse-inventory";
 import { formatNumber } from "./utils";
 import { useDebouncedValue } from "./use-debounced-value";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { ProductPickerModalProps } from "./types";
 
-type Props = {
-  open: boolean;
-  warehouseId: string;
-  title: string;
-  dict: WarehouseInventoryDictionary;
-  onPick: (product: WarehouseInventoryProduct) => void;
-  onClose: () => void;
-};
+
+
 
 // Lightweight product chooser for toolbar-level Transfer / Adjust, which both reuse
 // product-scoped drawers. Searches the selected warehouse via the same Phase 0 endpoint.
-export function ProductPickerModal({ open, warehouseId, title, dict, onPick, onClose }: Props) {
+export function ProductPickerModal({ open, warehouseId, title, dict, onPick, onClose }: ProductPickerModalProps) {
   const [search, setSearch] = useState("");
   const debounced = useDebouncedValue(search, 300);
 

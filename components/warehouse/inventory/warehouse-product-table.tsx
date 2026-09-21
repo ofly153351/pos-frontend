@@ -6,20 +6,16 @@ import type { WarehouseInventoryProduct } from "@/types/warehouse-inventory";
 import { formatNumber, totalBarClass } from "./utils";
 import { StatusChip } from "./status-chip";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { WarehouseProductTableProps } from "./types";
 
-type Props = {
-  dict: WarehouseInventoryDictionary;
-  items: WarehouseInventoryProduct[];
-  onViewLocations: (item: WarehouseInventoryProduct) => void;
-  onTransfer: (item: WarehouseInventoryProduct) => void;
-  canTransfer: boolean;
-};
+
+
 
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase() || "—";
 }
 
-export function WarehouseProductTable({ dict, items, onViewLocations, onTransfer, canTransfer }: Props) {
+export function WarehouseProductTable({ dict, items, onViewLocations, onTransfer, canTransfer }: WarehouseProductTableProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <table className="w-full border-collapse text-sm">

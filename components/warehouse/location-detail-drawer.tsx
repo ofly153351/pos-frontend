@@ -8,25 +8,18 @@ import {
   STATUS_STYLES, STATUS_BADGE, DRAWER_BG,
   type StorageLocationDictionary,
 } from "./storage-location-types";
+import type { LocationDetailDrawerConfirmAction } from "./types";
+import type { LocationDetailDrawerProps } from "./types";
 
-type ConfirmAction = "disable" | "enable" | "delete";
 
-type Props = {
-  isOpen: boolean;
-  selectedLocation: Location | null;
-  onClose: () => void;
-  onEdit: (loc: Location) => void;
-  onConfirmAction: (action: ConfirmAction) => void;
-  products: LocationProduct[];
-  isProductsLoading: boolean;
-  warehouses: Warehouse[];
-  dictionary: StorageLocationDictionary;
-};
+
+
+
 
 export function LocationDetailDrawer({
   isOpen, selectedLocation, onClose, onEdit, onConfirmAction,
   products, isProductsLoading, warehouses, dictionary,
-}: Props) {
+}: LocationDetailDrawerProps) {
   const drawerStatus = selectedLocation ? getStatus(selectedLocation) : ("available" as const);
   const isArchived = Boolean(selectedLocation?.deleted_at);
 

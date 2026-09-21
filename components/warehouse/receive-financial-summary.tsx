@@ -3,14 +3,11 @@
 import { Coins } from "lucide-react";
 
 import { formatCurrency, type ReceiveDictionary } from "./receive-shared";
+import type { ReceiveFinancialSummaryReceiveFinancialSummaryProps } from "./types";
+export type { ReceiveFinancialSummaryReceiveFinancialSummaryProps as ReceiveFinancialSummaryProps } from "./types";
 
-export type ReceiveFinancialSummaryProps = {
-  dictionary: ReceiveDictionary;
-  subtotal: number;
-  discount: number;
-  vatAmount: number;
-  total: number;
-};
+
+
 
 function Line({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
@@ -21,7 +18,7 @@ function Line({ label, value, strong }: { label: string; value: string; strong?:
   );
 }
 
-export function ReceiveFinancialSummary({ dictionary: t, subtotal, discount, vatAmount, total }: ReceiveFinancialSummaryProps) {
+export function ReceiveFinancialSummary({ dictionary: t, subtotal, discount, vatAmount, total }: ReceiveFinancialSummaryReceiveFinancialSummaryProps) {
   return (
     <section className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">

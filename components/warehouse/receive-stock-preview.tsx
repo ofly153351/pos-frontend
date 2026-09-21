@@ -4,16 +4,13 @@ import { Loader2, TrendingUp } from "lucide-react";
 
 import type { GoodsReceiptStockImpact } from "@/types/goods-receipt";
 import { formatNumber, formatSignedNumber, type ReceiveDictionary } from "./receive-shared";
+import type { ReceiveStockPreviewReceiveStockPreviewProps } from "./types";
+export type { ReceiveStockPreviewReceiveStockPreviewProps as ReceiveStockPreviewProps } from "./types";
 
-export type ReceiveStockPreviewProps = {
-  dictionary: ReceiveDictionary;
-  stockPreview: GoodsReceiptStockImpact[];
-  isLoading: boolean;
-  isError: boolean;
-  error: unknown;
-};
 
-export function ReceiveStockPreview({ dictionary: t, stockPreview, isLoading, isError, error }: ReceiveStockPreviewProps) {
+
+
+export function ReceiveStockPreview({ dictionary: t, stockPreview, isLoading, isError, error }: ReceiveStockPreviewReceiveStockPreviewProps) {
   return (
     <section className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-3">

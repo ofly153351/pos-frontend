@@ -5,15 +5,14 @@ import { MoreHorizontal, X } from "lucide-react";
 
 import type { WarehouseAction } from "./warehouse-action-bar";
 import type { WarehouseInventoryDictionary } from "./types";
+import type { MobileWarehouseActionsProps } from "./types";
 
-type Props = {
-  dict: WarehouseInventoryDictionary;
-  actions: WarehouseAction[];
-};
+
+
 
 // Sticky bottom bar for narrow viewports: the primary action stays inline; the rest
 // open in a bottom sheet. Hidden at md+ where the full toolbar is shown.
-export function MobileWarehouseActions({ dict, actions }: Props) {
+export function MobileWarehouseActions({ dict, actions }: MobileWarehouseActionsProps) {
   const [open, setOpen] = useState(false);
   const primary = actions.find((a) => a.primary);
   const rest = actions.filter((a) => !a.primary);

@@ -6,19 +6,11 @@ import { Minus, Package, Plus, Search } from "lucide-react";
 import type { Product } from "@/types/product";
 import { ScanButton } from "@/components/shared/scan-button";
 import type { ReceiveDictionary } from "./receive-shared";
+import type { ReceiveProductSearchReceiveProductSearchProps } from "./types";
+export type { ReceiveProductSearchReceiveProductSearchProps as ReceiveProductSearchProps } from "./types";
 
-export type ReceiveProductSearchProps = {
-  dictionary: ReceiveDictionary;
-  products: Product[];
-  search: string;
-  scanFeedback: { tone: "error" | "success"; value: string } | null;
-  qtyByProduct: Record<string, number>;
-  disabled: boolean;
-  onSearchChange: (v: string) => void;
-  onScanDetected: (barcode: string) => void;
-  onAdd: (product: Product) => void;
-  onStep: (product: Product, delta: number) => void;
-};
+
+
 
 export function ReceiveProductSearch({
   dictionary: t,
@@ -31,7 +23,7 @@ export function ReceiveProductSearch({
   onScanDetected,
   onAdd,
   onStep,
-}: ReceiveProductSearchProps) {
+}: ReceiveProductSearchReceiveProductSearchProps) {
   const filtered = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     if (!keyword) return products;

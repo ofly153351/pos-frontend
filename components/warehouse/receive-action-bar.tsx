@@ -4,24 +4,11 @@ import { CheckCircle2, Loader2, Printer, RotateCcw, Save, Send } from "lucide-re
 
 import type { GoodsReceiptStatus } from "@/types/goods-receipt";
 import { formatCurrency, formatNumber, type ReceiveDictionary } from "./receive-shared";
+import type { ReceiveActionBarReceiveActionBarProps } from "./types";
+export type { ReceiveActionBarReceiveActionBarProps as ReceiveActionBarProps } from "./types";
 
-export type ReceiveActionBarProps = {
-  dictionary: ReceiveDictionary;
-  status: GoodsReceiptStatus;
-  canManage: boolean;
-  busy: boolean;
-  hasItems: boolean;
-  hasBlockingError: boolean;
-  totalLines: number;
-  totalQty: number;
-  totalCost: number;
-  onSaveDraft: () => void;
-  onSubmit: () => void;
-  onReopen: () => void;
-  onConfirm: () => void;
-  onCancel: () => void;
-  onPrint: () => void;
-};
+
+
 
 const BTN = "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50";
 const PRIMARY = `${BTN} bg-violet-600 text-white hover:bg-violet-700`;
@@ -44,7 +31,7 @@ export function ReceiveActionBar({
   onConfirm,
   onCancel,
   onPrint,
-}: ReceiveActionBarProps) {
+}: ReceiveActionBarReceiveActionBarProps) {
   const spinner = busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null;
   // Confirm is NOT gated on hasBlockingError: those verdicts (over-receipt, location
   // rules) come from the API response on confirm — the button must stay clickable so

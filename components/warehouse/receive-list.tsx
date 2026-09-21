@@ -17,13 +17,12 @@ import {
   type ReceiveDictionary,
 } from "./receive-shared";
 import { ReceiptStatusBadge, SummaryCard } from "./receive-cards";
+import type { ReceiveListReceivePageProps } from "./types";
 
-type ReceivePageProps = {
-  dictionary: ReceiveDictionary;
-  locale: string;
-};
 
-export function ReceiveIndexPage({ dictionary, locale }: ReceivePageProps) {
+
+
+export function ReceiveIndexPage({ dictionary, locale }: ReceiveListReceivePageProps) {
   const queryClient = useQueryClient();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isPendingDelete, startDeleteTransition] = useTransition();

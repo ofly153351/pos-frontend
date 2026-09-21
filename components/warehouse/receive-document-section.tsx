@@ -7,22 +7,11 @@ import type { Warehouse as WarehouseType } from "@/types/warehouse";
 import { EntityCombobox } from "@/components/ui/entity-combobox";
 import { SummaryCard } from "./receive-cards";
 import { formatDateTimeLabel, formatNumber, type HeaderForm, type ReceiveDictionary } from "./receive-shared";
+import type { ReceiveDocumentSectionReceiveDocumentSectionProps } from "./types";
+export type { ReceiveDocumentSectionReceiveDocumentSectionProps as ReceiveDocumentSectionProps } from "./types";
 
-export type ReceiveDocumentSectionProps = {
-  dictionary: ReceiveDictionary;
-  documentNo: string;
-  editable: boolean;
-  headerForm: HeaderForm;
-  errors: Partial<Record<keyof HeaderForm, string>>;
-  warehouses: WarehouseType[];
-  suppliers: Supplier[];
-  purchaseOrders: { id: string; order_number: string }[];
-  purchaseOrderId: string;
-  purchaseOrderNo: string;
-  locationsWarning: string | null;
-  onFieldChange: <K extends keyof HeaderForm>(field: K, value: HeaderForm[K]) => void;
-  onPurchaseOrderChange: (poId: string) => void;
-};
+
+
 
 export function ReceiveDocumentSection({
   dictionary: t,
@@ -38,7 +27,7 @@ export function ReceiveDocumentSection({
   locationsWarning,
   onFieldChange,
   onPurchaseOrderChange,
-}: ReceiveDocumentSectionProps) {
+}: ReceiveDocumentSectionReceiveDocumentSectionProps) {
   const supplierName = suppliers.find((s) => s.id === headerForm.supplierId)?.name ?? "-";
   const warehouseName = warehouses.find((w) => w.id === headerForm.warehouseId)?.name ?? "-";
   const isFromPo = Boolean(purchaseOrderId);

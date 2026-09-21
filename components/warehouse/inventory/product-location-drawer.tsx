@@ -11,20 +11,10 @@ import type { WarehouseInventoryProduct } from "@/types/warehouse-inventory";
 import { DrawerShell } from "./drawer-shell";
 import { buildProductLocationBreakdown, formatNumber, locationPath } from "./utils";
 import type { EnrichedStockLocation, WarehouseInventoryDictionary } from "./types";
+import type { ProductLocationDrawerProps } from "./types";
 
-type Props = {
-  open: boolean;
-  product: WarehouseInventoryProduct | null;
-  warehouseId: string;
-  locations: Location[];
-  dict: WarehouseInventoryDictionary;
-  locale: string;
-  canManage: boolean;
-  onClose: () => void;
-  onTransfer: (product: WarehouseInventoryProduct, presetSourceLocationId?: string) => void;
-  onAdjust: (product: WarehouseInventoryProduct) => void;
-  onHistory: (product: WarehouseInventoryProduct) => void;
-};
+
+
 
 export function ProductLocationDrawer({
   open,
@@ -38,7 +28,7 @@ export function ProductLocationDrawer({
   onTransfer,
   onAdjust,
   onHistory,
-}: Props) {
+}: ProductLocationDrawerProps) {
   const stockQuery = useQuery({
     enabled: open && Boolean(product),
     queryKey: ["wh-inv", "product-stock", product?.product_id],

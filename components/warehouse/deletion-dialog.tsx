@@ -10,23 +10,15 @@ import {
   type DeletionEntity,
   type DeletionVariant,
 } from "@/types/lifecycle";
+import type { DeletionDialogNavigateTarget } from "./types";
+import type { DeletionDialogDeletionDialogProps } from "./types";
+import type { DeletionDialogIconKind } from "./types";
+import type { DeletionDialogViewModel } from "./types";
 
-type NavigateTarget = "transfer" | "products";
 
-type DeletionDialogProps = {
-  open: boolean;
-  entity: DeletionEntity;
-  target: DeletionTarget | null;
-  assessment: DeletionAssessment | null;
-  phase: DeletionPhase;
-  error: string | null;
-  stateChanged: boolean;
-  dict: DeletionDialogDictionary;
-  onConfirm: () => void;
-  onCancel: () => void;
-  onRetry: () => void;
-  onNavigate?: (target: NavigateTarget) => void;
-};
+
+
+
 
 // Substitutes {qty}/{rows}/{count}/{name} placeholders in a localized template.
 function fmt(tpl: string, vars: Record<string, string | number>): string {
@@ -36,10 +28,10 @@ function fmt(tpl: string, vars: Record<string, string | number>): string {
   });
 }
 
-type IconKind = "archive" | "danger" | "warning" | "locked" | "default";
+
 
 // Tone presets keep the dialog on the violet/rose/amber/slate system (no sky-*, no gradients).
-const ICON_WRAP: Record<IconKind, string> = {
+const ICON_WRAP: Record<DeletionDialogIconKind, string> = {
   archive: "bg-amber-100 text-amber-600",
   danger: "bg-rose-100 text-rose-600",
   warning: "bg-amber-100 text-amber-600",
@@ -47,7 +39,7 @@ const ICON_WRAP: Record<IconKind, string> = {
   default: "bg-amber-100 text-amber-600",
 };
 
-function DialogIcon({ kind }: { kind: IconKind }) {
+function DialogIcon({ kind }: { kind: DeletionDialogIconKind }) {
   const cls = "h-5 w-5";
   const common = { className: cls, fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 } as const;
   switch (kind) {
@@ -86,21 +78,13 @@ function DialogIcon({ kind }: { kind: IconKind }) {
   }
 }
 
-type ViewModel = {
-  icon: IconKind;
-  title: string;
-  body: string;
-  note?: string; // secondary line (archive history note)
-  confirmLabel?: string; // present → confirmable
-  danger?: boolean;
-  cta?: { label: string; target: NavigateTarget };
-};
+
 
 function buildViewModel(
   variant: DeletionVariant,
   a: DeletionAssessment,
   dict: DeletionDialogDictionary,
-): ViewModel {
+): DeletionDialogViewModel {
   const b = a.blockers;
   switch (variant) {
     case "archive":
@@ -169,7 +153,7 @@ export function DeletionDialog({
   onCancel,
   onRetry,
   onNavigate,
-}: DeletionDialogProps) {
+}: DeletionDialogDeletionDialogProps) {
   const primaryRef = useRef<HTMLButtonElement>(null);
 
   // entity is part of the public contract (callers pass "warehouse" | "location"); the wording

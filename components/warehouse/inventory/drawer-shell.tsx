@@ -2,17 +2,10 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import type { DrawerShellProps } from "./types";
 
-type Props = {
-  open: boolean;
-  title: string;
-  subtitle?: string;
-  onClose: () => void;
-  closeLabel: string;
-  children: ReactNode;
-  footer?: ReactNode;
-  widthClass?: string;
-};
+
+
 
 // A right-side sheet with focus trapping, Escape-to-close, scroll lock, and
 // focus restoration to the trigger. On mobile it expands toward full width.
@@ -25,7 +18,7 @@ export function DrawerShell({
   children,
   footer,
   widthClass = "sm:max-w-[460px]",
-}: Props) {
+}: DrawerShellProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {

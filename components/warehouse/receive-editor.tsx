@@ -52,15 +52,17 @@ import { ReceiveInspectionSummary } from "./receive-inspection-summary";
 import { ReceiveStockPreview } from "./receive-stock-preview";
 import { ReceiveFinancialSummary } from "./receive-financial-summary";
 import { ReceiveActionBar } from "./receive-action-bar";
+import type { ReceiveEditorProps } from "./types";
+
 
 // HTTP statuses the backend uses for confirm business-rule rejections (over-receipt vs
 // PO outstanding, item/location rules, status/idempotency conflicts) — the document is
 // fixable, so they surface as warnings rather than hard errors.
 const CONFIRM_WARNING_STATUSES = new Set([400, 409, 422]);
 
-type Props = { dictionary: ReceiveDictionary; locale: string; receiptId: string };
 
-export function ReceiveEditor({ dictionary: t, locale, receiptId }: Props) {
+
+export function ReceiveEditor({ dictionary: t, locale, receiptId }: ReceiveEditorProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { role } = useStoreRole();
