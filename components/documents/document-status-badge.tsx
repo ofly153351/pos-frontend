@@ -1,19 +1,10 @@
 import type { DocumentStatus, PaymentStatus } from "@/types/document";
+import type { DocumentStatusBadgeDocDict } from "./types";
+import type { DocumentStatusBadgePayDict } from "./types";
 
-type DocDict = {
-  statusDraft: string;
-  statusPending: string;
-  statusOverdue: string;
-  statusCompleted: string;
-  statusCancelled: string;
-  statusSent: string;
-  statusAccepted: string;
-  statusRejected: string;
-  statusExpired: string;
-  statusConverted: string;
-  statusProcessing: string;
-};
-type PayDict = { paymentUnpaid: string; paymentPartial: string; paymentPaid: string };
+
+
+
 
 const DOC_STATUS: Record<string, { className: string }> = {
   DRAFT: { className: "bg-slate-100 text-slate-500" },
@@ -34,7 +25,7 @@ const PAY_STATUS: Record<string, { className: string }> = {
   PAID: { className: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200" },
 };
 
-export function DocumentStatusBadge({ status, dict, isQuotation = false, isDeliveryOrder = false }: { status: DocumentStatus; dict: DocDict; isQuotation?: boolean; isDeliveryOrder?: boolean }) {
+export function DocumentStatusBadge({ status, dict, isQuotation = false, isDeliveryOrder = false }: { status: DocumentStatus; dict: DocumentStatusBadgeDocDict; isQuotation?: boolean; isDeliveryOrder?: boolean }) {
   if (isQuotation && status === "PENDING") {
     return <span className="inline-flex rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">-</span>;
   }
@@ -58,7 +49,7 @@ export function DocumentStatusBadge({ status, dict, isQuotation = false, isDeliv
   );
 }
 
-export function PaymentStatusBadge({ status, dict, isQuotation = false }: { status: PaymentStatus; dict: PayDict; isQuotation?: boolean }) {
+export function PaymentStatusBadge({ status, dict, isQuotation = false }: { status: PaymentStatus; dict: DocumentStatusBadgePayDict; isQuotation?: boolean }) {
   if (isQuotation) {
     return <span className="inline-flex rounded-full bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-500">-</span>;
   }

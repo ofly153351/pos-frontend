@@ -1,48 +1,12 @@
 import type { Sale } from "@/types/sale";
 import { SignatureBlock } from "./signature-block";
+import type { InvoiceA4InvoiceDict } from "./types";
+import type { InvoiceA4Props } from "./types";
 
-type InvoiceDict = {
-  title: string;
-  combinedTitle: string;
-  invoiceNo: string;
-  date: string;
-  reference: string;
-  customer: string;
-  phone: string;
-  cashier: string;
-  paymentMethod: string;
-  seller: string;
-  sellerTaxId: string;
-  notConfigured: string;
-  no: string;
-  description: string;
-  unit: string;
-  quantity: string;
-  unitPrice: string;
-  discount: string;
-  amount: string;
-  subtotal: string;
-  itemDiscount: string;
-  billDiscount: string;
-  beforeVat: string;
-  vat: string;
-  total: string;
-  note: string;
-  originalCopy: string;
-  generalCustomer: string;
-  cash: string;
-  transfer: string;
-  card: string;
-  promptpay: string;
-  vatIncluded: string;
-  vatExcluded: string;
-};
 
-type Props = {
-  sale: Sale;
-  dict: InvoiceDict;
-  invoiceNo: string;
-};
+
+
+
 
 function fmt(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -56,7 +20,7 @@ function fmtDate(s: string) {
   }).format(new Date(s));
 }
 
-function paymentLabel(method: string, dict: InvoiceDict) {
+function paymentLabel(method: string, dict: InvoiceA4InvoiceDict) {
   const map: Record<string, string> = {
     cash: dict.cash,
     transfer: dict.transfer,
@@ -66,7 +30,7 @@ function paymentLabel(method: string, dict: InvoiceDict) {
   return map[method] ?? method;
 }
 
-export function InvoiceA4({ sale, dict, invoiceNo }: Props) {
+export function InvoiceA4({ sale, dict, invoiceNo }: InvoiceA4Props) {
   const items = sale.items ?? [];
   const itemDiscountTotal = items.reduce((s, i) => s + (i.line_discount_total ?? 0), 0);
   const billDiscount = sale.bill_discount_amount ?? 0;

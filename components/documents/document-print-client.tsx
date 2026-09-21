@@ -4,22 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { FileText, Loader2, Printer, X } from "lucide-react";
 
 import { getDocumentPrintHtml } from "@/services/documents";
+import type { DocumentPrintClientDict } from "./types";
+import type { DocumentPrintClientProps } from "./types";
 
-type Dict = {
-  loading: string;
-  requestFailed: string;
-  print: string;
-  cancel: string;
-  noDocuments: string;
-};
 
-type Props = {
-  documentId: string;
-  dict: Dict;
-  copy?: number; // 0-based copy index; -1/undefined = whole set
-};
 
-export function DocumentPrintClient({ documentId, dict, copy = -1 }: Props) {
+
+
+
+export function DocumentPrintClient({ documentId, dict, copy = -1 }: DocumentPrintClientProps) {
   const [html, setHtml] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

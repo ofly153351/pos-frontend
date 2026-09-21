@@ -14,65 +14,18 @@ import type { CreateDocumentPayload, DocumentType } from "@/types/document";
 import type { Product } from "@/types/product";
 import type { Customer, ShippingAddress } from "@/types/customer";
 import { CustomerCombobox } from "@/components/credit-sales/customer-combobox";
+import type { CreateDocumentModalDict } from "./types";
+import type { CreateDocumentModalLineItem } from "./types";
+import type { CreateDocumentModalProps } from "./types";
 
-type Dict = {
-  createTitle: string;
-  createSubtitle: string;
-  selectCustomer: string;
-  customerSearchPlaceholder: string;
-  noCustomersFound: string;
-  documentDate: string;
-  optionalDueDate: string;
-  validUntil?: string;
-  priceValidityDays?: string;
-  deliveryTerms?: string;
-  deliveryLeadTimeDays?: string;
-  poReceivedDate?: string;
-  description: string;
-  productSearch: string;
-  scanWithCamera: string;
-  productNotFound: string;
-  quantity: string;
-  unitPrice: string;
-  discount: string;
-  amount: string;
-  addItem: string;
-  enableVat: string;
-  notes: string;
-  subtotal: string;
-  total: string;
-  cancel: string;
-  create: string;
-  creating?: string;
-  createSuccess: string;
-  createError: string;
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeQuotation: string;
-  typeBill: string;
-  typeCreditNote: string;
-  typeDeliveryOrder?: string;
-  selectShippingAddressLabel?: string;
-};
 
-type LineItem = {
-  product_id?: string;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  discount_type: "" | "PERCENT" | "AMOUNT";
-  discount_value: number;
-};
 
-type Props = {
-  dict: Dict;
-  initialType: DocumentType;
-  onClose: () => void;
-  onSuccess: () => void;
-};
 
-const TYPE_LABELS: Record<string, keyof Dict> = {
+
+
+
+
+const TYPE_LABELS: Record<string, keyof CreateDocumentModalDict> = {
   INVOICE: "typeInvoice", RECEIPT: "typeReceipt", TAX_INVOICE: "typeTaxInvoice",
   QUOTATION: "typeQuotation", BILL: "typeBill", CREDIT_NOTE: "typeCreditNote",
   DELIVERY_ORDER: "typeDeliveryOrder",
@@ -88,7 +41,7 @@ function today() {
   return new Date().toISOString().split("T")[0];
 }
 
-function lineAmount(item: LineItem): number {
+function lineAmount(item: CreateDocumentModalLineItem): number {
   let amt = item.quantity * item.unit_price;
   if (item.discount_type === "PERCENT") amt -= amt * item.discount_value / 100;
   if (item.discount_type === "AMOUNT") amt -= item.discount_value;
@@ -99,7 +52,7 @@ function fmt(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 2 });
 }
 
-export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }: Props) {
+export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }: CreateDocumentModalProps) {
   const [isPending, startTransition] = useTransition();
   const [isClosing, setIsClosing] = useState(false);
   const [docType, setDocType] = useState<DocumentType>(initialType);
@@ -121,7 +74,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const [poRefNo, setPoRefNo] = useState("");
   const [creditTermDays, setCreditTermDays] = useState(0);
   const [notes, setNotes] = useState("");
-  const [items, setItems] = useState<LineItem[]>([
+  const [items, setItems] = useState<CreateDocumentModalLineItem[]>([
     { description: "", quantity: 1, unit_price: 0, discount_type: "", discount_value: 0 },
   ]);
   const [error, setError] = useState("");
@@ -320,7 +273,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     setItems(items.filter((_, idx) => idx !== i));
   }
 
-  function updateItem<K extends keyof LineItem>(i: number, key: K, value: LineItem[K]) {
+  function updateItem<K extends keyof CreateDocumentModalLineItem>(i: number, key: K, value: CreateDocumentModalLineItem[K]) {
     setItems(items.map((item, idx) => idx === i ? { ...item, [key]: value } : item));
   }
 

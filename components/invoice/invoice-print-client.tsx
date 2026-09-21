@@ -7,62 +7,16 @@ import { getSaleById } from "@/services/sales";
 import type { Sale } from "@/types/sale";
 import { InvoiceA4 } from "./invoice-a4";
 import { InvoiceShort } from "./invoice-short";
+import type { InvoicePrintClientInvoiceDict } from "./types";
+import type { InvoicePrintClientProps } from "./types";
+import type { InvoicePrintClientFormat } from "./types";
 
-type InvoiceDict = {
-  title: string;
-  shortTitle: string;
-  taxInvoiceTitle: string;
-  invoiceNo: string;
-  date: string;
-  dueDate: string;
-  reference: string;
-  customer: string;
-  phone: string;
-  cashier: string;
-  paymentMethod: string;
-  seller: string;
-  sellerTaxId: string;
-  buyerTaxId: string;
-  notConfigured: string;
-  combinedTitle: string;
-  no: string;
-  description: string;
-  unit: string;
-  quantity: string;
-  unitPrice: string;
-  discount: string;
-  amount: string;
-  subtotal: string;
-  itemDiscount: string;
-  billDiscount: string;
-  beforeVat: string;
-  vat: string;
-  total: string;
-  note: string;
-  originalCopy: string;
-  formatFull: string;
-  formatShort: string;
-  print: string;
-  close: string;
-  loading: string;
-  notFound: string;
-  generalCustomer: string;
-  cash: string;
-  transfer: string;
-  card: string;
-  promptpay: string;
-  vatIncluded: string;
-  vatExcluded: string;
-  page: string;
-  of: string;
-};
 
-type Props = {
-  saleId: string;
-  dict: InvoiceDict;
-};
 
-type Format = "full" | "short";
+
+
+
+
 
 function makeInvoiceNo(sale: Sale): string {
   const saleNo = sale.sale_number ?? "";
@@ -70,10 +24,10 @@ function makeInvoiceNo(sale: Sale): string {
   return `INV-${suffix}`;
 }
 
-export function InvoicePrintClient({ saleId, dict }: Props) {
+export function InvoicePrintClient({ saleId, dict }: InvoicePrintClientProps) {
   const [sale, setSale] = useState<Sale | null>(null);
   const [loading, setLoading] = useState(true);
-  const [format, setFormat] = useState<Format>("full");
+  const [format, setFormat] = useState<InvoicePrintClientFormat>("full");
 
   useEffect(() => {
     getSaleById(saleId)
@@ -115,7 +69,7 @@ export function InvoicePrintClient({ saleId, dict }: Props) {
         <span className="nums text-sm text-slate-400">{invoiceNo}</span>
 
         <div className="ml-auto flex items-center gap-2">
-          {/* Format toggle */}
+          {/* InvoicePrintClientFormat toggle */}
           <div className="flex overflow-hidden rounded-lg border border-violet-200">
             <button
               type="button"

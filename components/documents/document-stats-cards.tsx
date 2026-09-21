@@ -2,33 +2,15 @@
 
 import { AlertCircle, CheckCircle2, Clock, FileSpreadsheet, FileStack, Plus, Printer } from "lucide-react";
 import type { DocumentStats, DocumentType } from "@/types/document";
+import type { DocumentStatsCardsDict } from "./types";
+import type { DocumentStatsCardsProps } from "./types";
 
-type Dict = {
-  statsTotal: string;
-  statsPending: string;
-  statsOverdue: string;
-  statsPaid: string;
-  exportExcel: string;
-  printReport: string;
-  createDocument: string;
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeQuotation: string;
-  typeBill: string;
-  typeCreditNote: string;
-};
 
-type Props = {
-  dict: Dict;
-  stats: DocumentStats;
-  defaultCreateType?: DocumentType;
-  onExport: () => void;
-  onPrint: () => void;
-  onCreateDocument: (type: DocumentType) => void;
-};
 
-export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE", onExport, onPrint, onCreateDocument }: Props) {
+
+
+
+export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE", onExport, onPrint, onCreateDocument }: DocumentStatsCardsProps) {
   // RECEIPT is intentionally excluded — receipts are issued from POS sales, not
   // hand-authored here. The Receipts tab surfaces them from sales history instead.
   const docTypes: { type: DocumentType; label: string }[] = [

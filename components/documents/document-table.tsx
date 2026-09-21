@@ -10,102 +10,13 @@ import { DocumentTypeBadge } from "./document-type-badge";
 import { DocumentStatusBadge, PaymentStatusBadge } from "./document-status-badge";
 import { DocumentRowActions } from "./document-row-actions";
 import { SkeletonDocumentRow } from "@/components/ui/skeleton";
+import type { DocumentTableDict } from "./types";
+import type { DocumentTableProps } from "./types";
 
-type Dict = {
-  colDocumentNo: string;
-  colType: string;
-  colCustomer: string;
-  colDate: string;
-  colDueDate: string;
-  colAmount: string;
-  colStatus: string;
-  colPaymentStatus: string;
-  colActions: string;
-  showing: string;
-  of: string;
-  records: string;
-  perPage: string;
-  copy: string;
-  print: string;
-  moreOptions: string;
-  send: string;
-  selectedCount: string;
-  changeStatus: string;
-  delete: string;
-  cancelSelection: string;
-  loading: string;
-  noDocuments: string;
-  noDocumentsHint: string;
-  noResults: string;
-  statusDraft: string;
-  statusPending: string;
-  statusOverdue: string;
-  statusCompleted: string;
-  statusCancelled: string;
-  statusSent: string;
-  statusAccepted: string;
-  statusRejected: string;
-  statusExpired: string;
-  statusConverted: string;
-  statusProcessing: string;
-  paymentUnpaid: string;
-  paymentPartial: string;
-  paymentPaid: string;
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeQuotation: string;
-  typeBill: string;
-  typeCreditNote: string;
-  typeDeliveryOrder?: string;
-  createDocument: string;
-  // Row actions + bulk
-  duplicate: string;
-  duplicateSuccess: string;
-  duplicateError: string;
-  printPreview: string;
-  downloadPDF: string;
-  convertTo: string;
-  recordPayment: string;
-  paySuccess: string;
-  payError: string;
-  cancelDocument: string;
-  cancelSuccess: string;
-  cancelError: string;
-  confirmCancelDoc: string;
-  deleteSuccess: string;
-  deleteError: string;
-  confirmDeleteDoc: string;
-  convertSuccess: string;
-  convertError: string;
-  pdfError: string;
-  comingSoon: string;
-  printAll: string;
-  printError: string;
-  cancel: string;
-  confirm: string;
-};
 
-type Props = {
-  dict: Dict;
-  documents: DocumentListItem[];
-  total: number;
-  page: number;
-  limit: number;
-  isLoading: boolean;
-  selectedDocId: string | null;
-  selectedIds: Set<string>;
-  onSelectDoc: (id: string) => void;
-  onToggleId: (id: string) => void;
-  onToggleAll: () => void;
-  onPageChange: (page: number) => void;
-  onLimitChange: (limit: number) => void;
-  onBulkDelete: () => void;
-  onBulkStatus: (status: DocumentStatus) => void;
-  onClearSelection: () => void;
-  onCreateDocument: () => void;
-  isBulkPending?: boolean;
-};
+
+
+
 
 function fmt(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -124,7 +35,7 @@ export function DocumentTable({
   onPageChange, onLimitChange,
   onBulkDelete, onBulkStatus, onClearSelection, onCreateDocument,
   isBulkPending,
-}: Props) {
+}: DocumentTableProps) {
   const [bulkPrinting, setBulkPrinting] = useState(false);
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const allChecked = documents.length > 0 && documents.every((d) => selectedIds.has(d.id));

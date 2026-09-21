@@ -8,46 +8,13 @@ import {
   type DateFilterValue,
   isDefaultDateFilter,
 } from "@/components/shared/date-range-filter";
+import type { DocumentFilterBarDict } from "./types";
+import type { DocumentFilterBarProps } from "./types";
 
-type Dict = {
-  searchPlaceholder: string;
-  filter: string;
-  resetFilter: string;
-  allTypes: string;
-  allStatuses: string;
-  allPayments: string;
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeQuotation: string;
-  typeBill: string;
-  typeCreditNote: string;
-  statusDraft: string;
-  statusPending: string;
-  statusOverdue: string;
-  statusCompleted: string;
-  statusCancelled: string;
-  statusSent: string;
-  statusAccepted: string;
-  statusRejected: string;
-  statusExpired: string;
-  statusConverted: string;
-  statusProcessing: string;
-  paymentUnpaid: string;
-  paymentPartial: string;
-  paymentPaid: string;
-};
 
-type Props = {
-  dict: Dict;
-  salesDict: SalesHistoryDict;
-  query: DocumentListQuery;
-  dateFilter: DateFilterValue;
-  onDateFilterChange: (value: DateFilterValue) => void;
-  onChange: (q: Partial<DocumentListQuery>) => void;
-  onReset: () => void;
-  locale?: string;
-};
+
+
+
 
 export function DocumentFilterBar({
   dict,
@@ -58,7 +25,7 @@ export function DocumentFilterBar({
   onChange,
   onReset,
   locale = "th",
-}: Props) {
+}: DocumentFilterBarProps) {
   const activeCount = [query.type, query.status, query.payment_status, query.search, query.customer_id, query.staff_id]
     .filter(Boolean)
     .length + (isDefaultDateFilter(dateFilter, "all") ? 0 : 1);

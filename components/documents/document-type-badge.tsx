@@ -1,19 +1,15 @@
 import { FileBadge, FileDigit, FileMinus, FileQuestion, FileText, Receipt, Truck } from "lucide-react";
 import type { DocumentType } from "@/types/document";
+import type { DocumentTypeBadgeDict } from "./types";
+import type { DocumentTypeBadgeConfig } from "./types";
+import type { DocumentTypeBadgeProps } from "./types";
 
-type Dict = {
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeQuotation: string;
-  typeBill: string;
-  typeCreditNote: string;
-  typeDeliveryOrder?: string;
-};
 
-type Config = { label: string; className: string; darkClassName: string; icon: React.ComponentType<{ className?: string }> };
 
-function getConfig(type: DocumentType, d: Dict): Config {
+
+
+
+function getConfig(type: DocumentType, d: DocumentTypeBadgeDict): DocumentTypeBadgeConfig {
   switch (type) {
     case "INVOICE":     return { label: d.typeInvoice,    className: "bg-violet-100 text-violet-700 ring-1 ring-violet-200",   darkClassName: "bg-white/20 text-white ring-1 ring-white/30",  icon: FileText };
     case "RECEIPT":     return { label: d.typeReceipt,    className: "bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200", darkClassName: "bg-white/20 text-white ring-1 ring-white/30",  icon: Receipt };
@@ -25,9 +21,9 @@ function getConfig(type: DocumentType, d: Dict): Config {
   }
 }
 
-type Props = { type: DocumentType; dict: Dict; onDark?: boolean; compact?: boolean };
 
-export function DocumentTypeBadge({ type, dict, onDark, compact }: Props) {
+
+export function DocumentTypeBadge({ type, dict, onDark, compact }: DocumentTypeBadgeProps) {
   const cfg = getConfig(type, dict);
   const Icon = cfg.icon;
   return (

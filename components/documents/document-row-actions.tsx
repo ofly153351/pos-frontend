@@ -32,47 +32,14 @@ import {
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { DocumentListItem, DocumentType } from "@/types/document";
+import type { DocumentRowActionsRowActionsDict } from "./types";
+import type { DocumentRowActionsProps } from "./types";
+
 
 // Labels consumed by the row action menu. A structural subset of the documents dict.
-type RowActionsDict = {
-  copy: string;
-  print: string;
-  moreOptions: string;
-  duplicate: string;
-  duplicateSuccess: string;
-  duplicateError: string;
-  printPreview: string;
-  downloadPDF: string;
-  convertTo: string;
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeCreditNote: string;
-  typeDeliveryOrder?: string;
-  recordPayment: string;
-  paySuccess: string;
-  payError: string;
-  cancel: string;
-  confirm: string;
-  cancelDocument: string;
-  cancelSuccess: string;
-  cancelError: string;
-  confirmCancelDoc: string;
-  delete: string;
-  deleteSuccess: string;
-  deleteError: string;
-  confirmDeleteDoc: string;
-  convertSuccess: string;
-  convertError: string;
-  pdfError: string;
-};
 
-type Props = {
-  doc: DocumentListItem;
-  dict: RowActionsDict;
-  // Opens the shared preview drawer (which itself carries print / PDF / convert).
-  onPreview: () => void;
-};
+
+
 
 // Valid "Convert to…" targets per source type. Mirrors the backend workflow
 // matrix (allowedConversions); the server re-validates every request.
@@ -93,7 +60,7 @@ function convertTargetsFor(type: DocumentType): DocumentType[] {
   }
 }
 
-export function DocumentRowActions({ doc, dict: d, onPreview }: Props) {
+export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActionsProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [confirmKind, setConfirmKind] = useState<null | "cancel" | "delete">(null);

@@ -2,24 +2,13 @@
 
 import { ArrowRight, FileBadge, FileDigit, FileMinus, FileQuestion, FileText, Receipt, Truck } from "lucide-react";
 import type { DocumentType, RelatedDocument } from "@/types/document";
+import type { DocumentTimelineTypeLabels } from "./types";
+import type { DocumentTimelineProps } from "./types";
 
-type TypeLabels = {
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeQuotation: string;
-  typeBill: string;
-  typeCreditNote: string;
-  typeDeliveryOrder?: string;
-};
 
-type Props = {
-  items: RelatedDocument[];
-  currentId: string;
-  label: string;
-  typeLabels: TypeLabels;
-  onSelect?: (id: string) => void;
-};
+
+
+
 
 const TYPE_ICON: Record<DocumentType, typeof FileText> = {
   INVOICE: FileText,
@@ -34,7 +23,7 @@ const TYPE_ICON: Record<DocumentType, typeof FileText> = {
 // Horizontal lineage strip for a document family (Quotation → Invoice → DO → Tax
 // Invoice …). Hidden for standalone documents (a single-item family). The current
 // document is highlighted; the rest navigate when clicked.
-export function DocumentTimeline({ items, currentId, label, typeLabels, onSelect }: Props) {
+export function DocumentTimeline({ items, currentId, label, typeLabels, onSelect }: DocumentTimelineProps) {
   if (items.length < 2) return null;
 
   const labelOf: Record<DocumentType, string> = {

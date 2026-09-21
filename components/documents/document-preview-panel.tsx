@@ -11,50 +11,13 @@ import { copyChoicesFor } from "@/lib/document-copies";
 import type { DocumentType } from "@/types/document";
 
 import { DocumentTimeline } from "./document-timeline";
+import type { DocumentPreviewPanelDict } from "./types";
+import type { DocumentPreviewPanelProps } from "./types";
 
-type Dict = {
-  previewTitle: string;
-  viewFull: string;
-  loading: string;
-  relatedDocs: string;
-  email: string;
-  share: string;
-  comingSoon: string;
-  moreOptions: string;
-  print: string;
-  deliveryDate: string;
-  poReference: string;
-  poReferencePlaceholder: string;
-  invoiceReference: string;
-  completeDelivery: string;
-  deliveryCompleteSuccess: string;
-  deliveryCompleteError: string;
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeQuotation: string;
-  typeBill: string;
-  typeCreditNote: string;
-  typeDeliveryOrder: string;
-  cancel: string;
-  confirm: string;
-  cancelDocument: string;
-  confirmCancelDoc: string;
-  cancelSuccess: string;
-  cancelError: string;
-};
 
-type Props = {
-  documentId: string;
-  documentNo?: string;
-  documentType?: DocumentType;
-  paymentStatus?: string;      // "UNPAID" | "PARTIAL" | "PAID"
-  documentStatus?: string;     // "PENDING" | "COMPLETED" | "CANCELLED" | ...
 
-  dict: Dict;
-  onClose: () => void;
-  onNavigate?: (id: string) => void; // jump to another document in the lineage
-};
+
+
 
 // A4 types open as a full drawer; all others use the inline panel card.
 const A4_TYPES: DocumentType[] = ["INVOICE", "TAX_INVOICE", "BILL", "QUOTATION", "CREDIT_NOTE", "DELIVERY_ORDER", "RECEIPT"];
@@ -63,7 +26,7 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, dict, onClose, onNavigate }: Props) {
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, dict, onClose, onNavigate }: DocumentPreviewPanelProps) {
   const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();

@@ -21,12 +21,12 @@ import {
 import { getSaleById, getSaleReceiptHtml, listSales } from "@/services/sales";
 import type { Invoice } from "@/types/invoice";
 import type { Sale } from "@/types/sale";
+import type { DocumentsManagerDocumentsManagerProps } from "./types";
+import type { DocumentsManagerDocumentLineItem } from "./types";
+import type { DocumentsManagerInvoiceStatus } from "./types";
 
-type DocumentsManagerProps = {
-  dictionary: SalesDictionary;
-  salesDict: SalesHistoryDict;
-  mode?: "all" | "pending";
-};
+
+
 
 // Bangkok calendar date (YYYY-MM-DD) of an ISO timestamp. Matches the convention in
 // date-range-filter (todayIso) and the backend's `AT TIME ZONE 'Asia/Bangkok'`, so a
@@ -39,17 +39,9 @@ function bkkDate(iso?: string | null): string {
   return new Date(t.getTime() + BKK_OFFSET_MS).toISOString().slice(0, 10);
 }
 
-type DocumentLineItem = {
-  id?: string;
-  line_total?: number | null;
-  product_id?: string | null;
-  product_name?: string | null;
-  quantity: number;
-  total_amount?: number | null;
-  unit_price?: number | null;
-};
 
-type InvoiceStatus = "unpaid" | "partially_paid" | "paid";
+
+
 
 const DEFAULT_PAYMENT_METHOD = "cash";
 const DRAWER_OPEN_DELAY_MS = 10;
@@ -58,7 +50,7 @@ const DEFAULT_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const TABLE_COLUMN_COUNT = 6;
 
-const invoiceStatusClassName: Record<InvoiceStatus, string> = {
+const invoiceStatusClassName: Record<DocumentsManagerInvoiceStatus, string> = {
   paid: "bg-emerald-100 text-emerald-700",
   partially_paid: "bg-amber-100 text-amber-700",
   unpaid: "bg-rose-100 text-rose-700",
@@ -106,7 +98,7 @@ function getErrorMessage(nextError: unknown, dictionary: SalesDictionary) {
   return nextError instanceof Error ? nextError.message : dictionary.requestFailedLabel;
 }
 
-function normalizeInvoiceStatus(status?: string): InvoiceStatus {
+function normalizeInvoiceStatus(status?: string): DocumentsManagerInvoiceStatus {
   if (status === "paid" || status === "partially_paid" || status === "unpaid") {
     return status;
   }
@@ -114,7 +106,7 @@ function normalizeInvoiceStatus(status?: string): InvoiceStatus {
   return "unpaid";
 }
 
-function getInvoiceStatusLabel(status: InvoiceStatus, dictionary: SalesDictionary) {
+function getInvoiceStatusLabel(status: DocumentsManagerInvoiceStatus, dictionary: SalesDictionary) {
   if (status === "paid") {
     return dictionary.statusPaidLabel;
   }
@@ -146,7 +138,7 @@ function findLatestProofPaymentId(invoice: Invoice) {
   return undefined;
 }
 
-export function DocumentsManager({ dictionary, salesDict, mode = "all" }: DocumentsManagerProps) {
+export function DocumentsManager({ dictionary, salesDict, mode = "all" }: DocumentsManagerDocumentsManagerProps) {
   const params = useParams();
   const locale = (params?.locale as string) ?? "th";
   const [sales, setSales] = useState<Sale[]>([]);
@@ -567,7 +559,7 @@ export function DocumentsManager({ dictionary, salesDict, mode = "all" }: Docume
     return undefined;
   }, [isSaleReceiptDrawerOpen, saleReceiptHtml]);
 
-  function renderLineItems(items: DocumentLineItem[]) {
+  function renderLineItems(items: DocumentsManagerDocumentLineItem[]) {
     return (
       <div className="mt-6 space-y-3">
         {items.map((item) => (

@@ -1,11 +1,8 @@
 import type { CSSProperties } from "react";
+import type { SignatureBlockProps } from "./types";
 
-type Props = {
-  leftTH: string;
-  leftEN: string;
-  rightTH?: string;
-  rightEN?: string;
-};
+
+
 
 const labelStyle: CSSProperties = {
   fontSize: "8.5pt",
@@ -76,7 +73,7 @@ function SigCol({ labelTH, labelEN }: { labelTH: string; labelEN: string }) {
   );
 }
 
-export function SignatureBlock({ leftTH, leftEN, rightTH, rightEN }: Props) {
+export function SignatureBlock({ leftTH, leftEN, rightTH, rightEN }: SignatureBlockProps) {
   return (
     <div
       style={{

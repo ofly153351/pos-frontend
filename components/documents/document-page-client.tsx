@@ -21,163 +21,13 @@ import { DocumentPreviewPanel } from "./document-preview-panel";
 import { CreateDocumentModal } from "./create-document-modal";
 import { SalesHistoryManager } from "@/components/sales/sales-history-manager";
 import type { SalesHistoryDict } from "@/components/sales/sales-history-dict";
+import type { DocumentPageClientDocumentDict } from "./types";
+import type { DocumentPageClientProps } from "./types";
 
-type DocumentDict = {
-  title: string;
-  subtitle: string;
-  searchPlaceholder: string;
-  filter: string;
-  resetFilter: string;
-  allTypes: string;
-  allStatuses: string;
-  allCustomers: string;
-  allStaff: string;
-  allPayments: string;
-  typeInvoice: string;
-  typeReceipt: string;
-  typeTaxInvoice: string;
-  typeQuotation: string;
-  typeBill: string;
-  typeCreditNote: string;
-  typeDeliveryOrder: string;
-  statusDraft: string;
-  statusPending: string;
-  statusOverdue: string;
-  statusCompleted: string;
-  statusCancelled: string;
-  statusSent: string;
-  statusAccepted: string;
-  statusRejected: string;
-  statusExpired: string;
-  statusConverted: string;
-  statusProcessing: string;
-  paymentUnpaid: string;
-  paymentPartial: string;
-  paymentPaid: string;
-  statsTotal: string;
-  statsPending: string;
-  statsOverdue: string;
-  statsPaid: string;
-  exportExcel: string;
-  printReport: string;
-  createDocument: string;
-  selectedCount: string;
-  print: string;
-  send: string;
-  changeStatus: string;
-  delete: string;
-  cancelSelection: string;
-  colDocumentNo: string;
-  colType: string;
-  colCustomer: string;
-  colDate: string;
-  colDueDate: string;
-  colAmount: string;
-  colStatus: string;
-  colPaymentStatus: string;
-  colActions: string;
-  showing: string;
-  of: string;
-  records: string;
-  perPage: string;
-  copy: string;
-  moreOptions: string;
-  deliveryDate: string;
-  poReference: string;
-  poReferencePlaceholder: string;
-  invoiceReference: string;
-  completeDelivery: string;
-  deliveryCompleteSuccess: string;
-  deliveryCompleteError: string;
-  previewTitle: string;
-  documentNo: string;
-  date: string;
-  dueDate: string;
-  customer: string;
-  items: string;
-  subtotal: string;
-  vat: string;
-  total: string;
-  relatedDocs: string;
-  viewFull: string;
-  downloadPDF: string;
-  createTitle: string;
-  createSubtitle: string;
-  selectCustomer: string;
-  customerSearchPlaceholder: string;
-  noCustomersFound: string;
-  documentDate: string;
-  optionalDueDate: string;
-  priceValidityDays: string;
-  deliveryTerms: string;
-  deliveryLeadTimeDays: string;
-  poReceivedDate: string;
-  addItem: string;
-  description: string;
-  quantity: string;
-  unitPrice: string;
-  discount: string;
-  amount: string;
-  enableVat: string;
-  notes: string;
-  cancel: string;
-  create: string;
-  createSuccess: string;
-  createError: string;
-  deleteSuccess: string;
-  deleteError: string;
-  statusUpdateSuccess: string;
-  statusUpdateError: string;
-  noDocuments: string;
-  noDocumentsHint: string;
-  confirmDelete: string;
-  confirmDeleteMessage: string;
-  confirm: string;
-  units: string;
-  phone: string;
-  sellerTaxId: string;
-  loading: string;
-  requestFailed: string;
-  noResults: string;
-  tabDocuments: string;
-  tabReceipts: string;
-  receiptPaymentMethod: string;
-  receiptViewBtn: string;
-  receiptInvoiceBtn: string;
-  receiptEmpty: string;
-  receiptLoadError: string;
-  receiptStatsTotal: string;
-  receiptStatsPaid: string;
-  receiptStatsAmount: string;
-  receiptModeName: string;
-  printAll: string;
-  printError: string;
-  productSearch: string;
-  scanWithCamera: string;
-  productNotFound: string;
-  // Row actions + bulk (Phase 1)
-  duplicate: string;
-  duplicateSuccess: string;
-  duplicateError: string;
-  printPreview: string;
-  convertTo: string;
-  recordPayment: string;
-  paySuccess: string;
-  payError: string;
-  cancelDocument: string;
-  cancelSuccess: string;
-  cancelError: string;
-  confirmCancelDoc: string;
-  confirmDeleteDoc: string;
-  convertSuccess: string;
-  convertError: string;
-  pdfError: string;
-  comingSoon: string;
-  email: string;
-  share: string;
-};
 
-type Props = { dictionary: DocumentDict; salesDict: SalesHistoryDict };
+
+
+
 
 const EMPTY_STATS = { total: 0, pending_payment: 0, overdue: 0, paid: 0 };
 const DEFAULT_QUERY: DocumentListQuery = { page: 1, limit: 20 };
@@ -191,7 +41,7 @@ function fmtDateShort(s: string) {
 
 // Localised label maps for the document type / status / payment enums — shared by
 // the CSV export and the printable report so both speak the user's language.
-function buildDocLabelMaps(d: DocumentDict) {
+function buildDocLabelMaps(d: DocumentPageClientDocumentDict) {
   const typeLabel: Record<string, string> = {
     INVOICE: d.typeInvoice,
     RECEIPT: d.typeReceipt,
@@ -219,7 +69,7 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 }
 
-export function DocumentPageClient({ dictionary: d, salesDict }: Props) {
+export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageClientProps) {
   const queryClient = useQueryClient();
   const params = useParams();
   const locale = (params?.locale as string) ?? "th";
