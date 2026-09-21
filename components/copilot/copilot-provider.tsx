@@ -4,29 +4,19 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { useQuery } from "@tanstack/react-query"
 import { getCopilotOverview } from "@/services/copilot"
 import type { CopilotOverview } from "@/types/copilot"
+import type { CopilotProviderTab } from "./types";
+import type { CopilotProviderCopilotContextValue } from "./types";
 
-type Tab = 'overview' | 'insights' | 'actions' | 'chat'
 
-interface CopilotContextValue {
-  isOpen: boolean
-  openPanel: () => void
-  closePanel: () => void
-  activeTab: Tab
-  setActiveTab: (tab: Tab) => void
-  data: CopilotOverview | undefined
-  isLoading: boolean
-  error: Error | null
-  refetch: () => void
-  pendingChatMessage: string | null
-  sendChatMessage: (msg: string) => void
-  clearPendingChat: () => void
-}
 
-const CopilotContext = createContext<CopilotContextValue | null>(null)
+
+
+
+const CopilotContext = createContext<CopilotProviderCopilotContextValue | null>(null)
 
 export function CopilotProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<Tab>('overview')
+  const [activeTab, setActiveTab] = useState<CopilotProviderTab>('overview')
   const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(null)
 
   const { data: raw, isLoading, error, refetch } = useQuery({

@@ -1,0 +1,112 @@
+import type { ReactNode } from "react";
+import type { Locale } from "@/lib/locale-config";
+import type { SalesDictionary } from "@/components/sales/types";
+
+export type AdminWorkspaceShellAdminWorkspaceShellProps = {
+  active: "plans";
+  children: ReactNode;
+  locale: Locale;
+  navigation: {
+    dashboard: string;
+    plans: string;
+  };
+  subtitle: string;
+  title: string;
+};
+
+export type UserWorkspaceLayoutUserWorkspaceLayoutProps = {
+  children: React.ReactNode;
+  locale: Locale;
+  salesDictionary: SalesDictionary;
+  shell: {
+    brand: string;
+    completeSale: string;
+    customers: string;
+    dashboard: string;
+    documentBills: string;
+    documentPending: string;
+    documents: string;
+    editProfile: string;
+    inventory: string;
+    products: string;
+    productList: string;
+    masterData: string;
+    promotions: string;
+    logout: string;
+    purchasing: string;
+    purchaseOrders: string;
+    reports: string;
+    reportsInventoryValue: string;
+    reportsSummary: string;
+    finance: string;
+    financeExpenses: string;
+    financePnl: string;
+    register: string;
+    salesHistory: string;
+    searchPlaceholder: string;
+    settings: string;
+    storageLocations: string;
+    receiptPayment: string;
+    activityLogs: string;
+    staff: string;
+    storeLabel: string;
+    stockCategories: string;
+    stockLevels: string;
+    stockCount: string;
+    stockWarehouses: string;
+    warehouseOverview: string;
+    creditSales: string;
+    notificationsLowStock: string;
+    notificationsLowStockDesc: string;
+    notificationsNone: string;
+    notificationsNoneDesc: string;
+    notificationsOutOfStock: string;
+    notificationsOutOfStockDesc: string;
+    notificationsPendingApprovals: string;
+    notificationsPendingApprovalsDesc: string;
+    notificationsPendingCounts: string;
+    notificationsPendingCountsDesc: string;
+    notificationsTitle: string;
+    notificationsViewAll: string;
+    receiveGoods: string;
+    station: string;
+    suppliers: string;
+    transactions: string;
+    help: string;
+  };
+  titles: {
+    customers: string;
+    dashboard: string;
+    documents: string;
+    profile?: string;
+    promotions?: string;
+    reports?: string;
+    reportsSummary?: string;
+    finance?: string;
+    financePnl?: string;
+    sales: string;
+    settings: string;
+    staff?: string;
+    stock: string;
+    inventory?: string;
+    stockCategories: string;
+    stockWarehouses: string;
+    warehouseOverview: string;
+    receiveGoods: string;
+    purchaseOrders: string;
+    suppliers: string;
+  };
+};
+
+export type UserWorkspaceShellUserWorkspaceShellProps = {
+  active: "dashboard" | "sales" | "stock";
+  children: ReactNode;
+  locale: Locale;
+  navigation: {
+    dashboard: string;
+    sales: string;
+    stock: string;
+  };
+  subtitle: string;
+  title: string;
+};

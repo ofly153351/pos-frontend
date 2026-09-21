@@ -12,33 +12,18 @@ import {
   getPendingPlanChoice,
   type PendingPlanChoice,
 } from "@/lib/subscription-storage";
+import type { StoreSetupFormStoreSetupDictionary } from "./types";
+import type { StoreSetupFormStoreSetupFormProps } from "./types";
 
-type StoreSetupDictionary = {
-  createTitle: string;
-  descriptionLabel: string;
-  helper: string;
-  nameLabel: string;
-  phoneLabel: string;
-  addressLabel: string;
-  currencyLabel: string;
-  save: string;
-  selectedPlanEmpty: string;
-  selectedPlanLabel: string;
-  planRequired: string;
-  saving: string;
-  title: string;
-  planNames: Record<string, string>;
-};
 
-type StoreSetupFormProps = {
-  dictionary: StoreSetupDictionary;
-  locale: Locale;
-};
+
+
+
 
 export function StoreSetupForm({
   dictionary,
   locale,
-}: StoreSetupFormProps) {
+}: StoreSetupFormStoreSetupFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState("");

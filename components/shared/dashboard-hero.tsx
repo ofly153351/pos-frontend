@@ -7,73 +7,33 @@ import {
   RefreshCw,
   type LucideIcon,
 } from "lucide-react";
+import type { DashboardHeroHeroPeriod } from "./types";
+import type { DashboardHeroHeroPeriodOption } from "./types";
+import type { DashboardHeroHeroChip } from "./types";
+import type { DashboardHeroHeroPeriodLabels } from "./types";
+import type { DashboardHeroDashboardHeroProps } from "./types";
+export type { DashboardHeroHeroPeriod as HeroPeriod } from "./types";
+export type { DashboardHeroHeroPeriodOption as HeroPeriodOption } from "./types";
+export type { DashboardHeroHeroChip as HeroChip } from "./types";
+export type { DashboardHeroHeroPeriodLabels as HeroPeriodLabels } from "./types";
+export type { DashboardHeroDashboardHeroProps as DashboardHeroProps } from "./types";
+
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type HeroPeriod = "today" | "7d" | "30d" | "90d" | "custom";
 
-export type HeroPeriodOption<P extends string = HeroPeriod> = {
-  value: P;
-  label: string;
-};
 
-export type HeroChip = {
-  label: string;
-  value: string;
-  /** Optional tone override — defaults to white/violet-300 on the dark hero bg. */
-  tone?: "default" | "success" | "warning" | "danger";
-};
 
-export type HeroPeriodLabels = {
-  today: string;
-  d7: string;
-  d30: string;
-  d90: string;
-  custom: string;
-  from: string;
-  to: string;
-  apply: string;
-  refresh: string;
-};
 
-export type DashboardHeroProps<P extends string = HeroPeriod> = {
-  icon: LucideIcon;
-  title: string;
-  subtitle: string;
-  /** Formatted date range string shown after subtitle. */
-  rangeLabel?: string;
-  /** Active period tab. */
-  period: P;
-  onPeriodChange: (p: P) => void;
-  periodLabels: HeroPeriodLabels;
-  /**
-   * Explicit period pills. When omitted, defaults to the standard
-   * today/7d/30d/90d set (plus a custom-range pill) built from `periodLabels`.
-   * Pages whose backend supports a different window set (e.g. the warehouse
-   * dashboard's 7d/30d/3m) pass their own options here.
-   */
-  periodOptions?: HeroPeriodOption<P>[];
-  /** Custom date range inputs — only needed when a "custom" pill is shown. */
-  customFrom?: string;
-  customTo?: string;
-  onCustomFromChange?: (v: string) => void;
-  onCustomToChange?: (v: string) => void;
-  onApplyCustom?: () => void;
-  customValid?: boolean;
-  /** Compact KPI chips rendered inside the hero. */
-  chips?: HeroChip[];
-  /** Loading state — spins refresh icon. */
-  isLoading?: boolean;
-  onRefresh?: () => void;
-  /** Extra buttons rendered after the period pills (e.g. Print, Export). */
-  actions?: ReactNode;
-  /** Advanced filter panel content — rendered inside expandable area. */
-  filterContent?: ReactNode;
-};
+
+
+
+
+
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function defaultOptions(labels: HeroPeriodLabels): HeroPeriodOption[] {
+function defaultOptions(labels: DashboardHeroHeroPeriodLabels): DashboardHeroHeroPeriodOption[] {
   return [
     { value: "today", label: labels.today },
     { value: "7d", label: labels.d7 },
@@ -91,7 +51,7 @@ const CHIP_TONE = {
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function DashboardHero<P extends string = HeroPeriod>({
+export function DashboardHero<P extends string = DashboardHeroHeroPeriod>({
   icon: Icon,
   title,
   subtitle,
@@ -111,13 +71,13 @@ export function DashboardHero<P extends string = HeroPeriod>({
   onRefresh,
   actions,
   filterContent,
-}: DashboardHeroProps<P>) {
+}: DashboardHeroDashboardHeroProps<P>) {
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Default mode renders the standard set + a custom-range pill. When a page
   // supplies its own `periodOptions`, the custom-range UI is suppressed.
   const usingDefault = !periodOptions;
-  const options = (periodOptions ?? defaultOptions(periodLabels)) as HeroPeriodOption<P>[];
+  const options = (periodOptions ?? defaultOptions(periodLabels)) as DashboardHeroHeroPeriodOption<P>[];
   const customValue = "custom" as P;
 
   const pillClass = (active: boolean) =>

@@ -8,16 +8,12 @@ import { ChevronDown, CircleDollarSign, X } from "lucide-react";
 import { NAV_SECTIONS, isNavGroup } from "@/components/navigation/nav-config";
 import type { NavLabels } from "@/components/navigation/nav-config";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
+import type { SidebarDrawerSidebarDrawerProps } from "./types";
 
-type SidebarDrawerProps = {
-  isOpen: boolean;
-  locale: string;
-  labels: NavLabels;
-  onClose: () => void;
-  onNavigate: () => void;
-};
 
-export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: SidebarDrawerProps) {
+
+
+export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: SidebarDrawerSidebarDrawerProps) {
   const pathname = usePathname();
   const { role: storeRole } = useStoreRole();
   const canManage = canManageStore(storeRole);

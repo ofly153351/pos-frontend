@@ -8,24 +8,17 @@ import {
   updateCurrentSubscription,
 } from "@/services/stores";
 import type { StoreSubscription, SubscriptionPlan } from "@/types/store";
+import type { SubscriptionPlanManagerSubscriptionPlanManagerDictionary } from "./types";
+import type { SubscriptionPlanManagerSubscriptionPlanManagerProps } from "./types";
 
-type SubscriptionPlanManagerDictionary = {
-  currentLabel: string;
-  empty: string;
-  helper: string;
-  save: string;
-  saving: string;
-  selectLabel: string;
-  title: string;
-};
 
-type SubscriptionPlanManagerProps = {
-  dictionary: SubscriptionPlanManagerDictionary;
-};
+
+
+
 
 export function SubscriptionPlanManager({
   dictionary,
-}: SubscriptionPlanManagerProps) {
+}: SubscriptionPlanManagerSubscriptionPlanManagerProps) {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [subscription, setSubscription] = useState<StoreSubscription | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState("");

@@ -12,6 +12,9 @@ import {
   localeStorageKey,
   type Locale,
 } from "@/lib/locale-config";
+import type { AuthShellAuthBrand } from "./types";
+import type { AuthShellAuthShellProps } from "./types";
+
 
 // ── Language dropdown (smooth open/close) ─────────────────────────────────────
 function LanguageDropdown({
@@ -103,53 +106,9 @@ function LanguageDropdown({
   );
 }
 
-type AuthBrand = {
-  badge: string;
-  features: string[];
-  statProductsValue: string;
-  statProductsLabel: string;
-  statDocumentsValue: string;
-  statDocumentsLabel: string;
-  statReadyValue: string;
-  statReadyLabel: string;
-  version: string;
-  secureNote: string;
-  rememberMe: string;
-  forgotPassword: string;
-};
 
-type AuthShellProps = {
-  alternateCta: string;
-  alternateHref: string;
-  alternateLabel: string;
-  brand: string;
-  description: string;
-  fields: AuthFormField[];
-  footerNote: string;
-  languageLabel: string;
-  locale: Locale;
-  mode: "login" | "register";
-  pageTitle: string;
-  panelDescription: string;
-  panelEyebrow: string;
-  panelTitle: string;
-  submitLabel: string;
-  switchLocaleHref: "login" | "register";
-  thaiLabel: string;
-  englishLabel: string;
-  authBrand: AuthBrand;
-  showStrength?: boolean;
-  strengthLabels?: { weak: string; medium: string; good: string; strong: string };
-  mismatchMessage?: string;
-  terms?: { prefix: string; termsLink: string; and: string; privacyLink: string; required: string };
-  validation: {
-    emailInvalid: string;
-    genericError: string;
-    passwordMin: string;
-    redirecting: string;
-    required: string;
-  };
-};
+
+
 
 export function AuthShell({
   alternateCta,
@@ -176,7 +135,7 @@ export function AuthShell({
   mismatchMessage,
   terms,
   validation,
-}: AuthShellProps) {
+}: AuthShellAuthShellProps) {
   useEffect(() => {
     window.localStorage.setItem(localeStorageKey, locale);
   }, [locale]);

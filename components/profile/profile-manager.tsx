@@ -27,13 +27,13 @@ import { changePassword, logout } from "@/services/auth";
 import { getStoreById } from "@/services/stores";
 import type { AuthPayload } from "@/types/auth";
 import th from "@/locales/th.json";
+import type { ProfileManagerProfileDictionary } from "./types";
+import type { ProfileManagerProfileManagerProps } from "./types";
 
-type ProfileDictionary = typeof th.profile;
 
-type ProfileManagerProps = {
-  dictionary: ProfileDictionary;
-  locale: Locale;
-};
+
+
+
 
 // ── Backend capability flags ────────────────────────────────────────────────
 // The Go backend (D:\Fork\pos-backend) exposes NONE of these endpoints today.
@@ -60,7 +60,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 // ── Pure helpers ────────────────────────────────────────────────────────────
-function roleLabel(role: string, d: ProfileDictionary): string {
+function roleLabel(role: string, d: ProfileManagerProfileDictionary): string {
   switch (role) {
     case "owner":
       return d.roleOwner;
@@ -170,7 +170,7 @@ const readonlyInputClass =
 const primaryButtonClass =
   "inline-flex items-center justify-center gap-2 rounded-lg bg-violet-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-800 disabled:cursor-not-allowed disabled:bg-violet-400";
 
-export function ProfileManager({ dictionary, locale }: ProfileManagerProps) {
+export function ProfileManager({ dictionary, locale }: ProfileManagerProfileManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
 

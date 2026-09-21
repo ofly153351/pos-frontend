@@ -13,17 +13,10 @@ import {
   type NotificationLabels,
 } from "@/components/navigation/notification-dropdown";
 import { getStoreById, listMyStores } from "@/services/stores";
+import type { UserWorkspaceTopbarUserWorkspaceTopbarProps } from "./types";
 
-type UserWorkspaceTopbarProps = {
-  editProfileLabel: string;
-  locale: Locale;
-  logoutLabel: string;
-  notificationLabels: NotificationLabels;
-  onToggle: () => void;
-  settingsLabel: string;
-  sidebarCollapsed: boolean;
-  title: string;
-};
+
+
 
 export function UserWorkspaceTopbar({
   editProfileLabel,
@@ -34,7 +27,7 @@ export function UserWorkspaceTopbar({
   settingsLabel,
   sidebarCollapsed,
   title,
-}: UserWorkspaceTopbarProps) {
+}: UserWorkspaceTopbarUserWorkspaceTopbarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [storeLogoUrl, setStoreLogoUrl] = useState("");

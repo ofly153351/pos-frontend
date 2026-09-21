@@ -3,20 +3,10 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, Loader2, X } from "lucide-react";
+import type { ConfirmModalProps } from "./types";
 
-type Props = {
-  open: boolean;
-  title: string;
-  message?: string;
-  confirmLabel: string;
-  cancelLabel: string;
-  /** "danger" → red confirm button (destructive actions). */
-  tone?: "danger" | "default";
-  /** Disables both buttons + shows a spinner while the action runs. */
-  loading?: boolean;
-  onConfirm: () => void;
-  onClose: () => void;
-};
+
+
 
 /**
  * Themed confirmation dialog — drop-in replacement for window.confirm().
@@ -33,7 +23,7 @@ export function ConfirmModal({
   loading = false,
   onConfirm,
   onClose,
-}: Props) {
+}: ConfirmModalProps) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {

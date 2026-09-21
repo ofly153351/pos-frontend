@@ -1,16 +1,19 @@
 import type { ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
+import type { AlertAlertTone } from "./types";
+export type { AlertAlertTone as AlertTone } from "./types";
 
-export type AlertTone = "success" | "error" | "info" | "warning";
 
-const STYLE: Record<AlertTone, string> = {
+
+
+const STYLE: Record<AlertAlertTone, string> = {
   success: "border-emerald-200 bg-emerald-50 text-emerald-800",
   error:   "border-rose-200   bg-rose-50   text-rose-800",
   info:    "border-violet-200 bg-violet-50 text-violet-800",
   warning: "border-amber-200  bg-amber-50  text-amber-800",
 };
 
-const ICON: Record<AlertTone, ReactNode> = {
+const ICON: Record<AlertAlertTone, ReactNode> = {
   success: <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />,
   error:   <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500" />,
   info:    <Info className="h-4 w-4 shrink-0 text-violet-500" />,
@@ -23,7 +26,7 @@ export function Alert({
   onDismiss,
   className = "",
 }: {
-  tone?: AlertTone;
+  tone?: AlertAlertTone;
   children: ReactNode;
   onDismiss?: () => void;
   className?: string;

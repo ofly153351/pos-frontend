@@ -21,123 +21,19 @@ import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { friendlyMessage } from "@/lib/form-errors";
 import type { Customer, CustomerLevelDiscount, ShippingAddress } from "@/types/customer";
 import type { Locale } from "@/lib/locale-config";
+import type { CustomerNetworkManagerCustomerNetworkDictionary } from "./types";
+import type { CustomerNetworkManagerCustomerNetworkManagerProps } from "./types";
+import type { CustomerNetworkManagerLocalShippingAddress } from "./types";
+import type { CustomerNetworkManagerCustomerFormState } from "./types";
 
-type CustomerNetworkDictionary = {
-  activeLabel: string;
-  activeStatus: string;
-  addPointsLabel: string;
-  addressLabel: string;
-  branchLabel: string;
-  branchPlaceholder: string;
-  cancelEdit: string;
-  cancelLabel: string;
-  closeLabel: string;
-  createSubtitle: string;
-  createTitle: string;
-  createTitleNew: string;
-  discountRuleHint: string;
-  discountRuleSubtitle: string;
-  deleteConfirm: string;
-  deleteLabel: string;
-  deletedSuccess: string;
-  discountPercentLabel: string;
-  discountRuleTitle: string;
-  editLabel: string;
-  addressPlaceholder: string;
-  emailLabel: string;
-  emailPlaceholder: string;
-  empty: string;
-  filterAllLevels: string;
-  fullNameLabel: string;
-  fullNamePlaceholder: string;
-  fullNameRequired: string;
-  phonePlaceholder: string;
-  inactiveStatus: string;
-  invoiceLabel: string;
-  kpiGold: string;
-  kpiPlatinum: string;
-  kpiPoints: string;
-  kpiSilver: string;
-  kpiTotal: string;
-  kpiVip: string;
-  levelGeneral: string;
-  levelGold: string;
-  levelLabel: string;
-  levelPlatinum: string;
-  levelRequired: string;
-  levelSilver: string;
-  levelVip: string;
-  listTitle: string;
-  loading: string;
-  memberCodeAuto: string;
-  memberCodeHint: string;
-  memberCodeLabel: string;
-  noteLabel: string;
-  phoneLabel: string;
-  pointsLabel: string;
-  requestFailed: string;
-  save: string;
-  saveDiscount: string;
-  saveLabel: string;
-  saving: string;
-  savingDiscount: string;
-  searchPlaceholder: string;
-  subtitle: string;
-  successCreated: string;
-  successDiscountUpdated: string;
-  successUpdated: string;
-  tableActions: string;
-  taxIdLabel: string;
-  taxIdPlaceholder: string;
-  title: string;
-  totalBillsLabel: string;
-  totalPurchaseLabel: string;
-  updateTitle: string;
-  shippingSectionTitle: string;
-  shippingContactLabel: string;
-  shippingPhoneLabel: string;
-  shippingAddressLabel: string;
-  shippingProvinceLabel: string;
-  shippingSubDistrictLabel: string;
-  shippingDistrictLabel: string;
-  shippingPostalCodeLabel: string;
-  deliveryNoteLabel: string;
-  addShippingAddressBtn: string;
-  noShippingAddresses: string;
-  useCustomerAddressLabel: string;
-  shippingLabelLabel: string;
-  shippingLabelPlaceholder: string;
-  recipientNameLabel: string;
-  recipientPhoneLabel: string;
-  defaultAddressLabel: string;
-  setAsDefaultLabel: string;
-  removeAddressBtn: string;
-};
 
-type CustomerNetworkManagerProps = {
-  dictionary: CustomerNetworkDictionary;
-  locale: Locale;
-};
 
-type LocalShippingAddress = {
-  _tempId: string;
-  _isNew: boolean;
-  _isDeleted: boolean;
-  id?: string;
-  label: string;
-  recipient_name: string;
-  recipient_phone: string;
-  address: string;
-  sub_district: string;
-  district: string;
-  province: string;
-  postal_code: string;
-  note: string;
-  use_customer_address: boolean;
-  is_default: boolean;
-};
 
-function localFromSaved(a: ShippingAddress): LocalShippingAddress {
+
+
+
+
+function localFromSaved(a: ShippingAddress): CustomerNetworkManagerLocalShippingAddress {
   return {
     _tempId: a.id,
     _isNew: false,
@@ -157,19 +53,9 @@ function localFromSaved(a: ShippingAddress): LocalShippingAddress {
   };
 }
 
-type CustomerFormState = {
-  address: string;
-  branch: string;
-  email: string;
-  full_name: string;
-  is_active: boolean;
-  level: string;
-  note: string;
-  phone: string;
-  tax_id: string;
-};
 
-const initialFormState: CustomerFormState = {
+
+const initialFormState: CustomerNetworkManagerCustomerFormState = {
   address: "",
   branch: "",
   email: "",
@@ -199,7 +85,7 @@ const AVATAR_COLORS = [
   "bg-rose-100 text-rose-600",
 ];
 
-export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkManagerProps) {
+export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkManagerCustomerNetworkManagerProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -210,14 +96,14 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
   const [success, setSuccess] = useState("");
   const [discountError, setDiscountError] = useState("");
   const [discountSuccess, setDiscountSuccess] = useState("");
-  const [formState, setFormState] = useState<CustomerFormState>(initialFormState);
+  const [formState, setFormState] = useState<CustomerNetworkManagerCustomerFormState>(initialFormState);
   const [isPending, startTransition] = useTransition();
   const [levelInputs, setLevelInputs] = useState<Record<number, string>>({});
   const [savingLevel, setSavingLevel] = useState<number | null>(null);
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isDiscountDrawerOpen, setIsDiscountDrawerOpen] = useState(false);
-  const [localShippingAddresses, setLocalShippingAddresses] = useState<LocalShippingAddress[]>([]);
+  const [localShippingAddresses, setLocalShippingAddresses] = useState<CustomerNetworkManagerLocalShippingAddress[]>([]);
 
   useEffect(() => {
     async function loadInitialData() {
@@ -325,7 +211,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
   }
 
   // ─── Event handlers ───────────────────────────────────────────────────────
-  function onFieldChange<K extends keyof CustomerFormState>(key: K, value: CustomerFormState[K]) {
+  function onFieldChange<K extends keyof CustomerNetworkManagerCustomerFormState>(key: K, value: CustomerNetworkManagerCustomerFormState[K]) {
     setFormState((current) => ({ ...current, [key]: value }));
   }
 
@@ -347,7 +233,7 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
     }]);
   }
 
-  function updateLocalAddress(tempId: string, updates: Partial<LocalShippingAddress>) {
+  function updateLocalAddress(tempId: string, updates: Partial<CustomerNetworkManagerLocalShippingAddress>) {
     setLocalShippingAddresses(prev => prev.map(a => a._tempId === tempId ? { ...a, ...updates } : a));
   }
 

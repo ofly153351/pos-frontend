@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation"
 import { TrendingUp, Package, DollarSign, Users, ArrowRight, Lightbulb } from "lucide-react"
 import { useCopilot } from "../copilot-provider"
 import type { OpportunityCategory } from "@/types/copilot"
+import type { OpportunitiesTabFilter } from "./../types";
 
-type Filter = 'all' | OpportunityCategory
+
+
 
 const CAT_LABELS: Record<string, string> = {
   sales: 'ยอดขาย',
@@ -32,7 +34,7 @@ function CatIcon({ category }: { category: string }) {
 
 export function OpportunitiesTab() {
   const { data, isLoading } = useCopilot()
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useState<OpportunitiesTabFilter>('all')
   const router = useRouter()
   const params = useParams()
   const locale = (params.locale as string) || 'th'
@@ -48,7 +50,7 @@ export function OpportunitiesTab() {
   const opps = data?.opportunities ?? []
   const filtered = filter === 'all' ? opps : opps.filter(o => o.category === filter)
 
-  const filters: { id: Filter; label: string }[] = [
+  const filters: { id: OpportunitiesTabFilter; label: string }[] = [
     { id: 'all', label: `ทั้งหมด (${opps.length})` },
     { id: 'sales', label: 'ยอดขาย' },
     { id: 'inventory', label: 'สินค้า' },

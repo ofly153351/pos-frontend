@@ -29,15 +29,25 @@ import type {
   CopilotPriority,
   CopilotFollowUp,
 } from "@/types/copilot"
+import type { ChatTabLang } from "./../types";
+import type { ChatTabSakuSection } from "./../types";
+import type { ChatTabSakuResponse } from "./../types";
+import type { ChatTabContextItem } from "./../types";
+import type { ChatTabConversationContext } from "./../types";
+import type { ChatTabCustomerRow } from "./../types";
+import type { ChatTabMessage } from "./../types";
+import type { ChatTabStarterCard } from "./../types";
+import type { ChatTabStarterGroup } from "./../types";
+
 
 // ── Language Detection ──
 
-type Lang = 'th' | 'en'
+
 
 const TH_RANGE = /[฀-๿]/
 const EN_RANGE = /[a-zA-Z]/
 
-function detectLang(text: string): Lang {
+function detectLang(text: string): ChatTabLang {
   let th = 0, en = 0
   for (const ch of text) {
     if (TH_RANGE.test(ch)) th++
@@ -48,38 +58,21 @@ function detectLang(text: string): Lang {
 
 // ── Saku Response Types ──
 
-interface SakuSection {
-  icon: string
-  title: string
-  lines: string[]
-}
 
-interface SakuResponse {
-  sections: SakuSection[]
-  followUps: CopilotFollowUp[]
-  context: ConversationContext
-}
 
-function sec(icon: string, title: string, ...lines: string[]): SakuSection {
+
+
+function sec(icon: string, title: string, ...lines: string[]): ChatTabSakuSection {
   return { icon, title, lines: lines.filter(Boolean) }
 }
 
 // ── Conversation Context ──
 
-interface ContextItem {
-  index: number
-  label: string
-  type: 'action' | 'risk' | 'opportunity' | 'product' | 'customer'
-  data: CopilotAction | CopilotRisk | CopilotOpportunity | CopilotPriority | { name: string; value: number }
-}
 
-interface ConversationContext {
-  lastTopic: string | null
-  lastItems: ContextItem[]
-  lastItemType: string | null
-}
 
-function emptyContext(): ConversationContext {
+
+
+function emptyContext(): ChatTabConversationContext {
   return { lastTopic: null, lastItems: [], lastItemType: null }
 }
 
@@ -107,7 +100,7 @@ const ORDINALS_EN: Record<string, number> = {
   'third': 2, '#3': 2, 'third one': 2, 'number 3': 2, 'number three': 2,
 }
 
-function resolveReference(q: string, ctx: ConversationContext): ContextItem | null {
+function resolveReference(q: string, ctx: ChatTabConversationContext): ChatTabContextItem | null {
   if (ctx.lastItems.length === 0) return null
   for (const [pat, idx] of Object.entries(ORDINALS_TH)) {
     if (q.includes(pat) && ctx.lastItems[idx]) return ctx.lastItems[idx]
@@ -130,7 +123,7 @@ function resolveReference(q: string, ctx: ConversationContext): ContextItem | nu
 
 // ── Explain Referenced Items ──
 
-function explainItem(item: ContextItem, data: CopilotOverview, lang: Lang): SakuSection[] {
+function explainItem(item: ChatTabContextItem, data: CopilotOverview, lang: ChatTabLang): ChatTabSakuSection[] {
   if (item.type === 'action') {
     const a = item.data as CopilotAction
     const de = data.decisionEngine
@@ -166,7 +159,7 @@ function explainItem(item: ContextItem, data: CopilotOverview, lang: Lang): Saku
   return [sec('ℹ️', item.label)]
 }
 
-function explainWhy(item: ContextItem, data: CopilotOverview, lang: Lang): SakuSection[] {
+function explainWhy(item: ChatTabContextItem, data: CopilotOverview, lang: ChatTabLang): ChatTabSakuSection[] {
   const { decisionEngine: de, inventoryIntelligence: intel, moneyIntelligence: money } = data
 
   if (item.type === 'action') {
@@ -175,7 +168,7 @@ function explainWhy(item: ContextItem, data: CopilotOverview, lang: Lang): SakuS
       ?? de?.weekPriorities.find(p => p.action.id === a.id)
       ?? (de?.topPriority?.action.id === a.id ? de.topPriority : null)
     const isTop = de?.topPriority?.action.id === a.id
-    const sections: SakuSection[] = []
+    const sections: ChatTabSakuSection[] = []
 
     sections.push(sec('🔍', lang === 'en' ? 'Why' : 'ทำไม', scored?.reason ?? a.description))
 
@@ -250,12 +243,12 @@ function explainWhy(item: ContextItem, data: CopilotOverview, lang: Lang): SakuS
 
 // ── Consequence Reasoning ──
 
-function buildConsequence(data: CopilotOverview, ctx: ConversationContext, lang: Lang): SakuSection[] {
+function buildConsequence(data: CopilotOverview, ctx: ChatTabConversationContext, lang: ChatTabLang): ChatTabSakuSection[] {
   if (ctx.lastItems.length === 0) {
     return [sec('🤔', '', lang === 'en' ? 'Ask about a specific issue first, then I can explain consequences.' : 'ถามเรื่องใดเรื่องหนึ่งก่อน แล้วเดี๋ยวอธิบายผลกระทบให้ครับ')]
   }
   const item = ctx.lastItems[0]
-  const sections: SakuSection[] = []
+  const sections: ChatTabSakuSection[] = []
   const { inventoryIntelligence: intel, moneyIntelligence: money, decisionEngine: de } = data
 
   if (item.type === 'action') {
@@ -392,7 +385,7 @@ function buildConsequence(data: CopilotOverview, ctx: ConversationContext, lang:
 
 // ── Urgency Assessment ──
 
-function buildUrgency(data: CopilotOverview, ctx: ConversationContext, lang: Lang): SakuSection[] {
+function buildUrgency(data: CopilotOverview, ctx: ChatTabConversationContext, lang: ChatTabLang): ChatTabSakuSection[] {
   if (ctx.lastItems.length === 0) {
     return [sec('🤔', '', lang === 'en' ? 'Ask about something first.' : 'ถามเรื่องใดเรื่องหนึ่งก่อนครับ')]
   }
@@ -440,8 +433,8 @@ function buildUrgency(data: CopilotOverview, ctx: ConversationContext, lang: Lan
 function generateFollowUps(
   topic: string,
   data: CopilotOverview,
-  lang: Lang,
-  ctx?: ConversationContext,
+  lang: ChatTabLang,
+  ctx?: ChatTabConversationContext,
 ): CopilotFollowUp[] {
   const result: CopilotFollowUp[] = []
   const { healthScore: h, inventoryIntelligence: intel, moneyIntelligence: money, purchasingIntelligence: purch } = data
@@ -538,7 +531,7 @@ const GREETING_FOLLOWUPS: CopilotFollowUp[] = [
   { label: '📖 วิธีใช้งาน', query: 'คู่มือใช้งานทั้งหมด' },
 ]
 
-function buildGreeting(lang: Lang): SakuResponse {
+function buildGreeting(lang: ChatTabLang): ChatTabSakuResponse {
   return {
     sections: [sec('👋', '',
       lang === 'en' ? 'Hi! I can help with your store. Ask me anything:' : 'สวัสดีครับ! ผมช่วยดูเรื่องร้านได้ ถามได้เลย:',
@@ -550,7 +543,7 @@ function buildGreeting(lang: Lang): SakuResponse {
   }
 }
 
-function buildThanks(lang: Lang): SakuResponse {
+function buildThanks(lang: ChatTabLang): ChatTabSakuResponse {
   return {
     sections: [sec('🙏', '', lang === 'en' ? "You're welcome! Anything else?" : 'ยินดีครับ! มีอะไรให้ช่วยอีกไหมครับ')],
     followUps: GREETING_FOLLOWUPS,
@@ -563,14 +556,14 @@ function buildThanks(lang: Lang): SakuResponse {
 // report and surface the actionable proxy: fast-moving items that are low on
 // stock (from reorder intel). Clearly labelled so it is not mistaken for the
 // real revenue ranking.
-function buildBestSellers(data: CopilotOverview, lang: Lang): SakuResponse {
+function buildBestSellers(data: CopilotOverview, lang: ChatTabLang): ChatTabSakuResponse {
   const intel = data.inventoryIntelligence
   const movers = [...intel.urgentReorders]
     .filter(r => r.avgDailySales > 0)
     .sort((a, b) => b.avgDailySales - a.avgDailySales)
     .slice(0, 5)
 
-  const sections: SakuSection[] = [
+  const sections: ChatTabSakuSection[] = [
     sec('📊', lang === 'en' ? 'Best sellers' : 'สินค้าขายดี',
       lang === 'en'
         ? 'Full per-product ranking is in Reports → Summary and the Dashboard.'
@@ -603,9 +596,9 @@ function buildBestSellers(data: CopilotOverview, lang: Lang): SakuResponse {
 // bounded client-side scans with a short-lived module cache. All read-only
 // GETs through the user's own token — no data leaves the browser session.
 
-type CustomerRow = Awaited<ReturnType<typeof listCustomers>>["data"][number]
 
-const entityCache = new Map<string, { at: number; value: Product[] | CustomerRow[] }>()
+
+const entityCache = new Map<string, { at: number; value: Product[] | ChatTabCustomerRow[] }>()
 const ENTITY_CACHE_MS = 60_000
 
 async function loadProducts(): Promise<Product[]> {
@@ -619,11 +612,11 @@ async function loadProducts(): Promise<Product[]> {
   return items
 }
 
-async function loadCustomers(): Promise<CustomerRow[]> {
-  const hit = entityCache.get("customers") as { at: number; value: CustomerRow[] } | undefined
+async function loadCustomers(): Promise<ChatTabCustomerRow[]> {
+  const hit = entityCache.get("customers") as { at: number; value: ChatTabCustomerRow[] } | undefined
   if (hit && Date.now() - hit.at < ENTITY_CACHE_MS) return hit.value
   const res = await listCustomers()
-  const items: CustomerRow[] = res.data
+  const items: ChatTabCustomerRow[] = res.data
   entityCache.set("customers", { at: Date.now(), value: items })
   return items
 }
@@ -655,9 +648,9 @@ function findProduct(products: Product[], name: string): Product | null {
 
 /** Find a customer by loose name / member-code match. */
 function findCustomer(
-  customers: CustomerRow[],
+  customers: ChatTabCustomerRow[],
   name: string,
-): CustomerRow | null {
+): ChatTabCustomerRow | null {
   const n = normName(name)
   if (!n) return null
   return (
@@ -722,17 +715,17 @@ function isProductIntent(rawQ: string): boolean {
 async function buildDebtorEntityResponse(
   name: string,
   data: CopilotOverview,
-  lang: Lang,
-): Promise<SakuResponse | null> {
+  lang: ChatTabLang,
+): Promise<ChatTabSakuResponse | null> {
   const customers = await loadCustomers()
   const customer = findCustomer(customers, name)
   if (!customer) return null
 
   const money = data.moneyIntelligence
   const cust = money.agingCustomers.find((c) => normName(c.customerName) === normName(customer.full_name))
-  const items: ContextItem[] = []
+  const items: ChatTabContextItem[] = []
 
-  const sections: SakuSection[] = [
+  const sections: ChatTabSakuSection[] = [
     sec('👤', customer.full_name,
       cust
         ? `${lang === 'en' ? 'Outstanding' : 'ยอดค้างชำระ'}: ${fmtMoney(cust.outstanding)}`
@@ -763,15 +756,15 @@ async function buildProductEntityResponse(
   name: string,
   question: string,
   data: CopilotOverview,
-  lang: Lang,
-): Promise<SakuResponse | null> {
+  lang: ChatTabLang,
+): Promise<ChatTabSakuResponse | null> {
   const products = await loadProducts()
   const product = findProduct(products, name)
   if (!product) return null
 
   const q = normLower(question)
-  const items: ContextItem[] = []
-  const sections: SakuSection[] = []
+  const items: ChatTabContextItem[] = []
+  const sections: ChatTabSakuSection[] = []
 
   // Stock + location (QA case 3)
   sections.push(sec('📦', product.name,
@@ -809,9 +802,9 @@ async function buildProductEntityResponse(
 function buildSakuResponse(
   input: string,
   data: CopilotOverview | undefined,
-  lang: Lang,
-  prevCtx: ConversationContext,
-): SakuResponse {
+  lang: ChatTabLang,
+  prevCtx: ChatTabConversationContext,
+): ChatTabSakuResponse {
   if (!data) {
     return {
       sections: [sec('⏳', '', lang === 'en' ? 'Loading store data...' : 'กำลังโหลดข้อมูลร้าน...')],
@@ -899,7 +892,7 @@ function buildSakuResponse(
       q.includes('ค่าเช่า') || q.includes('ค่าน้ำ') || q.includes('ค่าไฟ') ||
       q.includes('losing money') || q.includes('lose money') || q.includes('loss') || q.includes('net profit')) {
     const askingToday = q.includes('วันนี้') || q.includes('today')
-    const sections: SakuSection[] = []
+    const sections: ChatTabSakuSection[] = []
 
     if (askingToday) {
       // Show today's snapshot first — use today's profit for the status, not 7-day
@@ -960,7 +953,7 @@ function buildSakuResponse(
         !q.includes('ขายแย่') && !q.includes('เพิ่มยอด') && !q.includes('โตขึ้น'))) {
     // QA case 1: "ยอดขายวันนี้" — answer TODAY first, 7-day second.
     const askingToday = asksToday(input)
-    const sections: SakuSection[] = []
+    const sections: ChatTabSakuSection[] = []
 
     if (askingToday) {
       const profitLabel = s.profitToday >= 0
@@ -1013,8 +1006,8 @@ function buildSakuResponse(
       }
     }
 
-    const items: ContextItem[] = []
-    const sections: SakuSection[] = []
+    const items: ChatTabContextItem[] = []
+    const sections: ChatTabSakuSection[] = []
     const allPriorities = de.todayPriorities.length > 0 ? de.todayPriorities : [de.topPriority]
     const top3 = allPriorities.slice(0, 3)
 
@@ -1052,8 +1045,8 @@ function buildSakuResponse(
       (/เป็นยังไง|เป็นไง|เป็นอย่างไร|สถานะร้าน/.test(q) &&
         !/จัดซื้อ|ซื้อ|สต็อก|สินค้า|ลูกหนี้|หนี้|ค้าง|สั่ง|ซัพพลาย|ต้นทุน|stock|supplier|reorder/.test(q) &&
         !/อากาศ|ฝน|หุ้น|ทอง|บอล|รถติด|น้ำมัน|ดอลลาร|หวย/.test(q))) {
-    const items: ContextItem[] = []
-    const sections: SakuSection[] = []
+    const items: ChatTabContextItem[] = []
+    const sections: ChatTabSakuSection[] = []
 
     const scoreLabel = h.overall >= 80 ? (lang === 'en' ? 'Great' : 'ดีมาก') :
                        h.overall >= 60 ? (lang === 'en' ? 'Needs attention' : 'ต้องดูแล') :
@@ -1099,8 +1092,8 @@ function buildSakuResponse(
       q.includes('ขายไม่ออก') || q.includes('ขายไม่ได้') || q.includes('ขายไม่ดี') || q.includes('ขายไม่ค่อย') || q.includes('ขายแย่') ||
       q.includes('ค้างสต็อก') || q.includes('ของค้าง') || q.includes('นอนสต็อก') ||
       q.includes('เติมของ') || q.includes('เติมสต') || q.includes('ในคลัง') || q.includes('เหลือน้อย') || q.includes('reorder')) {
-    const items: ContextItem[] = []
-    const sections: SakuSection[] = []
+    const items: ChatTabContextItem[] = []
+    const sections: ChatTabSakuSection[] = []
 
     sections.push(sec('📦', lang === 'en' ? 'Inventory' : 'สต็อกสินค้า',
       lang === 'en' ? `Out: ${h.inventory.outOfStockCount} | Low: ${h.inventory.lowStockCount} | Score: ${h.inventory.score}/100` : `หมด ${h.inventory.outOfStockCount} | ใกล้หมด ${h.inventory.lowStockCount} | คะแนน ${h.inventory.score}/100`,
@@ -1128,7 +1121,7 @@ function buildSakuResponse(
       ))
     }
 
-    const stockCtx: ConversationContext = { lastTopic: 'stock', lastItems: items, lastItemType: items.length > 0 ? 'product' : null }
+    const stockCtx: ChatTabConversationContext = { lastTopic: 'stock', lastItems: items, lastItemType: items.length > 0 ? 'product' : null }
     return {
       sections,
       followUps: generateFollowUps('stock', data, lang, stockCtx),
@@ -1154,8 +1147,8 @@ function buildSakuResponse(
       }
     }
 
-    const items: ContextItem[] = []
-    const sections: SakuSection[] = [
+    const items: ChatTabContextItem[] = []
+    const sections: ChatTabSakuSection[] = [
       sec('👤', lang === 'en' ? 'Credit & Aging' : 'ลูกหนี้',
         `${lang === 'en' ? 'Outstanding' : 'ค้างทั้งหมด'}: ${fmtMoney(money.totalOutstanding)}`,
         `${lang === 'en' ? 'Overdue' : 'เกินกำหนด'}: ${fmtMoney(money.totalOverdue)}`,
@@ -1181,7 +1174,7 @@ function buildSakuResponse(
       sections.push(sec('🔴', lang === 'en' ? 'Collect first' : 'เก็บก่อน', ...custLines))
     }
 
-    const agingCtx: ConversationContext = { lastTopic: 'aging', lastItems: items, lastItemType: items.length > 0 ? 'customer' : null }
+    const agingCtx: ChatTabConversationContext = { lastTopic: 'aging', lastItems: items, lastItemType: items.length > 0 ? 'customer' : null }
     return {
       sections,
       followUps: generateFollowUps('aging', data, lang, agingCtx),
@@ -1194,8 +1187,8 @@ function buildSakuResponse(
       q.includes('ต้นทุน') || q.includes('ราคาทุน') || q.includes('ใบสั่งซื้อ') || q.includes('จัดซื้อ') ||
       q.includes('พึ่งเจ้า') || q.includes('เจ้าเดียว') || /\bpo\b/.test(q) ||
       q.includes('purchase') || q.includes('supplier') || q.includes('cost') || q.includes('buy') || q.includes('reorder')) {
-    const items: ContextItem[] = []
-    const sections: SakuSection[] = []
+    const items: ChatTabContextItem[] = []
+    const sections: ChatTabSakuSection[] = []
     const riskTh = purch.concentrationRisk === 'high' ? 'สูง' : purch.concentrationRisk === 'medium' ? 'ปานกลาง' : 'ต่ำ'
 
     sections.push(sec('🛒', lang === 'en' ? 'Purchasing' : 'จัดซื้อ',
@@ -1224,7 +1217,7 @@ function buildSakuResponse(
       sections.push(sec('⚠️', '', lang === 'en' ? `${purch.noSupplierProducts} products without supplier` : `${purch.noSupplierProducts} สินค้าไม่มีซัพพลายเออร์`))
     }
 
-    const purchCtx: ConversationContext = { lastTopic: 'purchasing', lastItems: items, lastItemType: items.length > 0 ? 'product' : null }
+    const purchCtx: ChatTabConversationContext = { lastTopic: 'purchasing', lastItems: items, lastItemType: items.length > 0 ? 'product' : null }
     return {
       sections,
       followUps: generateFollowUps('purchasing', data, lang, purchCtx),
@@ -1243,17 +1236,17 @@ function buildSakuResponse(
       }
     }
 
-    const items: ContextItem[] = []
+    const items: ChatTabContextItem[] = []
     const riskLines = risks.slice(0, 5).map((r, i) => {
       items.push({ index: i + 1, label: r.title, type: 'risk', data: r })
       return `${i + 1}. ${r.title}`
     })
-    const sections: SakuSection[] = [sec('⚠️', lang === 'en' ? `Issues (${risks.length})` : `ปัญหา (${risks.length})`, ...riskLines)]
+    const sections: ChatTabSakuSection[] = [sec('⚠️', lang === 'en' ? `Issues (${risks.length})` : `ปัญหา (${risks.length})`, ...riskLines)]
     if (risks.length > 5) {
       sections[0].lines.push(lang === 'en' ? `... +${risks.length - 5} more` : `... อีก ${risks.length - 5} รายการ`)
     }
 
-    const riskCtx: ConversationContext = { lastTopic: 'risks', lastItems: items, lastItemType: 'risk' }
+    const riskCtx: ChatTabConversationContext = { lastTopic: 'risks', lastItems: items, lastItemType: 'risk' }
     return {
       sections,
       followUps: generateFollowUps('risks', data, lang, riskCtx),
@@ -1272,7 +1265,7 @@ function buildSakuResponse(
       }
     }
 
-    const items: ContextItem[] = []
+    const items: ChatTabContextItem[] = []
     const oppLines = opportunities.map((o, i) => {
       items.push({ index: i + 1, label: o.title, type: 'opportunity', data: o })
       return `${i + 1}. ${o.title}${o.metric ? ` (${o.metric})` : ''}`
@@ -1330,7 +1323,7 @@ const ACT_MODULE: Record<string, { th: string; en: string }> = {
   invoice: { th: 'ใบแจ้งหนี้', en: 'invoice' }, warehouse: { th: 'คลังสินค้า', en: 'warehouse' },
 }
 
-function actLabel(map: Record<string, { th: string; en: string }>, key: string, lang: Lang): string {
+function actLabel(map: Record<string, { th: string; en: string }>, key: string, lang: ChatTabLang): string {
   return map[key] ? (lang === 'en' ? map[key].en : map[key].th) : key
 }
 
@@ -1345,14 +1338,14 @@ function fmtVal(v: unknown): string {
 }
 
 // Builds "field A→B, field2 C→D" for the scalar changes of one entry (top 2).
-function changeSummary(entry: ActivityLogEntry, lang: Lang): string {
+function changeSummary(entry: ActivityLogEntry, lang: ChatTabLang): string {
   const f = entry.changes?.fields
   if (!f) return ''
   const keys = Object.keys(f).filter(k => k !== 'data' && (f[k].before === null || ['string', 'number', 'boolean'].includes(typeof f[k].before) || ['string', 'number', 'boolean'].includes(typeof f[k].after)))
   return keys.slice(0, 2).map(k => `${actLabel(ACT_FIELD, k, lang)} ${fmtVal(f[k].before)}→${fmtVal(f[k].after)}`).join(', ')
 }
 
-function entryLine(e: ActivityLogEntry, lang: Lang): string {
+function entryLine(e: ActivityLogEntry, lang: ChatTabLang): string {
   const who = e.user_name || (lang === 'en' ? 'someone' : 'ใครบางคน')
   const act = actLabel(ACT_ACTION, e.action, lang)
   const mod = actLabel(ACT_MODULE, e.module, lang)
@@ -1369,7 +1362,7 @@ async function fetchActivities(q: string): Promise<ActivityLogEntry[]> {
   return res.items
 }
 
-function activityFollowUps(lang: Lang): CopilotFollowUp[] {
+function activityFollowUps(lang: ChatTabLang): CopilotFollowUp[] {
   return [
     { label: lang === 'en' ? '💰 Who changed prices' : '💰 ใครแก้ราคา', query: lang === 'en' ? 'who changed prices today' : 'ใครแก้ราคาวันนี้' },
     { label: lang === 'en' ? '🗑 Deletions' : '🗑 ลบอะไรบ้าง', query: lang === 'en' ? 'what was deleted today' : 'วันนี้ลบอะไรบ้าง' },
@@ -1377,7 +1370,7 @@ function activityFollowUps(lang: Lang): CopilotFollowUp[] {
   ]
 }
 
-function buildActivityResponse(q: string, acts: ActivityLogEntry[], lang: Lang): SakuResponse {
+function buildActivityResponse(q: string, acts: ActivityLogEntry[], lang: ChatTabLang): ChatTabSakuResponse {
   const period = /สัปดาห์|week|7 ?วัน|7 ?day/i.test(q)
     ? (lang === 'en' ? 'last 7 days' : '7 วันล่าสุด')
     : (lang === 'en' ? 'today' : 'วันนี้')
@@ -1394,7 +1387,7 @@ function buildActivityResponse(q: string, acts: ActivityLogEntry[], lang: Lang):
   const deleteIntent = /ลบ|ยกเลิก|delete|void|cancel|remove/i.test(q)
   const reviewIntent = /ตรวจสอบ|ผิดปกติ|น่าสงสัย|review|suspicious|check|unusual/i.test(q)
 
-  const sections: SakuSection[] = []
+  const sections: ChatTabSakuSection[] = []
 
   if (priceIntent) {
     const priced = acts.filter(e => e.action === 'update' && e.changes?.fields &&
@@ -1518,7 +1511,7 @@ function searchHelpTopics(rawQ: string): { categoryTitle: string; topic: HelpTop
   return results.sort((a, b) => b.score - a.score)
 }
 
-function buildHelpResponse(q: string, lang: Lang): SakuResponse {
+function buildHelpResponse(q: string, lang: ChatTabLang): ChatTabSakuResponse {
   const lower = q.toLowerCase()
 
   const isOverview =
@@ -1561,7 +1554,7 @@ function buildHelpResponse(q: string, lang: Lang): SakuResponse {
   }
 
   const top = results[0]
-  const sections: SakuSection[] = []
+  const sections: ChatTabSakuSection[] = []
 
   if (results.length === 1 || top.score >= (results[1]?.score ?? 0) * 1.5) {
     const { topic, categoryTitle } = top
@@ -1601,16 +1594,9 @@ function buildHelpResponse(q: string, lang: Lang): SakuResponse {
   }
 }
 
-// ── Message Type ──
+// ── ChatTabMessage Type ──
 
-interface Message {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  sections?: SakuSection[]
-  followUps?: CopilotFollowUp[]
-  timestamp: Date
-}
+
 
 // ── Section Renderer ──
 
@@ -1629,7 +1615,7 @@ const SECTION_BG: Record<string, string> = {
   '📋': 'bg-blue-50 border-blue-200',
 }
 
-function SectionBlock({ section }: { section: SakuSection }) {
+function SectionBlock({ section }: { section: ChatTabSakuSection }) {
   const bg = SECTION_BG[section.icon] ?? 'bg-white border-slate-100'
   return (
     <div className={`rounded-lg border px-3 py-2 ${bg}`}>
@@ -1655,18 +1641,10 @@ function SectionBlock({ section }: { section: SakuSection }) {
 
 // ── Empty-state suggestion cards (Edge-Copilot style) ──
 
-interface StarterCard {
-  Icon: LucideIcon
-  label: string
-  query: string
-}
-interface StarterGroup {
-  Icon: LucideIcon
-  title: string
-  cards: StarterCard[]
-}
 
-const STARTER_GROUPS: StarterGroup[] = [
+
+
+const STARTER_GROUPS: ChatTabStarterGroup[] = [
   {
     Icon: BarChart3,
     title: 'ดูข้อมูลร้าน',
@@ -1737,9 +1715,9 @@ function EmptyState({ onPick }: { onPick: (q: string) => void }) {
 
 export function ChatTab() {
   const { data, pendingChatMessage, clearPendingChat } = useCopilot()
-  const [sessionLang, setSessionLang] = useState<Lang>('th')
-  const [convCtx, setConvCtx] = useState<ConversationContext>(emptyContext)
-  const [messages, setMessages] = useState<Message[]>(() => [
+  const [sessionLang, setSessionLang] = useState<ChatTabLang>('th')
+  const [convCtx, setConvCtx] = useState<ChatTabConversationContext>(emptyContext)
+  const [messages, setMessages] = useState<ChatTabMessage[]>(() => [
     {
       id: 'welcome',
       role: 'assistant',
@@ -1770,7 +1748,7 @@ export function ChatTab() {
     const lang = detectLang(q)
     setSessionLang(lang)
 
-    const userMsg: Message = {
+    const userMsg: ChatTabMessage = {
       id: `msg-${++msgId.current}-u`,
       role: 'user',
       content: q,
@@ -1780,7 +1758,7 @@ export function ChatTab() {
     // Activity Center questions (spec §12) need the activity log, fetched on demand.
     if (isActivityIntent(q)) {
       const thinkingId = `msg-${++msgId.current}-a`
-      const thinking: Message = {
+      const thinking: ChatTabMessage = {
         id: thinkingId,
         role: 'assistant',
         content: '',
@@ -1815,7 +1793,7 @@ export function ChatTab() {
     const isProductQ = isProductIntent(q)
     if (entityName && (isDebtorQ || isProductQ) && data) {
       const thinkingId = `msg-${++msgId.current}-a`
-      const thinking: Message = {
+      const thinking: ChatTabMessage = {
         id: thinkingId,
         role: 'assistant',
         content: '',
@@ -1825,7 +1803,7 @@ export function ChatTab() {
       setMessages(prev => [...prev, userMsg, thinking])
       setInput('')
       void (async () => {
-        let response: SakuResponse | null = null
+        let response: ChatTabSakuResponse | null = null
         try {
           if (isDebtorQ) {
             response = await buildDebtorEntityResponse(entityName, data, lang)
@@ -1858,7 +1836,7 @@ export function ChatTab() {
     if (isHelpIntent(q)) {
       const response = buildHelpResponse(q, lang)
       setConvCtx(response.context)
-      const helpMsg: Message = {
+      const helpMsg: ChatTabMessage = {
         id: `msg-${++msgId.current}-a`,
         role: 'assistant',
         content: '',
@@ -1873,7 +1851,7 @@ export function ChatTab() {
 
     const response = buildSakuResponse(q, data, lang, convCtx)
     setConvCtx(response.context)
-    const assistantMsg: Message = {
+    const assistantMsg: ChatTabMessage = {
       id: `msg-${++msgId.current}-a`,
       role: 'assistant',
       content: '',

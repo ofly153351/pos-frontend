@@ -4,23 +4,17 @@ import { useState } from "react";
 import { Camera } from "lucide-react";
 
 import { CameraScanner } from "@/components/shared/camera-scanner";
+import type { ScanButtonScanButtonProps } from "./types";
+
 
 const DEFAULT_TITLE = "สแกนบาร์โค้ดด้วยกล้อง (มือถือ)";
 
-type ScanButtonProps = {
-  /** Called with the decoded barcode/SKU string once the camera detects a code. */
-  onScan: (code: string) => void;
-  /** Tooltip + aria-label. Pass a localized string; falls back to Thai. */
-  title?: string;
-  disabled?: boolean;
-  /** Override the button styling to match the host input's height/shape. */
-  className?: string;
-};
+
 
 // Reusable camera-scan trigger: a single icon button that opens the shared
 // CameraScanner overlay and forwards the decoded code to `onScan`. Used next to
 // every product-search input so mobile users can scan instead of type.
-export function ScanButton({ onScan, title, disabled = false, className }: ScanButtonProps) {
+export function ScanButton({ onScan, title, disabled = false, className }: ScanButtonScanButtonProps) {
   const [showCamera, setShowCamera] = useState(false);
   const label = title ?? DEFAULT_TITLE;
 

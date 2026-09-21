@@ -2,17 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Camera, X, AlertCircle, RefreshCw } from "lucide-react";
+import type { CameraScannerProps } from "./types";
+import type { CameraScannerScanState } from "./types";
 
-type Props = {
-  onDetected: (barcode: string) => void;
-  onClose: () => void;
-};
 
-type ScanState = "starting" | "scanning" | "error";
 
-export function CameraScanner({ onDetected, onClose }: Props) {
+
+
+
+export function CameraScanner({ onDetected, onClose }: CameraScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [state, setState] = useState<ScanState>("starting");
+  const [state, setState] = useState<CameraScannerScanState>("starting");
   const [errorMsg, setErrorMsg] = useState("");
   const stopRef = useRef<(() => void) | null>(null);
   const detectedRef = useRef(false);

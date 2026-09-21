@@ -12,94 +12,14 @@ import { CopilotPanel } from "@/components/copilot/copilot-panel";
 import type { NavLabels } from "@/components/navigation/nav-config";
 import type { SalesDictionary } from "@/components/sales/types";
 import type { Locale } from "@/lib/locale-config";
+import type { UserWorkspaceLayoutUserWorkspaceLayoutProps } from "./types";
+
 
 const CashierModal = dynamic(() =>
   import("@/components/sales/cashier-modal").then((mod) => mod.CashierModal),
 );
 
-type UserWorkspaceLayoutProps = {
-  children: React.ReactNode;
-  locale: Locale;
-  salesDictionary: SalesDictionary;
-  shell: {
-    brand: string;
-    completeSale: string;
-    customers: string;
-    dashboard: string;
-    documentBills: string;
-    documentPending: string;
-    documents: string;
-    editProfile: string;
-    inventory: string;
-    products: string;
-    productList: string;
-    masterData: string;
-    promotions: string;
-    logout: string;
-    purchasing: string;
-    purchaseOrders: string;
-    reports: string;
-    reportsInventoryValue: string;
-    reportsSummary: string;
-    finance: string;
-    financeExpenses: string;
-    financePnl: string;
-    register: string;
-    salesHistory: string;
-    searchPlaceholder: string;
-    settings: string;
-    storageLocations: string;
-    receiptPayment: string;
-    activityLogs: string;
-    staff: string;
-    storeLabel: string;
-    stockCategories: string;
-    stockLevels: string;
-    stockCount: string;
-    stockWarehouses: string;
-    warehouseOverview: string;
-    creditSales: string;
-    notificationsLowStock: string;
-    notificationsLowStockDesc: string;
-    notificationsNone: string;
-    notificationsNoneDesc: string;
-    notificationsOutOfStock: string;
-    notificationsOutOfStockDesc: string;
-    notificationsPendingApprovals: string;
-    notificationsPendingApprovalsDesc: string;
-    notificationsPendingCounts: string;
-    notificationsPendingCountsDesc: string;
-    notificationsTitle: string;
-    notificationsViewAll: string;
-    receiveGoods: string;
-    station: string;
-    suppliers: string;
-    transactions: string;
-    help: string;
-  };
-  titles: {
-    customers: string;
-    dashboard: string;
-    documents: string;
-    profile?: string;
-    promotions?: string;
-    reports?: string;
-    reportsSummary?: string;
-    finance?: string;
-    financePnl?: string;
-    sales: string;
-    settings: string;
-    staff?: string;
-    stock: string;
-    inventory?: string;
-    stockCategories: string;
-    stockWarehouses: string;
-    warehouseOverview: string;
-    receiveGoods: string;
-    purchaseOrders: string;
-    suppliers: string;
-  };
-};
+
 
 export function UserWorkspaceLayout({
   children,
@@ -107,7 +27,7 @@ export function UserWorkspaceLayout({
   salesDictionary,
   shell,
   titles,
-}: UserWorkspaceLayoutProps) {
+}: UserWorkspaceLayoutUserWorkspaceLayoutProps) {
   const pathname = usePathname();
   // POS (/sales) is a self-contained full-height layout — leave it untouched.
   // Every other workspace page gets extra bottom padding so page-bottom content

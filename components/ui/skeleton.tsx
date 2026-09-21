@@ -1,3 +1,4 @@
+import type { SkeletonSkeletonProps } from "./types";
 /**
  * Skeleton loading primitives — violet/slate theme, animate-pulse.
  *
@@ -7,12 +8,9 @@
 
 // ── Base ─────────────────────────────────────────────────────────────────────
 
-type SkeletonProps = {
-  className?: string;
-  style?: React.CSSProperties;
-};
 
-export function Skeleton({ className = "", style }: SkeletonProps) {
+
+export function Skeleton({ className = "", style }: SkeletonSkeletonProps) {
   return (
     <div
       className={`animate-pulse rounded-lg bg-slate-200 ${className}`}
@@ -65,7 +63,7 @@ export function SkeletonTable({ rows = 6, cols = 5, className = "" }: { rows?: n
 
 // ── KPI Card ─────────────────────────────────────────────────────────────────
 
-export function SkeletonKPICard({ className = "" }: SkeletonProps) {
+export function SkeletonKPICard({ className = "" }: SkeletonSkeletonProps) {
   return (
     <div className={`rounded-2xl border border-slate-100 bg-white p-5 shadow-sm ${className}`} aria-hidden="true">
       <div className="flex items-start justify-between">
@@ -82,7 +80,7 @@ export function SkeletonKPICard({ className = "" }: SkeletonProps) {
 
 // ── List item (sidebar card) ──────────────────────────────────────────────────
 
-export function SkeletonListItem({ className = "" }: SkeletonProps) {
+export function SkeletonListItem({ className = "" }: SkeletonSkeletonProps) {
   return (
     <div className={`flex items-center gap-3 rounded-xl border border-slate-100 bg-white p-3 ${className}`} aria-hidden="true">
       <div className="h-11 w-11 animate-pulse rounded-xl bg-slate-200 flex-shrink-0" />
@@ -97,7 +95,7 @@ export function SkeletonListItem({ className = "" }: SkeletonProps) {
 
 // ── Product grid card ─────────────────────────────────────────────────────────
 
-export function SkeletonProductCard({ className = "" }: SkeletonProps) {
+export function SkeletonProductCard({ className = "" }: SkeletonSkeletonProps) {
   return (
     <div className={`rounded-2xl border border-slate-100 bg-white overflow-hidden ${className}`} aria-hidden="true">
       <div className="h-[190px] w-full animate-pulse bg-slate-200" />
@@ -139,7 +137,7 @@ export function SkeletonSettingsPanel({ rows = 4, className = "" }: { rows?: num
 
 // ── Stat row (dashboard low/high stock) ──────────────────────────────────────
 
-export function SkeletonStatRow({ className = "" }: SkeletonProps) {
+export function SkeletonStatRow({ className = "" }: SkeletonSkeletonProps) {
   return (
     <div className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${className}`} aria-hidden="true">
       <div className="h-8 w-8 animate-pulse rounded-lg bg-slate-200 flex-shrink-0" />
@@ -154,7 +152,7 @@ export function SkeletonStatRow({ className = "" }: SkeletonProps) {
 
 // ── Document / receipt row ────────────────────────────────────────────────────
 
-export function SkeletonDocumentRow({ className = "" }: SkeletonProps) {
+export function SkeletonDocumentRow({ className = "" }: SkeletonSkeletonProps) {
   return (
     <div className={`flex items-center gap-4 border-b border-slate-100 px-4 py-3 ${className}`} aria-hidden="true">
       <div className="h-5 w-5 animate-pulse rounded-md bg-slate-200 flex-shrink-0" />

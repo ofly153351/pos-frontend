@@ -20,56 +20,26 @@ import { clearCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
 import type { Locale } from "@/lib/locale-config";
 import { login, register } from "@/services/auth";
 import type { LoginRequest, RegisterRequest } from "@/types/auth";
+import type { AuthFormAuthFormField } from "./types";
+import type { AuthFormAuthFormDictionary } from "./types";
+import type { AuthFormStrengthLabels } from "./types";
+import type { AuthFormTermsConfig } from "./types";
+import type { AuthFormAuthFormProps } from "./types";
+import type { AuthFormFieldErrors } from "./types";
+export type { AuthFormAuthFormField as AuthFormField } from "./types";
 
-export type AuthFormField = {
-  autoComplete: string;
-  label: string;
-  name: string;
-  placeholder: string;
-  type: "email" | "password" | "text" | "tel";
-  half?: boolean; // render two consecutive `half` fields side-by-side
-  confirmOf?: string; // validate equals this field; excluded from API payload
-};
 
-type AuthFormDictionary = {
-  emailInvalid: string;
-  genericError: string;
-  passwordMin: string;
-  redirecting: string;
-  required: string;
-};
 
-type StrengthLabels = {
-  weak: string;
-  medium: string;
-  good: string;
-  strong: string;
-};
 
-type TermsConfig = {
-  prefix: string;
-  termsLink: string;
-  and: string;
-  privacyLink: string;
-  required: string;
-};
 
-type AuthFormProps = {
-  fields: AuthFormField[];
-  locale: Locale;
-  mode: "login" | "register";
-  submitLabel: string;
-  validation: AuthFormDictionary;
-  rememberLabel?: string;
-  forgotLabel?: string;
-  secureNote?: string;
-  showStrength?: boolean;
-  strengthLabels?: StrengthLabels;
-  mismatchMessage?: string;
-  terms?: TermsConfig;
-};
 
-type FieldErrors = Record<string, string>;
+
+
+
+
+
+
+
 
 function leadingIcon(name: string, type: string) {
   if (name === "storeName" || name === "store") return Store;
@@ -103,10 +73,10 @@ export function AuthForm({
   strengthLabels,
   mismatchMessage,
   terms,
-}: AuthFormProps) {
+}: AuthFormAuthFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [errors, setErrors] = useState<FieldErrors>({});
+  const [errors, setErrors] = useState<AuthFormFieldErrors>({});
   const [message, setMessage] = useState("");
   const [messageTone, setMessageTone] = useState<"error" | "success">("success");
   const [visiblePw, setVisiblePw] = useState<Record<string, boolean>>({});
@@ -120,7 +90,7 @@ export function AuthForm({
   const passwordValue = passwordField ? formValues[passwordField.name] ?? "" : "";
 
   function validate() {
-    const nextErrors: FieldErrors = {};
+    const nextErrors: AuthFormFieldErrors = {};
 
     for (const field of fields) {
       const value = formValues[field.name]?.trim() ?? "";
@@ -210,7 +180,7 @@ export function AuthForm({
 
   // Group consecutive half-width fields into 2-col rows.
   const rows = useMemo(() => {
-    const out: AuthFormField[][] = [];
+    const out: AuthFormAuthFormField[][] = [];
     let i = 0;
     while (i < fields.length) {
       const f = fields[i];
@@ -225,7 +195,7 @@ export function AuthForm({
     return out;
   }, [fields]);
 
-  function renderField(field: AuthFormField) {
+  function renderField(field: AuthFormAuthFormField) {
     const Icon = leadingIcon(field.name, field.type);
     const isPassword = field.type === "password";
     const show = visiblePw[field.name] ?? false;
@@ -389,7 +359,7 @@ function Checkbox({ checked, onChange }: { checked: boolean; onChange: (v: boole
 }
 
 // ── Password strength meter ──────────────────────────────────────────────────
-function StrengthMeter({ value, labels }: { value: string; labels: StrengthLabels }) {
+function StrengthMeter({ value, labels }: { value: string; labels: AuthFormStrengthLabels }) {
   const score = scorePassword(value);
   const barColors = ["", "bg-rose-500", "bg-amber-500", "bg-violet-500", "bg-emerald-500"];
   const textColors = ["text-slate-400", "text-rose-500", "text-amber-500", "text-violet-600", "text-emerald-600"];

@@ -23,55 +23,11 @@ import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
 import { createBankAccount, createStore, deleteBankAccount, getStoreById, listBankAccounts, listMyStores, updateStoreById } from "@/services/stores";
 import type { Store, StoreBankAccount } from "@/types/store";
+import type { StoreManagementPanelStoreManagementDictionary } from "./types";
+import type { StoreManagementPanelProps } from "./types";
 
-type StoreManagementDictionary = {
-  activeLabel: string;
-  addStoreButton: string;
-  addressLabel: string;
-  basicInfoSection: string;
-  contactSection: string;
-  createStoreTitle: string;
-  createSubmit: string;
-  createSuccess: string;
-  creating: string;
-  currencyLabel: string;
-  emptyStores: string;
-  errorFallback: string;
-  locationSection: string;
-  logoLabel: string;
-  logoPreviewLabel: string;
-  logoSection: string;
-  nameLabel: string;
-  nameRequired: string;
-  noLogoLabel: string;
-  pageDescription: string;
-  pageTitle: string;
-  switchSectionTitle: string;
-  paymentSection: string;
-  phoneLabel: string;
-  planLabel: string;
-  plans: { growth: string; pro: string; starter: string };
-  promptPayLabel: string;
-  taxIdLabel: string;
-  selectStoreLabel: string;
-  storeListTitle: string;
-  switchStoreAction: string;
-  switchStoreHint: string;
-  switchedSuccess: string;
-  updateStoreTitle: string;
-  updateSubmit: string;
-  updateSuccess: string;
-  updating: string;
-  bankAccountsSection?: string;
-  bankAccountsEmpty?: string;
-  bankAccountAdd?: string;
-  bankAccountBank?: string;
-  bankAccountNo?: string;
-  bankAccountName?: string;
-  bankAccountAdded?: string;
-  bankAccountDeleted?: string;
-  bankAccountError?: string;
-};
+
+
 
 const THAI_BANKS = [
   { code: "BBL",   name: "ธนาคารกรุงเทพ" },
@@ -91,7 +47,7 @@ const THAI_BANKS = [
   { code: "OTHER", name: "ธนาคารอื่น" },
 ] as const;
 
-type Props = { dictionary: StoreManagementDictionary };
+
 
 const availablePlanCodes = ["starter", "growth", "pro"] as const;
 
@@ -137,7 +93,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputCls =
   "w-full rounded-lg border border-violet-100 bg-violet-50/60 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-100";
 
-export function StoreManagementPanel({ dictionary }: Props) {
+export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) {
   const router = useRouter();
   const pathname = usePathname();
 

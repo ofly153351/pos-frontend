@@ -10,20 +10,12 @@ import {
 } from "@/lib/auth-storage";
 import type { Locale } from "@/lib/locale-config";
 import type { AuthPayload } from "@/types/auth";
+import type { AuthStatusCardAuthStatusCardProps } from "./types";
 
-type AuthStatusCardProps = {
-  locale: Locale;
-  labels: {
-    backToLogin: string;
-    email: string;
-    empty: string;
-    logout: string;
-    title: string;
-    user: string;
-  };
-};
 
-export function AuthStatusCard({ locale, labels }: AuthStatusCardProps) {
+
+
+export function AuthStatusCard({ locale, labels }: AuthStatusCardAuthStatusCardProps) {
   const router = useRouter();
   const [session] = useState<AuthPayload | null>(() => {
     if (typeof window === "undefined") {

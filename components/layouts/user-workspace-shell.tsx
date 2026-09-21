@@ -2,19 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import type { Locale } from "@/lib/locale-config";
+import type { UserWorkspaceShellUserWorkspaceShellProps } from "./types";
 
-type UserWorkspaceShellProps = {
-  active: "dashboard" | "sales" | "stock";
-  children: ReactNode;
-  locale: Locale;
-  navigation: {
-    dashboard: string;
-    sales: string;
-    stock: string;
-  };
-  subtitle: string;
-  title: string;
-};
+
+
 
 export function UserWorkspaceShell({
   active,
@@ -23,7 +14,7 @@ export function UserWorkspaceShell({
   navigation,
   subtitle,
   title,
-}: UserWorkspaceShellProps) {
+}: UserWorkspaceShellUserWorkspaceShellProps) {
   const navItems = [
     {
       href: `/${locale}/dashboard`,

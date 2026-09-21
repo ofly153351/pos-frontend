@@ -36,222 +36,22 @@ import type {
   DashboardRecentSale,
   StoreDashboard,
 } from "@/types/dashboard";
+import type { DashboardManagerDashboardDictionary } from "./types";
+import type { DashboardManagerDashboardManagerProps } from "./types";
+import type { DashboardManagerFilterPeriod } from "./types";
+import type { DashboardManagerUserRole } from "./types";
+import type { DashboardManagerChartMetric } from "./types";
+
 
 // ── Dictionary type ─────────────────────────────────────────────────────────
 
-type DashboardDictionary = {
-  actions: {
-    newSaleDescription: string;
-    newSaleTitle: string;
-    stockDescription: string;
-    stockTitle: string;
-  };
-  actionCenter: {
-    title: string;
-    lowStock: string;
-    outOfStock: string;
-    negativeStock: string;
-    pendingCounts: string;
-    pendingApprovals: string;
-    critical: string;
-    warning: string;
-    info: string;
-    viewItems: string;
-    noIssues: string;
-  };
-  cards: {
-    lowStockHint: string;
-    lowStockLabel: string;
-    ordersHint: string;
-    ordersLabel: string;
-    salesTodayHint: string;
-    salesTodayLabel: string;
-  };
-  empty: string;
-  emptyStates: {
-    noSales: string;
-    noSalesAction: string;
-    noProducts: string;
-    noStock: string;
-    noStockAction: string;
-    noActivity: string;
-    noPayments: string;
-  };
-  filters: {
-    apply: string;
-    fromLabel: string;
-    lowStockLimitLabel: string;
-    lowStockThresholdLabel: string;
-    period7d: string;
-    period30d: string;
-    periodCustom: string;
-    periodLabel: string;
-    periodToday: string;
-    recentLimitLabel: string;
-    refresh: string;
-    toLabel: string;
-    topLimitLabel: string;
-  };
-  hero: {
-    storeOpen: string;
-    storeClosed: string;
-    totalSales: string;
-    totalOrders: string;
-    totalProfit: string;
-    storeStatus: string;
-    showingData: string;
-  };
-  inventoryAlerts: {
-    title: string;
-    lowStock: string;
-    outOfStock: string;
-    negativeStock: string;
-    pendingCounts: string;
-    viewAll: string;
-    noAlerts: string;
-  };
-  kpi: {
-    totalSales: string;
-    totalOrders: string;
-    totalProfit: string;
-    averageBill: string;
-    lowStockItems: string;
-    outOfStockItems: string;
-    customersServed: string;
-    topProduct: string;
-    vsPrevious: string;
-    noChange: string;
-    itemsUnit: string;
-    noSalesYet: string;
-  };
-  loading: string;
-  paymentMethods: {
-    cash: string;
-    transfer: string;
-    qr: string;
-    credit: string;
-    card: string;
-  };
-  period90d: string;
-  quickActions: {
-    openPos: string;
-    openPosDesc: string;
-    receiveStock: string;
-    receiveStockDesc: string;
-    stockCount: string;
-    stockCountDesc: string;
-    createQuotation: string;
-    createQuotationDesc: string;
-    customers: string;
-    customersDesc: string;
-    promotions: string;
-    promotionsDesc: string;
-  };
-  quickActionsTitle: string;
-  recentOrders: {
-    title: string;
-    invoice: string;
-    customer: string;
-    total: string;
-    payment: string;
-    time: string;
-    walkIn: string;
-    viewAll: string;
-    noOrders: string;
-    openPos: string;
-  };
-  bestSellers: {
-    title: string;
-    qtySold: string;
-    noBestSellers: string;
-    openPos: string;
-  };
-  stockAttention: {
-    title: string;
-    outOfStockSection: string;
-    lowStockSection: string;
-    remaining: string;
-    reorderPoint: string;
-    warehouse: string;
-    outOfStockBadge: string;
-    lowBadge: string;
-    viewAll: string;
-    noIssues: string;
-    stockError: string;
-    stockRetry: string;
-  };
-  recentSales: {
-    title: string;
-  };
-  expenseCategories: {
-    title: string;
-    subtitle: string;
-    empty: string;
-  };
-  requestFailedLabel: string;
-  roleLabel: {
-    owner: string;
-    cashier: string;
-    warehouse: string;
-  };
-  salesTrend: {
-    title: string;
-    revenue: string;
-    profit: string;
-    orders: string;
-  };
-  sections: {
-    highStockProducts: string;
-    lowStockProducts: string;
-    paymentBreakdown: string;
-    range: string;
-    recentSales: string;
-    topProducts: string;
-  };
-  subtitle: string;
-  summary: {
-    averageTicket: string;
-    discountAmount: string;
-    revenue: string;
-    salesCount: string;
-    totalItems: string;
-    vatAmount: string;
-  };
-  table: {
-    amount: string;
-    cashier: string;
-    customer: string;
-    paymentMethod: string;
-    price: string;
-    productName: string;
-    quantity: string;
-    saleNumber: string;
-    soldAt: string;
-    sku: string;
-    stock: string;
-  };
-  title: string;
-  topProductsTable: {
-    title: string;
-    rank: string;
-    product: string;
-    qtySold: string;
-    revenue: string;
-    viewAll: string;
-  };
-  validation: {
-    customRangeRequired: string;
-  };
-};
 
-type DashboardManagerProps = {
-  dictionary: DashboardDictionary;
-  locale: string;
-};
 
-type FilterPeriod = HeroPeriod;
-type UserRole = "owner" | "cashier" | "warehouse";
-type ChartMetric = "revenue" | "profit" | "orders";
+
+
+
+
+
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -299,7 +99,7 @@ function toBangkokDay(iso: string): string {
   return `${y}-${m}-${d}`;
 }
 
-function formatDateRange(locale: string, period: FilterPeriod, fromDate?: string, toDate?: string): string {
+function formatDateRange(locale: string, period: DashboardManagerFilterPeriod, fromDate?: string, toDate?: string): string {
   const tag = toLocaleTag(locale);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -408,7 +208,7 @@ function DashboardBriefingCard() {
   );
 }
 
-const ROLE_SECTIONS: Record<UserRole, Set<string>> = {
+const ROLE_SECTIONS: Record<DashboardManagerUserRole, Set<string>> = {
   owner: new Set(["hero", "quickActions", "kpi", "actionCenter", "salesChart", "stockAttention", "recentSales"]),
   cashier: new Set(["hero", "quickActions", "kpi", "salesChart", "recentSales"]),
   warehouse: new Set(["hero", "quickActions", "kpi", "actionCenter", "stockAttention"]),
@@ -416,18 +216,18 @@ const ROLE_SECTIONS: Record<UserRole, Set<string>> = {
 
 // ── Component ───────────────────────────────────────────────────────────────
 
-export function DashboardManager({ dictionary, locale }: DashboardManagerProps) {
+export function DashboardManager({ dictionary, locale }: DashboardManagerDashboardManagerProps) {
   const t = dictionary;
 
-  const [period, setPeriod] = useState<FilterPeriod>("today");
+  const [period, setPeriod] = useState<DashboardManagerFilterPeriod>("today");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [chartMetric, setChartMetric] = useState<ChartMetric>("revenue");
+  const [chartMetric, setChartMetric] = useState<DashboardManagerChartMetric>("revenue");
   // Dashboard view is driven by the STORE-scoped role (store_members.role), not
   // the global users.role. Owner/manager get the full view; warehouse and cashier
   // get their reduced section sets. Unknown role defaults to least-privilege.
   const { role: storeRole } = useStoreRole();
-  const role: UserRole =
+  const role: DashboardManagerUserRole =
     storeRole === "owner" || storeRole === "manager"
       ? "owner"
       : storeRole === "warehouse"
@@ -580,7 +380,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerProps) 
             <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
               <label className="flex flex-col gap-1 text-[11px] text-white/90">
                 <span>{t.filters.periodLabel}</span>
-                <select className="rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-xs text-white outline-none" onChange={(e) => setPeriod(e.target.value as FilterPeriod)} value={period}>
+                <select className="rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-xs text-white outline-none" onChange={(e) => setPeriod(e.target.value as DashboardManagerFilterPeriod)} value={period}>
                   <option className="text-slate-900" value="today">{t.filters.periodToday}</option>
                   <option className="text-slate-900" value="7d">{t.filters.period7d}</option>
                   <option className="text-slate-900" value="30d">{t.filters.period30d}</option>

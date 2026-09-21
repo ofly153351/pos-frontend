@@ -2,18 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import type { Locale } from "@/lib/locale-config";
+import type { AdminWorkspaceShellAdminWorkspaceShellProps } from "./types";
 
-type AdminWorkspaceShellProps = {
-  active: "plans";
-  children: ReactNode;
-  locale: Locale;
-  navigation: {
-    dashboard: string;
-    plans: string;
-  };
-  subtitle: string;
-  title: string;
-};
+
+
 
 export function AdminWorkspaceShell({
   active,
@@ -22,7 +14,7 @@ export function AdminWorkspaceShell({
   navigation,
   subtitle,
   title,
-}: AdminWorkspaceShellProps) {
+}: AdminWorkspaceShellAdminWorkspaceShellProps) {
   const navItems = [
     {
       href: `/${locale}/admin/plans`,

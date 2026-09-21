@@ -18,45 +18,10 @@ import { Alert } from "@/components/ui/alert";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { toast } from "@/components/ui/toast";
 import type { Member, MemberStatus, StoreRole } from "@/types/member";
+import type { StaffManagerDict } from "./types";
 
-type Dict = {
-  pageTitle: string;
-  pageSubtitle: string;
-  addMember: string;
-  refresh: string;
-  empty: string;
-  forbidden: string;
-  you: string;
-  table: { name: string; email: string; role: string; status: string; joined: string; actions: string };
-  roles: Record<StoreRole, string>;
-  statusLabels: Record<MemberStatus, string>;
-  rowActions: { suspend: string; activate: string; remove: string };
-  form: {
-    title: string;
-    subtitle: string;
-    name: string;
-    email: string;
-    password: string;
-    passwordHint: string;
-    role: string;
-    submit: string;
-    cancel: string;
-  };
-  confirmRemove: string;
-  confirmRemoveTitle: string;
-  errors: {
-    generic: string;
-    nameRequired: string;
-    emailRequired: string;
-    passwordTooShort: string;
-    alreadyMember: string;
-    lastOwner: string;
-    ownerOnly: string;
-    selfRemove: string;
-    selfSuspend: string;
-  };
-  toast: { added: string; updated: string; removed: string };
-};
+
+
 
 const ROLE_ORDER: StoreRole[] = ["owner", "manager", "cashier", "warehouse"];
 
@@ -67,7 +32,7 @@ const ROLE_BADGE: Record<StoreRole, string> = {
   warehouse: "bg-amber-100 text-amber-700 border-amber-200",
 };
 
-export function StaffManager({ t, locale }: { t: Dict; locale: string }) {
+export function StaffManager({ t, locale }: { t: StaffManagerDict; locale: string }) {
   const queryClient = useQueryClient();
   const { role: storeRole, loading: roleLoading } = useStoreRole();
   const canManage = canManageStore(storeRole);
@@ -352,7 +317,7 @@ function AddMemberForm({
   onSuccess,
   onSubmitError,
 }: {
-  t: Dict;
+  t: StaffManagerDict;
   isOwner: boolean;
   onClose: () => void;
   onSuccess: () => void;

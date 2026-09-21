@@ -24,37 +24,34 @@ import {
   Wallet,
   Warehouse,
 } from "lucide-react";
+import type { NavConfigNavLeaf } from "./types";
+import type { NavConfigNavGroup } from "./types";
+import type { NavConfigNavEntry } from "./types";
+import type { NavConfigNavSection } from "./types";
+import type { NavConfigNavLabels } from "./types";
+export type { NavConfigNavLeaf as NavLeaf } from "./types";
+export type { NavConfigNavGroup as NavGroup } from "./types";
+export type { NavConfigNavEntry as NavEntry } from "./types";
+export type { NavConfigNavSection as NavSection } from "./types";
+export type { NavConfigNavLabels as NavLabels } from "./types";
 
-export type NavLeaf = {
-  key: string;
-  icon: ReactNode;
-  href: (locale: string) => string;
-};
 
-export type NavGroup = {
-  key: string;
-  icon: ReactNode;
-  href: (locale: string) => string;
-  children: NavLeaf[];
-};
 
-export type NavEntry = NavLeaf | NavGroup;
 
-export type NavSection = {
-  id: string;
-  labelKey: string;
-  manageOnly?: boolean;
-  entries: NavEntry[];
-};
 
-export function isNavGroup(entry: NavEntry): entry is NavGroup {
+
+
+
+
+
+export function isNavGroup(entry: NavConfigNavEntry): entry is NavConfigNavGroup {
   return "children" in entry;
 }
 
-export type NavLabels = Partial<Record<string, string>>;
+
 
 // Canonical shared navigation — one source of truth for Sidebar + POS Drawer.
-export const NAV_SECTIONS: NavSection[] = [
+export const NAV_SECTIONS: NavConfigNavSection[] = [
   // ① การขาย & ลูกค้า
   {
     id: "sales-customers",
@@ -249,4 +246,4 @@ export const NAV_SECTIONS: NavSection[] = [
 ];
 
 // Flat array for backward compatibility.
-export const NAV_ENTRIES: NavEntry[] = NAV_SECTIONS.flatMap((s) => s.entries);
+export const NAV_ENTRIES: NavConfigNavEntry[] = NAV_SECTIONS.flatMap((s) => s.entries);

@@ -9,20 +9,17 @@ import { type Locale } from "@/lib/locale-config";
 import { clearCurrentStoreId } from "@/lib/store-storage";
 import { logout } from "@/services/auth";
 import type { AuthPayload } from "@/types/auth";
+import type { UserProfileMenuUserProfileMenuProps } from "./types";
 
-type UserProfileMenuProps = {
-  editProfileLabel: string;
-  locale: Locale;
-  logoutLabel: string;
-  settingsLabel: string;
-};
+
+
 
 export function UserProfileMenu({
   editProfileLabel,
   locale,
   logoutLabel,
   settingsLabel,
-}: UserProfileMenuProps) {
+}: UserProfileMenuUserProfileMenuProps) {
   const router = useRouter();
   const [session, setSession] = useState<AuthPayload | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);

@@ -14,25 +14,16 @@ import {
 
 import { listLowStock } from "@/services/stock-alerts";
 import { listCountSessions } from "@/services/stock-count";
+import type { NotificationDropdownNotificationLabels } from "./types";
+import type { NotificationDropdownProps } from "./types";
+export type { NotificationDropdownNotificationLabels as NotificationLabels } from "./types";
 
-export type NotificationLabels = {
-  noneDesc: string;
-  none: string;
-  outOfStockDesc: string;
-  outOfStock: string;
-  lowStockDesc: string;
-  lowStock: string;
-  pendingApprovalsDesc: string;
-  pendingApprovals: string;
-  pendingCountsDesc: string;
-  pendingCounts: string;
-  title: string;
-  viewAll: string;
-};
 
-type Props = { labels: NotificationLabels; locale: string };
 
-export function NotificationDropdown({ labels, locale }: Props) {
+
+
+
+export function NotificationDropdown({ labels, locale }: NotificationDropdownProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [lowStock, setLowStock] = useState(0);

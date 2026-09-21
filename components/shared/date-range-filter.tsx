@@ -2,37 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronDown, X } from "lucide-react";
+import type { DateRangeFilterDateFilterPreset } from "./types";
+import type { DateRangeFilterDateFilterValue } from "./types";
+import type { DateRangeFilterDateRangeLabels } from "./types";
+import type { DateRangeFilterProps } from "./types";
+export type { DateRangeFilterDateFilterPreset as DateFilterPreset } from "./types";
+export type { DateRangeFilterDateFilterValue as DateFilterValue } from "./types";
+export type { DateRangeFilterDateRangeLabels as DateRangeLabels } from "./types";
 
-export type DateFilterPreset = "today" | "7d" | "30d" | "all";
 
-export type DateFilterValue = {
-  preset: DateFilterPreset;
-  custom?: {
-    from: string;
-    to: string;
-  } | null;
-};
 
-export type DateRangeLabels = {
-  today: string;
-  sevenDays: string;
-  thirtyDays: string;
-  all: string;
-  custom: string;
-  startDate: string;
-  endDate: string;
-  cancel: string;
-  apply: string;
-};
 
-type Props = {
-  value: DateFilterValue;
-  onChange: (value: DateFilterValue) => void;
-  labels: DateRangeLabels;
-  locale?: string;
-  className?: string;
-  buttonClassName?: string;
-};
+
+
+
+
+
 
 const BKK_OFFSET_MS = 7 * 60 * 60 * 1000;
 
@@ -46,7 +31,7 @@ function addDaysIso(dateIso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function presetRange(preset: DateFilterPreset): { from?: string; to?: string } {
+function presetRange(preset: DateRangeFilterDateFilterPreset): { from?: string; to?: string } {
   const today = todayIso();
   switch (preset) {
     case "today":
@@ -81,7 +66,7 @@ function formatDate(dateIso: string, locale = "th"): string {
   }).format(d);
 }
 
-export function resolveDateQuery(value: DateFilterValue): { date_from?: string; date_to?: string } {
+export function resolveDateQuery(value: DateRangeFilterDateFilterValue): { date_from?: string; date_to?: string } {
   if (value.custom?.from || value.custom?.to) {
     const { from, to } = normalizeRange(value.custom?.from ?? "", value.custom?.to ?? "");
     return { date_from: from, date_to: to };
@@ -93,12 +78,12 @@ export function resolveDateQuery(value: DateFilterValue): { date_from?: string; 
   };
 }
 
-export function isDefaultDateFilter(value: DateFilterValue, defaultPreset: DateFilterPreset): boolean {
+export function isDefaultDateFilter(value: DateRangeFilterDateFilterValue, defaultPreset: DateRangeFilterDateFilterPreset): boolean {
   return value.preset === defaultPreset && !value.custom;
 }
 
 export function formatDateRangeLabel(
-  value: NonNullable<DateFilterValue["custom"]>,
+  value: NonNullable<DateRangeFilterDateFilterValue["custom"]>,
   locale = "th",
 ): string {
   return `${formatDate(value.from, locale)} – ${formatDate(value.to, locale)}`;
@@ -111,7 +96,7 @@ export function DateRangeFilter({
   locale = "th",
   className = "",
   buttonClassName = "",
-}: Props) {
+}: DateRangeFilterProps) {
   const [open, setOpen] = useState(false);
   const [draftFrom, setDraftFrom] = useState("");
   const [draftTo, setDraftTo] = useState("");
@@ -164,7 +149,7 @@ export function DateRangeFilter({
   const customLabel = hasCustom ? formatDateRangeLabel(normalizeRange(value.custom?.from ?? "", value.custom?.to ?? ""), locale) : labels.custom;
   const canApply = draftFrom.trim() !== "" && draftTo.trim() !== "";
 
-  function selectPreset(preset: DateFilterPreset) {
+  function selectPreset(preset: DateRangeFilterDateFilterPreset) {
     onChange({ preset, custom: null });
     setOpen(false);
   }

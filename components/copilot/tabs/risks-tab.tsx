@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation"
 import { AlertTriangle, AlertCircle, Info, ArrowRight } from "lucide-react"
 import { useCopilot } from "../copilot-provider"
 import type { RiskSeverity } from "@/types/copilot"
+import type { RisksTabFilter } from "./../types";
 
-type Filter = 'all' | RiskSeverity
+
+
 
 const SEV_LABELS: Record<string, string> = {
   critical: 'วิกฤต',
@@ -44,7 +46,7 @@ function SevIcon({ sev }: { sev: string }) {
 
 export function RisksTab() {
   const { data, isLoading } = useCopilot()
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useState<RisksTabFilter>('all')
   const router = useRouter()
   const params = useParams()
   const locale = (params.locale as string) || 'th'
@@ -68,7 +70,7 @@ export function RisksTab() {
     low: risks.filter(r => r.severity === 'low').length,
   }
 
-  const filters: { id: Filter; label: string }[] = [
+  const filters: { id: RisksTabFilter; label: string }[] = [
     { id: 'all', label: `ทั้งหมด (${counts.all})` },
     { id: 'critical', label: `วิกฤต (${counts.critical})` },
     { id: 'high', label: `สูง (${counts.high})` },
@@ -77,7 +79,7 @@ export function RisksTab() {
 
   return (
     <div className="flex flex-col">
-      {/* Filter tabs */}
+      {/* RisksTabFilter tabs */}
       <div className="flex shrink-0 flex-wrap gap-1 border-b border-slate-100 px-4 py-2">
         {filters.map(f => (
           <button

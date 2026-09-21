@@ -37,58 +37,13 @@ import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
 import type { Locale } from "@/lib/locale-config";
 import { getStoreById, listMyStores } from "@/services/stores";
+import type { UserWorkspaceSidebarUserWorkspaceSidebarProps } from "./types";
+import type { UserWorkspaceSidebarSidebarGroupItem } from "./types";
 
-type UserWorkspaceSidebarProps = {
-  collapsed: boolean;
-  locale: Locale;
-  labels: {
-    creditSales: string;
-    customers: string;
-    dashboard: string;
-    documentBills: string;
-    documentPending: string;
-    documents: string;
-    editProfile: string;
-    inventory: string;
-    products: string;
-    productList: string;
-    masterData: string;
-    promotions: string;
-    purchasing: string;
-    purchaseOrders: string;
-    reports: string;
-    reportsInventoryValue: string;
-    reportsSummary: string;
-    finance: string;
-    financeExpenses: string;
-    financePnl: string;
-    receiveGoods: string;
-    register: string;
-    salesHistory: string;
-    settings: string;
-    storageLocations: string;
-    receiptPayment: string;
-    activityLogs: string;
-    staff: string;
-    stockCategories: string;
-    stockLevels: string;
-    stockCount: string;
-    stockWarehouses: string;
-    warehouseOverview: string;
-    suppliers: string;
-    transactions: string;
-  help: string;
-  };
-  onOpenCashier?: () => void;
-  shell: {
-    brand: string;
-    completeSale: string;
-    station: string;
-    storeLabel: string;
-  };
-};
 
-type SidebarGroupItem = { href: string; key: string; label: string; icon: ReactNode };
+
+
+
 
 function CollapsibleNavGroup({
   collapsed,
@@ -108,7 +63,7 @@ function CollapsibleNavGroup({
   active: boolean;
   expanded: boolean;
   onToggle: () => void;
-  items: SidebarGroupItem[];
+  items: UserWorkspaceSidebarSidebarGroupItem[];
   activeKey: string;
 }) {
   return (
@@ -197,7 +152,7 @@ export function UserWorkspaceSidebar({
   labels,
   onOpenCashier,
   shell,
-}: UserWorkspaceSidebarProps) {
+}: UserWorkspaceSidebarUserWorkspaceSidebarProps) {
   const pathname = usePathname();
   // Store-scoped role (store_members.role) drives visibility of management-only
   // nav groups (Reports & Finance, Settings, Staff). Operational groups stay
@@ -345,7 +300,7 @@ export function UserWorkspaceSidebar({
     { href: promotionsHref, key: "promotions", label: labels.promotions },
   ];
 
-  const productsItems: SidebarGroupItem[] = useMemo(
+  const productsItems: UserWorkspaceSidebarSidebarGroupItem[] = useMemo(
     () => [
       { href: productsBaseHref, key: "product-list", label: labels.productList, icon: <Layers3 className="h-3.5 w-3.5" /> },
       { href: productsCategoriesHref, key: "master-data", label: labels.masterData, icon: <Tags className="h-3.5 w-3.5" /> },
@@ -353,7 +308,7 @@ export function UserWorkspaceSidebar({
     [labels.masterData, labels.productList, productsBaseHref, productsCategoriesHref],
   );
 
-  const stockItems: SidebarGroupItem[] = useMemo(
+  const stockItems: UserWorkspaceSidebarSidebarGroupItem[] = useMemo(
     () => [
       { href: warehouseOverviewHref, key: "warehouse-overview", label: labels.warehouseOverview, icon: <LayoutDashboard className="h-3.5 w-3.5" /> },
       { href: inventoryLevelsHref, key: "stock-levels", label: labels.stockLevels, icon: <Layers3 className="h-3.5 w-3.5" /> },
@@ -376,7 +331,7 @@ export function UserWorkspaceSidebar({
     ],
   );
 
-  const reportsItems: SidebarGroupItem[] = useMemo(
+  const reportsItems: UserWorkspaceSidebarSidebarGroupItem[] = useMemo(
     () => [
       { href: reportsSummaryHref, key: "reports-summary", label: labels.reportsSummary, icon: <BarChart3 className="h-3.5 w-3.5" /> },
       { href: reportsInventoryValueHref, key: "reports-inventory-value", label: labels.reportsInventoryValue, icon: <Boxes className="h-3.5 w-3.5" /> },

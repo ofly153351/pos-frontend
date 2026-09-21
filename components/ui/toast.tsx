@@ -2,25 +2,24 @@
 
 import { useEffect, useSyncExternalStore, useState, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
+import type { ToastToastTone } from "./types";
+import type { ToastToastEntry } from "./types";
+export type { ToastToastTone as ToastTone } from "./types";
 
-export type ToastTone = "success" | "error" | "info" | "warning";
 
-type ToastEntry = {
-  id: string;
-  tone: ToastTone;
-  message: string;
-  duration: number;
-};
+
+
+
 
 // ── Module-level store — no context or Zustand needed ───────────────────────
-let _toasts: ToastEntry[] = [];
+let _toasts: ToastToastEntry[] = [];
 const _listeners = new Set<() => void>();
 
 function _notify() {
   _listeners.forEach((l) => l());
 }
 
-function _add(entry: Omit<ToastEntry, "id">): string {
+function _add(entry: Omit<ToastToastEntry, "id">): string {
   const id = Math.random().toString(36).slice(2, 10);
   _toasts = [..._toasts, { ...entry, id }];
   _notify();
@@ -48,21 +47,21 @@ export function useToast() {
 }
 
 // ── Individual toast item ───────────────────────────────────────────────────
-const ICON: Record<ToastTone, ReactNode> = {
+const ICON: Record<ToastToastTone, ReactNode> = {
   success: <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />,
   error:   <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500" />,
   info:    <Info className="h-4 w-4 shrink-0 text-violet-500" />,
   warning: <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />,
 };
 
-const STYLE: Record<ToastTone, string> = {
+const STYLE: Record<ToastToastTone, string> = {
   success: "border-emerald-200 bg-white text-emerald-800",
   error:   "border-rose-200   bg-white text-rose-800",
   info:    "border-violet-200 bg-white text-violet-800",
   warning: "border-amber-200  bg-white text-amber-800",
 };
 
-function ToastItem({ id, tone, message }: ToastEntry) {
+function ToastItem({ id, tone, message }: ToastToastEntry) {
   const [show, setShow] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 10);
@@ -88,7 +87,7 @@ function ToastItem({ id, tone, message }: ToastEntry) {
   );
 }
 
-const _emptyToasts: ToastEntry[] = [];
+const _emptyToasts: ToastToastEntry[] = [];
 
 // ── Toaster — place once in root layout ────────────────────────────────────
 export function Toaster() {

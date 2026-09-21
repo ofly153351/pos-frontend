@@ -2,20 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { CheckCircle } from "lucide-react";
+import type { SuccessPopupSuccessPopupProps } from "./types";
 
-type SuccessPopupProps = {
-  message: string | null;
-  autoClose?: boolean;
-  duration?: number;
-  onClose?: () => void;
-};
+
+
 
 export default function SuccessPopup({
   message,
   autoClose = true,
   duration = 1000,
   onClose,
-}: SuccessPopupProps) {
+}: SuccessPopupSuccessPopupProps) {
   const [animClass, setAnimClass] = useState("");
 
   // Reset the animation class whenever the popup message clears — "adjust

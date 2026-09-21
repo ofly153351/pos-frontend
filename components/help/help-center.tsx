@@ -27,10 +27,13 @@ import {
   type HelpCategory,
   type HelpTopic,
 } from "@/lib/help/help-topics";
+import type { HelpCenterIconComponent } from "./types";
+import type { HelpCenterHelpCenterProps } from "./types";
 
-type IconComponent = ComponentType<{ className?: string }>;
 
-const ICON_MAP: Record<string, IconComponent> = {
+
+
+const ICON_MAP: Record<string, HelpCenterIconComponent> = {
   rocket: Rocket,
   dashboard: LayoutDashboard,
   pos: CircleDollarSign,
@@ -53,23 +56,9 @@ function CategoryIcon({ iconKey, size = 20, color }: { iconKey: string; size?: n
   );
 }
 
-type HelpCenterProps = {
-  labels: {
-    title: string;
-    subtitle: string;
-    searchPlaceholder: string;
-    popularTopics: string;
-    allCategories: string;
-    steps: string;
-    tips: string;
-    back: string;
-    backToCategory: string;
-    noResults: string;
-    noResultsDesc: string;
-  };
-};
 
-export function HelpCenter({ labels }: HelpCenterProps) {
+
+export function HelpCenter({ labels }: HelpCenterHelpCenterProps) {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<HelpCategory | null>(null);
   const [activeTopic, setActiveTopic] = useState<HelpTopic | null>(null);
@@ -252,7 +241,7 @@ function SearchResults({
 }: {
   results: { cat: HelpCategory; topic: HelpTopic }[];
   query: string;
-  labels: HelpCenterProps["labels"];
+  labels: HelpCenterHelpCenterProps["labels"];
   onOpenTopic: (cat: HelpCategory, topic: HelpTopic) => void;
 }) {
   if (!results.length) {
@@ -303,7 +292,7 @@ function CategoryView({
   onOpenTopic,
 }: {
   category: HelpCategory;
-  labels: HelpCenterProps["labels"];
+  labels: HelpCenterHelpCenterProps["labels"];
   onBack: () => void;
   onOpenTopic: (topic: HelpTopic) => void;
 }) {
@@ -361,7 +350,7 @@ function TopicDetail({
 }: {
   category: HelpCategory;
   topic: HelpTopic;
-  labels: HelpCenterProps["labels"];
+  labels: HelpCenterHelpCenterProps["labels"];
   onBack: () => void;
   onBackRoot: () => void;
 }) {

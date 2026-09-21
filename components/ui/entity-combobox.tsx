@@ -2,40 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+import type { EntityComboboxEntityComboboxItem } from "./types";
+import type { EntityComboboxEntityComboboxLabels } from "./types";
+import type { EntityComboboxProps } from "./types";
+export type { EntityComboboxEntityComboboxItem as EntityComboboxItem } from "./types";
+export type { EntityComboboxEntityComboboxLabels as EntityComboboxLabels } from "./types";
+
 
 // Cap rendered rows so a large list never mounts as one giant list.
 const MAX_RESULTS = 50;
 
-export type EntityComboboxItem = {
-  id: string;
-  /** Primary label (shown bold). */
-  label: string;
-  /** Secondary text under the label (member code / phone / …). */
-  subtitle?: string;
-  /** Small right-aligned badge (e.g. "L1 • 5%"). */
-  badge?: string;
-  /** Extra keywords matched by search in addition to label/subtitle. */
-  keywords?: string[];
-};
 
-export type EntityComboboxLabels = {
-  placeholder: string;
-  noResults: string;
-};
 
-type Props = {
-  items: EntityComboboxItem[];
-  value: string;
-  onChange: (id: string) => void;
-  labels: EntityComboboxLabels;
-  /** Renders an extra pinned row at the end of the dropdown (e.g. "+ create new"). */
-  footerOption?: { id: string; label: string; onPick: () => void };
-  /** Optional wrapper class for the trigger + dropdown container. */
-  className?: string;
-  /** Show a small ✕ on the selected value to clear it. */
-  clearable?: boolean;
-  disabled?: boolean;
-};
+
+
+
 
 // Generic searchable picker — the shared combobox for entity lists (customers,
 // suppliers, brands, categories, PO numbers). Type-ahead on label/subtitle/
@@ -50,7 +31,7 @@ export function EntityCombobox({
   className = "",
   clearable = false,
   disabled = false,
-}: Props) {
+}: EntityComboboxProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);

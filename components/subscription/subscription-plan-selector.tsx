@@ -8,26 +8,13 @@ import {
   getPendingPlanChoice,
   savePendingPlanChoice,
 } from "@/lib/subscription-storage";
+import type { SubscriptionPlanSelectorPlanCard } from "./types";
+import type { SubscriptionPlanSelectorSubscriptionPlanSelectorProps } from "./types";
 
-type PlanCard = {
-  code: string;
-  currency: string;
-  description: string;
-  durationDays: number;
-  id: string;
-  name: string;
-  price: string;
-};
 
-type SubscriptionPlanSelectorProps = {
-  ctaLabel: string;
-  helper: string;
-  locale: Locale;
-  plans: PlanCard[];
-  selectedBadge: string;
-  subtitle: string;
-  title: string;
-};
+
+
+
 
 export function SubscriptionPlanSelector({
   ctaLabel,
@@ -37,7 +24,7 @@ export function SubscriptionPlanSelector({
   selectedBadge,
   subtitle,
   title,
-}: SubscriptionPlanSelectorProps) {
+}: SubscriptionPlanSelectorSubscriptionPlanSelectorProps) {
   const router = useRouter();
   const storedPlan = typeof window === "undefined" ? null : getPendingPlanChoice();
   const [selectedPlanId, setSelectedPlanId] = useState(

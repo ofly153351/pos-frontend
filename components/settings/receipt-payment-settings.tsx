@@ -34,22 +34,25 @@ import type { ReceiptSettingsData, UpdateReceiptSettingsInput, PaymentChannelSet
 import type { Store as StoreType, StoreBankAccount, CreateBankAccountInput, UpdateBankAccountInput } from "@/types/store";
 import { SkeletonSettingsPanel } from "@/components/ui/skeleton";
 import th from "@/locales/th.json";
+import type { ReceiptPaymentSettingsT } from "./types";
+import type { ReceiptPaymentSettingsTaxMode } from "./types";
+import type { ReceiptPaymentSettingsPaperSize } from "./types";
+import type { ReceiptPaymentSettingsLogoPosition } from "./types";
+import type { ReceiptPaymentSettingsTabKey } from "./types";
+import type { ReceiptPaymentSettingsPaymentChannel } from "./types";
+import type { ReceiptPaymentSettingsGatewayProvider } from "./types";
+import type { ReceiptPaymentSettingsGatewayConfig } from "./types";
 
-type T = typeof th.receiptSettings;
+
+
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type TaxMode = "none" | "inclusive" | "exclusive";
-type PaperSize = "80mm" | "a4";
-type LogoPosition = "top_center" | "top_left" | "top_right";
-type TabKey = "receipt" | "payment" | "promptpay" | "bankAccounts" | "gateway" | "printer" | "display";
 
-interface PaymentChannel {
-  key: string;
-  name: string;
-  enabled: boolean;
-  color: string;
-  icon: React.ReactNode;
-}
+
+
+
+
+
 
 // Canonical channels (keys mirror lib/payment-method.ts) + legacy keys kept ONLY so an
 // older saved config still renders with the right name. Labels match the canonical
@@ -68,7 +71,7 @@ const CHANNEL_META: Record<string, { name: string; color: string; icon: React.Re
   debit_card:  { name: "บัตรเดบิต",         color: "bg-teal-500",   icon: <CreditCard className="h-4 w-4" /> },
 };
 
-function toChannels(raw: PaymentChannelSetting[]): PaymentChannel[] {
+function toChannels(raw: PaymentChannelSetting[]): ReceiptPaymentSettingsPaymentChannel[] {
   return raw.map((ch) => ({
     key: ch.key,
     enabled: ch.enabled,
@@ -80,15 +83,15 @@ function toChannels(raw: PaymentChannelSetting[]): PaymentChannel[] {
 // fully built but intentionally NOT listed here yet — the backend does not persist a real
 // printer config or customer-display device, so exposing them would let users save settings
 // that have no effect. Re-add them to this array once those features are wired end-to-end.
-function makeTabs(t: T) {
+function makeTabs(t: ReceiptPaymentSettingsT) {
   return [
-    { key: "receipt"      as TabKey, label: t.tabs.receipt,      icon: <ReceiptText className="h-4 w-4" /> },
-    { key: "payment"      as TabKey, label: t.tabs.payment,      icon: <CreditCard  className="h-4 w-4" /> },
-    { key: "promptpay"    as TabKey, label: t.tabs.promptpay,    icon: <QrCode      className="h-4 w-4" /> },
-    { key: "bankAccounts" as TabKey, label: t.tabs.bankAccounts, icon: <Banknote    className="h-4 w-4" /> },
-    { key: "gateway"      as TabKey, label: t.tabs.gateway,      icon: <Zap         className="h-4 w-4" /> },
-    // { key: "printer"   as TabKey, label: t.tabs.printer,   icon: <Printer className="h-4 w-4" /> },
-    // { key: "display"   as TabKey, label: t.tabs.display,   icon: <Monitor className="h-4 w-4" /> },
+    { key: "receipt"      as ReceiptPaymentSettingsTabKey, label: t.tabs.receipt,      icon: <ReceiptText className="h-4 w-4" /> },
+    { key: "payment"      as ReceiptPaymentSettingsTabKey, label: t.tabs.payment,      icon: <CreditCard  className="h-4 w-4" /> },
+    { key: "promptpay"    as ReceiptPaymentSettingsTabKey, label: t.tabs.promptpay,    icon: <QrCode      className="h-4 w-4" /> },
+    { key: "bankAccounts" as ReceiptPaymentSettingsTabKey, label: t.tabs.bankAccounts, icon: <Banknote    className="h-4 w-4" /> },
+    { key: "gateway"      as ReceiptPaymentSettingsTabKey, label: t.tabs.gateway,      icon: <Zap         className="h-4 w-4" /> },
+    // { key: "printer"   as ReceiptPaymentSettingsTabKey, label: t.tabs.printer,   icon: <Printer className="h-4 w-4" /> },
+    // { key: "display"   as ReceiptPaymentSettingsTabKey, label: t.tabs.display,   icon: <Monitor className="h-4 w-4" /> },
   ];
 }
 
@@ -124,9 +127,9 @@ const inputCls = "w-full rounded-xl border border-violet-200 bg-white px-3 py-2.
 const selectCls = "w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100";
 
 // ── Tab panels ────────────────────────────────────────────────────────────────
-function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
+function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: ReceiptPaymentSettingsT }) {
   const r = t.receipt;
-  const taxLabels: Record<TaxMode, string> = { none: r.taxNone, inclusive: r.taxInclusive, exclusive: r.taxExclusive };
+  const taxLabels: Record<ReceiptPaymentSettingsTaxMode, string> = { none: r.taxNone, inclusive: r.taxInclusive, exclusive: r.taxExclusive };
   const storeInfoFields: [keyof ReceiptSettingsData, string][] = [
     ["show_store_name", r.showStoreName],
     ["show_address",    r.showAddress],
@@ -151,7 +154,7 @@ function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
         <div className="grid grid-cols-2 gap-3">
           <div>
             <FieldLabel>{r.labelPaperSize}</FieldLabel>
-            <select className={selectCls} value={settings.paper_size} onChange={(e) => onChange({ paper_size: e.target.value as PaperSize })}>
+            <select className={selectCls} value={settings.paper_size} onChange={(e) => onChange({ paper_size: e.target.value as ReceiptPaymentSettingsPaperSize })}>
               <option value="80mm">{r.paper80mm}</option>
               <option value="a4">{r.paperA4}</option>
             </select>
@@ -170,7 +173,7 @@ function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
         <SectionTitle>{r.sectionTax}</SectionTitle>
         <div className="mb-4 flex gap-2">
-          {(["none", "inclusive", "exclusive"] as TaxMode[]).map((mode) => (
+          {(["none", "inclusive", "exclusive"] as ReceiptPaymentSettingsTaxMode[]).map((mode) => (
             <button key={mode} type="button" onClick={() => onChange({ tax_mode: mode })}
               className={`flex-1 rounded-xl border px-3 py-2 text-xs font-semibold transition ${settings.tax_mode === mode ? "border-violet-600 bg-violet-600 text-white" : "border-violet-200 bg-white text-slate-600 hover:border-violet-400"}`}>
               {taxLabels[mode]}
@@ -211,7 +214,7 @@ function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
           </div>
           <div>
             <FieldLabel>{r.labelLogoPosition}</FieldLabel>
-            <select className={selectCls} value={settings.logo_position} onChange={(e) => onChange({ logo_position: e.target.value as LogoPosition })}>
+            <select className={selectCls} value={settings.logo_position} onChange={(e) => onChange({ logo_position: e.target.value as ReceiptPaymentSettingsLogoPosition })}>
               <option value="top_center">{r.logoCenter}</option>
               <option value="top_left">{r.logoLeft}</option>
               <option value="top_right">{r.logoRight}</option>
@@ -253,7 +256,7 @@ function ReceiptTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
   );
 }
 
-function PaymentTab({ channels, onChange, t }: { channels: PaymentChannel[]; onChange: (key: string, enabled: boolean) => void; t: T }) {
+function PaymentTab({ channels, onChange, t }: { channels: ReceiptPaymentSettingsPaymentChannel[]; onChange: (key: string, enabled: boolean) => void; t: ReceiptPaymentSettingsT }) {
   return (
     <div className="space-y-5">
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
@@ -278,7 +281,7 @@ function PaymentTab({ channels, onChange, t }: { channels: PaymentChannel[]; onC
   );
 }
 
-function PromptPayTab({ settings, store, onChange, t }: { settings: ReceiptSettingsData; store: StoreType | null; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
+function PromptPayTab({ settings, store, onChange, t }: { settings: ReceiptSettingsData; store: StoreType | null; onChange: (p: Partial<ReceiptSettingsData>) => void; t: ReceiptPaymentSettingsT }) {
   const p = t.promptpay;
   return (
     <div className="space-y-5">
@@ -313,7 +316,7 @@ function PromptPayTab({ settings, store, onChange, t }: { settings: ReceiptSetti
   );
 }
 
-function PrinterTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
+function PrinterTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: ReceiptPaymentSettingsT }) {
   const p = t.printer;
   return (
     <div className="space-y-5">
@@ -355,7 +358,7 @@ function PrinterTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
   );
 }
 
-function BankAccountsTab({ storeId, t, canManage }: { storeId: string; t: T; canManage: boolean }) {
+function BankAccountsTab({ storeId, t, canManage }: { storeId: string; t: ReceiptPaymentSettingsT; canManage: boolean }) {
   const p = t.bankAccounts;
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
@@ -582,7 +585,7 @@ function BankAccountsTab({ storeId, t, canManage }: { storeId: string; t: T; can
   );
 }
 
-function DisplayTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: T }) {
+function DisplayTab({ settings, onChange, t }: { settings: ReceiptSettingsData; onChange: (p: Partial<ReceiptSettingsData>) => void; t: ReceiptPaymentSettingsT }) {
   const d = t.display;
   return (
     <div className="space-y-5">
@@ -626,18 +629,14 @@ function DisplayTab({ settings, onChange, t }: { settings: ReceiptSettingsData; 
 }
 
 // ── Gateway tab ───────────────────────────────────────────────────────────────
-type GatewayProvider = "none" | "omise" | "2c2p";
-type GatewayConfig = {
-  provider: GatewayProvider;
-  omise: { public_key: string; secret_key: string; webhook_secret: string };
-  c2p: { merchant_id: string; secret_key: string };
-};
-const GATEWAY_DEFAULT: GatewayConfig = {
+
+
+const GATEWAY_DEFAULT: ReceiptPaymentSettingsGatewayConfig = {
   provider: "none",
   omise: { public_key: "", secret_key: "", webhook_secret: "" },
   c2p: { merchant_id: "", secret_key: "" },
 };
-function loadGatewayConfig(storeId: string): GatewayConfig {
+function loadGatewayConfig(storeId: string): ReceiptPaymentSettingsGatewayConfig {
   try {
     const raw = localStorage.getItem(`pos_gateway_${storeId}`);
     if (!raw) return GATEWAY_DEFAULT;
@@ -666,7 +665,7 @@ function WebhookUrlField({ url }: { url: string }) {
 }
 
 function GatewayTab({ storeId }: { storeId: string }) {
-  const [config, setConfig] = useState<GatewayConfig>(() => loadGatewayConfig(storeId));
+  const [config, setConfig] = useState<ReceiptPaymentSettingsGatewayConfig>(() => loadGatewayConfig(storeId));
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState(false);
 
@@ -681,9 +680,9 @@ function GatewayTab({ storeId }: { storeId: string }) {
   }
 
   const PROVIDERS = [
-    { key: "none" as GatewayProvider,  label: "ไม่ใช้ Gateway", desc: "ยืนยันด้วยตนเองผ่านมือถือ",           badge: "bg-slate-500" },
-    { key: "omise" as GatewayProvider, label: "Omise",           desc: "แนะนำ · รองรับทุกธนาคารไทย",        badge: "bg-blue-600"  },
-    { key: "2c2p" as GatewayProvider,  label: "2C2P",            desc: "Payment gateway ยอดนิยมในไทย",      badge: "bg-rose-500"  },
+    { key: "none" as ReceiptPaymentSettingsGatewayProvider,  label: "ไม่ใช้ Gateway", desc: "ยืนยันด้วยตนเองผ่านมือถือ",           badge: "bg-slate-500" },
+    { key: "omise" as ReceiptPaymentSettingsGatewayProvider, label: "Omise",           desc: "แนะนำ · รองรับทุกธนาคารไทย",        badge: "bg-blue-600"  },
+    { key: "2c2p" as ReceiptPaymentSettingsGatewayProvider,  label: "2C2P",            desc: "Payment gateway ยอดนิยมในไทย",      badge: "bg-rose-500"  },
   ];
 
   return (
@@ -796,7 +795,7 @@ function GatewayTab({ storeId }: { storeId: string }) {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export function ReceiptPaymentSettings({ t }: { t: T }) {
+export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
   const queryClient = useQueryClient();
   const { role } = useStoreRole();
   const canManage = canManageStore(role);
@@ -870,15 +869,15 @@ export function ReceiptPaymentSettings({ t }: { t: T }) {
   }, [remoteSettings, isDirty]);
 
   // ── Tab state ─────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<TabKey>("receipt");
-  const [prevTab, setPrevTab]     = useState<TabKey | null>(null);
+  const [activeTab, setActiveTab] = useState<ReceiptPaymentSettingsTabKey>("receipt");
+  const [prevTab, setPrevTab]     = useState<ReceiptPaymentSettingsTabKey | null>(null);
   const [direction, setDirection] = useState<"left" | "right">("right");
   const [animating, setAnimating] = useState(false);
 
   const TABS = makeTabs(t);
-  const tabIndex = (k: TabKey) => TABS.findIndex((tab) => tab.key === k);
+  const tabIndex = (k: ReceiptPaymentSettingsTabKey) => TABS.findIndex((tab) => tab.key === k);
 
-  function switchTab(next: TabKey) {
+  function switchTab(next: ReceiptPaymentSettingsTabKey) {
     if (next === activeTab || animating) return;
     setDirection(tabIndex(next) > tabIndex(activeTab) ? "right" : "left");
     setPrevTab(activeTab);
@@ -929,7 +928,7 @@ export function ReceiptPaymentSettings({ t }: { t: T }) {
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  function panelClass(key: TabKey): string {
+  function panelClass(key: ReceiptPaymentSettingsTabKey): string {
     const isActive = key === activeTab;
     const isExiting = key === prevTab;
     if (isActive && animating) {
@@ -958,7 +957,7 @@ export function ReceiptPaymentSettings({ t }: { t: T }) {
 
   const channels = toChannels(localSettings.payment_channels);
 
-  const panelContent: Record<TabKey, React.ReactNode> = {
+  const panelContent: Record<ReceiptPaymentSettingsTabKey, React.ReactNode> = {
     receipt:      <ReceiptTab      settings={localSettings} onChange={update}        t={t} />,
     payment:      <PaymentTab      channels={channels}       onChange={updateChannel} t={t} />,
     promptpay:    <PromptPayTab    settings={localSettings} store={storeData ?? null} onChange={update} t={t} />,
