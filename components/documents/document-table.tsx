@@ -238,7 +238,7 @@ export function DocumentTable({
             ))}
           </div>
         ) : documents.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+          <div className="flex mt-5 h-full flex-col items-center justify-center gap-3 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100">
               <Package className="h-8 w-8 text-violet-400" />
             </div>

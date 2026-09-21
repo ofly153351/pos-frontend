@@ -83,6 +83,9 @@ type DocumentDict = {
   copy: string;
   moreOptions: string;
   deliveryDate: string;
+  poReference: string;
+  poReferencePlaceholder: string;
+  invoiceReference: string;
   completeDelivery: string;
   deliveryCompleteSuccess: string;
   deliveryCompleteError: string;

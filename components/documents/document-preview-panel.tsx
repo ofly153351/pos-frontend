@@ -23,6 +23,9 @@ type Dict = {
   moreOptions: string;
   print: string;
   deliveryDate: string;
+  poReference: string;
+  poReferencePlaceholder: string;
+  invoiceReference: string;
   completeDelivery: string;
   deliveryCompleteSuccess: string;
   deliveryCompleteError: string;
@@ -70,6 +73,8 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [deliveryDateModal, setDeliveryDateModal] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState("");
+  const [poRefNo, setPoRefNo] = useState("");
+  const poRefNoInputRef = useRef("");
 
   const isPaid = paymentStatus === "PAID";
   const isCancelled = documentStatus === "CANCELLED";
@@ -162,6 +167,9 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
 
   function handleConvertToDO() {
     setCreateMenuOpen(false);
+    setDeliveryDate("");
+    setPoRefNo("");
+    poRefNoInputRef.current = "";
     setDeliveryDateModal(true);
   }
 
@@ -169,7 +177,8 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
     setDeliveryDateModal(false);
     startConvertTransition(async () => {
       try {
-        await convertToDeliveryOrder(documentId, deliveryDate || undefined);
+        const poReference = poRefNoInputRef.current.trim();
+        await convertToDeliveryOrder(documentId, deliveryDate || undefined, poReference || undefined);
         toast.success("สร้างใบส่งของสำเร็จ");
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
@@ -483,6 +492,24 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   onChange={(e) => setDeliveryDate(e.target.value)}
                   className="mt-3 w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 />
+                <label className="mt-3 block text-sm font-semibold text-slate-700" htmlFor="delivery-order-po-ref">
+                  {dict.poReference}
+                </label>
+                <input
+                  id="delivery-order-po-ref"
+                  type="text"
+                  value={poRefNo}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    poRefNoInputRef.current = value;
+                    setPoRefNo(value);
+                  }}
+                  placeholder={dict.poReferencePlaceholder}
+                  className="mt-1 w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  {dict.invoiceReference}: {documentNo || documentId}
+                </p>
                 <div className="mt-4 flex justify-end gap-2">
                   <button type="button" onClick={() => setDeliveryDateModal(false)} className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-50">{dict.cancel}</button>
                   <button type="button" onClick={confirmConvertToDO} className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700">{dict.confirm}</button>
