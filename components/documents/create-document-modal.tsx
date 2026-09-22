@@ -7,10 +7,11 @@ import { Loader2, Minus, Plus, Search, Trash2, X } from "lucide-react";
 import { authorizedApiRequest, ApiError } from "@/services/api";
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { listProducts } from "@/services/products";
-import { createDocument } from "@/services/documents";
+import { createDocument, getDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ScanButton } from "@/components/shared/scan-button";
-import type { CreateDocumentPayload, DocumentType } from "@/types/document";
+import { EntityCombobox } from "@/components/ui/entity-combobox";
+import type { CreateDocumentPayload, DocumentListItem, DocumentType } from "@/types/document";
 import type { Product } from "@/types/product";
 import type { Customer, ShippingAddress } from "@/types/customer";
 import { CustomerCombobox } from "@/components/credit-sales/customer-combobox";
@@ -77,6 +78,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const [items, setItems] = useState<CreateDocumentModalLineItem[]>([
     { description: "", quantity: 1, unit_price: 0, discount_type: "", discount_value: 0 },
   ]);
+  const [selectedDOIds, setSelectedDOIds] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [storeId, setStoreId] = useState<string | null>(null);
   const [productSearch, setProductSearch] = useState("");
@@ -108,6 +110,20 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     enabled: !!storeId,
   });
 
+  const { data: deliveryOrders = [], isPending: isDeliveryOrdersPending } = useQuery<DocumentListItem[]>({
+    queryKey: ["delivery-orders-for-bill", storeId, customerId],
+    queryFn: async () => {
+      const response = await getDocuments({
+        type: "DELIVERY_ORDER",
+        customer_id: customerId || undefined,
+        limit: 500,
+      });
+      return response?.items ?? [];
+    },
+    enabled: !!storeId && docType === "BILL",
+  });
+
+  const selectedDeliveryOrders = deliveryOrders.filter((doc) => selectedDOIds.includes(doc.id));
   const filteredProducts = (() => {
     const kw = productSearch.trim().toLowerCase();
     const list = kw
@@ -143,8 +159,15 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     if (addr) applyShippingAddress(addr, c);
   }
 
+  function handleDocTypeChange(nextType: DocumentType) {
+    setDocType(nextType);
+    if (nextType !== "BILL") setSelectedDOIds([]);
+    if (nextType === "BILL") setVatEnabled(false);
+  }
+
   function handleCustomerChange(id: string) {
     setCustomerId(id);
+    setSelectedDOIds([]);
     setSelectedShippingAddressId("");
     if (docType !== "DELIVERY_ORDER") return;
     const c = customers.find((x) => x.id === id);
@@ -277,17 +300,29 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
     setItems(items.map((item, idx) => idx === i ? { ...item, [key]: value } : item));
   }
 
-  const subtotal = items.reduce((s, item) => s + lineAmount(item), 0);
-  const vatAmount = vatEnabled ? subtotal * 0.07 : 0;
+  const subtotal = docType === "BILL"
+    ? selectedDeliveryOrders.reduce((sum, doc) => sum + doc.total_amount, 0)
+    : items.reduce((s, item) => s + lineAmount(item), 0);
+  const vatAmount = docType === "BILL" ? 0 : vatEnabled ? subtotal * 0.07 : 0;
   const total = subtotal + vatAmount;
 
   function handleSave() {
     setError("");
     if (!customerId) { setError(d.selectCustomer); return; }
-    // Drop leftover empty draft rows (no product, no description) — the server
-    // rejects them with 422 otherwise. Only truly invalid lines (blank
-    // description, non-positive quantity) surface a client error.
-    const itemsToSubmit = items.filter((it) => (it.product_id && it.product_id.trim()) || it.description.trim() !== "");
+    if (docType === "BILL" && selectedDeliveryOrders.length === 0) {
+      setError(d.noDeliveryOrdersSelected);
+      return;
+    }
+    // BILL lines are snapshots of the selected DOs; other document types use product lines.
+    const itemsToSubmit = docType === "BILL"
+      ? selectedDeliveryOrders.map((doc) => ({
+          description: doc.document_no_full,
+          quantity: 1,
+          unit_price: doc.total_amount,
+          discount_type: "" as const,
+          discount_value: 0,
+        }))
+      : items.filter((it) => (it.product_id && it.product_id.trim()) || it.description.trim() !== "");
     if (itemsToSubmit.some((it) => !it.description.trim() || it.quantity <= 0)) {
       setError(d.description + " / " + d.quantity); return;
     }
@@ -309,10 +344,10 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       invoice_ref_no: invoiceRefNo || undefined,
       po_ref_no: poRefNo || undefined,
       credit_term_days: creditTermDays || undefined,
-      vat_rate: vatEnabled ? 7 : 0,
+      vat_rate: docType === "BILL" ? 0 : vatEnabled ? 7 : 0,
       notes: notes || undefined,
       items: itemsToSubmit.map((it) => ({
-        product_id: it.product_id,
+        product_id: "product_id" in it ? it.product_id : undefined,
         description: it.description,
         quantity: it.quantity,
         unit_price: it.unit_price,
@@ -369,7 +404,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                   className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                     docType === t ? "bg-white text-violet-700" : "text-violet-200 hover:text-white"
                   }`}
-                  onClick={() => setDocType(t)}
+                  onClick={() => handleDocTypeChange(t)}
                   type="button"
                 >
                   {d[TYPE_LABELS[t]] as string}
@@ -398,7 +433,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               <select
                 className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
                 value={docType}
-                onChange={(e) => setDocType(e.target.value as DocumentType)}
+                onChange={(e) => handleDocTypeChange(e.target.value as DocumentType)}
               >
                 {CREATABLE_TYPES.map((t) => (
                   <option key={t} value={t}>{d[TYPE_LABELS[t]] as string}</option>
@@ -595,7 +630,36 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               </div>
             )}
 
-            {/* Product search + barcode + camera */}
+            {docType === "BILL" ? (
+              <div className="relative mt-4">
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {d.deliveryOrderSelectLabel}
+                </label>
+                <EntityCombobox
+                  items={deliveryOrders
+                    .filter((doc) => !selectedDOIds.includes(doc.id))
+                    .map((doc) => ({
+                      id: doc.id,
+                      label: doc.document_no_full,
+                      subtitle: `${doc.document_date} · ${fmt(doc.total_amount)}${doc.customer_name ? ` · ${doc.customer_name}` : ""}`,
+                      keywords: [doc.customer_name, doc.document_no, doc.document_no_full],
+                    }))}
+                  value=""
+                  disabled={isDeliveryOrdersPending}
+                  onChange={(id) => {
+                    const selected = deliveryOrders.find((doc) => doc.id === id);
+                    if (!selected || selectedDOIds.includes(id)) return;
+                    if (!customerId) setCustomerId(selected.customer_id);
+                    setSelectedDOIds([...selectedDOIds, id]);
+                  }}
+                  labels={{
+                    placeholder: d.deliveryOrderSearchPlaceholder,
+                    noResults: d.deliveryOrderNoMatch,
+                  }}
+                />
+              </div>
+            ) : (
+            /* Product search + barcode + camera */
             <div className="relative mt-4" ref={productWrapperRef}>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
@@ -658,8 +722,42 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 </div>
               )}
             </div>
+            )}
 
             {/* Line items */}
+            {docType === "BILL" ? (
+              <div className="mt-3 overflow-hidden rounded-xl border border-violet-100">
+                <table className="w-full text-sm">
+                  <thead className="bg-violet-50/60 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-3 py-2.5 text-left">{d.deliveryOrderNumber}</th>
+                      <th className="px-3 py-2.5 text-center">{d.documentDate}</th>
+                      <th className="px-3 py-2.5 text-center">{d.optionalDueDate}</th>
+                      <th className="px-3 py-2.5 text-right">{d.amount}</th>
+                      <th className="w-10 px-2 py-2.5" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-violet-50">
+                    {selectedDeliveryOrders.map((doc) => (
+                      <tr key={doc.id}>
+                        <td className="px-3 py-2 font-medium text-slate-800">{doc.document_no_full}</td>
+                        <td className="px-3 py-2 text-center text-slate-600">{doc.document_date}</td>
+                        <td className="px-3 py-2 text-center text-slate-600">{doc.due_date ?? "-"}</td>
+                        <td className="px-3 py-2 text-right nums font-semibold text-slate-800">{fmt(doc.total_amount)}</td>
+                        <td className="px-2 py-2">
+                          <button type="button" onClick={() => setSelectedDOIds(selectedDOIds.filter((id) => id !== doc.id))} className="rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500" aria-label={d.removeItem}>
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {selectedDeliveryOrders.length === 0 && (
+                      <tr><td colSpan={5} className="px-3 py-6 text-center text-sm text-slate-400">{d.noDeliveryOrdersSelected}</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
             <div className={`mt-3 transition-opacity duration-200 ${!hasProducts ? "pointer-events-none opacity-40" : ""}`}>
               <div className="overflow-hidden rounded-xl border border-violet-100">
                 <table className="w-full text-sm">
@@ -748,6 +846,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 </div>
               </div>
             </div>
+            )}
 
             {/* Totals + VAT + Notes */}
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -768,23 +867,27 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                   <span>{d.subtotal}</span>
                   <span className="nums">{fmt(subtotal)}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-600">{d.enableVat}</span>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={vatEnabled}
-                    onClick={() => setVatEnabled((prev) => !prev)}
-                    className={`relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 ${vatEnabled ? "bg-violet-600" : "bg-slate-200"}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${vatEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
-                  </button>
-                </div>
-                {vatEnabled && (
-                  <div className="flex justify-between text-sm text-slate-500">
-                    <span>VAT 7%</span>
-                    <span className="nums">{fmt(vatAmount)}</span>
-                  </div>
+                {docType !== "BILL" && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600">{d.enableVat}</span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={vatEnabled}
+                        onClick={() => setVatEnabled((prev) => !prev)}
+                        className={`relative inline-flex h-5 w-9 cursor-pointer items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 ${vatEnabled ? "bg-violet-600" : "bg-slate-200"}`}
+                      >
+                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${vatEnabled ? "translate-x-4" : "translate-x-0.5"}`} />
+                      </button>
+                    </div>
+                    {vatEnabled && (
+                      <div className="flex justify-between text-sm text-slate-500">
+                        <span>VAT 7%</span>
+                        <span className="nums">{fmt(vatAmount)}</span>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="flex justify-between border-t border-violet-100 pt-2 font-semibold text-slate-800">
                   <span>{d.total}</span>

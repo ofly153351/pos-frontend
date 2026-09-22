@@ -99,17 +99,23 @@ export async function convertToDeliveryOrder(id: string, deliveryDate?: string, 
 
 // Generic workflow conversion — server validates the (source → target) pair
 // against the allowed matrix and links the new document back to its source.
-export async function convertDocument(id: string, targetType: DocumentType): Promise<Document> {
+export async function convertDocument(id: string, targetType: DocumentType, receiptTemplate?: 1 | 2): Promise<Document> {
   const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-to`, {
     method: "POST",
-    body: { target_type: targetType },
+    body: {
+      target_type: targetType,
+      ...(targetType === "RECEIPT" && receiptTemplate ? { receipt_template: receiptTemplate } : {}),
+    },
   });
   return res.data;
 }
 
 // copy: 0-based copy index (Original=0, Company=last); omit or -1 for the whole set.
-export async function getDocumentPrintHtml(id: string, copy?: number): Promise<string> {
-  const q = copy != null && copy >= 0 ? `?copy=${copy}` : "";
+export async function getDocumentPrintHtml(id: string, copy?: number, receiptTemplate = 1): Promise<string> {
+  const params = new URLSearchParams();
+  if (copy != null && copy >= 0) params.set("copy", String(copy));
+  params.set("receipt_template", String(receiptTemplate));
+  const q = params.toString() ? `?${params.toString()}` : "";
   return authorizedRawRequest<string>(`${base()}/${id}/print${q}`, { method: "GET", responseType: "text" });
 }
 
@@ -132,18 +138,21 @@ export interface StatementPDFParams {
 // The download PDF is rendered server-side from the SAME unified HTML as the
 // preview (headless Chrome) — no per-request layout params; only the copy index.
 // copy: 0-based copy index (Original=0, Company=last); omit or -1 for the whole set.
-export async function getDocumentPdfBlob(id: string, copy?: number): Promise<Blob> {
-  const url = getDocumentPDFUrl(id, copy);
+export async function getDocumentPdfBlob(id: string, copy?: number, receiptTemplate = 1): Promise<Blob> {
+  const url = getDocumentPDFUrl(id, copy, receiptTemplate);
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error(`PDF fetch failed: ${res.status}`);
   return res.blob();
 }
 
-export function getDocumentPDFUrl(id: string, copy?: number): string {
+export function getDocumentPDFUrl(id: string, copy?: number, receiptTemplate = 1): string {
   const storeId = getCurrentStoreId();
   if (!storeId) throw new Error("No active store");
-  const q = copy != null && copy >= 0 ? `?copy=${copy}` : "";
-  return `/api/stores/${storeId}/documents/${id}/pdf${q}`;
+  const params = new URLSearchParams();
+  if (copy != null && copy >= 0) params.set("copy", String(copy));
+  params.set("receipt_template", String(receiptTemplate));
+  const q = params.toString();
+  return `/api/stores/${storeId}/documents/${id}/pdf${q ? `?${q}` : ""}`;
 }
 
 export interface WHTCertParams {

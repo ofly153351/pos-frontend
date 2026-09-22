@@ -39,7 +39,7 @@ export function DocumentTimeline({ items, currentId, label, typeLabels, onSelect
   return (
     <div className="shrink-0 border-b border-violet-100 bg-violet-50/40 px-4 py-2.5">
       <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</div>
-      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+      <div className="pretty-scroll flex items-center gap-1 overflow-x-auto pb-1">
         {items.map((doc, i) => {
           const Icon = TYPE_ICON[doc.type] ?? FileText;
           const active = doc.id === currentId;

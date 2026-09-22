@@ -33,6 +33,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   const [isCancelling, startCancelTransition] = useTransition();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [receiptTemplateModalOpen, setReceiptTemplateModalOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [deliveryDateModal, setDeliveryDateModal] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState("");
@@ -48,11 +49,12 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   // Copy selection — Original / Customer Copy / Company Copy / All copies.
   // -1 = whole set (default). Threaded into preview, print, and PDF so all three agree.
   const [copyIdx, setCopyIdx] = useState(-1);
+  const [receiptTemplate, setReceiptTemplate] = useState<1 | 2>(1);
   const copyChoices = copyChoicesFor(documentType);
 
   const { data: html, isLoading } = useQuery({
-    queryKey: ["document-print", documentId, copyIdx],
-    queryFn: () => getDocumentPrintHtml(documentId, copyIdx),
+    queryKey: ["document-print", documentId, copyIdx, receiptTemplate],
+    queryFn: () => getDocumentPrintHtml(documentId, copyIdx, receiptTemplate),
     enabled: !!documentId,
     staleTime: 30_000,
   });
@@ -115,10 +117,16 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
 
   function handleConvertToReceipt() {
     setCreateMenuOpen(false);
+    setReceiptTemplateModalOpen(true);
+  }
+
+  function createReceipt(template: 1 | 2) {
+    setReceiptTemplate(template);
+    setReceiptTemplateModalOpen(false);
     startConvertTransition(async () => {
       try {
-        const receipt = await convertDocument(documentId, "RECEIPT");
-        toast.success("สร้างใบเสร็จรับเงินสำเร็จ");
+        const receipt = await convertDocument(documentId, "RECEIPT", template);
+        toast.success("สร้างใบเสร็จรับเงิน A4 สำเร็จ");
         qc.invalidateQueries({ queryKey: ["documents"] });
         if (onNavigate) onNavigate(receipt.id);
         else onClose();
@@ -196,9 +204,9 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
     });
   }
 
-  function handlePrint() {
+  function handlePrint(template = receiptTemplate) {
     startOpenTransition(async () => {
-      const freshHtml = await getDocumentPrintHtml(documentId, copyIdx);
+      const freshHtml = await getDocumentPrintHtml(documentId, copyIdx, template);
       const blob = new Blob([freshHtml], { type: "text/html;charset=utf-8" });
       const blobUrl = URL.createObjectURL(blob);
       const frame = document.createElement("iframe");
@@ -365,6 +373,25 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   ยกเลิก
                 </button>
               )}
+              {receiptTemplateModalOpen && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true">
+                  <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+                    <div className="mb-1 text-lg font-bold text-slate-800">{dict.receiptTemplateTitle}</div>
+                    <p className="mb-5 text-sm text-slate-500">{dict.receiptTemplateDescription}</p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button type="button" onClick={() => createReceipt(1)} disabled={isConverting} className="rounded-xl border border-slate-200 p-4 text-left transition hover:border-violet-400 hover:bg-violet-50 disabled:opacity-50">
+                        <div className="font-semibold text-slate-800">{dict.receiptTemplate1}</div>
+                        <div className="mt-1 text-xs text-slate-500">{dict.receiptTemplate1Description}</div>
+                      </button>
+                      <button type="button" onClick={() => createReceipt(2)} disabled={isConverting} className="rounded-xl border-2 border-violet-300 bg-violet-50 p-4 text-left transition hover:border-violet-500 disabled:opacity-50">
+                        <div className="font-semibold text-violet-800">{dict.receiptTemplate2}</div>
+                        <div className="mt-1 text-xs text-slate-600">{dict.receiptTemplate2Description}</div>
+                      </button>
+                    </div>
+                    <button type="button" onClick={() => setReceiptTemplateModalOpen(false)} className="mt-5 w-full rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">{dict.cancel}</button>
+                  </div>
+                </div>
+              )}
               {confirmCancel && (
                 <ConfirmModal
                   open
@@ -383,11 +410,33 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                 aria-label={dict.print}
                 title={dict.print}
                 disabled={!html}
-                onClick={handlePrint}
+                onClick={() => handlePrint()}
                 className="rounded-lg border border-violet-200 bg-white p-1.5 text-violet-700 transition-colors hover:bg-violet-50 disabled:opacity-40"
               >
                 <Printer className="h-4 w-4" />
               </button>
+              {documentType === "RECEIPT" && (
+                <div className="flex items-center rounded-lg border border-violet-200 bg-violet-50 p-0.5" role="group" aria-label={dict.receiptTemplateLabel}>
+                  {([1, 2] as const).map((template) => {
+                    const selected = receiptTemplate === template;
+                    const label = template === 1 ? dict.receiptTemplate1 : dict.receiptTemplate2;
+                    return (
+                      <button
+                        key={template}
+                        type="button"
+                        aria-pressed={selected}
+                        disabled={!html}
+                        onClick={() => setReceiptTemplate(template)}
+                        className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                          selected ? "bg-violet-600 text-white shadow-sm" : "text-violet-700 hover:bg-violet-100"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
               <div className="relative">
                 <button
                   type="button"

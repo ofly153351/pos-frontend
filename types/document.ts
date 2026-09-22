@@ -76,6 +76,7 @@ export interface DocumentListItem {
   type: DocumentType;
   status: DocumentStatus;
   payment_status: PaymentStatus;
+  customer_id: string;
   customer_name: string;
   staff_name: string;
   document_date: string;
