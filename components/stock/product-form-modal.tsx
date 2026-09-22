@@ -558,9 +558,7 @@ export function ProductFormDrawer({
             </svg>
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">
-              {quickActionLabel}
-            </p>
+
             <h1 className="text-xl font-semibold">
               {isEditing ? formLabels.titleEdit : formLabels.titleCreate}
             </h1>
