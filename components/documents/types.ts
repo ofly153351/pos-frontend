@@ -153,6 +153,7 @@ export type DocumentPageClientDocumentDict = {
   printReport: string;
   createDocument: string;
   selectedCount: string;
+  clearSelection: string;
   print: string;
   send: string;
   changeStatus: string;
@@ -191,6 +192,8 @@ export type DocumentPageClientDocumentDict = {
   receiptSettlementTitle: string;
   receiptSettlementHint: string;
   receiptSettlementSelected: string;
+  receiptSettlementSearchPlaceholder: string;
+  receiptSettlementNoMatch: string;
   documentNo: string;
   date: string;
   dueDate: string;
@@ -307,6 +310,9 @@ export type DocumentPreviewPanelDict = {
   receiptSettlementTitle: string;
   receiptSettlementHint: string;
   receiptSettlementSelected: string;
+  receiptSettlementSearchPlaceholder: string;
+  receiptSettlementNoMatch: string;
+  clearSelection: string;
   deliveryDate: string;
   poReference: string;
   poReferencePlaceholder: string;

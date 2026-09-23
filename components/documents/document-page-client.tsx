@@ -12,6 +12,7 @@ import {
 } from "@/services/documents";
 import { type DateFilterValue, resolveDateQuery } from "@/components/shared/date-range-filter";
 import { toast } from "@/components/ui/toast";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import type { DocumentListQuery, DocumentStatus, DocumentType } from "@/types/document";
 
 import { DocumentFilterBar } from "./document-filter-bar";
@@ -90,6 +91,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [createModalType, setCreateModalType] = useState<DocumentType | null>(null);
   const [isBulkPending, startBulkTransition] = useTransition();
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const dateRange = resolveDateQuery(dateFilter);
   const fetchQuery = { ...query, ...dateRange };
@@ -136,7 +138,12 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
   }
 
   function handleBulkDelete() {
-    if (!window.confirm(d.confirmDeleteMessage.replace("{n}", String(selectedIds.size)))) return;
+    if (selectedIds.size === 0) return;
+    setConfirmBulkDelete(true);
+  }
+
+  function runBulkDelete() {
+    setConfirmBulkDelete(false);
     startBulkTransition(async () => {
       try {
         await bulkDocumentAction({ ids: Array.from(selectedIds), action: "DELETE" });
@@ -434,6 +441,20 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
           </div>
         )}
       </div>
+
+      {confirmBulkDelete && (
+        <ConfirmModal
+          open
+          tone="danger"
+          title={d.confirmDelete}
+          message={d.confirmDeleteMessage.replace("{n}", String(selectedIds.size))}
+          confirmLabel={d.confirm}
+          cancelLabel={d.cancel}
+          loading={isBulkPending}
+          onConfirm={runBulkDelete}
+          onClose={() => setConfirmBulkDelete(false)}
+        />
+      )}
 
       {/* Create modal */}
       {createModalType && (

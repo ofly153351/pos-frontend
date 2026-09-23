@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { ArrowRight, Ban, ChevronDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { ArrowRight, Ban, Check, ChevronDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getRelatedDocuments, getDocuments } from "@/services/documents";
@@ -34,6 +35,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [receiptTemplateModalOpen, setReceiptTemplateModalOpen] = useState(false);
+  const [receiptTemplateChoice, setReceiptTemplateChoice] = useState<1 | 2 | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [deliveryDateModal, setDeliveryDateModal] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState("");
@@ -51,12 +53,24 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   const [copyIdx, setCopyIdx] = useState(-1);
   const [receiptTemplate, setReceiptTemplate] = useState<1 | 2>(1);
   const [selectedBillingDocumentIds, setSelectedBillingDocumentIds] = useState<string[]>([]);
+  const [billingSearch, setBillingSearch] = useState("");
+  const [billingComboOpen, setBillingComboOpen] = useState(false);
+  const billingComboRef = useRef<HTMLDivElement>(null);
   const copyChoices = copyChoicesFor(documentType);
 
   const { data: billingDocuments = [] } = useQuery({
     queryKey: ["receipt-billing-documents", customerId],
     queryFn: async () => (await getDocuments({ type: "BILL", customer_id: customerId, limit: 500 })).items,
     enabled: !!customerId && (documentType === "BILL" || documentType === "DELIVERY_ORDER"),
+  });
+
+  const availableBillingDocuments = billingDocuments.filter(
+    (bill) => bill.status !== "CANCELLED" && bill.payment_status === "UNPAID",
+  );
+  const filteredBillingDocuments = availableBillingDocuments.filter((bill) => {
+    const query = billingSearch.trim().toLowerCase();
+    if (!query) return true;
+    return (bill.document_no_full || bill.document_no).toLowerCase().includes(query);
   });
 
   const { data: html, isLoading } = useQuery({
@@ -73,6 +87,17 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     enabled: !!documentId,
     staleTime: 30_000,
   });
+
+  useEffect(() => {
+    if (!billingComboOpen) return;
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (billingComboRef.current && !billingComboRef.current.contains(event.target as Node)) {
+        setBillingComboOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [billingComboOpen]);
 
   // Close drawer on Escape key
   useEffect(() => {
@@ -124,6 +149,9 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
 
   function handleConvertToReceipt() {
     setCreateMenuOpen(false);
+    setReceiptTemplateChoice(null);
+    setBillingSearch("");
+    setBillingComboOpen(false);
     setReceiptTemplateModalOpen(true);
   }
 
@@ -385,33 +413,92 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                   ยกเลิก
                 </button>
               )}
-              {receiptTemplateModalOpen && (
-                <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true">
+              {receiptTemplateModalOpen && typeof document !== "undefined" && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true">
                   <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
                     <div className="mb-1 text-lg font-bold text-slate-800">{dict.receiptTemplateTitle}</div>
                     <p className="mb-5 text-sm text-slate-500">{dict.receiptTemplateDescription}</p>
-                    {billingDocuments.length > 0 && (
+                    {receiptTemplateChoice === 2 && (
                       <div className="mb-5 rounded-xl border border-violet-100 bg-violet-50/40 p-3">
                         <div className="text-sm font-semibold text-slate-800">{dict.receiptSettlementTitle}</div>
                         <p className="mt-1 text-xs text-slate-500">{dict.receiptSettlementHint}</p>
-                        <div className="mt-3 max-h-36 space-y-1 overflow-y-auto">
-                          {billingDocuments.filter((bill) => bill.status !== "CANCELLED" && bill.payment_status === "UNPAID").map((bill) => {
-                            const checked = selectedBillingDocumentIds.includes(bill.id);
-                            return (
-                              <label key={bill.id} className="flex cursor-pointer items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-white">
-                                <span className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={() => setSelectedBillingDocumentIds((current) => checked ? current.filter((id) => id !== bill.id) : [...current, bill.id])}
-                                    className="h-4 w-4 accent-violet-600"
-                                  />
-                                  <span className="nums text-slate-700">{bill.document_no_full || bill.document_no}</span>
+                        <div ref={billingComboRef} className="relative mt-3">
+                          <button
+                            type="button"
+                            role="combobox"
+                            aria-expanded={billingComboOpen}
+                            aria-controls="receipt-billing-combobox-options"
+                            onClick={() => setBillingComboOpen((open) => !open)}
+                            className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-violet-200 bg-white px-3 py-2 text-left shadow-sm transition hover:border-violet-400 focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                          >
+                            <span className="flex min-w-0 flex-wrap items-center gap-1.5">
+                              {selectedBillingDocumentIds.length > 0 ? (
+                                selectedBillingDocumentIds.slice(0, 2).map((id) => {
+                                  const bill = availableBillingDocuments.find((item) => item.id === id);
+                                  return bill ? (
+                                    <span key={id} className="inline-flex max-w-[10rem] items-center gap-1 rounded-full bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-700">
+                                      <span className="truncate">{bill.document_no_full || bill.document_no}</span>
+                                      <X aria-hidden="true" className="h-3 w-3" />
+                                    </span>
+                                  ) : null;
+                                })
+                              ) : (
+                                <span className="text-sm text-slate-400">{dict.receiptSettlementSearchPlaceholder}</span>
+                              )}
+                              {selectedBillingDocumentIds.length > 2 && (
+                                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+                                  +{selectedBillingDocumentIds.length - 2}
                                 </span>
-                                <span className="nums text-xs text-slate-500">{Number(bill.total_amount).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
-                              </label>
-                            );
-                          })}
+                              )}
+                            </span>
+                            <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${billingComboOpen ? "rotate-180" : ""}`} />
+                          </button>
+                          {billingComboOpen && (
+                            <div id="receipt-billing-combobox-options" className="absolute inset-x-0 top-full z-10 mt-2 overflow-hidden rounded-xl border border-violet-100 bg-white shadow-xl">
+                              <div className="border-b border-slate-100 p-2">
+                                <input
+                                  type="search"
+                                  autoFocus
+                                  value={billingSearch}
+                                  onChange={(event) => setBillingSearch(event.target.value)}
+                                  placeholder={dict.receiptSettlementSearchPlaceholder}
+                                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-violet-400 focus:bg-white"
+                                />
+                              </div>
+                              <div className="max-h-52 overflow-y-auto p-1">
+                                {filteredBillingDocuments.length > 0 ? filteredBillingDocuments.map((bill) => {
+                                  const checked = selectedBillingDocumentIds.includes(bill.id);
+                                  return (
+                                    <button
+                                      key={bill.id}
+                                      type="button"
+                                      onClick={() => setSelectedBillingDocumentIds((current) => checked ? current.filter((id) => id !== bill.id) : [...current, bill.id])}
+                                      className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-violet-50"
+                                    >
+                                      <span className="flex min-w-0 items-center gap-3">
+                                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${checked ? "border-violet-600 bg-violet-600 text-white" : "border-slate-300 bg-white"}`}>
+                                          {checked && <Check className="h-3.5 w-3.5" />}
+                                        </span>
+                                        <span className="min-w-0">
+                                          <span className="nums block truncate text-sm font-semibold text-slate-700">{bill.document_no_full || bill.document_no}</span>
+                                          <span className="block text-[11px] text-slate-400">{dict.receiptSettlementSelected}</span>
+                                        </span>
+                                      </span>
+                                      <span className="nums shrink-0 text-xs font-semibold text-slate-500">{Number(bill.total_amount).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+                                    </button>
+                                  );
+                                }) : (
+                                  <div className="px-3 py-4 text-center text-xs text-slate-400">{dict.receiptSettlementNoMatch}</div>
+                                )}
+                              </div>
+                              {selectedBillingDocumentIds.length > 0 && (
+                                <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-xs">
+                                  <span className="font-semibold text-violet-700">{selectedBillingDocumentIds.length} {dict.receiptSettlementSelected}</span>
+                                  <button type="button" onClick={() => setSelectedBillingDocumentIds([])} className="font-semibold text-slate-400 hover:text-slate-700">{dict.clearSelection}</button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {selectedBillingDocumentIds.length > 0 && (
                           <div className="mt-2 text-xs font-semibold text-violet-700">
@@ -421,18 +508,25 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                       </div>
                     )}
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <button type="button" onClick={() => createReceipt(1)} disabled={isConverting} className="rounded-xl border border-slate-200 p-4 text-left transition hover:border-violet-400 hover:bg-violet-50 disabled:opacity-50">
+                      <button type="button" onClick={() => createReceipt(1)} disabled={isConverting} className={`rounded-xl border p-4 text-left transition hover:border-violet-400 hover:bg-violet-50 disabled:opacity-50 ${receiptTemplateChoice === 1 ? "border-violet-500 bg-violet-50" : "border-slate-200"}`}>
                         <div className="font-semibold text-slate-800">{dict.receiptTemplate1}</div>
                         <div className="mt-1 text-xs text-slate-500">{dict.receiptTemplate1Description}</div>
                       </button>
-                      <button type="button" onClick={() => createReceipt(2)} disabled={isConverting} className="rounded-xl border-2 border-violet-300 bg-violet-50 p-4 text-left transition hover:border-violet-500 disabled:opacity-50">
+                      <button type="button" onClick={() => setReceiptTemplateChoice(2)} disabled={isConverting} className={`rounded-xl border p-4 text-left transition hover:border-violet-500 hover:bg-violet-50 disabled:opacity-50 ${receiptTemplateChoice === 2 ? "border-2 border-violet-300 bg-violet-50" : "border-slate-200"}`}>
                         <div className="font-semibold text-violet-800">{dict.receiptTemplate2}</div>
                         <div className="mt-1 text-xs text-slate-600">{dict.receiptTemplate2Description}</div>
                       </button>
                     </div>
+                    {receiptTemplateChoice === 2 && (
+                      <button type="button" onClick={() => createReceipt(2)} disabled={isConverting} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50">
+                        {isConverting && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {dict.receiptTemplate2}
+                      </button>
+                    )}
                     <button type="button" onClick={() => setReceiptTemplateModalOpen(false)} className="mt-5 w-full rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">{dict.cancel}</button>
                   </div>
-                </div>
+                </div>,
+                document.body,
               )}
               {confirmCancel && (
                 <ConfirmModal
