@@ -188,6 +188,9 @@ export type DocumentPageClientDocumentDict = {
   receiptTemplateLabel: string;
   receiptTemplate1: string;
   receiptTemplate2: string;
+  receiptSettlementTitle: string;
+  receiptSettlementHint: string;
+  receiptSettlementSelected: string;
   documentNo: string;
   date: string;
   dueDate: string;
@@ -301,6 +304,9 @@ export type DocumentPreviewPanelDict = {
   receiptTemplate2Description: string;
   receiptTemplate2: string;
   receiptTemplateLabel: string;
+  receiptSettlementTitle: string;
+  receiptSettlementHint: string;
+  receiptSettlementSelected: string;
   deliveryDate: string;
   poReference: string;
   poReferencePlaceholder: string;
@@ -327,6 +333,7 @@ export type DocumentPreviewPanelProps = {
   documentId: string;
   documentNo?: string;
   documentType?: DocumentType;
+  customerId?: string;
   paymentStatus?: string;      // "UNPAID" | "PARTIAL" | "PAID"
   documentStatus?: string;     // "PENDING" | "COMPLETED" | "CANCELLED" | ...
 

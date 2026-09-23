@@ -414,6 +414,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
               documentId={selectedDocId}
               documentNo={documents.find((doc) => doc.id === selectedDocId)?.document_no}
               documentType={documents.find((doc) => doc.id === selectedDocId)?.type}
+              customerId={documents.find((doc) => doc.id === selectedDocId)?.customer_id}
               paymentStatus={documents.find((doc) => doc.id === selectedDocId)?.payment_status}
               documentStatus={documents.find((doc) => doc.id === selectedDocId)?.status}
 

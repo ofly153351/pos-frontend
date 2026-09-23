@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { ArrowRight, Ban, ChevronDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getRelatedDocuments } from "@/services/documents";
+import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getRelatedDocuments, getDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
@@ -26,7 +26,7 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentNo, documentType, paymentStatus, documentStatus, dict, onClose, onNavigate }: DocumentPreviewPanelProps) {
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, customerId, paymentStatus, documentStatus, dict, onClose, onNavigate }: DocumentPreviewPanelProps) {
   const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
@@ -50,7 +50,14 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   // -1 = whole set (default). Threaded into preview, print, and PDF so all three agree.
   const [copyIdx, setCopyIdx] = useState(-1);
   const [receiptTemplate, setReceiptTemplate] = useState<1 | 2>(1);
+  const [selectedBillingDocumentIds, setSelectedBillingDocumentIds] = useState<string[]>([]);
   const copyChoices = copyChoicesFor(documentType);
+
+  const { data: billingDocuments = [] } = useQuery({
+    queryKey: ["receipt-billing-documents", customerId],
+    queryFn: async () => (await getDocuments({ type: "BILL", customer_id: customerId, limit: 500 })).items,
+    enabled: !!customerId && (documentType === "BILL" || documentType === "DELIVERY_ORDER"),
+  });
 
   const { data: html, isLoading } = useQuery({
     queryKey: ["document-print", documentId, copyIdx, receiptTemplate],
@@ -123,9 +130,14 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
   function createReceipt(template: 1 | 2) {
     setReceiptTemplate(template);
     setReceiptTemplateModalOpen(false);
+    const sourceDocumentIds = selectedBillingDocumentIds.length > 0
+      ? selectedBillingDocumentIds
+      : documentType === "BILL"
+        ? [documentId]
+        : undefined;
     startConvertTransition(async () => {
       try {
-        const receipt = await convertDocument(documentId, "RECEIPT", template);
+        const receipt = await convertDocument(documentId, "RECEIPT", template, sourceDocumentIds);
         toast.success("สร้างใบเสร็จรับเงิน A4 สำเร็จ");
         qc.invalidateQueries({ queryKey: ["documents"] });
         if (onNavigate) onNavigate(receipt.id);
@@ -323,7 +335,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   </div>
                 </>
               )}
-              {documentType === "DELIVERY_ORDER" && !isCancelled && (
+              {(documentType === "DELIVERY_ORDER" || documentType === "BILL") && !isCancelled && (
                 <div className="relative">
                   <button
                     type="button"
@@ -378,6 +390,36 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, pay
                   <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
                     <div className="mb-1 text-lg font-bold text-slate-800">{dict.receiptTemplateTitle}</div>
                     <p className="mb-5 text-sm text-slate-500">{dict.receiptTemplateDescription}</p>
+                    {billingDocuments.length > 0 && (
+                      <div className="mb-5 rounded-xl border border-violet-100 bg-violet-50/40 p-3">
+                        <div className="text-sm font-semibold text-slate-800">{dict.receiptSettlementTitle}</div>
+                        <p className="mt-1 text-xs text-slate-500">{dict.receiptSettlementHint}</p>
+                        <div className="mt-3 max-h-36 space-y-1 overflow-y-auto">
+                          {billingDocuments.filter((bill) => bill.status !== "CANCELLED" && bill.payment_status === "UNPAID").map((bill) => {
+                            const checked = selectedBillingDocumentIds.includes(bill.id);
+                            return (
+                              <label key={bill.id} className="flex cursor-pointer items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-white">
+                                <span className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => setSelectedBillingDocumentIds((current) => checked ? current.filter((id) => id !== bill.id) : [...current, bill.id])}
+                                    className="h-4 w-4 accent-violet-600"
+                                  />
+                                  <span className="nums text-slate-700">{bill.document_no_full || bill.document_no}</span>
+                                </span>
+                                <span className="nums text-xs text-slate-500">{Number(bill.total_amount).toLocaleString("th-TH", { minimumFractionDigits: 2 })}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        {selectedBillingDocumentIds.length > 0 && (
+                          <div className="mt-2 text-xs font-semibold text-violet-700">
+                            {selectedBillingDocumentIds.length} {dict.receiptSettlementSelected}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <button type="button" onClick={() => createReceipt(1)} disabled={isConverting} className="rounded-xl border border-slate-200 p-4 text-left transition hover:border-violet-400 hover:bg-violet-50 disabled:opacity-50">
                         <div className="font-semibold text-slate-800">{dict.receiptTemplate1}</div>

@@ -99,12 +99,18 @@ export async function convertToDeliveryOrder(id: string, deliveryDate?: string, 
 
 // Generic workflow conversion — server validates the (source → target) pair
 // against the allowed matrix and links the new document back to its source.
-export async function convertDocument(id: string, targetType: DocumentType, receiptTemplate?: 1 | 2): Promise<Document> {
+export async function convertDocument(
+  id: string,
+  targetType: DocumentType,
+  receiptTemplate?: 1 | 2,
+  sourceDocumentIds?: string[],
+): Promise<Document> {
   const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-to`, {
     method: "POST",
     body: {
       target_type: targetType,
       ...(targetType === "RECEIPT" && receiptTemplate ? { receipt_template: receiptTemplate } : {}),
+      ...(targetType === "RECEIPT" && sourceDocumentIds?.length ? { source_document_ids: sourceDocumentIds } : {}),
     },
   });
   return res.data;
