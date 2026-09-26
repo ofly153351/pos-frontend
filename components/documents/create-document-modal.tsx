@@ -6,6 +6,8 @@ import { Loader2, Minus, Plus, Search, Trash2, X } from "lucide-react";
 
 import { authorizedApiRequest, ApiError } from "@/services/api";
 import { getCurrentStoreId } from "@/lib/store-storage";
+import { listBankAccounts } from "@/services/stores";
+import type { StoreBankAccount } from "@/types/store";
 import { listProducts } from "@/services/products";
 import { createDocument, getDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
@@ -75,6 +77,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const [poRefNo, setPoRefNo] = useState("");
   const [creditTermDays, setCreditTermDays] = useState(0);
   const [notes, setNotes] = useState("");
+  const [bankAccountId, setBankAccountId] = useState("");
   const [items, setItems] = useState<CreateDocumentModalLineItem[]>([
     { description: "", quantity: 1, unit_price: 0, discount_type: "", discount_value: 0 },
   ]);
@@ -89,6 +92,12 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const barcodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
+
+  const { data: bankAccounts = [] } = useQuery<StoreBankAccount[]>({
+    queryKey: ["store-bank-accounts", storeId],
+    enabled: Boolean(storeId),
+    queryFn: async () => (await listBankAccounts(storeId!)).data ?? [],
+  });
 
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["customers-simple", storeId],
@@ -346,6 +355,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       credit_term_days: creditTermDays || undefined,
       vat_rate: docType === "BILL" ? 0 : vatEnabled ? 7 : 0,
       notes: notes || undefined,
+      bank_account_id: bankAccountId || undefined,
       items: itemsToSubmit.map((it) => ({
         product_id: "product_id" in it ? it.product_id : undefined,
         description: it.description,
@@ -851,6 +861,25 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
             {/* Totals + VAT + Notes */}
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
+                {bankAccounts.some((account) => account.is_active) && (
+                  <div className="mb-3">
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {d.bankAccountLabel}
+                    </label>
+                    <select
+                      className="w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                      value={bankAccountId}
+                      onChange={(e) => setBankAccountId(e.target.value)}
+                    >
+                      <option value="">{d.bankAccountDefault}</option>
+                      {bankAccounts.filter((account) => account.is_active).map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.bank_name} · {account.account_no} · {account.account_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                   {d.notes}
                 </label>

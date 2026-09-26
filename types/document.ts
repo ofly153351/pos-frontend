@@ -158,6 +158,7 @@ export interface CreateDocumentPayload {
   }[];
   vat_rate: number;
   notes?: string;
+  bank_account_id?: string;
 }
 
 export interface UpdateDocumentStatusPayload {

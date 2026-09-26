@@ -477,18 +477,17 @@ function BankAccountsTab({ storeId, t, canManage }: { storeId: string; t: Receip
                   <span className="text-xs text-slate-500">{acc.account_name}</span>
                 </div>
                 {canManage && (
-                  <div className="flex shrink-0 items-center gap-1">
-                    {!acc.is_default && (
-                      <button
-                        type="button"
-                        title={p.defaultLabel}
-                        onClick={() => updateMut.mutate({ id: acc.id, is_default: true })}
-                        disabled={updateMut.isPending}
-                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40"
-                      >
-                        <Star className="h-4 w-4" />
-                      </button>
-                    )}
+                  <div className="flex shrink-0 items-center gap-2">
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-violet-50">
+                      <input
+                        type="checkbox"
+                        checked={acc.is_default}
+                        disabled={updateMut.isPending || !acc.is_active || acc.is_default}
+                        onChange={() => updateMut.mutate({ id: acc.id, is_default: true })}
+                        className="h-4 w-4 rounded border-slate-300 accent-violet-600"
+                      />
+                      <span>{p.primaryLabel}</span>
+                    </label>
                     <button
                       type="button"
                       title={acc.is_active ? "ปิดใช้งาน" : p.activeLabel}

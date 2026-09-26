@@ -21,7 +21,7 @@ import { toast } from "@/components/ui/toast";
 
 import { getAuthSession } from "@/lib/auth-storage";
 import { getCurrentStoreId, saveCurrentStoreId } from "@/lib/store-storage";
-import { createBankAccount, createStore, deleteBankAccount, getStoreById, listBankAccounts, listMyStores, updateStoreById } from "@/services/stores";
+import { createBankAccount, createStore, deleteBankAccount, getStoreById, listBankAccounts, listMyStores, updateBankAccount, updateStoreById } from "@/services/stores";
 import type { Store, StoreBankAccount } from "@/types/store";
 import type { StoreManagementPanelStoreManagementDictionary } from "./types";
 import type { StoreManagementPanelProps } from "./types";
@@ -138,6 +138,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
   const [newAccountName, setNewAccountName] = useState("");
   const [isAddingBank, startAddBankTransition] = useTransition();
   const [deletingBankId, setDeletingBankId] = useState<string | null>(null);
+  const [updatingPrimaryBankId, setUpdatingPrimaryBankId] = useState<string | null>(null);
 
   const [isSwitchPending, startSwitchTransition] = useTransition();
   const [isUpdatePending, startUpdateTransition] = useTransition();
@@ -315,6 +316,21 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
         toast.error(dictionary.bankAccountError ?? "ไม่สามารถเพิ่มบัญชีได้");
       }
     });
+  }
+
+  function handleSetPrimaryBank(id: string) {
+    if (!selectedStoreId) return;
+    setUpdatingPrimaryBankId(id);
+    updateBankAccount(selectedStoreId, id, { is_default: true })
+      .then((res) => {
+        setBankAccounts((prev) => prev.map((account) => ({
+          ...account,
+          is_default: account.id === res.data.id,
+        })));
+        toast.success(dictionary.bankAccountPrimaryUpdated ?? "เลือกบัญชีหลักแล้ว");
+      })
+      .catch(() => toast.error(dictionary.bankAccountError ?? "ไม่สามารถเลือกบัญชีหลักได้"))
+      .finally(() => setUpdatingPrimaryBankId(null));
   }
 
   function handleDeleteBank(id: string) {
@@ -557,16 +573,28 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
                             <p className="text-sm font-semibold text-slate-800">{acc.bank_name}</p>
                             <p className="text-xs text-slate-500">{acc.account_no}{acc.account_name ? ` · ${acc.account_name}` : ""}</p>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteBank(acc.id)}
-                            disabled={deletingBankId === acc.id}
+                          <div className="flex shrink-0 items-center gap-2">
+                            <label className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white">
+                              <input
+                                type="checkbox"
+                                checked={acc.is_default}
+                                disabled={updatingPrimaryBankId !== null || !acc.is_active || acc.is_default}
+                                onChange={() => handleSetPrimaryBank(acc.id)}
+                                className="h-4 w-4 rounded border-slate-300 accent-violet-600"
+                              />
+                              <span>{dictionary.bankAccountPrimary ?? "บัญชีหลัก"}</span>
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBank(acc.id)}
+                              disabled={deletingBankId === acc.id}
                             className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-500"
                           >
                             {deletingBankId === acc.id
                               ? <Loader2 className="h-4 w-4 animate-spin" />
                               : <Trash2 className="h-4 w-4" />}
-                          </button>
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

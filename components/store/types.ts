@@ -45,6 +45,8 @@ export type StoreManagementPanelStoreManagementDictionary = {
   bankAccountAdded?: string;
   bankAccountDeleted?: string;
   bankAccountError?: string;
+  bankAccountPrimary?: string;
+  bankAccountPrimaryUpdated?: string;
 };
 
 export type StoreManagementPanelProps = { dictionary: StoreManagementPanelStoreManagementDictionary };

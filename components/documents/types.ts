@@ -40,6 +40,9 @@ export type CreateDocumentModalDict = {
   addItem: string;
   enableVat: string;
   notes: string;
+  bankAccountLabel?: string;
+  bankAccountPlaceholder?: string;
+  bankAccountDefault?: string;
   subtotal: string;
   total: string;
   cancel: string;
