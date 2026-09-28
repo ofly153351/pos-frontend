@@ -58,6 +58,7 @@ export interface Document {
   vat_amount: number;
   total_amount: number;
   notes?: string;
+  quotation_summary?: string;
   store_name?: string;
   store_address?: string;
   store_phone?: string;
@@ -158,6 +159,7 @@ export interface CreateDocumentPayload {
   }[];
   vat_rate: number;
   notes?: string;
+  quotation_summary?: string;
   bank_account_id?: string;
 }
 

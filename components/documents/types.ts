@@ -29,7 +29,10 @@ export type CreateDocumentModalDict = {
   deliveryTerms?: string;
   deliveryLeadTimeDays?: string;
   poReceivedDate?: string;
+  quotationSummary?: string;
+  quotationSummaryPlaceholder?: string;
   description: string;
+  sequence: string;
   productSearch: string;
   scanWithCamera: string;
   productNotFound: string;
@@ -228,6 +231,7 @@ export type DocumentPageClientDocumentDict = {
   poReceivedDate: string;
   addItem: string;
   description: string;
+  sequence: string;
   quantity: string;
   unitPrice: string;
   discount: string;

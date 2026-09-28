@@ -68,6 +68,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const [priceValidityDays, setPriceValidityDays] = useState<number | "">("");
   const [deliveryLeadTimeDays, setDeliveryLeadTimeDays] = useState<number | "">("");
   const [poReceivedDate, setPoReceivedDate] = useState("");
+  const [quotationSummary, setQuotationSummary] = useState("");
   // Delivery order fields
   const [deliveryDate, setDeliveryDate] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -297,10 +298,6 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
 
   const hasProducts = items.some((it) => it.description !== "" || it.unit_price > 0);
 
-  function addItem() {
-    setItems([...items, { description: "", quantity: 1, unit_price: 0, discount_type: "", discount_value: 0 }]);
-  }
-
   function removeItem(i: number) {
     setItems(items.filter((_, idx) => idx !== i));
   }
@@ -355,6 +352,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
       credit_term_days: creditTermDays || undefined,
       vat_rate: docType === "BILL" ? 0 : vatEnabled ? 7 : 0,
       notes: notes || undefined,
+      quotation_summary: docType === "QUOTATION" ? (quotationSummary.trim() || undefined) : undefined,
       bank_account_id: bankAccountId || undefined,
       items: itemsToSubmit.map((it) => ({
         product_id: "product_id" in it ? it.product_id : undefined,
@@ -520,41 +518,47 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 <div className="md:col-span-3 rounded-xl border border-violet-100 bg-violet-50/40 p-4">
                   <div className="mb-3 text-sm font-semibold text-violet-800">{d.deliveryTerms}</div>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {d.priceValidityDays}
-                  </label>
-                  <input type="number" min={0} step={1}
-                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                    value={priceValidityDays}
-                    onChange={(e) => setPriceValidityDays(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
-                  />
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{d.priceValidityDays}</label>
+                      <input type="number" min={0} step={1}
+                        className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        value={priceValidityDays}
+                        onChange={(e) => setPriceValidityDays(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{d.deliveryLeadTimeDays}</label>
+                      <input type="number" min={0} step={1}
+                        className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        value={deliveryLeadTimeDays}
+                        onChange={(e) => setDeliveryLeadTimeDays(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{d.poReceivedDate}</label>
+                      <input type="date"
+                        className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        value={poReceivedDate}
+                        onChange={(e) => setPoReceivedDate(e.target.value)}
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{d.quotationSummary}</label>
+                      <input
+                        className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        placeholder={d.quotationSummaryPlaceholder}
+                        value={quotationSummary}
+                        onChange={(e) => setQuotationSummary(e.target.value)}
+                        maxLength={300}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{d.deliveryLeadTimeDays}</label>
-                  <input type="number" min={0} step={1}
-                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                    value={deliveryLeadTimeDays}
-                    onChange={(e) => setDeliveryLeadTimeDays(e.target.value === "" ? "" : Math.max(0, Number(e.target.value)))}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">{d.poReceivedDate}</label>
-                  <input type="date"
-                    className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
-                    value={poReceivedDate}
-                    onChange={(e) => setPoReceivedDate(e.target.value)}
-                  />
-                </div>
-                </div>
-              </div>
               )}
 
               {docType === "DELIVERY_ORDER" && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    วันที่จัดส่ง
-                  </label>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">วันที่จัดส่ง</label>
                   <input
                     type="date"
                     className="w-full rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
@@ -773,6 +777,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-violet-100 bg-violet-50/60 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <th className="w-12 px-3 py-2.5 text-center">{d.sequence}</th>
                       <th className="px-3 py-2.5 text-left">{d.description}</th>
                       <th className="w-20 px-3 py-2.5 text-center">{d.quantity}</th>
                       <th className="w-28 px-3 py-2.5 text-right">{d.unitPrice}</th>
@@ -783,8 +788,8 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                   <tbody className="divide-y divide-violet-50">
                     {items.map((item, i) => (
                       <tr key={i}>
-                        <td className="px-3 py-2">
-                          {item.product_id ? (
+                        <td className="px-3 py-2 text-center nums text-slate-500">{i + 1}</td>
+                        <td className="px-3 py-2">                          {item.product_id ? (
                             <span className="block truncate px-2.5 py-1.5 text-sm font-medium text-slate-700">{item.description}</span>
                           ) : (
                             <input
@@ -844,16 +849,6 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
                     ))}
                   </tbody>
                 </table>
-                <div className="border-t border-violet-100 bg-violet-50/30 px-3 py-2">
-                  <button
-                    className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-700"
-                    onClick={addItem}
-                    type="button"
-                  >
-                    <Plus className="h-4 w-4" />
-                    {d.addItem}
-                  </button>
-                </div>
               </div>
             </div>
             )}

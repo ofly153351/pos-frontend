@@ -31,8 +31,7 @@ import {
 } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import type { DocumentListItem, DocumentType } from "@/types/document";
-import type { DocumentRowActionsRowActionsDict } from "./types";
+import type { DocumentType } from "@/types/document";
 import type { DocumentRowActionsProps } from "./types";
 
 
@@ -147,7 +146,7 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${doc.document_no_full || doc.document_no}.pdf`;
+        a.download = `${doc.id}.pdf`;
         document.body.appendChild(a);
         a.click();
         a.remove();

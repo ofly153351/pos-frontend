@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { FileText, Loader2, Printer, X } from "lucide-react";
 
 import { getDocumentPrintHtml } from "@/services/documents";
-import type { DocumentPrintClientDict } from "./types";
 import type { DocumentPrintClientProps } from "./types";
 
 
@@ -17,6 +16,14 @@ export function DocumentPrintClient({ documentId, dict, copy = -1 }: DocumentPri
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const frameRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = documentId;
+    return () => {
+      document.title = previousTitle;
+    };
+  }, [documentId]);
 
   useEffect(() => {
     getDocumentPrintHtml(documentId, copy)
