@@ -2235,6 +2235,7 @@
     "receiptSettlementSelected": "เลือกแล้ว",
     "receiptSettlementSearchPlaceholder": "ค้นหาเลขที่ใบวางบิล",
     "receiptSettlementNoMatch": "ไม่พบใบวางบิลที่ตรงกัน",
+    "receiptAlreadyCreated": "ใบเสร็จรับเงินนี้ถูกสร้างไปแล้ว",
     "clearSelection": "ล้างการเลือก",
     "documentNo": "เลขที่เอกสาร",
     "date": "วันที่",

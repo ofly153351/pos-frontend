@@ -55,10 +55,10 @@ const ICON: Record<ToastToastTone, ReactNode> = {
 };
 
 const STYLE: Record<ToastToastTone, string> = {
-  success: "border-emerald-200 bg-white text-emerald-800",
-  error:   "border-rose-200   bg-white text-rose-800",
-  info:    "border-violet-200 bg-white text-violet-800",
-  warning: "border-amber-200  bg-white text-amber-800",
+  success: "border-emerald-300 bg-emerald-50 text-emerald-900 shadow-emerald-900/10",
+  error:   "border-rose-300 bg-rose-50 text-rose-900 shadow-rose-900/10",
+  info:    "border-violet-300 bg-violet-50 text-violet-900 shadow-violet-900/10",
+  warning: "border-amber-300 bg-amber-50 text-amber-950 shadow-amber-900/10",
 };
 
 function ToastItem({ id, tone, message }: ToastToastEntry) {
@@ -70,7 +70,7 @@ function ToastItem({ id, tone, message }: ToastToastEntry) {
 
   return (
     <div
-      className={`pointer-events-auto flex min-w-[280px] max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg shadow-black/5 transition-all duration-300 ease-out
+      className={`pointer-events-auto flex min-w-[280px] max-w-sm items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium shadow-lg transition-all duration-300 ease-out
         ${STYLE[tone]}
         ${show ? "translate-x-0 opacity-100" : "translate-x-6 opacity-0"}`}
     >
@@ -98,7 +98,7 @@ export function Toaster() {
   );
 
   return (
-    <div className="pointer-events-none fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div className="pointer-events-none fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-2">
       {activeToasts.map((t) => (
         <ToastItem key={t.id} {...t} />
       ))}

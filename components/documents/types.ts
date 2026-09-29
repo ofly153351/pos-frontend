@@ -200,6 +200,7 @@ export type DocumentPageClientDocumentDict = {
   receiptSettlementSelected: string;
   receiptSettlementSearchPlaceholder: string;
   receiptSettlementNoMatch: string;
+  receiptAlreadyCreated: string;
   documentNo: string;
   date: string;
   dueDate: string;
@@ -319,6 +320,7 @@ export type DocumentPreviewPanelDict = {
   receiptSettlementSelected: string;
   receiptSettlementSearchPlaceholder: string;
   receiptSettlementNoMatch: string;
+  receiptAlreadyCreated: string;
   clearSelection: string;
   deliveryDate: string;
   poReference: string;

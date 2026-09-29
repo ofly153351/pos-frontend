@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { ArrowRight, Ban, Check, ChevronDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { ApiError } from "@/services/api";
 import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getRelatedDocuments, getDocuments } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -170,7 +171,11 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
         qc.invalidateQueries({ queryKey: ["documents"] });
         if (onNavigate) onNavigate(receipt.id);
         else onClose();
-      } catch {
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 409) {
+          toast.warning(dict.receiptAlreadyCreated);
+          return;
+        }
         toast.error("ไม่สามารถสร้างใบเสร็จรับเงินได้");
       }
     });

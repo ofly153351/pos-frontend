@@ -2235,6 +2235,7 @@
     "receiptSettlementSelected": "selected",
     "receiptSettlementSearchPlaceholder": "Search billing notice number",
     "receiptSettlementNoMatch": "No matching billing notices",
+    "receiptAlreadyCreated": "This receipt has already been created",
     "clearSelection": "Clear selection",
     "documentNo": "Document No.",
     "date": "Date",
