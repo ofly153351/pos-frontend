@@ -60,7 +60,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
 
   const { data: billingDocuments = [] } = useQuery({
     queryKey: ["receipt-billing-documents", customerId],
-    queryFn: async () => (await getDocuments({ type: "BILL", customer_id: customerId, limit: 500 })).items,
+    queryFn: async () => (await getDocuments({ type: "BILL", customer_id: customerId, limit: 500 })).items ?? [],
     enabled: !!customerId && (documentType === "BILL" || documentType === "DELIVERY_ORDER"),
   });
 
