@@ -57,7 +57,13 @@ export type SuccessPopupSuccessPopupProps = {
   onClose?: () => void;
 };
 
-export type ToastToastTone = "success" | "error" | "info" | "warning";
+export type ToastToastTone = "default" | "success" | "error" | "info" | "warning";
+
+export type ToastToastAddOptions = {
+  description: string;
+  type?: ToastToastTone;
+  priority?: "normal" | "high";
+};
 
 export type ToastToastEntry = {
   id: string;

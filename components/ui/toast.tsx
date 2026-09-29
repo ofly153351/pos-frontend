@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore, useState, type ReactNode } from "react";
 import { AlertTriangle, CheckCircle2, Info, X } from "lucide-react";
-import type { ToastToastTone } from "./types";
+import type { ToastToastAddOptions, ToastToastTone } from "./types";
 import type { ToastToastEntry } from "./types";
 export type { ToastToastTone as ToastTone } from "./types";
 
@@ -34,10 +34,12 @@ function _remove(id: string) {
 
 // ── Public API — import and call from anywhere (components, callbacks, utils) ─
 export const toast = {
-  success: (message: string, duration = 3500) => _add({ tone: "success", message, duration }),
-  error:   (message: string, duration = 5000) => _add({ tone: "error",   message, duration }),
-  info:    (message: string, duration = 3000) => _add({ tone: "info",    message, duration }),
-  warning: (message: string, duration = 4000) => _add({ tone: "warning", message, duration }),
+  add: ({ description, type = "default", priority = "normal" }: ToastToastAddOptions) =>
+    _add({ tone: type, message: description, duration: priority === "high" ? 7000 : 3500 }),
+  success: (message: string, duration = 3500) => toast.add({ type: "success", description: message, priority: duration >= 7000 ? "high" : "normal" }),
+  error:   (message: string, duration = 5000) => toast.add({ type: "error", description: message, priority: duration >= 7000 ? "high" : "normal" }),
+  info:    (message: string, duration = 3000) => toast.add({ type: "info", description: message, priority: duration >= 7000 ? "high" : "normal" }),
+  warning: (message: string, duration = 4000) => toast.add({ type: "warning", description: message, priority: duration >= 7000 ? "high" : "normal" }),
   dismiss: (id: string) => _remove(id),
 };
 
@@ -48,6 +50,7 @@ export function useToast() {
 
 // ── Individual toast item ───────────────────────────────────────────────────
 const ICON: Record<ToastToastTone, ReactNode> = {
+  default: <Info className="h-4 w-4 shrink-0 text-slate-500" />,
   success: <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />,
   error:   <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500" />,
   info:    <Info className="h-4 w-4 shrink-0 text-violet-500" />,
@@ -55,6 +58,7 @@ const ICON: Record<ToastToastTone, ReactNode> = {
 };
 
 const STYLE: Record<ToastToastTone, string> = {
+  default: "border-slate-200 bg-white text-slate-800 shadow-slate-900/10",
   success: "border-emerald-300 bg-emerald-50 text-emerald-900 shadow-emerald-900/10",
   error:   "border-rose-300 bg-rose-50 text-rose-900 shadow-rose-900/10",
   info:    "border-violet-300 bg-violet-50 text-violet-900 shadow-violet-900/10",
