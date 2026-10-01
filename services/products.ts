@@ -151,18 +151,25 @@ export function deleteProductType(productTypeId: string) {
   );
 }
 
-type ListProductsOptions = {
+export type ListProductsOptions = {
   limit?: number;
   page?: number;
   sort_by?: "created_at" | "updated_at";
+  stock_status?: "low_stock" | "out_of_stock";
 };
 
-export async function listProducts(options: ListProductsOptions = {}) {
-  const currentStoreId = ensureStoreId();
+export function buildListProductsQuery(options: ListProductsOptions = {}) {
   const page = options.page ?? 1;
   const limit = options.limit ?? 50;
   const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
   if (options.sort_by) qs.set("sort_by", options.sort_by);
+  if (options.stock_status) qs.set("stock_status", options.stock_status);
+  return qs;
+}
+
+export async function listProducts(options: ListProductsOptions = {}) {
+  const currentStoreId = ensureStoreId();
+  const qs = buildListProductsQuery(options);
   const response = await authorizedApiRequest<Product[] | ProductListPage>(
     `/api/stores/${currentStoreId}/products?${qs}`,
   );

@@ -141,7 +141,7 @@ export function StockManager({
         if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 9999) return parsed;
       }
     }
-    return 5;
+    return 9999;
   });
   const [hasMounted, setHasMounted] = useState(false);
   const [productPage, setProductPage] = useState(1);
@@ -296,12 +296,15 @@ export function StockManager({
     enabled: hasMounted,
     placeholderData: (prev) => prev, // keep old data while fetching new page/sort — prevents products=[] flash
     queryFn: async () => {
+      const serverStockStatus = selectedStockStatus === "low_stock" || selectedStockStatus === "out_of_stock"
+        ? selectedStockStatus
+        : undefined;
       const response = isSearching
-        ? await listProducts({ limit: 9999, page: 1, sort_by: sortBy })
-        : await listProducts({ limit: productPageSize, page: productPage, sort_by: sortBy });
+        ? await listProducts({ limit: 9999, page: 1, sort_by: sortBy, stock_status: serverStockStatus })
+        : await listProducts({ limit: productPageSize, page: productPage, sort_by: sortBy, stock_status: serverStockStatus });
       return response.data;
     },
-    queryKey: ["stock", "products", isSearching ? "search" : productPage, isSearching ? "all" : productPageSize, sortBy],
+    queryKey: ["stock", "products", isSearching ? "search" : productPage, isSearching ? "all" : productPageSize, sortBy, selectedStockStatus],
   });
 
   // Separate full-dataset query for KPI chips — always fetches all products so counts
