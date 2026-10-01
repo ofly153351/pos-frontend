@@ -88,7 +88,6 @@ export function ReceiveInspectionSummary({
         </div>
       ) : null}
 
-      <p className="mt-3 text-[11px] text-slate-400">{t.inspectionReceivedNote}</p>
     </section>
   );
 }

@@ -1881,7 +1881,7 @@
       "inspectionNotReceived": "Not received",
       "inspectionMismatchTitle": "{count} item(s) do not match the purchase order",
       "inspectionOverWarning": "Some lines exceed the ordered quantity — confirmation is blocked until corrected.",
-      "inspectionReceivedNote": "Stock will increase by the actual received quantity, not the ordered quantity.",
+
       "overReceiptInline": "Exceeds remaining ({remaining})",
       "autoLocationHint": "The product's default location is preselected; you can change the receiving location per item.",
       "itemNoLocation": "This product has no storage location set",

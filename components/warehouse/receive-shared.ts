@@ -180,7 +180,7 @@ export type ReceiveDictionary = {
   inspectionNotReceived: string;
   inspectionMismatchTitle: string; // uses {count}
   inspectionOverWarning: string;
-  inspectionReceivedNote: string;
+
   overReceiptInline: string; // uses {remaining}
   autoLocationHint: string;
   itemNoLocation: string;

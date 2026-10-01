@@ -773,7 +773,7 @@ export function ReceiveEditor({ dictionary: t, locale, receiptId }: ReceiveEdito
             <span>{t.statusOver}: <strong className="text-violet-700">{formatNumber(inspection.counts.over)}</strong></span>
             <span>{t.labelTotal}: <strong className="text-slate-800">{formatCurrency(financials.total)}</strong></span>
           </div>
-          {inspection.mismatches.length > 0 ? <p className="font-medium text-amber-700">{t.inspectionReceivedNote}</p> : null}
+
         </div>
       </ConfirmDialog>
 
