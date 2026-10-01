@@ -52,6 +52,7 @@ import type { WarehouseDashboardVarianceRow } from "./types";
 import type { WarehouseDashboardStatusRow } from "./types";
 import type { WarehouseDashboardTimelineRow } from "./types";
 import type { WarehouseDashboardWarehouseDashboardProps } from "./types";
+import { normalizeWarehouseTimelineActivityType } from "./warehouse-dashboard-activity";
 
 
 
@@ -487,67 +488,68 @@ function buildTimelineRows(
   locale: Locale,
   t: WarehouseDashboardWarehouseDashboardDictionary["recentActivity"],
 ) {
-  const allowed = new Set(["IN", "OUT", "SALE", "TRANSFER", "ADJUST", "RETURN"]);
-
   const rows: WarehouseDashboardTimelineRow[] = activity
-    .filter((item) => allowed.has(item.type))
+    .map((item) => ({ item, type: normalizeWarehouseTimelineActivityType(item.type) }))
+    .filter((entry): entry is { item: RecentActivity; type: NonNullable<ReturnType<typeof normalizeWarehouseTimelineActivityType>> } => entry.type !== null)
     .map((item) => {
-      const absQty = Math.abs(Number(item.quantity_change ?? 0));
-      const qtyText = locale === "th" ? `${formatNumber(absQty, locale)} ${item.unit || ""}`.trim() : formatNumber(absQty, locale);
+      const activityType = item.type;
+      const activity = item.item;
+      const absQty = Math.abs(Number(activity.quantity_change ?? 0));
+      const qtyText = locale === "th" ? `${formatNumber(absQty, locale)} ${activity.unit || ""}`.trim() : formatNumber(absQty, locale);
       let title = t.types.adjustment;
-      let detail = t.messages.adjustment.replace("{product}", item.product_name || "-").replace("{qty}", qtyText).replace("{location}", item.location_name || "-");
+      let detail = t.messages.adjustment.replace("{product}", activity.product_name || "-").replace("{qty}", qtyText).replace("{location}", activity.location_name || "-");
       let tone = "bg-violet-100 text-violet-600";
       let icon: ReactNode = <Boxes className="h-4 w-4" />;
 
-      switch (item.type) {
+      switch (activityType) {
         case "IN":
           title = t.types.receive;
-          detail = t.messages.receive.replace("{product}", item.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (item.location_name || "-") : "location");
+          detail = t.messages.receive.replace("{product}", activity.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (activity.location_name || "-") : "location");
           tone = "bg-emerald-100 text-emerald-600";
           icon = <ArrowUpFromLine className="h-4 w-4" />;
           break;
         case "OUT":
           title = t.types.issue;
-          detail = t.messages.issue.replace("{product}", item.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (item.location_name || "-") : "location");
+          detail = t.messages.issue.replace("{product}", activity.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (activity.location_name || "-") : "location");
           tone = "bg-amber-100 text-amber-600";
           icon = <PackageOpen className="h-4 w-4" />;
           break;
         case "SALE":
           title = t.types.sale;
-          detail = t.messages.sale.replace("{product}", item.product_name || "-").replace("{qty}", qtyText);
+          detail = t.messages.sale.replace("{product}", activity.product_name || "-").replace("{qty}", qtyText);
           tone = "bg-sky-100 text-sky-600";
           icon = <PackageCheck className="h-4 w-4" />;
           break;
         case "TRANSFER":
           title = t.types.transfer;
           detail = t.messages.transfer
-            .replace("{product}", item.product_name || "-")
+            .replace("{product}", activity.product_name || "-")
             .replace("{qty}", qtyText)
-            .replace("{destination}", locale === "th" ? (item.destination_location_name || item.location_name || "-") : "destination");
+            .replace("{destination}", locale === "th" ? (activity.destination_location_name || activity.location_name || "-") : "destination");
           tone = "bg-fuchsia-100 text-fuchsia-600";
           icon = <ArrowLeftRight className="h-4 w-4" />;
           break;
         case "ADJUST":
           title = t.types.adjustment;
-          detail = t.messages.adjustment.replace("{product}", item.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (item.location_name || "-") : "location");
+          detail = t.messages.adjustment.replace("{product}", activity.product_name || "-").replace("{qty}", qtyText).replace("{location}", locale === "th" ? (activity.location_name || "-") : "location");
           tone = "bg-violet-100 text-violet-600";
           icon = <Boxes className="h-4 w-4" />;
           break;
         case "RETURN":
           title = t.types.return;
-          detail = t.messages.return.replace("{product}", item.product_name || "-").replace("{qty}", qtyText);
+          detail = t.messages.return.replace("{product}", activity.product_name || "-").replace("{qty}", qtyText);
           tone = "bg-cyan-100 text-cyan-600";
           icon = <ArrowUpFromLine className="h-4 w-4" />;
           break;
       }
 
       return {
-        id: item.id,
-        kind: item.type as WarehouseDashboardTimelineRow["kind"],
+        id: activity.id,
+        kind: activityType,
         title,
         detail,
-        reference: item.reference_id,
-        createdAt: item.created_at,
+        reference: activity.reference_id,
+        createdAt: activity.created_at,
         tone,
         icon,
       };
