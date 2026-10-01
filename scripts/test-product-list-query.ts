@@ -25,5 +25,8 @@ check("out-of-stock query preserves pagination", outOfStock.get("limit") === "99
 const allProducts = buildListProductsQuery({ limit: 9999, page: 1 });
 check("all-products query does not send a status filter", allProducts.has("stock_status") === false);
 
+const unboundedProducts = buildListProductsQuery({ all: true, limit: 9999, page: 1 });
+check("all-products query requests an unbounded result", unboundedProducts.get("all") === "true");
+
 console.log(`RESULT ${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

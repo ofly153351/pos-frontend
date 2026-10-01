@@ -172,7 +172,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
 
   const productsQuery = useQuery({
     queryKey: ["inventory", "products"],
-    queryFn: async () => (await listProducts({ limit: 9999, page: 1 })).data,
+    queryFn: async () => (await listProducts({ all: true, limit: 9999, page: 1 })).data,
   });
   const movementsQuery = useQuery({
     queryKey: ["inventory", "movements"],
