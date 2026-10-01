@@ -247,7 +247,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerDashboa
     setError("");
     try {
       const input: DashboardQueryInput = {
-        low_stock_limit: 20,
+        low_stock_limit: 200,
         low_stock_threshold: 10,
         recent_limit: 10,
         top_limit: 10,
