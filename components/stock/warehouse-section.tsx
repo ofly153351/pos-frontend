@@ -853,7 +853,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionWarehouseSectio
       <div>
         {/* Stats Cards */}
         <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="rounded-xl border-b-2 border-violet-200 bg-white p-6">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
             {dictionary.productsLabel}
           </span>
@@ -861,7 +861,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionWarehouseSectio
             {warehouseProducts.length}
           </p>
         </div>
-        <div className="rounded-xl border-b-2 border-amber-200 bg-white p-6">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
             {dictionary.totalStockLabel}
           </span>
@@ -869,7 +869,7 @@ export function WarehouseSection({ dictionary }: WarehouseSectionWarehouseSectio
             {totalUnits.toLocaleString()}
           </p>
         </div>
-        <div className="rounded-xl border-b-2 border-emerald-200 bg-white p-6">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
             {dictionary.totalValueLabel}
           </span>

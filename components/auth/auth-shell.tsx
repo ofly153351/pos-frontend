@@ -218,7 +218,7 @@ export function AuthShell({
             {stats.map((s, i) => (
               <div key={s.label} className="flex flex-1 items-center">
                 <div className="flex-1 text-center">
-                  <div className="bg-gradient-to-b from-white to-[#dcd2ff] bg-clip-text text-[30px] font-extrabold leading-none tracking-tight text-transparent">
+                  <div className="text-[30px] font-extrabold leading-none tracking-tight text-white">
                     {s.value}
                   </div>
                   <div className="mt-[7px] text-[13px] font-medium tracking-wide text-white/70">

@@ -885,7 +885,7 @@ export function CreditSalesManager({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-5">
+            <div className="flex items-start justify-between gap-3 bg-violet-700 px-6 py-5">
               <div className="flex items-start gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white">
                   <FilePlus2 className="h-5 w-5" />
@@ -1292,7 +1292,7 @@ export function CreditSalesManager({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-start justify-between bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-4">
+            <div className="flex items-start justify-between bg-violet-700 px-6 py-4">
               <div>
                 <p className="nums text-lg font-bold text-white">{viewSale.document_number}</p>
                 <div className="mt-1 flex items-center gap-2">
@@ -1493,7 +1493,7 @@ export function CreditSalesManager({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-4">
+            <div className="flex items-center justify-between bg-violet-700 px-6 py-4">
               <div className="flex items-center gap-2">
                 <Receipt className="h-5 w-5 text-white" />
                 <h3 className="text-lg font-bold text-white">{dictionary.paymentTitle}</h3>
@@ -1638,7 +1638,7 @@ export function CreditSalesManager({
             className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between bg-gradient-to-r from-violet-700 to-violet-600 px-6 py-4">
+            <div className="flex items-center justify-between bg-violet-700 px-6 py-4">
               <div className="flex items-center gap-2">
                 <Undo2 className="h-5 w-5 text-white" />
                 <div>

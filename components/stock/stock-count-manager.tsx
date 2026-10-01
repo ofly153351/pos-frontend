@@ -828,7 +828,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   <meta charset="utf-8" />
   <title>${active.name}</title>
   <style>
-    body { font-family: Arial, sans-serif; color: #0f172a; padding: 24px; }
+    body { font-family: Sarabun, "Noto Sans Thai", sans-serif; color: #0f172a; padding: 24px; }
     h1,h2 { margin: 0 0 12px; }
     .grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 18px 0; }
     .card { border: 1px solid #e9d5ff; border-radius: 16px; padding: 14px; }
@@ -1109,7 +1109,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
         <div className="mb-3 grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-6">
           {dashboardCards.map((card) => (
             <div key={card.label} className="rounded-xl border border-violet-100 bg-white p-3 shadow-sm">
-              <div className={`inline-flex rounded-lg px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${card.tone}`}>{card.label}</div>
+              <div className={`inline-flex rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${card.tone}`}>{card.label}</div>
               <p className="mt-2 text-xl font-black text-slate-900 tabular-nums sm:text-2xl">{card.value}</p>
             </div>
           ))}
@@ -1661,7 +1661,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                     {filterTabs.map((tab) => (
                       <button key={tab.key} type="button" onClick={() => setCountFilter(tab.key)} className={`inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold transition ${countFilter === tab.key ? "bg-violet-600 text-white shadow-sm" : "bg-white text-slate-600 hover:bg-violet-50"}`}>
                         {tab.label}
-                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${countFilter === tab.key ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>{tab.count}</span>
+                        <span className={`rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums ${countFilter === tab.key ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>{tab.count}</span>
                       </button>
                     ))}
                   </div>
@@ -1857,7 +1857,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-violet-700 tabular-nums">{entry.qty}</span>
-                                <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_BADGE[entry.status]}`}>{t.variance[entry.status]}</span>
+                                <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATUS_BADGE[entry.status]}`}>{t.variance[entry.status]}</span>
                               </div>
                             </div>
                           ))}
@@ -2074,7 +2074,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                           <td className="px-3 py-2.5 text-right text-sm font-bold text-slate-700 tabular-nums">{item.counted ?? "—"}</td>
                           <td className={`px-3 py-2.5 text-sm font-bold tabular-nums ${diff < 0 ? "text-rose-600" : diff > 0 ? "text-indigo-600" : "text-slate-400"}`}>{item.counted == null || item.skipped ? "—" : `${diff > 0 ? "+" : ""}${diff}`}</td>
                           <td className="px-3 py-2.5">
-                            {severity ? <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${SEVERITY_BADGE[severity]}`}>{t.severity[severity]}</span> : <span className="text-xs text-slate-300">—</span>}
+                            {severity ? <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold uppercase ${SEVERITY_BADGE[severity]}`}>{t.severity[severity]}</span> : <span className="text-xs text-slate-300">—</span>}
                           </td>
                           <td className="px-3 py-2.5"><span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_BADGE[status]}`}>{statusLabel}</span></td>
                           <td className="px-3 py-2.5">

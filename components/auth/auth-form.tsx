@@ -311,7 +311,7 @@ export function AuthForm({
       ) : null}
 
       <button
-        className="inline-flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[14px] bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 text-base font-bold text-white shadow-[0_14px_30px_-8px_rgba(124,58,237,0.55),inset_0_1px_0_rgba(255,255,255,0.25)] transition hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+        className="inline-flex h-[54px] w-full items-center justify-center gap-2.5 rounded-[14px] bg-violet-600 text-base font-bold text-white shadow-md shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
         disabled={isPending}
         type="submit"
       >
@@ -335,7 +335,7 @@ function Checkbox({ checked, onChange }: { checked: boolean; onChange: (v: boole
     <span
       className={`mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-[1.5px] transition ${
         checked
-          ? "border-transparent bg-gradient-to-br from-indigo-600 to-violet-600"
+          ? "border-violet-600 bg-violet-600"
           : "border-slate-300 bg-white"
       }`}
     >
