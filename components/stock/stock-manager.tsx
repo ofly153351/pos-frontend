@@ -300,7 +300,7 @@ export function StockManager({
         ? selectedStockStatus
         : undefined;
       const response = isSearching
-        ? await listProducts({ all: true, limit: 9999, page: 1, sort_by: sortBy, stock_status: serverStockStatus })
+        ? await listProducts({ limit: null, page: 1, sort_by: sortBy, stock_status: serverStockStatus })
         : await listProducts({ limit: productPageSize, page: productPage, sort_by: sortBy, stock_status: serverStockStatus });
       return response.data;
     },
@@ -314,7 +314,7 @@ export function StockManager({
     enabled: hasMounted && !isSearching,
     placeholderData: (prev) => prev,
     queryFn: async () => {
-      const response = await listProducts({ all: true, limit: 9999, page: 1, sort_by: sortBy });
+      const response = await listProducts({ limit: null, page: 1, sort_by: sortBy });
       return response.data;
     },
     queryKey: ["stock", "products-all-stats", sortBy],

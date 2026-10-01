@@ -179,7 +179,7 @@ export function CreditSalesManager({
   // Server is the source of truth — every terminal sees the same receivables.
   const salesQuery = useQuery({ queryKey: ["credit-sales"], queryFn: async () => (await listCreditSales()).data });
   const customersQuery = useQuery({ queryKey: ["credit", "customers"], queryFn: async () => (await listCustomers()).data });
-  const productsQuery = useQuery({ queryKey: ["credit", "products"], queryFn: async () => (await listProducts({ all: true, limit: 9999, page: 1 })).data });
+  const productsQuery = useQuery({ queryKey: ["credit", "products"], queryFn: async () => (await listProducts({ limit: null, page: 1 })).data });
   // Customer level (network) discounts — the backend applies these automatically on every
   // credit sale (customer_id is required), so the form preview must mirror them too.
   const levelDiscountsQuery = useQuery({ queryKey: ["credit", "level-discounts"], queryFn: async () => (await listCustomerLevelDiscounts()).data });

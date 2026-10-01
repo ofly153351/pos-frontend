@@ -153,7 +153,7 @@ export function deleteProductType(productTypeId: string) {
 
 export type ListProductsOptions = {
   all?: boolean;
-  limit?: number;
+  limit?: number | null;
   page?: number;
   sort_by?: "created_at" | "updated_at";
   stock_status?: "low_stock" | "out_of_stock";
@@ -161,9 +161,13 @@ export type ListProductsOptions = {
 
 export function buildListProductsQuery(options: ListProductsOptions = {}) {
   const page = options.page ?? 1;
-  const limit = options.limit ?? 50;
-  const qs = new URLSearchParams({ page: String(page), limit: String(limit) });
-  if (options.all) qs.set("all", "true");
+  const isUnbounded = options.all === true || options.limit === null;
+  const qs = new URLSearchParams({ page: String(page) });
+  if (isUnbounded) {
+    qs.set("all", "true");
+  } else {
+    qs.set("limit", String(options.limit ?? 50));
+  }
   if (options.sort_by) qs.set("sort_by", options.sort_by);
   if (options.stock_status) qs.set("stock_status", options.stock_status);
   return qs;
