@@ -88,8 +88,8 @@ export type InventoryDictionary = {
     stockValue: string;
     actions: string;
   };
-  status: { ready: string; low: string; out: string; inactive: string };
-  filter: { all: string; ready: string; low: string; out: string };
+  status: { ready: string; low: string; out: string; storage: string; inactive: string };
+  filter: { all: string; ready: string; low: string; out: string; storage: string };
   noMovement: string;
   action: { adjust: string; history: string; viewProduct: string; more: string };
   countMenu: { start: string; history: string };

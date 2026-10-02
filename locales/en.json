@@ -2774,7 +2774,7 @@
     "empty": "No products found",
     "loading": "Loading...",
     "openCount": "Stock Count",
-    "salePointHint": "Sale Point = sellable on-hand, used for low/out-of-stock alerts · In Storage = reserve stock not yet on the floor",
+    "salePointHint": "Ready = sellable stock across all sale points, used for low/out-of-stock alerts · In Storage = reserve stock not yet on the floor",
     "kpi": {
       "totalSku": "Total SKU",
       "availableUnits": "Available Units",
@@ -2796,15 +2796,17 @@
     },
     "status": {
       "ready": "Available",
-      "low": "Low Stock",
-      "out": "Out of Stock",
+      "low": "Low",
+      "out": "Out of sale-point stock",
+      "storage": "Storage available",
       "inactive": "Inactive"
     },
     "filter": {
       "all": "All",
       "ready": "Available",
-      "low": "Low Stock",
-      "out": "Out of Stock"
+      "low": "Low",
+      "out": "Out of sale-point stock",
+      "storage": "Storage available"
     },
     "noMovement": "No movement yet",
     "action": {
@@ -4256,8 +4258,8 @@
     "kpiValue": "Inventory Value",
     "kpiValueHint": "at product cost",
     "kpiAttention": "Needs Attention",
-    "kpiLow": "Low",
-    "kpiOut": "Out",
+    "kpiLow": "Low (this warehouse total)",
+    "kpiOut": "Out (this warehouse total)",
     "actionReceive": "Receive Goods",
     "actionTransfer": "Transfer",
     "actionAdjust": "Adjust Stock",
@@ -4277,8 +4279,8 @@
     "filterStockStatus": "Stock status",
     "statusAll": "All",
     "statusReady": "Ready to sell",
-    "statusLow": "Low",
-    "statusOut": "Out of stock",
+    "statusLow": "Low (this warehouse total)",
+    "statusOut": "Out (this warehouse total)",
     "filterLocationType": "Location type",
     "locationAll": "All",
     "locationSale": "Sale point",

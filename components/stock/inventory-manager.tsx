@@ -43,9 +43,10 @@ import type { InventoryManagerMovementKind } from "./types";
 
 
 // Map a ?status= query param (from notification deep-links) to a filter tab.
-function statusToTab(status?: string): "all" | "ready" | "low" | "out" {
+function statusToTab(status?: string): "all" | "ready" | "low" | "out" | "storage" {
   if (status === "low-stock") return "low";
   if (status === "out-of-stock") return "out";
+  if (status === "storage-only") return "storage";
   return "all";
 }
 
@@ -82,6 +83,7 @@ function totalStock(p: Product): number {
 function getStatus(p: Product): InventoryManagerStatus {
   if (!p.is_active) return "inactive";
   const s = salePointStock(p);
+  if (s <= 0 && storageStock(p) > 0) return "storage";
   if (s <= 0) return "out";
   if (p.min_stock != null && s <= p.min_stock) return "low";
   return "ready";
@@ -96,7 +98,7 @@ function getStockPercent(p: Product): number {
 }
 
 const STATUS_BAR: Record<InventoryManagerStatus, string> = {
-  ready: "bg-emerald-500", low: "bg-amber-500", out: "bg-rose-500", inactive: "bg-slate-300",
+  ready: "bg-emerald-500", low: "bg-amber-500", out: "bg-rose-500", storage: "bg-indigo-500", inactive: "bg-slate-300",
 };
 
 function productValue(p: Product): number {
@@ -153,7 +155,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
-  const [tab, setTab] = useState<"all" | "ready" | "low" | "out">(statusToTab(initialStatus));
+  const [tab, setTab] = useState<"all" | "ready" | "low" | "out" | "storage">(statusToTab(initialStatus));
   const [adjusting, setAdjusting] = useState<Product | null>(null);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
   // W2 §12: only owner/manager may adjust stock (cashier is denied; the backend also
@@ -206,14 +208,15 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
 
   // InventoryManagerStatus counts for filter tabs
   const counts = useMemo(() => {
-    let ready = 0, low = 0, out = 0;
+    let ready = 0, low = 0, out = 0, storage = 0;
     for (const p of products) {
       const st = getStatus(p);
       if (st === "ready") ready++;
       else if (st === "low") low++;
       else if (st === "out") out++;
+      else if (st === "storage") storage++;
     }
-    return { all: products.length, ready, low, out };
+    return { all: products.length, ready, low, out, storage };
   }, [products]);
 
   const filtered = useMemo(() => {
@@ -234,6 +237,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
       ready: { label: t.status.ready, cls: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
       low: { label: t.status.low, cls: "bg-amber-100 text-amber-700", dot: "bg-amber-500" },
       out: { label: t.status.out, cls: "bg-rose-100 text-rose-700", dot: "bg-rose-500" },
+      storage: { label: t.status.storage, cls: "bg-indigo-100 text-indigo-700", dot: "bg-indigo-500" },
       inactive: { label: t.status.inactive, cls: "bg-slate-100 text-slate-500", dot: "bg-slate-400" },
     };
     return map[st];
@@ -247,11 +251,12 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
     { label: t.kpi.outOfStock, value: kpis.out.toLocaleString(), icon: PackageX, tone: "bg-rose-100 text-rose-600" },
   ];
 
-  const TABS: Array<{ key: "all" | "ready" | "low" | "out"; label: string; count: number; active: string }> = [
+  const TABS: Array<{ key: "all" | "ready" | "low" | "out" | "storage"; label: string; count: number; active: string }> = [
     { key: "all", label: t.filter.all, count: counts.all, active: "border-violet-500 bg-violet-50 text-violet-700" },
     { key: "ready", label: t.filter.ready, count: counts.ready, active: "border-emerald-500 bg-emerald-50 text-emerald-700" },
     { key: "low", label: t.filter.low, count: counts.low, active: "border-amber-500 bg-amber-50 text-amber-700" },
     { key: "out", label: t.filter.out, count: counts.out, active: "border-rose-500 bg-rose-50 text-rose-700" },
+    { key: "storage", label: t.filter.storage, count: counts.storage, active: "border-indigo-500 bg-indigo-50 text-indigo-700" },
   ];
 
   const isPending = productsQuery.isPending;

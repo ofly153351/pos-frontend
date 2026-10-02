@@ -656,7 +656,7 @@ export type ImportProductModalProps = {
 
 export type InventoryManagerProps = { dictionary: InventoryDictionary; locale: string; initialStatus?: string };
 
-export type InventoryManagerStatus = "ready" | "low" | "out" | "inactive";
+export type InventoryManagerStatus = "ready" | "low" | "out" | "storage" | "inactive";
 
 export type InventoryManagerMovementKind = "receive" | "sale" | "adjust" | "transfer" | "countCorrection" | "return";
 
