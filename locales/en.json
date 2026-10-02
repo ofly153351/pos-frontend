@@ -4293,6 +4293,7 @@
     "colProduct": "Product",
     "colSku": "SKU / Barcode",
     "colCategory": "Category",
+    "colStock": "Stock",
     "colReady": "Ready (all sale pts)",
     "colStorage": "Storage (this WH)",
     "colTotal": "Total (ready+this WH)",

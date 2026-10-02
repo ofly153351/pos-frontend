@@ -2,10 +2,8 @@
 
 import { ArrowLeftRight, MapPin } from "lucide-react";
 
-import type { WarehouseInventoryProduct } from "@/types/warehouse-inventory";
 import { formatNumber, totalBarClass } from "./utils";
 import { StatusChip } from "./status-chip";
-import type { WarehouseInventoryDictionary } from "./types";
 import type { WarehouseProductTableProps } from "./types";
 
 
@@ -17,17 +15,13 @@ function initials(name: string): string {
 
 export function WarehouseProductTable({ dict, items, onViewLocations, onTransfer, canTransfer }: WarehouseProductTableProps) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-      <table className="w-full border-collapse text-sm">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+      <table className="w-full min-w-[760px] border-collapse text-sm">
         <thead>
           <tr className="border-b border-slate-100 bg-slate-50/70 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-            <th className="px-3 py-3 font-semibold">{dict.colImage}</th>
+            <th className="px-3 py-3 font-semibold text-center ">{dict.colImage}</th>
             <th className="px-3 py-3 font-semibold">{dict.colProduct}</th>
-            <th className="hidden px-3 py-3 font-semibold lg:table-cell">{dict.colSku}</th>
-            <th className="hidden px-3 py-3 font-semibold lg:table-cell">{dict.colCategory}</th>
-            <th className="px-3 py-3 text-right font-semibold">{dict.colReady}</th>
-            <th className="px-3 py-3 text-right font-semibold">{dict.colStorage}</th>
-            <th className="px-3 py-3 text-right font-semibold">{dict.colTotal}</th>
+            <th className="px-3 py-3 font-semibold">{dict.colStock}</th>
             <th className="px-3 py-3 font-semibold">{dict.colStatus}</th>
             <th className="px-3 py-3 text-right font-semibold">{dict.colActions}</th>
           </tr>
@@ -42,8 +36,8 @@ export function WarehouseProductTable({ dict, items, onViewLocations, onTransfer
                 onClick={() => onViewLocations(item)}
                 className="cursor-pointer border-b border-slate-50 transition last:border-0 hover:bg-violet-50/40"
               >
-                <td className="px-3 py-2.5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-xs font-bold text-violet-500">
+                <td className="px-3 py-2.5 text-center">
+                  <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-xs font-bold text-violet-500">
                     {initials(item.product_name)}
                   </span>
                 </td>
@@ -59,26 +53,27 @@ export function WarehouseProductTable({ dict, items, onViewLocations, onTransfer
                     {item.product_name}
                   </button>
                   {item.unit ? <span className="text-xs text-slate-400">{item.unit}</span> : null}
-                </td>
-                <td className="hidden px-3 py-2.5 lg:table-cell">
-                  <div className="text-xs text-slate-600">{item.sku || "—"}</div>
-                  <div className="text-[11px] text-slate-400">{item.barcode || dict.noBarcode}</div>
-                </td>
-                <td className="hidden px-3 py-2.5 lg:table-cell">
-                  <span className="text-xs text-slate-600">{item.category_name || dict.uncategorized}</span>
-                </td>
-                <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-emerald-600">
-                  {formatNumber(item.ready_stock)}
-                </td>
-                <td className="px-3 py-2.5 text-right tabular-nums text-slate-500">
-                  {formatNumber(item.storage_stock)}
+                  <div className="mt-1 truncate text-xs text-slate-500">
+                    {item.sku || "—"} · {item.barcode || dict.noBarcode} · {item.category_name || dict.uncategorized}
+                  </div>
                 </td>
                 <td className="px-3 py-2.5">
-                  <div className="text-right font-bold tabular-nums text-slate-900">
-                    {formatNumber(item.total_stock)}
-                  </div>
-                  <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-100">
-                    <div className={`h-full rounded-full ${totalBarClass(item.status)}`} style={{ width: `${pct}%` }} />
+                  <div className="grid min-w-[360px] grid-cols-3 gap-3">
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500">{dict.colReady}</div>
+                      <div className="mt-0.5 font-semibold tabular-nums text-emerald-600">{formatNumber(item.ready_stock)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500">{dict.colStorage}</div>
+                      <div className="mt-0.5 tabular-nums text-slate-500">{formatNumber(item.storage_stock)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-slate-500">{dict.colTotal}</div>
+                      <div className="mt-0.5 font-bold tabular-nums text-slate-900">{formatNumber(item.total_stock)}</div>
+                      <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div className={`h-full rounded-full ${totalBarClass(item.status)}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td className="px-3 py-2.5">
