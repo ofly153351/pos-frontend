@@ -2769,6 +2769,8 @@
     "subtitle": "Manage stock quantity, movements and counting",
     "search": "Search product name, SKU or scan barcode",
     "scanWithCamera": "Scan barcode with camera (mobile)",
+    "warehouseFilter": "Warehouse",
+    "allWarehouses": "All warehouses",
     "empty": "No products found",
     "loading": "Loading...",
     "openCount": "Stock Count",
@@ -2782,6 +2784,7 @@
     },
     "col": {
       "product": "Product",
+      "warehouse": "Warehouse",
       "available": "Stock",
       "salePoint": "Sale Point",
       "storage": "In Storage",

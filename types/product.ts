@@ -53,6 +53,7 @@ export type Product = {
   warehouse_stock?: number; // DEPRECATED: grand total across all locations, NOT storage-only
   ready_stock?: number; // W5: POS-sellable stock (SUM where is_sale_point); == total_stock
   storage_stock?: number; // W5: non-sale-point storage (SUM where NOT is_sale_point)
+  warehouse_names?: string;
   sku?: string | null;
   barcode?: string | null;
   special_price?: number | null;

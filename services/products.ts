@@ -157,6 +157,7 @@ export type ListProductsOptions = {
   page?: number;
   sort_by?: "created_at" | "updated_at";
   stock_status?: "low_stock" | "out_of_stock";
+  warehouse_id?: string;
 };
 
 export function buildListProductsQuery(options: ListProductsOptions = {}) {
@@ -170,6 +171,7 @@ export function buildListProductsQuery(options: ListProductsOptions = {}) {
   }
   if (options.sort_by) qs.set("sort_by", options.sort_by);
   if (options.stock_status) qs.set("stock_status", options.stock_status);
+  if (options.warehouse_id) qs.set("warehouse_id", options.warehouse_id);
   return qs;
 }
 

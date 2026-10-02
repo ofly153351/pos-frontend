@@ -63,6 +63,8 @@ export type InventoryDictionary = {
   subtitle: string;
   search: string;
   scanWithCamera: string;
+  warehouseFilter: string;
+  allWarehouses: string;
   empty: string;
   loading: string;
   openCount: string;
@@ -76,6 +78,7 @@ export type InventoryDictionary = {
   salePointHint: string;
   col: {
     product: string;
+    warehouse: string;
     available: string;
     salePoint: string;
     storage: string;

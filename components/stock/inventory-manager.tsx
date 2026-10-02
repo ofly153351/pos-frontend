@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import { listProducts } from "@/services/products";
+import { listWarehouses } from "@/services/warehouses";
 import { listMovements } from "@/services/stock-movements";
 import { StockAdjustDrawer } from "@/components/stock/stock-adjust-drawer";
 import { ScanButton } from "@/components/shared/scan-button";
@@ -151,6 +152,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
   const router = useRouter();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [warehouseId, setWarehouseId] = useState("");
   const [tab, setTab] = useState<"all" | "ready" | "low" | "out">(statusToTab(initialStatus));
   const [adjusting, setAdjusting] = useState<Product | null>(null);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
@@ -170,9 +172,13 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
     setTab(statusToTab(initialStatus));
   }
 
+  const warehousesQuery = useQuery({
+    queryKey: ["inventory", "warehouses"],
+    queryFn: async () => (await listWarehouses()).data,
+  });
   const productsQuery = useQuery({
-    queryKey: ["inventory", "products"],
-    queryFn: async () => (await listProducts({ limit: null, page: 1 })).data,
+    queryKey: ["inventory", "products", warehouseId],
+    queryFn: async () => (await listProducts({ limit: null, page: 1, warehouse_id: warehouseId || undefined })).data,
   });
   const movementsQuery = useQuery({
     queryKey: ["inventory", "movements"],
@@ -304,8 +310,15 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
             </button>
           ))}
         </div>
-        <div className="flex w-full max-w-xs items-center gap-2 sm:w-72">
-          <div className="relative flex-1">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <label className="flex h-10 items-center gap-2 rounded-xl border border-violet-200 bg-white px-3 text-sm text-slate-700">
+            <span className="sr-only">{t.warehouseFilter}</span>
+            <select aria-label={t.warehouseFilter} className="max-w-[12rem] bg-transparent font-semibold outline-none" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+              <option value="">{t.allWarehouses}</option>
+              {(warehousesQuery.data ?? []).map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}{warehouse.code ? ` · ${warehouse.code}` : ""}</option>)}
+            </select>
+          </label>
+          <div className="relative flex-1 sm:w-72">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.search}
               className="h-10 w-full rounded-xl border border-violet-200 bg-white pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
@@ -333,6 +346,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
               <thead className="sticky top-0 z-20">
                 <tr className="bg-slate-100 text-xs uppercase tracking-wider text-slate-500">
                   <th className="px-4 py-3.5 font-bold">{t.col.product}</th>
+                  <th className="hidden px-3 py-3.5 font-bold md:table-cell">{t.col.warehouse}</th>
                   <th className="px-4 py-3.5 font-bold">{t.col.salePoint}</th>
                   <th className="hidden px-3 py-3.5 font-bold lg:table-cell">{t.col.storage}</th>
                   <th className="hidden px-3 py-3.5 font-bold sm:table-cell">{t.col.minStock}</th>
@@ -355,7 +369,7 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
                     </tr>
                   ))
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">{t.empty}</td></tr>
+                  <tr><td colSpan={8} className="px-6 py-12 text-center text-sm text-slate-500">{t.empty}</td></tr>
                 ) : filtered.map((p, i) => {
                   const st = getStatus(p);
                   const unit = p.product_unit_name ?? "";
@@ -375,6 +389,9 @@ export function InventoryManager({ dictionary, locale, initialStatus }: Inventor
                             <p className="truncate text-[11px] text-slate-400">{p.sku ?? "-"}{p.barcode ? ` · ${p.barcode}` : ""}</p>
                           </div>
                         </div>
+                      </td>
+                      <td className="hidden max-w-[13rem] px-3 py-3 text-xs text-slate-600 md:table-cell">
+                        <span className="line-clamp-2">{p.warehouse_names || "—"}</span>
                       </td>
                       {/* Sale-point stock (operational basis for status/alerts) + subtle bar */}
                       <td className="px-4 py-3">
