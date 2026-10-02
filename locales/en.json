@@ -4249,7 +4249,7 @@
     "kpiProducts": "Products",
     "kpiProductsHint": "with stock in this warehouse",
     "kpiOnHand": "Stock on Hand",
-    "kpiOnHandHint": "across all locations",
+    "kpiOnHandHint": "sale points store-wide + storage here",
     "kpiValue": "Inventory Value",
     "kpiValueHint": "at product cost",
     "kpiAttention": "Needs Attention",

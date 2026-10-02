@@ -4249,7 +4249,7 @@
     "kpiProducts": "จำนวนสินค้า",
     "kpiProductsHint": "มีสต็อกในคลังนี้",
     "kpiOnHand": "จำนวนคงเหลือ",
-    "kpiOnHandHint": "รวมทุกตำแหน่งในคลัง",
+    "kpiOnHandHint": "พร้อมขายทุกจุดขาย + จัดเก็บในคลังนี้",
     "kpiValue": "มูลค่าสต็อก",
     "kpiValueHint": "ตามต้นทุนสินค้า",
     "kpiAttention": "ต้องดำเนินการ",
