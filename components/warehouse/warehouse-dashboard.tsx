@@ -690,10 +690,10 @@ export function WarehouseDashboard({ dictionary, locale }: WarehouseDashboardWar
     {
       key: "low-stock",
       label: t.actionCenter.items.lowStock,
-      value: Math.max(lowStockCount - outOfStockCount, 0),
+      value: lowStockCount,
       helper: t.actionCenter.helpers.lowStock,
       href: `/${locale}/inventory?stock_status=low_stock`,
-      tone: lowStockCount > outOfStockCount ? "warning" : "info",
+      tone: lowStockCount > 0 ? "warning" : "info",
       icon: <PackageSearch className="h-4 w-4" />,
     },
     {
