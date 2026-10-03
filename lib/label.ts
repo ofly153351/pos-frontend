@@ -56,20 +56,32 @@ export function pageCount(mode: PrinterMode, layout: A4LayoutId, total: number):
 // line box is taller than the tallest stacked glyph. (Same root cause as the
 // product-card vowel fix.) Latin-only fields (price, barcode number) can stay tighter.
 export const LABEL_CSS = `
-.bclbl{box-sizing:border-box;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.3mm;padding:1mm;overflow:hidden;background:#fff;font-family:'Sarabun',system-ui,sans-serif;text-align:center;color:#0f172a;}
-.bclbl-store{font-size:6pt;font-weight:700;color:#6d28d9;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bclbl-name{font-size:8pt;font-weight:700;line-height:1.6;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;}
-.bclbl-pair{display:flex;align-items:center;justify-content:center;gap:2mm;max-width:100%;}
+.bclbl{box-sizing:border-box;width:100%;height:100%;container-type:size;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.3mm;padding:1mm;overflow:hidden;background:#fff;font-family:'Sarabun',system-ui,sans-serif;text-align:center;color:#0f172a;}
+.bclbl-store{flex:0 0 auto;font-size:6pt;font-weight:700;color:#6d28d9;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bclbl-name{flex:0 0 auto;font-size:8pt;font-weight:700;line-height:1.6;max-width:100%;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;}
+.bclbl-pair{display:flex;flex:0 0 auto;align-items:center;justify-content:center;gap:2mm;max-width:100%;}
 .bclbl-half{max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.bclbl-sku,.bclbl-cat,.bclbl-brand,.bclbl-loc{font-size:6pt;color:#475569;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.bclbl-sku,.bclbl-cat,.bclbl-brand,.bclbl-loc{flex:0 0 auto;font-size:6pt;color:#475569;line-height:1.5;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .bclbl-cat{color:#6d28d9;}
-.bclbl-price{font-size:12pt;font-weight:800;line-height:1.3;}
-.bclbl-price-wrap{display:flex;align-items:baseline;justify-content:center;gap:1.5mm;}
+.bclbl-price{flex:0 0 auto;font-size:12pt;font-weight:800;line-height:1.3;}
+.bclbl-price-wrap{display:flex;flex:0 0 auto;align-items:baseline;justify-content:center;gap:1.5mm;}
 .bclbl-price-orig{font-size:7pt;font-weight:600;color:#94a3b8;text-decoration:line-through;line-height:1.3;}
 .bclbl-price-sale{font-size:12pt;font-weight:800;color:#dc2626;line-height:1.3;}
-.bclbl-bc{display:flex;align-items:center;justify-content:center;max-width:100%;max-height:56%;overflow:hidden;}
-.bclbl-bc svg{display:block;max-width:100%;max-height:100%;width:auto;height:auto;}
-.bclbl-num{font-size:7pt;font-variant-numeric:tabular-nums;letter-spacing:0.5px;line-height:1.3;}
+.bclbl-bc{display:flex;flex:0 0 42%;align-items:center;justify-content:center;width:100%;min-height:0;max-width:100%;overflow:hidden;}
+.bclbl-bc svg{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;}
+.bclbl-num{flex:0 0 auto;font-size:7pt;font-variant-numeric:tabular-nums;letter-spacing:0.5px;line-height:1.3;}
+@container (max-height:90px){
+  .bclbl{gap:0.15mm;padding:0.6mm;}
+  .bclbl-store{font-size:4.5pt;line-height:1.25;}
+  .bclbl-name{font-size:5.5pt;line-height:1.3;-webkit-line-clamp:2;}
+  .bclbl-pair{gap:1mm;}
+  .bclbl-sku,.bclbl-cat,.bclbl-brand,.bclbl-loc{font-size:4.5pt;line-height:1.25;}
+  .bclbl-price{font-size:7.5pt;line-height:1.15;}
+  .bclbl-price-wrap{gap:0.8mm;}
+  .bclbl-price-orig{font-size:4.5pt;line-height:1.15;}
+  .bclbl-price-sale{font-size:7.5pt;line-height:1.15;}
+  .bclbl-num{font-size:4.5pt;letter-spacing:0.2px;line-height:1.15;}
+}
 `.trim();
 
 // ── Label data ────────────────────────────────────────────────────────────────

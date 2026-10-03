@@ -125,24 +125,38 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
   const origPriceNum = origPriceInput.trim() ? parseFloat(origPriceInput) : null;
   const validOrigPrice = origPriceNum !== null && !isNaN(origPriceNum) && origPriceNum >= 0;
 
-  const labelData: LabelData | null = product
-    ? {
-        name: product.name,
-        sku: product.sku ?? null,
-        barcode: product.barcode ?? null,
-        price: (flags.showSalePrice && validOrigPrice) ? origPriceNum : product.base_price,
-        salePrice: (flags.showSalePrice && validSalePrice) ? salePriceNum : null,
-        location,
-        category: categoryName,
-        brand: brandName,
-        storeName: storeName ?? null,
-        barcodeSvg,
-      }
-    : null;
+  // A sale price has no meaning unless the regular price is also enabled.
+  // Keep this invariant at the render boundary so the preview cannot retain
+  // stale price markup when the user turns off the "ราคา" option.
+  const effectiveFlags = useMemo<LabelContentFlags>(
+    () => ({
+      ...flags,
+      showSalePrice: flags.showPrice && flags.showSalePrice,
+    }),
+    [flags],
+  );
+
+  const labelData = useMemo<LabelData | null>(
+    () => product
+      ? {
+          name: product.name,
+          sku: product.sku ?? null,
+          barcode: product.barcode ?? null,
+          price: (effectiveFlags.showSalePrice && validOrigPrice) ? origPriceNum : product.base_price,
+          salePrice: (effectiveFlags.showSalePrice && validSalePrice) ? salePriceNum : null,
+          location,
+          category: categoryName,
+          brand: brandName,
+          storeName: storeName ?? null,
+          barcodeSvg,
+        }
+      : null,
+    [product, effectiveFlags, validOrigPrice, origPriceNum, validSalePrice, salePriceNum, location, categoryName, brandName, storeName, barcodeSvg],
+  );
 
   const labelHtml = useMemo(
-    () => (labelData ? buildLabelHtml(labelData, flags) : ""),
-    [labelData, flags],
+    () => (labelData ? buildLabelHtml(labelData, effectiveFlags) : ""),
+    [labelData, effectiveFlags],
   );
 
   const dims = TEMPLATE_DIMS_MM[template];
@@ -217,7 +231,15 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
   }
 
   function toggleFlag(key: keyof LabelContentFlags) {
-    setFlags((prev) => ({ ...prev, [key]: !prev[key] }));
+    setFlags((prev) => {
+      if (key === "showPrice" && prev.showPrice) {
+        return { ...prev, showPrice: false, showSalePrice: false };
+      }
+      if (key === "showSalePrice" && !prev.showPrice) {
+        return { ...prev, showPrice: true, showSalePrice: true };
+      }
+      return { ...prev, [key]: !prev[key] };
+    });
   }
 
   // Single large preview scale (fit ~480×300 area)
@@ -412,8 +434,9 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
                   <label key={flag} className="flex cursor-pointer items-center gap-2 text-xs text-slate-700 select-none">
                     <input
                       type="checkbox"
-                      checked={flags[flag]}
+                      checked={flag === "showSalePrice" ? effectiveFlags.showSalePrice : flags[flag]}
                       onChange={() => toggleFlag(flag)}
+                      disabled={flag === "showSalePrice" && !flags.showPrice}
                       className="h-3.5 w-3.5 rounded border-violet-300 text-violet-600 focus:ring-violet-400"
                     />
                     {labels[labelKey] as string}
@@ -421,8 +444,8 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
                 ))}
               </div>
 
-              {/* Sale price inputs — shown when showSalePrice is enabled */}
-              {flags.showSalePrice ? (
+              {/* Sale price inputs — shown only when regular price is enabled */}
+              {effectiveFlags.showSalePrice ? (
                 <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/50 p-3 space-y-2.5">
                   {/* Original price (crossed-out) — editable, defaults to base_price */}
                   <div>
@@ -456,9 +479,6 @@ export function BarcodeModal({ product, labels, storeName, onClose }: BarcodeMod
                       />
                     </div>
                   </div>
-                  {!flags.showPrice ? (
-                    <p className="text-[10px] text-amber-600">⚠ เปิด &quot;ราคา&quot; ด้วยเพื่อแสดงราคาขีดทับ</p>
-                  ) : null}
                 </div>
               ) : null}
             </div>
