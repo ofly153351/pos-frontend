@@ -45,8 +45,21 @@ export interface Document {
   payment_status: PaymentStatus;
   customer_id: string;
   customer_name: string;
+  customer_phone?: string;
   customer_tax_id?: string;
   staff_id: string;
+  delivery_date?: string;
+  delivery_address?: string;
+  delivery_contact?: string;
+  delivery_phone?: string;
+  invoice_ref_no?: string;
+  po_ref_no?: string;
+  credit_term_days?: number;
+  bank_account_id?: string;
+  sales_zone?: string;
+  salesperson_name?: string;
+  shipping_fee?: number;
+
   staff_name: string;
   document_date: string;
   due_date?: string;
@@ -162,6 +175,19 @@ export interface CreateDocumentPayload {
   quotation_summary?: string;
   bank_account_id?: string;
 }
+
+export interface DocumentRevision {
+  revision_no: number;
+  action: "EDIT" | "RESTORE" | string;
+  changed_by: string;
+  changed_at: string;
+}
+
+export interface RestoreDocumentRevisionPayload {
+  revision_no: number;
+}
+
+export type UpdateDocumentPayload = CreateDocumentPayload;
 
 export interface UpdateDocumentStatusPayload {
   status: DocumentStatus;

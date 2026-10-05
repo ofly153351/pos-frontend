@@ -8,12 +8,13 @@ import { FileBadge, FileDigit, FileMinus, FileQuestion, FileText, LayoutGrid, Re
 import { getCurrentStoreId } from "@/lib/store-storage";
 import {
   bulkDocumentAction,
+  getDocument,
   getDocuments,
 } from "@/services/documents";
 import { type DateFilterValue, resolveDateQuery } from "@/components/shared/date-range-filter";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import type { DocumentListQuery, DocumentStatus, DocumentType } from "@/types/document";
+import type { DocumentListQuery, DocumentStatus, DocumentType, Document } from "@/types/document";
 
 import { DocumentFilterBar } from "./document-filter-bar";
 import { DocumentStatsCards } from "./document-stats-cards";
@@ -90,6 +91,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [createModalType, setCreateModalType] = useState<DocumentType | null>(null);
+  const [editingDocument, setEditingDocument] = useState<Document | null>(null);
   const [isBulkPending, startBulkTransition] = useTransition();
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
@@ -171,7 +173,18 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
 
   function handleModalSuccess() {
     setCreateModalType(null);
+    setEditingDocument(null);
     queryClient.invalidateQueries({ queryKey: ["documents"] });
+  }
+
+  async function handleEditDocument(id: string) {
+    try {
+      const full = await getDocument(id);
+      setSelectedDocId(null);
+      setEditingDocument(full);
+    } catch {
+      toast.error(d.createError);
+    }
   }
 
   // Pull every document matching the CURRENT filter across all pages. The list
@@ -427,6 +440,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
 
               dict={d}
               onClose={() => setSelectedDocId(null)}
+              onEdit={() => void handleEditDocument(selectedDocId)}
               onNavigate={(id) => setSelectedDocId(id)}
             />
           )}
@@ -457,14 +471,15 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
       )}
 
       {/* Create modal */}
-      {createModalType && (
+      {createModalType || editingDocument ? (
         <CreateDocumentModal
           dict={d}
-          initialType={createModalType}
-          onClose={() => setCreateModalType(null)}
+          initialType={editingDocument?.type ?? createModalType!}
+          editDocument={editingDocument ?? undefined}
+          onClose={() => { setCreateModalType(null); setEditingDocument(null); }}
           onSuccess={handleModalSuccess}
         />
-      )}
+      ) : null}
     </>
   );
 }

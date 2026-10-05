@@ -9,7 +9,7 @@ import { getCurrentStoreId } from "@/lib/store-storage";
 import { listBankAccounts } from "@/services/stores";
 import type { StoreBankAccount } from "@/types/store";
 import { listProducts } from "@/services/products";
-import { createDocument, getDocuments } from "@/services/documents";
+import { createDocument, getDocuments, updateDocument } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ScanButton } from "@/components/shared/scan-button";
 import { EntityCombobox } from "@/components/ui/entity-combobox";
@@ -55,7 +55,8 @@ function fmt(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 2 });
 }
 
-export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }: CreateDocumentModalProps) {
+export function CreateDocumentModal({ dict: d, initialType, editDocument, onClose, onSuccess }: CreateDocumentModalProps) {
+  const isEditing = Boolean(editDocument);
   const [isPending, startTransition] = useTransition();
   const [isClosing, setIsClosing] = useState(false);
   const [docType, setDocType] = useState<DocumentType>(initialType);
@@ -93,6 +94,36 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   const barcodeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { setStoreId(getCurrentStoreId()); }, []);
+
+  useEffect(() => {
+    if (!editDocument) return;
+    setDocType(editDocument.type);
+    setCustomerId(editDocument.customer_id);
+    setDocDate(editDocument.document_date.slice(0, 10));
+    setDueDate(editDocument.due_date?.slice(0, 10) ?? "");
+    setVatEnabled(editDocument.vat_rate > 0);
+    setPriceValidityDays(editDocument.price_validity_days ?? "");
+    setDeliveryLeadTimeDays(editDocument.delivery_lead_time_days ?? "");
+    setPoReceivedDate(editDocument.po_received_date?.slice(0, 10) ?? "");
+    setDeliveryDate(editDocument.delivery_date?.slice(0, 10) ?? "");
+    setDeliveryAddress(editDocument.delivery_address ?? "");
+    setDeliveryContact(editDocument.delivery_contact ?? "");
+    setDeliveryPhone(editDocument.delivery_phone ?? "");
+    setInvoiceRefNo(editDocument.invoice_ref_no ?? "");
+    setPoRefNo(editDocument.po_ref_no ?? "");
+    setCreditTermDays(editDocument.credit_term_days ?? 0);
+    setNotes(editDocument.notes ?? "");
+    setQuotationSummary(editDocument.quotation_summary ?? "");
+    setBankAccountId(editDocument.bank_account_id ?? "");
+    setItems(editDocument.items.map((it) => ({
+      product_id: it.product_id,
+      description: it.description,
+      quantity: it.quantity,
+      unit_price: it.unit_price,
+      discount_type: it.discount_type,
+      discount_value: it.discount_value,
+    })));
+  }, [editDocument]);
 
   const { data: bankAccounts = [] } = useQuery<StoreBankAccount[]>({
     queryKey: ["store-bank-accounts", storeId],
@@ -315,12 +346,12 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
   function handleSave() {
     setError("");
     if (!customerId) { setError(d.selectCustomer); return; }
-    if (docType === "BILL" && selectedDeliveryOrders.length === 0) {
+    if (docType === "BILL" && selectedDeliveryOrders.length === 0 && !isEditing) {
       setError(d.noDeliveryOrdersSelected);
       return;
     }
     // BILL lines are snapshots of the selected DOs; other document types use product lines.
-    const itemsToSubmit = docType === "BILL"
+    const itemsToSubmit = docType === "BILL" && selectedDeliveryOrders.length > 0
       ? selectedDeliveryOrders.map((doc) => ({
           description: doc.document_no_full,
           quantity: 1,
@@ -366,8 +397,12 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
 
     startTransition(async () => {
       try {
-        await createDocument(payload);
-        toast.success(d.createSuccess);
+        if (isEditing && editDocument) {
+          await updateDocument(editDocument.id, payload);
+        } else {
+          await createDocument(payload);
+        }
+        toast.success(isEditing ? d.editDocument : d.createSuccess);
         onSuccess();
       } catch (err) {
         // Server 422 carries indexed line errors (items[0].unit_price). Surface
@@ -402,7 +437,7 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
           {/* Header */}
           <div className="flex shrink-0 items-center gap-3 bg-violet-600 px-6 py-4 text-white">
             <div className="min-w-0 flex-1">
-              <h4 className="text-base font-bold">{d.createTitle}</h4>
+              <h4 className="text-base font-bold">{isEditing ? d.editDocument : d.createTitle}</h4>
               <p className="text-xs text-violet-200">{d.createSubtitle}</p>
             </div>
             <div className="hidden items-center gap-1 rounded-lg bg-violet-700/50 p-1 md:flex">
@@ -937,9 +972,9 @@ export function CreateDocumentModal({ dict: d, initialType, onClose, onSuccess }
               type="button"
             >
               {isPending ? (
-                <><Loader2 className="h-4 w-4 animate-spin" />{d.creating ?? d.create}</>
+                <><Loader2 className="h-4 w-4 animate-spin" />{isEditing ? d.editDocument : (d.creating ?? d.create)}</>
               ) : (
-                <><Plus className="h-4 w-4" />{d.create} — {docTypeLabel}</>
+                <><Plus className="h-4 w-4" />{isEditing ? d.editDocument : d.create} — {docTypeLabel}</>
               )}
             </button>
           </div>

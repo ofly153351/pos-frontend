@@ -6,8 +6,10 @@ import type {
   Document,
   DocumentListQuery,
   DocumentListResponse,
+  DocumentRevision,
   DocumentType,
   RelatedDocument,
+  UpdateDocumentPayload,
   UpdateDocumentStatusPayload,
 } from "@/types/document";
 
@@ -41,6 +43,23 @@ export async function createDocument(payload: CreateDocumentPayload): Promise<Do
   return res.data;
 }
 
+export async function updateDocument(id: string, payload: UpdateDocumentPayload): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}`, { method: "PUT", body: payload });
+  return res.data;
+}
+
+export async function getDocumentRevisions(id: string): Promise<DocumentRevision[]> {
+  const res = await authorizedApiRequest<DocumentRevision[]>(`${base()}/${id}/revisions`);
+  return res.data ?? [];
+}
+
+export async function restoreDocumentRevision(id: string, revisionNo: number): Promise<Document> {
+  const res = await authorizedApiRequest<Document>(`${base()}/${id}/revisions/restore`, {
+    method: "POST",
+    body: { revision_no: revisionNo },
+  });
+  return res.data;
+}
 export async function updateDocumentStatus(id: string, payload: UpdateDocumentStatusPayload): Promise<void> {
   await authorizedApiRequest(`${base()}/${id}/status`, { method: "PUT", body: payload, allowEmptyData: true });
 }

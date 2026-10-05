@@ -7,6 +7,12 @@ export async function GET(request: Request, context: RouteContext) {
   return proxyApiRequest(request, `/api/v1/stores/${storeId}/documents/${id}`);
 }
 
+export async function PUT(request: Request, context: RouteContext) {
+  const { storeId, id } = await context.params;
+  const body = await request.text();
+  return proxyApiRequest(request, `/api/v1/stores/${storeId}/documents/${id}`, { method: "PUT", body });
+}
+
 export async function DELETE(request: Request, context: RouteContext) {
   const { storeId, id } = await context.params;
   return proxyApiRequest(request, `/api/v1/stores/${storeId}/documents/${id}`, { method: "DELETE" });

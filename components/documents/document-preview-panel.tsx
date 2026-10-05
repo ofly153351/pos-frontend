@@ -6,7 +6,7 @@ import { ArrowRight, Ban, Check, ChevronDown, FileText, Loader2, Mail, MoreHoriz
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/services/api";
-import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getRelatedDocuments, getDocuments } from "@/services/documents";
+import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getRelatedDocuments, getDocuments, getDocumentRevisions, restoreDocumentRevision } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
@@ -28,7 +28,7 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
-export function DocumentPreviewPanel({ documentId, documentNo, documentType, customerId, paymentStatus, documentStatus, dict, onClose, onNavigate }: DocumentPreviewPanelProps) {
+export function DocumentPreviewPanel({ documentId, documentNo, documentType, customerId, paymentStatus, documentStatus, dict, onClose, onEdit, onNavigate }: DocumentPreviewPanelProps) {
   const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
   const [isPaying, startPayTransition] = useTransition();
@@ -38,6 +38,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   const [receiptTemplateModalOpen, setReceiptTemplateModalOpen] = useState(false);
   const [receiptTemplateChoice, setReceiptTemplateChoice] = useState<1 | 2 | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [revisionHistoryOpen, setRevisionHistoryOpen] = useState(false);
   const [deliveryDateModal, setDeliveryDateModal] = useState(false);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [poRefNo, setPoRefNo] = useState("");
@@ -89,6 +90,12 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     staleTime: 30_000,
   });
 
+  const { data: revisions = [] } = useQuery({
+    queryKey: ["document-revisions", documentId],
+    queryFn: () => getDocumentRevisions(documentId),
+    enabled: !!documentId && revisionHistoryOpen,
+    staleTime: 5_000,
+  });
   useEffect(() => {
     if (!billingComboOpen) return;
     const handleOutsideClick = (event: MouseEvent) => {
@@ -249,6 +256,19 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     });
   }
 
+  function handleRestoreRevision(revisionNo: number) {
+    startConvertTransition(async () => {
+      try {
+        await restoreDocumentRevision(documentId, revisionNo);
+        toast.success(dict.revisionRestored);
+        qc.invalidateQueries({ queryKey: ["document-print", documentId] });
+        qc.invalidateQueries({ queryKey: ["document-revisions", documentId] });
+        qc.invalidateQueries({ queryKey: ["documents"] });
+      } catch {
+        toast.error(dict.revisionError);
+      }
+    });
+  }
   function handlePrint(template = receiptTemplate) {
     startOpenTransition(async () => {
       const freshHtml = await getDocumentPrintHtml(documentId, copyIdx, template);
@@ -592,8 +612,26 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                   <>
                     <div className="fixed inset-0 z-[60]" onClick={() => setMoreMenuOpen(false)} />
                     <div className="absolute right-0 top-full z-[61] mt-1 w-52 overflow-hidden rounded-lg border border-violet-100 bg-white p-1 shadow-lg">
-                      <select
-                        value={copyIdx}
+                    <button type="button" onClick={() => setRevisionHistoryOpen((open) => !open)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-violet-50">
+                      <FileText className="h-3.5 w-3.5 text-violet-600" />{dict.revisionHistory}
+                    </button>
+                    {revisionHistoryOpen && (
+                      <div className="mb-1 max-h-48 overflow-y-auto rounded-md bg-slate-50 p-1">
+                        {revisions.length === 0 ? <p className="px-2 py-2 text-xs text-slate-400">{dict.noRevisions}</p> : revisions.map((revision) => (
+                          <div key={revision.revision_no} className="flex items-center justify-between gap-2 px-2 py-1.5 text-[11px] text-slate-600">
+                            <span>v{revision.revision_no} · {new Date(revision.changed_at).toLocaleString()}</span>
+                            {documentStatus !== "COMPLETED" && documentStatus !== "CANCELLED" && paymentStatus !== "PAID" && <button type="button" onClick={() => handleRestoreRevision(revision.revision_no)} className="shrink-0 font-semibold text-violet-700 hover:text-violet-900">{dict.restoreRevision}</button>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {onEdit && documentStatus !== "COMPLETED" && documentStatus !== "CANCELLED" && paymentStatus !== "PAID" && (
+                      <button type="button" onClick={() => { setMoreMenuOpen(false); onEdit(); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-violet-700 hover:bg-violet-50">
+                        <FileText className="h-3.5 w-3.5" />{dict.editDocument}
+                      </button>
+                    )}
+                    <select
+                      value={copyIdx}
                         onChange={(e) => setCopyIdx(Number(e.target.value))}
                         title="เลือกชุดสำเนาที่จะพิมพ์"
                         className="mb-1 w-full rounded-md border border-violet-200 bg-white px-2 py-1.5 text-xs font-semibold text-violet-700"

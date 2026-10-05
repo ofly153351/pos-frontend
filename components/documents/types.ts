@@ -1,4 +1,4 @@
-import type { DocumentType } from "@/types/document";
+import type { DocumentType, Document } from "@/types/document";
 import type { DocumentListQuery } from "@/types/document";
 import type { SalesHistoryDict } from "@/components/sales/sales-history-dict";
 import type { DateFilterValue } from "@/components/shared/date-range-filter";
@@ -11,6 +11,7 @@ import type { SalesDictionary } from "@/components/sales/types";
 
 export type CreateDocumentModalDict = {
   createTitle: string;
+  editDocument: string;
   createSubtitle: string;
   selectCustomer: string;
   customerSearchPlaceholder: string;
@@ -75,6 +76,7 @@ export type CreateDocumentModalLineItem = {
 export type CreateDocumentModalProps = {
   dict: CreateDocumentModalDict;
   initialType: DocumentType;
+  editDocument?: Document;
   onClose: () => void;
   onSuccess: () => void;
 };
@@ -158,6 +160,12 @@ export type DocumentPageClientDocumentDict = {
   exportExcel: string;
   printReport: string;
   createDocument: string;
+  editDocument: string;
+  revisionHistory: string;
+  restoreRevision: string;
+  revisionRestored: string;
+  revisionError: string;
+  noRevisions: string;
   selectedCount: string;
   clearSelection: string;
   print: string;
@@ -307,6 +315,12 @@ export type DocumentPreviewPanelDict = {
   share: string;
   comingSoon: string;
   moreOptions: string;
+  editDocument: string;
+  revisionHistory: string;
+  restoreRevision: string;
+  revisionRestored: string;
+  revisionError: string;
+  noRevisions: string;
   print: string;
   receiptTemplateTitle: string;
   receiptTemplateDescription: string;
@@ -354,6 +368,7 @@ export type DocumentPreviewPanelProps = {
 
   dict: DocumentPreviewPanelDict;
   onClose: () => void;
+  onEdit?: () => void;
   onNavigate?: (id: string) => void; // jump to another document in the lineage
 };
 
