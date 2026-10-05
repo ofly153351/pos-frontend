@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
-import { ArrowRight, Ban, Check, ChevronDown, FileText, Loader2, Mail, MoreHorizontal, Printer, Share2, Truck, X } from "lucide-react";
+import { ArrowRight, Ban, Check, ChevronDown, FileText, Loader2, Mail, MoreHorizontal, Pencil, Printer, Share2, Truck, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/services/api";
@@ -438,6 +438,16 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                   ยกเลิก
                 </button>
               )}
+              {onEdit && documentStatus !== "COMPLETED" && documentStatus !== "CANCELLED" && paymentStatus !== "PAID" && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  {dict.editDocument}
+                </button>
+              )}
               {receiptTemplateModalOpen && typeof document !== "undefined" && createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true">
                   <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
@@ -624,11 +634,6 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                           </div>
                         ))}
                       </div>
-                    )}
-                    {onEdit && documentStatus !== "COMPLETED" && documentStatus !== "CANCELLED" && paymentStatus !== "PAID" && (
-                      <button type="button" onClick={() => { setMoreMenuOpen(false); onEdit(); }} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-xs font-medium text-violet-700 hover:bg-violet-50">
-                        <FileText className="h-3.5 w-3.5" />{dict.editDocument}
-                      </button>
                     )}
                     <select
                       value={copyIdx}
