@@ -171,7 +171,7 @@ export function DocumentTable({
                 </th>
                 <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDocumentNo}</th>
                 <th className="hidden px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:table-cell">{d.colType}</th>
-                <th className="max-w-[120px] px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colCustomer}</th>
+                <th className="w-[140px] max-w-[140px] px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colCustomer}</th>
                 <th className="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colDate}</th>
                 <th className="hidden px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500 xl:table-cell">{d.colDueDate}</th>
                 <th className="px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">{d.colAmount}</th>
@@ -205,8 +205,10 @@ export function DocumentTable({
                   <td className="hidden px-3 py-2.5 lg:table-cell">
                     <DocumentTypeBadge type={doc.type} dict={d} />
                   </td>
-                  <td className="max-w-[120px] px-3 py-2.5">
-                    <span className="truncate text-slate-700">{doc.customer_name}</span>
+                  <td className="w-[140px] max-w-[140px] px-3 py-2.5">
+                    <span className="block max-w-full truncate text-slate-700" title={doc.customer_name}>
+                      {doc.customer_name}
+                    </span>
                   </td>
                   <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(doc.document_date)}</td>
                   <td className="hidden px-3 py-2.5 text-xs text-slate-500 xl:table-cell">
