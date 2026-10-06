@@ -28,6 +28,15 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
+function HeaderActionTooltip({ label, visible }: { label: string; visible: boolean }) {
+  if (!visible) return null;
+  return (
+    <span className="pointer-events-none absolute left-1/2 top-full z-[70] mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-800 px-2 py-1 text-[11px] font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+      {label}
+    </span>
+  );
+}
+
 export function DocumentPreviewPanel({ documentId, documentNo, documentType, customerId, paymentStatus, documentStatus, dict, onClose, onEdit, onNavigate }: DocumentPreviewPanelProps) {
   const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
@@ -59,6 +68,16 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   const [billingComboOpen, setBillingComboOpen] = useState(false);
   const billingComboRef = useRef<HTMLDivElement>(null);
   const copyChoices = copyChoicesFor(documentType);
+  const headerActionCount =
+    Number(documentType === "QUOTATION") +
+    Number(documentType === "INVOICE" && !isPaid && !isCancelled) * 2 +
+    Number((documentType === "DELIVERY_ORDER" || documentType === "BILL") && !isCancelled) +
+    Number(documentType === "DELIVERY_ORDER" && !isPaid && !isCancelled) +
+    Number(documentType === "DELIVERY_ORDER" && documentStatus !== "COMPLETED" && !isCancelled) +
+    Number(!isCancelled && documentStatus !== "COMPLETED") +
+    Number(Boolean(onEdit) && documentStatus !== "COMPLETED" && documentStatus !== "CANCELLED" && paymentStatus !== "PAID") +
+    1; // print
+  const compactHeaderActions = headerActionCount >= 5;
 
   const { data: billingDocuments = [] } = useQuery({
     queryKey: ["receipt-billing-documents", customerId],
@@ -331,35 +350,44 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
               {documentType === "QUOTATION" && (
                 <button
                   type="button"
+                  aria-label={dict.typeInvoice}
+                  title={dict.typeInvoice}
                   disabled={isConverting}
                   onClick={handleConvert}
-                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
+                  className="group relative flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
                 >
                   {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-                  แปลงเป็นใบแจ้งหนี้
+                  <span className={compactHeaderActions ? "sr-only" : undefined}>{dict.typeInvoice}</span>
+                  <HeaderActionTooltip label={dict.typeInvoice} visible={compactHeaderActions} />
                 </button>
               )}
               {documentType === "INVOICE" && !isPaid && !isCancelled && (
                 <>
                   <button
                     type="button"
+                    aria-label={dict.recordPayment}
+                    title={dict.recordPayment}
                     disabled={isPaying}
                     onClick={handlePayInvoice}
-                    className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
+                    className="group relative flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
                   >
                     {isPaying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-                    ชำระแล้ว
+                    <span className={compactHeaderActions ? "sr-only" : undefined}>{dict.recordPayment}</span>
+                    <HeaderActionTooltip label={dict.recordPayment} visible={compactHeaderActions} />
                   </button>
                   {/* Create document dropdown */}
                   <div className="relative">
                     <button
                       type="button"
+                      aria-label={dict.createDocument}
+                      title={dict.createDocument}
                       disabled={isConverting}
                       onClick={() => setCreateMenuOpen((o) => !o)}
-                      className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
+                      className="group relative flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
                     >
                       {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-                      สร้างเอกสาร
+                      <span className={compactHeaderActions ? "sr-only" : undefined}>{dict.createDocument}</span>
+                      <HeaderActionTooltip label={dict.createDocument} visible={compactHeaderActions} />
                       <ChevronDown className="h-3 w-3" />
                     </button>
                     {createMenuOpen && (
@@ -392,12 +420,15 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                 <div className="relative">
                   <button
                     type="button"
+                    aria-label={dict.createDocument}
+                    title={dict.createDocument}
                     disabled={isConverting}
                     onClick={() => setCreateMenuOpen((o) => !o)}
-                    className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
+                    className="group relative flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 disabled:opacity-40"
                   >
                     {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-                    สร้างเอกสาร
+                    <span className={compactHeaderActions ? "sr-only" : undefined}>{dict.createDocument}</span>
+                      <HeaderActionTooltip label={dict.createDocument} visible={compactHeaderActions} />
                     <ChevronDown className="h-3 w-3" />
                   </button>
                   {createMenuOpen && (
@@ -413,39 +444,49 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
               {documentType === "DELIVERY_ORDER" && !isPaid && !isCancelled && (
                 <button
                   type="button"
+                  aria-label={dict.recordPayment}
+                  title={dict.recordPayment}
                   disabled={isPaying}
                   onClick={handlePayDO}
-                  className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
+                  className="group relative flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40"
                 >
                   {isPaying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
-                  ชำระแล้ว
+                  <span className={compactHeaderActions ? "sr-only" : undefined}>{dict.recordPayment}</span>
+                    <HeaderActionTooltip label={dict.recordPayment} visible={compactHeaderActions} />
                 </button>
               )}
               {documentType === "DELIVERY_ORDER" && documentStatus !== "COMPLETED" && !isCancelled && (
-                <button type="button" disabled={isConverting} onClick={handleCompleteDelivery} className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40">
+                <button type="button" aria-label={dict.completeDelivery} title={dict.completeDelivery} disabled={isConverting} onClick={handleCompleteDelivery} className="group relative flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-40">
                   {isConverting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Truck className="h-3.5 w-3.5" />}
-                  {dict.completeDelivery}
+                  <span className={compactHeaderActions ? "sr-only" : undefined}>{dict.completeDelivery}</span>
+                  <HeaderActionTooltip label={dict.completeDelivery} visible={compactHeaderActions} />
                 </button>
               )}
               {!isCancelled && documentStatus !== "COMPLETED" && (
                 <button
                   type="button"
+                  aria-label={dict.cancel}
+                  title={dict.cancel}
                   disabled={isCancelling}
                   onClick={handleCancel}
-                  className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100 disabled:opacity-40"
+                  className="group relative flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-100 disabled:opacity-40"
                 >
                   {isCancelling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
-                  ยกเลิก
+                  <span className={compactHeaderActions ? "sr-only" : undefined}>{dict.cancel}</span>
+                  <HeaderActionTooltip label={dict.cancel} visible={compactHeaderActions} />
                 </button>
               )}
               {onEdit && documentStatus !== "COMPLETED" && documentStatus !== "CANCELLED" && paymentStatus !== "PAID" && (
                 <button
                   type="button"
+                  aria-label={dict.editDocument}
+                  title={dict.editDocument}
                   onClick={onEdit}
-                  className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100"
+                  className="group relative flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100"
                 >
                   <Pencil className="h-3.5 w-3.5" />
-                  {dict.editDocument}
+                  <span className={compactHeaderActions ? "sr-only" : undefined}>{dict.editDocument}</span>
+                  <HeaderActionTooltip label={dict.editDocument} visible={compactHeaderActions} />
                 </button>
               )}
               {receiptTemplateModalOpen && typeof document !== "undefined" && createPortal(

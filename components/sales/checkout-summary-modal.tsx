@@ -193,6 +193,8 @@ export function CheckoutSummaryModal({
   setQuotationMode,
   quotationValidUntil,
   setQuotationValidUntil,
+  quotationPaymentTermDays,
+  setQuotationPaymentTermDays,
   quickCashOptions,
   lastQuickCashAmount,
   customerTypeLabel,
@@ -206,6 +208,9 @@ export function CheckoutSummaryModal({
   dictionary,
 }: CheckoutSummaryModalProps) {
   const [dueDatePresetOptions] = useState(() => getDueDatePresetOptions());
+  const paymentTermLabel = dictionary.quotationPaymentTermLabel ?? "เงื่อนไขการชำระเงิน (เครดิต)";
+  const paymentTermPlaceholder = dictionary.quotationPaymentTermPlaceholder ?? "จำนวนวัน";
+  const paymentTermSummary = dictionary.quotationPaymentTermSummary ?? "เงื่อนไขการชำระเงินภายใน {days} วัน";
 
   useEffect(() => {
     if (!isOpen) return;
@@ -409,6 +414,21 @@ export function CheckoutSummaryModal({
                     </button>
                   </p>
                 )}
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-violet-800">
+                  {paymentTermLabel}
+                </label>
+                <div className="flex items-center gap-2">
+                  <input type="number" min={0} max={3650} step={1} inputMode="numeric" value={quotationPaymentTermDays} onChange={(e) => setQuotationPaymentTermDays(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder={paymentTermPlaceholder} className="w-32 rounded-lg border border-violet-200 px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100" />
+                  <span className="text-sm text-slate-500">{dictionary.dayUnitLabel}</span>
+                </div>
+                <p className="mt-1.5 text-xs text-slate-500">
+                  {paymentTermSummary.replace(
+                    "{days}",
+                    quotationPaymentTermDays || "0",
+                  )}
+                </p>
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-violet-800">{dictionary.noteLabel}</label>

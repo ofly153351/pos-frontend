@@ -164,6 +164,7 @@ export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesMana
   const [isCreatingQuotation, startQuotationTransition] = useTransition();
   const [quotationMode, setQuotationMode] = useState(false);
   const [quotationValidUntil, setQuotationValidUntil] = useState("");
+  const [quotationPaymentTermDays, setQuotationPaymentTermDays] = useState("");
   const [discountEditorProductId, setDiscountEditorProductId] = useState<
     string | null
   >(null);
@@ -1401,6 +1402,7 @@ export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesMana
           customer_id: selectedCustomerId,
           document_date: today,
           valid_until: quotationValidUntil || undefined,
+          credit_term_days: quotationPaymentTermDays ? Number(quotationPaymentTermDays) : undefined,
           items: cart.map((item) => ({
             product_id: item.product.id,
             description: item.product.name,
@@ -2061,6 +2063,8 @@ export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesMana
         setQuotationMode={setQuotationMode}
         quotationValidUntil={quotationValidUntil}
         setQuotationValidUntil={setQuotationValidUntil}
+        quotationPaymentTermDays={quotationPaymentTermDays}
+        setQuotationPaymentTermDays={setQuotationPaymentTermDays}
         quickCashOptions={quickCashOptions}
         lastQuickCashAmount={lastQuickCashAmount}
         customerTypeLabel={customerTypeLabel}

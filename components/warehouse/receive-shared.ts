@@ -224,22 +224,38 @@ export type ItemFormRow = {
 
 export type AutosaveState = "idle" | "saving" | "saved" | "error";
 
+const BANGKOK_TIME_ZONE = "Asia/Bangkok";
+const BANGKOK_OFFSET_MINUTES = 7 * 60;
+
+function bangkokDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: BANGKOK_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  return Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+}
+
 export function formatDateTimeInput(value?: string | null) {
-  const toLocal = (d: Date) => {
-    const offsetMs = d.getTimezoneOffset() * 60_000;
-    return new Date(d.getTime() - offsetMs).toISOString().slice(0, 16);
-  };
-  if (!value) return toLocal(new Date());
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return toLocal(new Date());
-  return toLocal(date);
+  const date = value ? new Date(value) : new Date();
+  const safeDate = Number.isNaN(date.getTime()) ? new Date() : date;
+  const parts = bangkokDateParts(safeDate);
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
 }
 
 export function formatDateTimeLabel(value?: string | null) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return new Intl.DateTimeFormat("th-TH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: BANGKOK_TIME_ZONE,
+  }).format(date);
 }
 
 export function formatNumber(value?: number | null) {
@@ -351,9 +367,22 @@ export function getReceiptRoute(locale: string, receipt: GoodsReceiptDraft) {
 }
 
 export function buildHeaderPayload(headerForm: HeaderForm) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(headerForm.receivedAt);
+  const receivedAt = match
+    ? new Date(
+        Date.UTC(
+          Number(match[1]),
+          Number(match[2]) - 1,
+          Number(match[3]),
+          Number(match[4]),
+          Number(match[5]),
+        ) - BANGKOK_OFFSET_MINUTES * 60_000,
+      ).toISOString()
+    : new Date(headerForm.receivedAt).toISOString();
+
   return {
     note: headerForm.note.trim() || undefined,
-    received_at: new Date(headerForm.receivedAt).toISOString(),
+    received_at: receivedAt,
     reference_no: headerForm.referenceNo.trim() || undefined,
     supplier_id: headerForm.supplierId || undefined,
     vat_included: headerForm.vatIncluded,

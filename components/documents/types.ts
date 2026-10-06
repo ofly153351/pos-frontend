@@ -315,6 +315,8 @@ export type DocumentPreviewPanelDict = {
   share: string;
   comingSoon: string;
   moreOptions: string;
+  createDocument: string;
+  recordPayment: string;
   editDocument: string;
   revisionHistory: string;
   restoreRevision: string;

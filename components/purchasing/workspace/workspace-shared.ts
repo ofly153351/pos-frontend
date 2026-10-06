@@ -164,7 +164,10 @@ export function formatDate(locale: string, value?: string | null): string {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return new Intl.DateTimeFormat(dateLocale(locale), { dateStyle: "medium" }).format(d);
+  return new Intl.DateTimeFormat(dateLocale(locale), {
+    dateStyle: "medium",
+    timeZone: "Asia/Bangkok",
+  }).format(d);
 }
 
 export function formatDateTime(locale: string, value?: string | null): string {
@@ -174,6 +177,7 @@ export function formatDateTime(locale: string, value?: string | null): string {
   return new Intl.DateTimeFormat(dateLocale(locale), {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "Asia/Bangkok",
   }).format(d);
 }
 

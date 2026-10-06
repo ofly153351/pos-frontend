@@ -27,6 +27,9 @@ export type SalesDictionary = {
   saleModeQuotationLabel: string;
   saleModeQuotationDescription: string;
   quoteValidUntilLabel: string;
+  quotationPaymentTermLabel: string;
+  quotationPaymentTermPlaceholder: string;
+  quotationPaymentTermSummary: string;
   dayUnitLabel: string;
   quotationValidUntilPrefix: string;
   clearDateButton: string;
@@ -385,6 +388,9 @@ export type CheckoutSummaryModalDict = {
   saleModeQuotationLabel: string;
   saleModeQuotationDescription: string;
   quoteValidUntilLabel: string;
+  quotationPaymentTermLabel: string;
+  quotationPaymentTermPlaceholder: string;
+  quotationPaymentTermSummary: string;
   dayUnitLabel: string;
   quotationValidUntilPrefix: string;
   clearDateButton: string;
@@ -493,6 +499,8 @@ export type CheckoutSummaryModalProps = {
   setQuotationMode: (v: boolean) => void;
   quotationValidUntil: string;
   setQuotationValidUntil: (v: string) => void;
+  quotationPaymentTermDays: string;
+  setQuotationPaymentTermDays: (v: string) => void;
   quickCashOptions: CheckoutSummaryModalQuickCashOption[];
   lastQuickCashAmount: number | null;
   customerTypeLabel: string;
