@@ -305,7 +305,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   }
 
   const iframeBody = (
-    <div className="relative flex-1 overflow-hidden bg-white">
+    <div className={`relative min-h-0 flex-1 overflow-auto ${drawer ? "flex justify-center bg-slate-100 p-6 sm:p-8" : "bg-white"}`}>
       {isLoading ? (
         <div className="flex h-full items-center justify-center text-sm text-slate-400">
           {dict.loading}
@@ -315,7 +315,9 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
           ref={iframeRef}
           srcDoc={html}
           title="document preview"
-          className="h-full w-full border-0"
+          className={drawer
+            ? "aspect-[210/297] h-auto w-full max-w-[794px] shrink-0 rounded-lg border-0 bg-white shadow-md"
+            : "h-full w-full border-0"}
           sandbox="allow-same-origin allow-scripts"
         />
       ) : (
