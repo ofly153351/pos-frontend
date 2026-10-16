@@ -54,7 +54,6 @@ export type AuthFormAuthFormProps = {
 export type AuthFormFieldErrors = Record<string, string>;
 
 export type AuthShellAuthBrand = {
-  badge: string;
   features: string[];
   statProductsValue: string;
   statProductsLabel: string;
@@ -80,8 +79,6 @@ export type AuthShellAuthShellProps = {
   locale: Locale;
   mode: "login" | "register";
   pageTitle: string;
-  panelDescription: string;
-  panelEyebrow: string;
   panelTitle: string;
   submitLabel: string;
   switchLocaleHref: "login" | "register";

@@ -76,9 +76,8 @@
     "switchToRegister": "New to the system?",
     "createAccount": "Create account",
     "signIn": "Sign in",
-    "footerNote": "Responsive layout for front store and back office teams",
+    "footerNote": "Easy to use for both front-store and back-office teams",
     "authBrand": {
-      "badge": "ENTERPRISE POS PLATFORM",
       "features": [
         "Product & stock management",
         "Receipts, tax invoices, delivery notes",
@@ -105,7 +104,6 @@
     "redirecting": "Redirecting..."
   },
   "login": {
-    "eyebrow": "Store access",
     "title": "Sign in to start selling",
     "description": "Open the cashier screen, manage orders, and keep the counter moving without delays.",
     "cardTitle": "Login",
@@ -115,11 +113,9 @@
     "passwordLabel": "Password",
     "passwordPlaceholder": "Enter your password",
     "submit": "Login",
-    "secondaryTitle": "Ready for service",
-    "secondaryDescription": "Designed for retail teams that need a quick workflow, clear stock visibility, and fewer mistakes at checkout."
+    "secondaryTitle": "Ready for service"
   },
   "register": {
-    "eyebrow": "New store setup",
     "title": "Create your POS account",
     "description": "Set up the first staff account and prepare your store for sales, stock tracking, and daily reporting.",
     "cardTitle": "Register",
@@ -134,7 +130,6 @@
     "passwordPlaceholder": "Create a password",
     "submit": "Create account",
     "secondaryTitle": "Built for busy counters",
-    "secondaryDescription": "A clean setup flow gives your team a stable starting point before products, staff roles, and payment settings are added.",
     "confirmPasswordLabel": "Confirm password",
     "confirmPasswordPlaceholder": "Re-enter your password",
     "passwordMismatch": "Passwords do not match",

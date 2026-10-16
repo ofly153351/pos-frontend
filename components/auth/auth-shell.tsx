@@ -122,8 +122,6 @@ export function AuthShell({
   locale,
   mode,
   pageTitle,
-  panelDescription,
-  panelEyebrow,
   panelTitle,
   submitLabel,
   switchLocaleHref,
@@ -173,18 +171,11 @@ export function AuthShell({
             </div>
             <div className="text-xl font-extrabold leading-tight">
               {brand}
-              <span className="block text-[12.5px] font-medium tracking-wide text-white/70">
-                {panelEyebrow}
-              </span>
             </div>
           </header>
 
           {/* hero */}
           <div className="mb-9 mt-11">
-            <span className="mb-[22px] inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-[12.5px] font-semibold tracking-wide text-white/90 backdrop-blur">
-              <span className="h-[7px] w-[7px] rounded-full bg-emerald-300 shadow-[0_0_0_3px_rgba(167,243,208,0.25)]" />
-              {authBrand.badge}
-            </span>
             <h1 className="mb-2.5 text-[52px] font-extrabold leading-[1.05] tracking-tight">
               {pageTitle}
             </h1>
@@ -252,15 +243,9 @@ export function AuthShell({
         />
 
         <div className="w-full max-w-[440px] rounded-[24px] border border-[#eef0f6] bg-white p-9 shadow-[0_30px_60px_-20px_rgba(49,32,110,0.18),0_12px_24px_-12px_rgba(49,32,110,0.10)] sm:p-11">
-          <span className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-violet-200/60 bg-violet-600/[0.08] px-3.5 py-1.5 text-xs font-bold uppercase tracking-wide text-violet-600">
-            {panelEyebrow}
-          </span>
           <h2 className="mb-2 text-[32px] font-extrabold tracking-tight text-slate-900">
             {submitLabel}
           </h2>
-          <p className="text-[15px] text-slate-500">
-            {panelDescription}
-          </p>
 
           <AuthForm
             fields={fields}

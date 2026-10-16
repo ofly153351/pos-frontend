@@ -62,8 +62,6 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
       locale={locale}
       mode="register"
       pageTitle={dictionary.register.title}
-      panelDescription={dictionary.register.secondaryDescription}
-      panelEyebrow={dictionary.register.eyebrow}
       panelTitle={dictionary.register.secondaryTitle}
       submitLabel={dictionary.register.submit}
       switchLocaleHref="register"

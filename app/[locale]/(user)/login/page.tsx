@@ -44,8 +44,6 @@ export default async function LoginPage({ params }: LoginPageProps) {
       locale={locale}
       mode="login"
       pageTitle={dictionary.login.title}
-      panelDescription={dictionary.login.secondaryDescription}
-      panelEyebrow={dictionary.login.eyebrow}
       panelTitle={dictionary.login.secondaryTitle}
       submitLabel={dictionary.login.submit}
       switchLocaleHref="login"
