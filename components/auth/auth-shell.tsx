@@ -75,7 +75,7 @@ function LanguageDropdown({
       {open ? (
         <div
           role="listbox"
-          className="smooth-fade-up absolute right-0 mt-2 w-40 overflow-hidden rounded-2xl border border-violet-100 bg-white p-1.5 shadow-[0_20px_45px_-15px_rgba(49,32,110,0.25)]"
+          className="smooth-fade-up absolute right-0 mt-2 flex w-40 flex-col gap-1.5 overflow-hidden rounded-2xl border border-violet-100 bg-white p-1.5 shadow-[0_20px_45px_-15px_rgba(49,32,110,0.25)]"
         >
           {options.map((opt) => {
             const active = opt.code === locale;
