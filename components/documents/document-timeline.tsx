@@ -51,8 +51,8 @@ export function DocumentTimeline({ items, currentId, label, typeLabels, onSelect
                 type="button"
                 onClick={() => { if (!active) onSelect?.(doc.id); }}
                 disabled={active}
-                title={doc.document_no_full || doc.document_no}
-                aria-label={`${labelOf[doc.type]} ${doc.document_no_full || doc.document_no}`}
+                title={labelOf[doc.type]}
+                aria-label={labelOf[doc.type]}
                 className={`flex shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-[11px] leading-4 transition-colors ${
                   active
                     ? "border-violet-500 bg-violet-600 text-white shadow-sm"
@@ -60,8 +60,7 @@ export function DocumentTimeline({ items, currentId, label, typeLabels, onSelect
                 } ${cancelled ? "opacity-50 line-through" : ""}`}
               >
                 <Icon className="h-3 w-3" />
-                <span className="hidden font-medium sm:inline">{labelOf[doc.type]}</span>
-                <span className="nums opacity-70">{doc.document_no}</span>
+                <span className="font-medium">{labelOf[doc.type]}</span>
               </button>
             </div>
           );

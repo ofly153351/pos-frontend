@@ -160,6 +160,9 @@ export type DocumentPageClientDocumentDict = {
   exportExcel: string;
   printReport: string;
   createDocument: string;
+  manageDocuments: string;
+  convertDocument: string;
+  alreadyConverted: string;
   editDocument: string;
   revisionHistory: string;
   restoreRevision: string;
@@ -290,6 +293,7 @@ export type DocumentPageClientDocumentDict = {
   convertTo: string;
   recordPayment: string;
   paySuccess: string;
+  payRelatedSuccess: string;
   payError: string;
   cancelDocument: string;
   cancelSuccess: string;
@@ -315,8 +319,20 @@ export type DocumentPreviewPanelDict = {
   share: string;
   comingSoon: string;
   moreOptions: string;
+  manageDocuments: string;
   createDocument: string;
+  convertDocument: string;
+  printPreview: string;
+  downloadPDF: string;
+  duplicate: string;
+  duplicateSuccess: string;
+  duplicateError: string;
+  pdfError: string;
+  convertSuccess: string;
+  convertError: string;
+  alreadyConverted: string;
   recordPayment: string;
+  payRelatedSuccess: string;
   editDocument: string;
   revisionHistory: string;
   restoreRevision: string;
