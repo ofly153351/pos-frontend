@@ -57,10 +57,12 @@ export function DocumentTable({
           frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
           document.body.appendChild(frame);
           frame.src = blobUrl;
-          frame.onload = () => {
+          frame.onload = async () => {
+            const printWindow = frame.contentWindow as (Window & { __posPagedReady?: Promise<unknown> }) | null;
+            await printWindow?.__posPagedReady;
             setTimeout(() => {
-              frame.contentWindow?.focus();
-              frame.contentWindow?.print();
+              printWindow?.focus();
+              printWindow?.print();
               setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); resolve(); }, 1500);
             }, 150);
           };

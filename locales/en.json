@@ -2329,7 +2329,7 @@
     "duplicate": "Duplicate",
     "duplicateSuccess": "Document duplicated",
     "duplicateError": "Could not duplicate document",
-    "printPreview": "Preview / Print",
+    "printPreview": "Print",
     "convertTo": "Convert to",
     "recordPayment": "Record Payment",
     "paySuccess": "Payment recorded",

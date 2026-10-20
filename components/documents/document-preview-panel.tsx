@@ -28,6 +28,17 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
+function buildPreviewPageDocument(styles: string, page: string) {
+  return `<!doctype html><html><head><meta charset="utf-8">${styles}<style>
+    @page{size:A4;margin:0}
+    html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#e2e8f0}
+    .pagedjs_page,.pagedjs_sheet,.pagedjs_pagebox{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important}
+    .pagedjs_margin,.pagedjs_bleed,.pagedjs_marks{display:none!important}
+    .pagedjs_page{background:#fff;box-shadow:none!important;position:relative;overflow:hidden}
+    .pagedjs_bleed-top{background:#e2e8f0;border-top:2px dashed #94a3b8}
+  </style></head><body>${page}</body></html>`;
+}
+
 export function DocumentPreviewPanel({ documentId, documentNo, documentType, customerId, paymentStatus, documentStatus, dict, onClose, onEdit, onNavigate }: DocumentPreviewPanelProps) {
   const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
@@ -49,6 +60,8 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   const isCancelled = documentStatus === "CANCELLED";
   const drawer = isA4(documentType);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [previewPages, setPreviewPages] = useState<string[]>([]);
+  const [previewStyles, setPreviewStyles] = useState("");
   const qc = useQueryClient();
 
   // Copy selection — Original / Customer Copy / Company Copy / All copies.
@@ -82,6 +95,11 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     enabled: !!documentId,
     staleTime: 30_000,
   });
+
+  useEffect(() => {
+    setPreviewPages([]);
+    setPreviewStyles("");
+  }, [html, drawer]);
 
   // Lineage for the timeline strip (Quotation → Invoice → DO → Tax Invoice …).
   const { data: related = [] } = useQuery({
@@ -287,8 +305,11 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
       frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
       document.body.appendChild(frame);
       frame.src = blobUrl;
-      frame.onload = () => {
-        frame.contentWindow?.print();
+      frame.onload = async () => {
+        const printWindow = frame.contentWindow as (Window & { __posPagedReady?: Promise<unknown> }) | null;
+        await printWindow?.__posPagedReady;
+        printWindow?.focus();
+        printWindow?.print();
         setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
       };
     });
@@ -387,22 +408,67 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
       : null,
   ].filter((item): item is { label: string; icon: typeof Wallet; onClick: () => void; tone: string } => item !== null);
 
+  const handlePreviewLoad = async () => {
+    const frame = iframeRef.current;
+    const frameWindow = frame?.contentWindow as (Window & { __posPagedReady?: Promise<unknown> }) | null;
+    if (!frame || !frameWindow || !drawer) return;
+
+    try {
+      await frameWindow.__posPagedReady;
+    } catch (error) {
+      console.error("Document preview pagination failed", error);
+      return;
+    }
+
+    const frameDocument = frame.contentDocument;
+    const pages = Array.from(frameDocument?.querySelectorAll<HTMLElement>(".pagedjs_page") ?? []);
+    if (!pages.length || !frameDocument) return;
+
+    const styles = Array.from(frameDocument.head.querySelectorAll("style, link[rel='stylesheet']"))
+      .map((node) => node.outerHTML)
+      .join("\n");
+
+    setPreviewStyles(styles);
+    setPreviewPages(pages.map((page) => page.outerHTML));
+  };
+
   const iframeBody = (
-    <div className={`relative min-h-0 flex-1 overflow-auto ${drawer ? "flex justify-center bg-slate-100 p-6 sm:p-8" : "bg-white"}`}>
+    <div className={`relative flex min-h-0 flex-1 justify-center overflow-y-auto overflow-x-hidden ${drawer ? "bg-slate-100 p-6 sm:p-8" : "bg-white"}`}>
       {isLoading ? (
         <div className="flex h-full items-center justify-center text-sm text-slate-400">
           {dict.loading}
         </div>
       ) : html ? (
-        <iframe
-          ref={iframeRef}
-          srcDoc={html}
-          title="document preview"
-          className={drawer
-            ? "aspect-[210/297] h-auto w-full max-w-[794px] shrink-0 rounded-lg border-0 bg-white shadow-md"
-            : "h-full w-full border-0"}
-          sandbox="allow-same-origin allow-scripts"
-        />
+        <>
+          <iframe
+            ref={iframeRef}
+            srcDoc={html}
+            title="document pagination worker"
+            onLoad={handlePreviewLoad}
+            className={drawer
+              ? "pointer-events-none absolute left-0 top-0 h-px w-px opacity-0"
+              : "h-full w-full border-0"}
+            sandbox="allow-same-origin allow-scripts"
+          />
+          {drawer && previewPages.length > 0 && (
+            <div className="flex w-full flex-col items-center gap-4">
+              {previewPages.map((page, index) => (
+                <iframe
+                  key={`preview-page-${index + 1}`}
+                  title={`document preview page ${index + 1}`}
+                  srcDoc={buildPreviewPageDocument(previewStyles, page)}
+                  className="block aspect-[210/297] w-full max-w-[794px] shrink-0 border-0 bg-white shadow-md"
+                  sandbox="allow-same-origin"
+                />
+              ))}
+            </div>
+          )}
+          {drawer && previewPages.length === 0 && (
+            <div className="flex min-h-full items-center justify-center text-sm text-slate-400">
+              {dict.loading}
+            </div>
+          )}
+        </>
       ) : (
         <div className="flex h-full items-center justify-center text-sm text-slate-400">
           ไม่สามารถโหลดเอกสารได้
@@ -422,7 +488,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
           onClick={onClose}
         />
         {/* Drawer panel */}
-        <div className="fixed inset-y-0 right-0 z-[51] flex w-[820px] max-w-[92vw] flex-col bg-white shadow-2xl slide-in-right">
+        <div className="fixed inset-y-0 right-0 z-[51] flex w-[960px] max-w-[96vw] flex-col bg-white shadow-2xl slide-in-right">
           {/* Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-5 py-3">
             <div className="flex items-center gap-3">

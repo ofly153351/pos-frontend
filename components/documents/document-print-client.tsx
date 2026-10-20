@@ -33,10 +33,13 @@ export function DocumentPrintClient({ documentId, dict, copy = -1 }: DocumentPri
   }, [documentId, copy, dict.requestFailed]);
 
   function handlePrint() {
-    const fw = frameRef.current?.contentWindow;
+    const fw = frameRef.current?.contentWindow as (Window & { __posPagedReady?: Promise<unknown> }) | null;
     if (fw) {
-      fw.focus();
-      fw.print();
+      void (async () => {
+        await fw.__posPagedReady;
+        fw.focus();
+        fw.print();
+      })();
     } else {
       window.print();
     }
