@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import { ArrowRight, Ban, Check, ChevronDown, Copy, FileBadge, FileDown, FileMinus, FileSearch, FileText, Loader2, Mail, MoreHorizontal, Pencil, Printer, Receipt, Share2, Truck, Wallet, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,10 +31,11 @@ function isA4(type?: DocumentType) {
 function buildPreviewPageDocument(styles: string, page: string) {
   return `<!doctype html><html><head><meta charset="utf-8">${styles}<style>
     @page{size:A4;margin:0}
-    html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#e2e8f0}
-    .pagedjs_page,.pagedjs_sheet,.pagedjs_pagebox{width:100%!important;height:100%!important;min-height:100%!important;margin:0!important}
+    html,body{margin:0;padding:0;width:794px;height:1123px;overflow:auto;background:#e2e8f0;scrollbar-width:none;-ms-overflow-style:none}
+    html::-webkit-scrollbar,body::-webkit-scrollbar{display:none}
+    .pagedjs_page,.pagedjs_sheet,.pagedjs_pagebox{width:794px!important;height:1123px!important;min-height:1123px!important;margin:0!important}
     .pagedjs_margin,.pagedjs_bleed,.pagedjs_marks{display:none!important}
-    .pagedjs_page{background:#fff;box-shadow:none!important;position:relative;overflow:hidden}
+    .pagedjs_page{background:#fff;box-shadow:none!important;position:relative;overflow:visible}
     .pagedjs_bleed-top{background:#e2e8f0;border-top:2px dashed #94a3b8}
   </style></head><body>${page}</body></html>`;
 }
@@ -432,6 +433,15 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     setPreviewPages(pages.map((page) => page.outerHTML));
   };
 
+  const handlePreviewPageLoad = (event: SyntheticEvent<HTMLIFrameElement>) => {
+    const frame = event.currentTarget;
+    const frameDocument = frame.contentDocument;
+    if (!frameDocument) return;
+
+    const scale = Math.min(1, frame.clientWidth / 794);
+    frameDocument.documentElement.style.zoom = String(scale);
+  };
+
   const iframeBody = (
     <div className={`relative flex min-h-0 flex-1 justify-center overflow-y-auto overflow-x-hidden ${drawer ? "bg-slate-100 p-6 sm:p-8" : "bg-white"}`}>
       {isLoading ? (
@@ -457,7 +467,8 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                   key={`preview-page-${index + 1}`}
                   title={`document preview page ${index + 1}`}
                   srcDoc={buildPreviewPageDocument(previewStyles, page)}
-                  className="block aspect-[210/297] w-full max-w-[794px] shrink-0 border-0 bg-white shadow-md"
+                  onLoad={handlePreviewPageLoad}
+                  className="block aspect-[210/297] w-full max-w-[794px] shrink-0 overflow-y-auto border-0 bg-white shadow-md"
                   sandbox="allow-same-origin"
                 />
               ))}
