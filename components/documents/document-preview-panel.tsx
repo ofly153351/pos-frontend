@@ -375,10 +375,12 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     });
   }
 
+  const canEditDocument = onEdit && documentStatus !== "COMPLETED" && documentStatus !== "CANCELLED" && paymentStatus !== "PAID";
   const utilityMenuItems = [
     { label: dict.printPreview, icon: FileSearch, onClick: () => handlePrint() },
     { label: dict.downloadPDF, icon: FileDown, onClick: handleDownloadPdf },
     { label: dict.duplicate, icon: Copy, onClick: handleDuplicate },
+    ...(canEditDocument ? [{ label: dict.editDocument, icon: Pencil, onClick: () => onEdit?.() }] : []),
   ];
   const hasDirectConversion = (target: string) => related.some(
     (item) => item.id !== documentId && item.type === target && item.source_document_id === documentId,
