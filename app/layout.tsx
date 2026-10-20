@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "POS Suite",
   description: "Login and registration flow for the POS frontend",
   icons: {
-    icon: "/favicon.ico?v=homeshop-1",
+    icon: "/favicon.ico?v=basket-1",
   },
 };
 
