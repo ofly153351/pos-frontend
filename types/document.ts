@@ -174,6 +174,7 @@ export interface CreateDocumentPayload {
   notes?: string;
   quotation_summary?: string;
   bank_account_id?: string;
+  source_document_ids?: string[];
 }
 
 export interface DocumentRevision {

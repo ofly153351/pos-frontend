@@ -385,6 +385,7 @@ export function CreateDocumentModal({ dict: d, initialType, editDocument, onClos
       notes: notes || undefined,
       quotation_summary: docType === "QUOTATION" ? (quotationSummary.trim() || undefined) : undefined,
       bank_account_id: bankAccountId || undefined,
+      source_document_ids: docType === "BILL" && selectedDOIds.length > 0 ? selectedDOIds : undefined,
       items: itemsToSubmit.map((it) => ({
         product_id: "product_id" in it ? it.product_id : undefined,
         description: it.description,
