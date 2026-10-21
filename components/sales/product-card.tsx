@@ -124,7 +124,8 @@ export function ProductCard({ item, config, qtyInCart, onAdd, labels, promoLabel
 
   const Name = (
     <div
-      className={`${s.pad} ${s.nameText} ${s.namePad} font-semibold leading-[1.6] text-slate-900 ${CLAMP[config.lines]}`}
+      title={item.name}
+      className={`${s.pad} ${s.nameText} ${s.namePad} min-w-0 overflow-hidden break-words font-semibold leading-[1.6] text-slate-900 ${CLAMP[config.lines]}`}
       style={{ minHeight: `calc(${config.lines} * 1.6em)` }}
     >
       {item.name}

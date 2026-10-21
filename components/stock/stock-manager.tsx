@@ -289,7 +289,7 @@ export function StockManager({
     staleTime: 60_000,
   });
 
-  const [sortBy, setSortBy] = useState<"created_at" | "updated_at">("created_at");
+  const [sortBy, setSortBy] = useState<"created_at" | "updated_at">("updated_at");
   const isSearching = search.trim().length > 0;
 
   const productsQuery = useQuery({
