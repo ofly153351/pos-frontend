@@ -28,6 +28,12 @@ function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
 }
 
+function stripScriptsFromPreviewPage(page: string) {
+  // Paged.js has already finished in the worker iframe. The extracted page is
+  // display-only, so scripts must not be copied into the sandboxed child iframe.
+  return page.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+}
+
 function buildPreviewPageDocument(styles: string, page: string) {
   return `<!doctype html><html><head><meta charset="utf-8">${styles}<style>
     @page{size:A4;margin:0}
@@ -196,6 +202,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
       (item) => item.id !== documentId && item.type === "RECEIPT",
     );
     if (existingReceipt && onNavigate) {
+      setManageMenuOpen(false);
       onNavigate(existingReceipt.id);
       return;
     }
@@ -215,6 +222,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
         const receipt = await convertDocument(documentId, "RECEIPT", template, sourceDocumentIds);
         toast.success("สร้างใบเสร็จรับเงิน A4 สำเร็จ");
         qc.invalidateQueries({ queryKey: ["documents"] });
+        setManageMenuOpen(false);
         if (onNavigate) onNavigate(receipt.id);
         else onClose();
       } catch (error) {
@@ -443,7 +451,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
       .join("\n");
 
     setPreviewStyles(styles);
-    setPreviewPages(pages.map((page) => page.outerHTML));
+    setPreviewPages(pages.map((page) => stripScriptsFromPreviewPage(page.outerHTML)));
   };
 
   const handlePreviewPageLoad = (event: SyntheticEvent<HTMLIFrameElement>) => {
@@ -553,11 +561,17 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                     {conversionMenuItems.length > 0 && (
                       <>
                         <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">{dict.convertDocument}</p>
-                        {conversionMenuItems.map(({ label, icon: Icon, onClick }) => (
+                        {conversionMenuItems.map(({ label, icon: Icon, onClick, target }) => (
                           <button
                             key={label}
                             type="button"
-                            onClick={() => { onClick(); setManageMenuOpen(false); }}
+                            onClick={() => {
+                              onClick();
+                              // Keep this menu mounted while the receipt-template
+                              // portal opens; the portal currently lives below the
+                              // menu fragment and would otherwise unmount instantly.
+                              if (target !== "RECEIPT") setManageMenuOpen(false);
+                            }}
                             className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-violet-50"
                           >
                             <Icon className="h-3.5 w-3.5 opacity-70" />
@@ -823,7 +837,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
                         {dict.receiptTemplate2}
                       </button>
                     )}
-                    <button type="button" onClick={() => setReceiptTemplateModalOpen(false)} className="mt-5 w-full rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">{dict.cancel}</button>
+                    <button type="button" onClick={() => { setReceiptTemplateModalOpen(false); setManageMenuOpen(false); }} className="mt-5 w-full rounded-lg px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100">{dict.cancel}</button>
                   </div>
                 </div>,
                 document.body,
