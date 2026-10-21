@@ -271,7 +271,7 @@ export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesMana
         // operate level, so cashiers load the POS just like owners/managers.
         const [productsResponse, customersResponse, locationsResponse] =
           await Promise.all([
-            listProducts({ limit: 500 }),
+            listProducts({ limit: 500, sort_by: "updated_at" }),
             listCustomers(),
             listLocations({ limit: 500 }),
           ]);
@@ -1004,7 +1004,7 @@ export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesMana
   async function reloadData() {
     const [productsResponse, customersResponse, discountResponse] =
       await Promise.all([
-        listProducts({ limit: 500 }),
+        listProducts({ limit: 500, sort_by: "updated_at" }),
         listCustomers(),
         listCustomerLevelDiscounts(),
         // Refresh the active sale-point stock so the freshly-deducted quantities show

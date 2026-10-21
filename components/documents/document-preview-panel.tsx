@@ -191,6 +191,17 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     setReceiptTemplateModalOpen(true);
   }
 
+  function handleOpenOrCreateReceipt() {
+    const existingReceipt = related.find(
+      (item) => item.id !== documentId && item.type === "RECEIPT",
+    );
+    if (existingReceipt && onNavigate) {
+      onNavigate(existingReceipt.id);
+      return;
+    }
+    handleConvertToReceipt();
+  }
+
   function createReceipt(template: 1 | 2) {
     setReceiptTemplate(template);
     setReceiptTemplateModalOpen(false);
@@ -390,13 +401,13 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
       ? [{ label: dict.typeInvoice, icon: FileBadge, target: "INVOICE", onClick: handleConvert }]
       : documentType === "INVOICE"
         ? [
-            { label: dict.typeReceipt, icon: Receipt, target: "RECEIPT", onClick: handleConvertToReceipt },
+            { label: dict.typeReceipt, icon: Receipt, target: "RECEIPT", onClick: handleOpenOrCreateReceipt },
             { label: dict.typeTaxInvoice, icon: FileBadge, target: "TAX_INVOICE", onClick: handleConvertToTax },
             { label: dict.typeDeliveryOrder, icon: Truck, target: "DELIVERY_ORDER", onClick: handleConvertToDO },
             { label: dict.typeCreditNote, icon: FileMinus, target: "CREDIT_NOTE", onClick: () => handleConvertGeneric("CREDIT_NOTE") },
           ]
         : documentType === "DELIVERY_ORDER" || documentType === "BILL"
-          ? [{ label: dict.typeReceipt, icon: Receipt, target: "RECEIPT", onClick: handleConvertToReceipt }]
+          ? [{ label: dict.typeReceipt, icon: Receipt, target: "RECEIPT", onClick: handleOpenOrCreateReceipt }]
           : []
   ).filter((item) => !hasDirectConversion(item.target));
   const statusMenuItems = [
