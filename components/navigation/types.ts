@@ -89,6 +89,7 @@ export type UserWorkspaceSidebarUserWorkspaceSidebarProps = {
     settings: string;
     storageLocations: string;
     receiptPayment: string;
+    documentTemplates: string;
     activityLogs: string;
     staff: string;
     stockCategories: string;

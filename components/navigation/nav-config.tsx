@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   ClipboardCheck,
   CreditCard,
+  FileText,
   History,
   LayoutDashboard,
   Layers3,
@@ -228,6 +229,11 @@ export const NAV_SECTIONS: NavConfigNavSection[] = [
             key: "receipt-payment",
             icon: <ReceiptText className="h-3.5 w-3.5" />,
             href: (l) => `/${l}/settings/receipt-payment`,
+          },
+          {
+            key: "documentTemplates",
+            icon: <FileText className="h-3.5 w-3.5" />,
+            href: (l) => `/${l}/settings/documents`,
           },
           {
             key: "activity-logs",

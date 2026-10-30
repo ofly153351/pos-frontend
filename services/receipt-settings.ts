@@ -26,6 +26,15 @@ export function updateReceiptSettings(input: UpdateReceiptSettingsInput) {
   );
 }
 
+export function fetchDocumentTemplatePreviewHTML(input: Pick<UpdateReceiptSettingsInput, "document_template_key" | "document_design">) {
+  const storeId = ensureStoreId();
+  return authorizedRawRequest<string>(
+    `/api/stores/${storeId}/receipt-settings/document-preview`,
+    { method: "POST", body: input, responseType: "text" },
+    { requireToken: true },
+  );
+}
+
 export function fetchReceiptPreviewHTML(input: Partial<UpdateReceiptSettingsInput> = {}) {
   const storeId = ensureStoreId();
   return authorizedRawRequest<string>(

@@ -183,6 +183,7 @@ export function UserWorkspaceSidebar({
   const settingsBaseHref = `/${locale}/settings`;
   const storageLocationsHref = `/${locale}/settings/storage-locations`;
   const receiptPaymentHref = `/${locale}/settings/receipt-payment`;
+  const documentTemplatesHref = `/${locale}/settings/documents`;
   const activityLogsHref = `/${locale}/settings/activity-logs`;
   const staffHref = `/${locale}/settings/staff`;
   // storage-locations moved to Inventory — exclude it from Settings active detection.
@@ -233,7 +234,7 @@ export function UserWorkspaceSidebar({
   const purchasingExpanded = !collapsed && (manualPurchasingExpanded || isPurchasingRoute);
   const reportsExpanded = !collapsed && (manualReportsExpanded || isReportsRoute);
   const settingsExpanded = !collapsed && (manualSettingsExpanded || isSettingsRoute);
-  const activeSettingsKey = !isSettingsRoute ? "" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === activityLogsHref ? "activity-logs" : pathname === staffHref ? "staff" : "store-settings";
+  const activeSettingsKey = !isSettingsRoute ? "" : pathname === receiptPaymentHref ? "receipt-payment" : pathname === documentTemplatesHref ? "documentTemplates" : pathname === activityLogsHref ? "activity-logs" : pathname === staffHref ? "staff" : "store-settings";
 
   useEffect(() => {
     let isMounted = true;
@@ -694,6 +695,19 @@ export function UserWorkspaceSidebar({
                       <ReceiptText className="h-3.5 w-3.5" />
                     </span>
                     <span>{labels.receiptPayment}</span>
+                  </Link>
+                  <Link
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
+                      activeSettingsKey === "documentTemplates"
+                        ? "bg-violet-800/80 font-semibold text-violet-200"
+                        : "text-violet-400 hover:bg-violet-900/60 hover:text-white hover:rounded-xl"
+                    }`}
+                    href={documentTemplatesHref}
+                  >
+                    <span className={`inline-flex h-5 w-5 items-center justify-center rounded-md ${activeSettingsKey === "documentTemplates" ? "bg-violet-700 text-violet-200" : "bg-violet-900/60 text-violet-400"}`}>
+                      <FileText className="h-3.5 w-3.5" />
+                    </span>
+                    <span>{labels.documentTemplates}</span>
                   </Link>
                   <Link
                     className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${

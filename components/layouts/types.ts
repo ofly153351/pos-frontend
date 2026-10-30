@@ -47,6 +47,7 @@ export type UserWorkspaceLayoutUserWorkspaceLayoutProps = {
     settings: string;
     storageLocations: string;
     receiptPayment: string;
+    documentTemplates: string;
     activityLogs: string;
     staff: string;
     storeLabel: string;

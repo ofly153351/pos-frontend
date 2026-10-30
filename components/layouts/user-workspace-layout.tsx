@@ -125,12 +125,13 @@ export function UserWorkspaceLayout({
     if (pathname.includes("/purchases/suppliers")) return titles.suppliers;
     if (pathname.includes("/purchases")) return titles.purchaseOrders;
     if (pathname.includes("/settings/storage-locations")) return shell.storageLocations;
+    if (pathname.includes("/settings/documents")) return shell.documentTemplates;
     if (pathname.includes("/settings/receipt-payment")) return shell.receiptPayment;
     if (pathname.includes("/settings/activity-logs")) return shell.activityLogs;
     if (pathname.includes("/settings/staff")) return titles.staff ?? shell.staff;
     if (pathname.includes("/settings")) return titles.settings;
     return titles.dashboard;
-  }, [pathname, titles, shell.salesHistory, shell.promotions, shell.editProfile, shell.creditSales, shell.reportsInventoryValue, shell.reports, shell.reportsSummary, shell.finance, shell.financeExpenses, shell.financePnl, shell.documentPending, shell.stockCount, shell.storageLocations, shell.receiptPayment, shell.activityLogs, shell.staff]);
+  }, [pathname, titles, shell.salesHistory, shell.promotions, shell.editProfile, shell.creditSales, shell.reportsInventoryValue, shell.reports, shell.reportsSummary, shell.finance, shell.financeExpenses, shell.financePnl, shell.documentPending, shell.stockCount, shell.storageLocations, shell.receiptPayment, shell.documentTemplates, shell.activityLogs, shell.staff]);
 
   return (
     <CopilotProvider>
@@ -162,6 +163,7 @@ export function UserWorkspaceLayout({
           settings: shell.settings,
           storageLocations: shell.storageLocations,
           receiptPayment: shell.receiptPayment,
+          documentTemplates: shell.documentTemplates,
           activityLogs: shell.activityLogs,
           staff: shell.staff,
           stockCategories: shell.stockCategories,

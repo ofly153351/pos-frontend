@@ -55,6 +55,7 @@ export default async function WorkspaceLayout({
         settings: dictionary.stock.shell.settings,
         storageLocations: dictionary.stock.shell.storageLocations,
         receiptPayment: dictionary.stock.shell.receiptPayment,
+        documentTemplates: dictionary.stock.shell.documentTemplates,
         activityLogs: dictionary.stock.shell.activityLogs,
         staff: dictionary.stock.shell.staff,
         storeLabel: dictionary.stock.shell.storeLabel,
