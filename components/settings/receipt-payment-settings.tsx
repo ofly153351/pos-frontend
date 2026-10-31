@@ -844,20 +844,29 @@ export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
   const [previewSrcdoc, setPreviewSrcdoc] = useState<string>("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewRequest = useRef(0);
 
   async function refreshPreview(settings: ReceiptSettingsData) {
     if (!storeId) return;
+    const requestId = ++previewRequest.current;
     setPreviewLoading(true);
     try {
       const { id, store_id, created_at, updated_at, ...input } = settings;
       const html = await fetchReceiptPreviewHTML(input);
-      if (typeof html === "string") setPreviewSrcdoc(html);
+      if (requestId === previewRequest.current && typeof html === "string") {
+        setPreviewSrcdoc(html);
+      }
     } catch {
       // silently ignore preview errors
     } finally {
       setPreviewLoading(false);
     }
   }
+
+  useEffect(() => () => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    previewRequest.current += 1;
+  }, []);
 
   // Hydrate local state once remote data arrives
   useEffect(() => {
@@ -887,30 +896,40 @@ export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
 
   function schedulePreview(next: ReceiptSettingsData) {
     if (previewTimer.current) clearTimeout(previewTimer.current);
-    previewTimer.current = setTimeout(() => refreshPreview(next), 500);
+    previewTimer.current = setTimeout(() => {
+      previewTimer.current = null;
+      void refreshPreview(next);
+    }, 700);
   }
 
   function update(patch: Partial<ReceiptSettingsData>) {
+    const next = localSettings ? { ...localSettings, ...patch } : null;
     setLocalSettings((s) => {
-      const next = s ? { ...s, ...patch } : s;
-      if (next) schedulePreview(next);
-      return next;
+      return s ? { ...s, ...patch } : s;
     });
+    if (next) schedulePreview(next);
     setIsDirty(true);
   }
 
   function updateChannel(key: string, enabled: boolean) {
+    const next = localSettings
+      ? {
+          ...localSettings,
+          payment_channels: localSettings.payment_channels.map((ch) =>
+            ch.key === key ? { ...ch, enabled } : ch,
+          ),
+        }
+      : null;
     setLocalSettings((s) => {
       if (!s) return s;
-      const next = {
+      return {
         ...s,
         payment_channels: s.payment_channels.map((ch) =>
           ch.key === key ? { ...ch, enabled } : ch,
         ),
       };
-      schedulePreview(next);
-      return next;
     });
+    if (next) schedulePreview(next);
     setIsDirty(true);
   }
 

@@ -7,7 +7,8 @@ import { DrawerShell } from "@/components/warehouse/inventory/drawer-shell";
 import { toast } from "@/components/ui/toast";
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
-import { getReceiptSettings, updateReceiptSettings, fetchDocumentTemplatePreviewHTML } from "@/services/receipt-settings";
+import { getDocuments, getDocumentTemplatePreviewHtml } from "@/services/documents";
+import { getReceiptSettings, updateReceiptSettings } from "@/services/receipt-settings";
 import type { ReceiptSettingsData } from "@/types/receipt-settings";
 import th from "@/locales/th.json";
 
@@ -18,7 +19,7 @@ const card = "rounded-2xl border border-violet-100 bg-white p-5 shadow-sm";
 
 const A4_WIDTH_PX = 794;
 const A4_HEIGHT_PX = 1123;
-const PREVIEW_SCREEN_STYLES = `<style>@media screen{html,body{width:210mm!important;min-height:297mm!important;overflow:hidden!important}body{margin:0!important;background:#e2e8f0!important}.page{width:210mm!important;min-height:297mm!important;margin:0!important;padding:12mm 12mm 16mm!important;box-sizing:border-box!important;background:#fff!important;box-shadow:0 2px 8px rgba(15,23,42,.16)}.pagedjs_pages{width:210mm!important;align-items:center!important}.pagedjs_page{flex:0 0 auto!important}}</style>`;
+const PREVIEW_SCREEN_STYLES = `<style>@media screen{html,body{width:210mm!important;min-height:297mm!important;overflow:hidden!important}body{margin:0!important;background:#e2e8f0!important}.page{width:210mm!important;min-height:297mm!important;margin:0!important;padding:12mm 12mm 16mm!important;box-sizing:border-box!important;background:#fff!important;box-shadow:0 2px 8px rgba(15,23,42,.16)}.page[data-show-signature="true"]{padding-bottom:47mm!important}.page[data-show-signature="true"] .signature-source{display:flex!important;position:absolute;left:12mm;right:12mm;bottom:16mm;z-index:1;margin:0!important}.pagedjs_pages{width:210mm!important;align-items:center!important}.pagedjs_page{flex:0 0 auto!important}}</style>`;
 
 const REFERENCE_PREVIEW_SCREEN_STYLES = `<style>@media screen{html,body{width:210mm!important;min-height:297mm!important;overflow:hidden!important}body{margin:0!important;background:#e2e8f0!important}.page.template-classic{width:210mm!important;min-height:297mm!important;margin:0!important;padding:21.5mm 25mm 26mm 23.5mm!important;box-sizing:border-box!important;background:#fff!important;box-shadow:0 2px 8px rgba(15,23,42,.16)}}</style>`;
 
@@ -41,7 +42,8 @@ function A4DocumentPreview({ html, title }: { html: string; title: string }) {
         srcDoc={previewHTML}
         sandbox="allow-same-origin"
         className="absolute top-0 border-0 bg-white"
-        style={{ width: A4_WIDTH_PX, height: A4_HEIGHT_PX, left: "50%", marginLeft: -A4_WIDTH_PX / 2, transform: `scale(${scale})`, transformOrigin: "top left" }}
+        style={{ width: A4_WIDTH_PX, height: A4_HEIGHT_PX, left: (containerWidth - A4_WIDTH_PX * scale) / 2, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }}
+        tabIndex={-1}
       />
     </div>
   );
@@ -80,32 +82,30 @@ export function DocumentTemplatesSettings({ t }: { t: T }) {
     if (!window.confirm(t.confirmReset)) return;
     setDraftOverride(DEFAULT_DRAFT);
   };
-  const [previewHTML, setPreviewHTML] = useState("");
-  const [previewHTMLDraftKey, setPreviewHTMLDraftKey] = useState("");
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState(false);
-  const draftKey = JSON.stringify([draft.document_template_key, query.data?.document_design]);
-  const currentPreviewHTML = previewHTMLDraftKey === draftKey ? previewHTML : "";
-  useEffect(() => {
-    if (!storeId) return;
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      setPreviewLoading(true);
-      setPreviewError(false);
-      try {
-        const html = await fetchDocumentTemplatePreviewHTML({ document_template_key: draft.document_template_key });
-        if (!cancelled && typeof html === "string") {
-          setPreviewHTML(html);
-          setPreviewHTMLDraftKey(draftKey);
-        }
-      } catch {
-        if (!cancelled) setPreviewError(true);
-      } finally {
-        if (!cancelled) setPreviewLoading(false);
-      }
-    }, 300);
-    return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [draft, draftKey, storeId]);
+  const sourceQuery = useQuery({
+    queryKey: ["document-template-source", storeId],
+    queryFn: async () => {
+      const quotations = await getDocuments({ page: 1, limit: 1, type: "QUOTATION" });
+      if (quotations.items.length) return quotations.items[0];
+      const documents = await getDocuments({ page: 1, limit: 1 });
+      return documents.items[0] ?? null;
+    },
+    enabled: !!storeId,
+  });
+  const sourceId = sourceQuery.data?.id;
+  const previewsQuery = useQuery({
+    queryKey: ["document-template-previews", storeId, sourceId, query.data?.document_design],
+    queryFn: async () => {
+      if (!sourceId) throw new Error("No document selected for preview");
+      const [standard, classic] = await Promise.all([
+        getDocumentTemplatePreviewHtml(sourceId, "standard"),
+        getDocumentTemplatePreviewHtml(sourceId, "classic"),
+      ]);
+      return { standard, classic };
+    },
+    enabled: !!storeId && !!sourceId,
+  });
+  const currentPreviewHTML = previewsQuery.data?.[draft.document_template_key] ?? "";
 
   if (query.isLoading || !storeId) return <div className="rounded-xl border border-violet-100 bg-white p-6 text-sm text-slate-500">{t.loading}</div>;
   if (query.isError) return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{t.saveError}</div>;
@@ -128,34 +128,34 @@ export function DocumentTemplatesSettings({ t }: { t: T }) {
             <h2 className="mb-4 font-semibold text-slate-800">{t.choose}</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {(["standard", "classic"] as const).map((key) => <button key={key} type="button" disabled={!canManage} onClick={() => setDraftOverride((current) => ({ ...(current ?? initial), document_template_key: key }))} className={`rounded-xl border-2 p-4 text-left transition ${draft.document_template_key === key ? "border-violet-600 bg-violet-50" : "border-slate-200 hover:border-violet-300"}`}>
-                <div className="mb-3 aspect-[210/90] rounded-md border bg-white p-3">
-                  {key === "classic" ? (
-                    <div className="flex h-full flex-col gap-1.5 border border-slate-800 p-2">
-                      <div className="flex items-center justify-between"><span className="h-2.5 w-16 bg-slate-300"/><span className="h-4 w-12 border border-slate-700"/></div>
-                      <div className="grid flex-1 grid-cols-[7fr_3fr] border border-slate-800"><div className="border-r border-slate-800"><div className="h-2 bg-[#b6cce3]"/><div className="p-1"><span className="block h-1 w-4/5 bg-slate-200"/><span className="mt-1 block h-1 w-3/5 bg-slate-200"/></div></div><div><div className="h-2 bg-[#b6cce3]"/><div className="p-1"><span className="block h-1 w-full bg-slate-200"/><span className="mt-1 block h-1 w-4/5 bg-slate-200"/></div></div></div>
-                      <div className="h-2 border border-slate-800 bg-[#b6cce3]"/><div className="ml-auto h-2 w-1/3 bg-slate-200"/>
-                    </div>
+                <div className="mb-3 aspect-[210/297] overflow-hidden rounded-md border bg-white" aria-hidden="true">
+                  {previewsQuery.data?.[key] ? (
+                    <A4DocumentPreview html={previewsQuery.data[key]} title={t[key]} />
                   ) : (
-                    <div className="flex h-full flex-col justify-between"><div className="flex justify-between"><span className="h-3 w-16 bg-slate-200"/><span className="h-4 w-12 bg-violet-200"/></div><div className="h-px bg-slate-300"/><div className="flex justify-end"><span className="h-3 w-16 bg-slate-200"/></div></div>
+                    <div className="flex h-full items-center justify-center p-4 text-center text-sm text-slate-500">
+                      {sourceQuery.isLoading || previewsQuery.isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : sourceQuery.data === null ? t.noDocuments : t.previewError}
+                    </div>
                   )}
                 </div>
                 <div className="flex items-center justify-between"><span className="font-semibold text-slate-800">{t[key]}</span>{draft.document_template_key === key && <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-1 text-xs font-bold text-violet-700"><Check className="h-3 w-3"/>{t.active}</span>}</div>
               </button>)}
             </div>
+            {sourceQuery.data && <p className="mt-3 text-xs text-slate-600">{t.sourceDocument}: {sourceQuery.data.document_no_full}</p>}
+            {sourceQuery.data === null && <p role="status" className="mt-3 text-sm text-slate-600">{t.noDocuments}</p>}
           </section>
         </div>
         <aside className={card}>
           <h2 className="font-semibold text-slate-800">{t.preview}</h2>
           <p className="mt-2 text-sm text-slate-500">{t.previewNote}</p>
-          <button type="button" onClick={() => setPreviewOpen(true)} disabled={!currentPreviewHTML || previewLoading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50">
-            {previewLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Eye className="h-4 w-4"/>}
+          <button type="button" onClick={() => setPreviewOpen(true)} disabled={!currentPreviewHTML || previewsQuery.isLoading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50">
+            {previewsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Eye className="h-4 w-4"/>}
             {t.openPreview}
           </button>
-          {previewError && <p role="alert" className="mt-3 text-sm text-amber-700">{t.previewError}</p>}
+          {(sourceQuery.isError || previewsQuery.isError) && <p role="alert" className="mt-3 text-sm text-amber-700">{t.previewError}</p>}
         </aside>
       </div>
       <DrawerShell open={previewOpen} title={t.preview} subtitle={t.previewNote} closeLabel={t.closePreview} onClose={() => setPreviewOpen(false)} widthClass="sm:max-w-[960px]">
-        {currentPreviewHTML ? <A4DocumentPreview html={currentPreviewHTML} title={t.preview} /> : previewLoading ? <div className="flex min-h-72 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-violet-600"/></div> : <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{t.previewError}</p>}
+        {currentPreviewHTML ? <A4DocumentPreview html={currentPreviewHTML} title={t.preview} /> : previewsQuery.isLoading ? <div className="flex min-h-72 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-violet-600"/></div> : <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{sourceQuery.data === null ? t.noDocuments : t.previewError}</p>}
       </DrawerShell>
     </div>
   );

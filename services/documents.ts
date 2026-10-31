@@ -135,6 +135,12 @@ export async function convertDocument(
   return res.data;
 }
 
+// Read-only preview of one persisted document under an unsaved A4 template.
+export function getDocumentTemplatePreviewHtml(id: string, templateKey: "standard" | "classic"): Promise<string> {
+  const params = new URLSearchParams({ template_key: templateKey });
+  return authorizedRawRequest<string>(`${base()}/${id}/template-preview?${params}`, { method: "GET", responseType: "text" });
+}
+
 // copy: 0-based copy index (Original=0, Company=last); omit or -1 for the whole set.
 export async function getDocumentPrintHtml(id: string, copy?: number, receiptTemplate = 1): Promise<string> {
   const params = new URLSearchParams();
