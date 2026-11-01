@@ -7,7 +7,7 @@ export interface ReceiptSettingsData {
   id: string;
   store_id: string;
   template_key: string;
-  document_template_key: "standard" | "classic";
+  document_template_key: "standard" | "classic" | "template3";
   document_design: { primary_color: string; font_size: number; alignment: "left" | "center" | "right"; margin_mm: number; show_logo: boolean; show_store_info: boolean; spacing: "compact" | "standard" | "comfortable"; font_family: "Sarabun" | "Tahoma" | "Arial" };
   paper_size: string;
   paper_length: string;

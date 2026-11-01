@@ -136,7 +136,7 @@ export async function convertDocument(
 }
 
 // Read-only preview of one persisted document under an unsaved A4 template.
-export function getDocumentTemplatePreviewHtml(id: string, templateKey: "standard" | "classic"): Promise<string> {
+export function getDocumentTemplatePreviewHtml(id: string, templateKey: "standard" | "classic" | "template3"): Promise<string> {
   const params = new URLSearchParams({ template_key: templateKey });
   return authorizedRawRequest<string>(`${base()}/${id}/template-preview?${params}`, { method: "GET", responseType: "text" });
 }

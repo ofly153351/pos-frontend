@@ -22,6 +22,7 @@ const A4_HEIGHT_PX = 1123;
 const PREVIEW_SCREEN_STYLES = `<style>@media screen{html,body{width:210mm!important;min-height:297mm!important;overflow:hidden!important}body{margin:0!important;background:#e2e8f0!important}.page{width:210mm!important;min-height:297mm!important;margin:0!important;padding:12mm 12mm 16mm!important;box-sizing:border-box!important;background:#fff!important;box-shadow:0 2px 8px rgba(15,23,42,.16)}.page[data-show-signature="true"]{padding-bottom:47mm!important}.page[data-show-signature="true"] .signature-source{display:flex!important;position:absolute;left:12mm;right:12mm;bottom:16mm;z-index:1;margin:0!important}.pagedjs_pages{width:210mm!important;align-items:center!important}.pagedjs_page{flex:0 0 auto!important}}</style>`;
 
 const REFERENCE_PREVIEW_SCREEN_STYLES = `<style>@media screen{html,body{width:210mm!important;min-height:297mm!important;overflow:hidden!important}body{margin:0!important;background:#e2e8f0!important}.page.template-classic{width:210mm!important;min-height:297mm!important;margin:0!important;padding:21.5mm 25mm 26mm 23.5mm!important;box-sizing:border-box!important;background:#fff!important;box-shadow:0 2px 8px rgba(15,23,42,.16)}}</style>`;
+const TEMPLATE3_PREVIEW_SCREEN_STYLES = `<style>@media screen{html,body{width:210mm!important;min-height:297mm!important;overflow:hidden!important}body{margin:0!important;background:#e2e8f0!important}.page.template-template3{width:210mm!important;min-height:297mm!important;margin:0!important;padding:16mm 17mm 18mm!important;box-sizing:border-box!important;background:#fff!important;box-shadow:0 2px 8px rgba(15,23,42,.16)}.page.template-template3[data-show-signature="true"]{padding-bottom:36mm!important}.page.template-template3[data-show-signature="true"] .signature-source{display:flex!important;position:absolute;left:17mm;right:17mm;bottom:11mm;margin:0!important}}</style>`;
 
 function A4DocumentPreview({ html, title }: { html: string; title: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -34,7 +35,8 @@ function A4DocumentPreview({ html, title }: { html: string; title: string }) {
     return () => observer.disconnect();
   }, []);
   const scale = containerWidth > 0 ? Math.min(1, containerWidth / A4_WIDTH_PX) : 0.45;
-  const previewHTML = html.replace("</head>", `${html.includes('class="page template-classic"') ? REFERENCE_PREVIEW_SCREEN_STYLES : PREVIEW_SCREEN_STYLES}</head>`);
+  const previewStyles = html.includes('class="page template-template3"') ? TEMPLATE3_PREVIEW_SCREEN_STYLES : html.includes('class="page template-classic"') ? REFERENCE_PREVIEW_SCREEN_STYLES : PREVIEW_SCREEN_STYLES;
+  const previewHTML = html.replace("</head>", `${previewStyles}</head>`);
   return (
     <div ref={containerRef} className="relative w-full overflow-hidden rounded-xl bg-slate-100" style={{ height: A4_HEIGHT_PX * scale }}>
       <iframe
@@ -97,11 +99,12 @@ export function DocumentTemplatesSettings({ t }: { t: T }) {
     queryKey: ["document-template-previews", storeId, sourceId, query.data?.document_design],
     queryFn: async () => {
       if (!sourceId) throw new Error("No document selected for preview");
-      const [standard, classic] = await Promise.all([
+      const [standard, classic, template3] = await Promise.all([
         getDocumentTemplatePreviewHtml(sourceId, "standard"),
         getDocumentTemplatePreviewHtml(sourceId, "classic"),
+        getDocumentTemplatePreviewHtml(sourceId, "template3"),
       ]);
-      return { standard, classic };
+      return { standard, classic, template3 };
     },
     enabled: !!storeId && !!sourceId,
   });
@@ -126,8 +129,8 @@ export function DocumentTemplatesSettings({ t }: { t: T }) {
         <div className="space-y-5">
           <section className={card}>
             <h2 className="mb-4 font-semibold text-slate-800">{t.choose}</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(["standard", "classic"] as const).map((key) => <button key={key} type="button" disabled={!canManage} onClick={() => setDraftOverride((current) => ({ ...(current ?? initial), document_template_key: key }))} className={`rounded-xl border-2 p-4 text-left transition ${draft.document_template_key === key ? "border-violet-600 bg-violet-50" : "border-slate-200 hover:border-violet-300"}`}>
+            <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+              {(["standard", "classic", "template3"] as const).map((key) => <button key={key} type="button" disabled={!canManage} onClick={() => setDraftOverride((current) => ({ ...(current ?? initial), document_template_key: key }))} className={`rounded-xl border-2 p-4 text-left transition ${draft.document_template_key === key ? "border-violet-600 bg-violet-50" : "border-slate-200 hover:border-violet-300"}`}>
                 <div className="mb-3 aspect-[210/297] overflow-hidden rounded-md border bg-white" aria-hidden="true">
                   {previewsQuery.data?.[key] ? (
                     <A4DocumentPreview html={previewsQuery.data[key]} title={t[key]} />
