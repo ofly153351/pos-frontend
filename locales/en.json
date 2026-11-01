@@ -2720,6 +2720,15 @@
     "arial": "Arial"
   },
   "receiptSettings": {
+    "page": {
+      "settingsLink": "Settings",
+      "title": "Receipts & payments",
+      "description": "Configure receipt layout, payment methods, and bank transfer accounts",
+      "sectionsLabel": "Settings sections",
+      "previewError": "Could not load the receipt preview. Please try again.",
+      "previewButton": "Preview receipt",
+      "closePreview": "Close receipt preview"
+    },
     "tabs": {
       "receipt": "Receipt",
       "payment": "Payment",
@@ -2752,7 +2761,6 @@
     "saving": "Saving...",
     "saveSuccess": "Settings saved successfully",
     "previewLabel": "Receipt Preview",
-    "previewApiLabel": "Live from API",
     "receipt": {
       "sectionTemplate": "Receipt Template",
       "labelTemplate": "Template style",

@@ -2720,6 +2720,15 @@
     "arial": "Arial"
   },
   "receiptSettings": {
+    "page": {
+      "settingsLink": "ตั้งค่าระบบ",
+      "title": "ใบเสร็จและการชำระเงิน",
+      "description": "ตั้งค่ารูปแบบใบเสร็จ ช่องทางการชำระเงิน และบัญชีรับโอนเงิน",
+      "sectionsLabel": "หมวดหมู่การตั้งค่า",
+      "previewError": "โหลดตัวอย่างใบเสร็จไม่สำเร็จ กรุณาลองอีกครั้ง",
+      "previewButton": "ดูตัวอย่างใบเสร็จ",
+      "closePreview": "ปิดตัวอย่างใบเสร็จ"
+    },
     "tabs": {
       "receipt": "ใบเสร็จ",
       "payment": "การชำระเงิน",
@@ -2752,7 +2761,6 @@
     "saving": "กำลังบันทึก...",
     "saveSuccess": "บันทึกการเปลี่ยนแปลงเรียบร้อย",
     "previewLabel": "ตัวอย่างใบเสร็จ",
-    "previewApiLabel": "ดึงจาก API",
     "receipt": {
       "sectionTemplate": "เทมเพลตใบเสร็จ",
       "labelTemplate": "รูปแบบใบเสร็จ",

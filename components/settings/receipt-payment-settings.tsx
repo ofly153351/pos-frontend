@@ -21,6 +21,7 @@ import {
   Smartphone,
   Star,
   Trash2,
+  X,
   Upload,
   Wallet,
   Zap,
@@ -842,24 +843,28 @@ export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
 
   // ── Live preview (iframe srcdoc) ─────────────────────────────────────────
   const [previewSrcdoc, setPreviewSrcdoc] = useState<string>("");
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const previewDialogRef = useRef<HTMLDialogElement>(null);
+  const previewButtonRef = useRef<HTMLButtonElement>(null);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewRequest = useRef(0);
 
   async function refreshPreview(settings: ReceiptSettingsData) {
     if (!storeId) return;
     const requestId = ++previewRequest.current;
-    setPreviewLoading(true);
+    setPreviewError(false);
     try {
       const { id, store_id, created_at, updated_at, ...input } = settings;
       const html = await fetchReceiptPreviewHTML(input);
-      if (requestId === previewRequest.current && typeof html === "string") {
+      if (requestId === previewRequest.current) {
         setPreviewSrcdoc(html);
+        setPreviewError(!html);
       }
     } catch {
-      // silently ignore preview errors
-    } finally {
-      setPreviewLoading(false);
+      if (requestId === previewRequest.current) {
+        setPreviewError(true);
+      }
     }
   }
 
@@ -878,21 +883,7 @@ export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
 
   // ── Tab state ─────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<ReceiptPaymentSettingsTabKey>("receipt");
-  const [prevTab, setPrevTab]     = useState<ReceiptPaymentSettingsTabKey | null>(null);
-  const [direction, setDirection] = useState<"left" | "right">("right");
-  const [animating, setAnimating] = useState(false);
-
   const TABS = makeTabs(t);
-  const tabIndex = (k: ReceiptPaymentSettingsTabKey) => TABS.findIndex((tab) => tab.key === k);
-
-  function switchTab(next: ReceiptPaymentSettingsTabKey) {
-    if (next === activeTab || animating) return;
-    setDirection(tabIndex(next) > tabIndex(activeTab) ? "right" : "left");
-    setPrevTab(activeTab);
-    setAnimating(true);
-    setActiveTab(next);
-    setTimeout(() => { setPrevTab(null); setAnimating(false); }, 300);
-  }
 
   function schedulePreview(next: ReceiptSettingsData) {
     if (previewTimer.current) clearTimeout(previewTimer.current);
@@ -946,22 +937,20 @@ export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  function panelClass(key: ReceiptPaymentSettingsTabKey): string {
-    const isActive = key === activeTab;
-    const isExiting = key === prevTab;
-    if (isActive && animating) {
-      return direction === "right"
-        ? "translate-x-full opacity-0 transition-[transform,opacity] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
-        : "-translate-x-full opacity-0 transition-[transform,opacity] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]";
-    }
-    if (isActive) return "translate-x-0 opacity-100";
-    if (isExiting) {
-      return direction === "right"
-        ? "-translate-x-[40%] opacity-0 transition-[transform,opacity] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
-        : "translate-x-[40%] opacity-0 transition-[transform,opacity] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]";
-    }
-    return "hidden";
-  }
+  useEffect(() => {
+    if (!previewOpen) return;
+    const dialog = previewDialogRef.current;
+    if (!dialog) return;
+    const trigger = previewButtonRef.current;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+      trigger?.focus();
+    };
+  }, [previewOpen]);
 
   // ── Loading state ─────────────────────────────────────────────────────────
   if (settingsLoading || !localSettings) {
@@ -988,23 +977,18 @@ export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
   const isSaving = saveMutation.isPending;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="mb-4 shrink-0 rounded-2xl border border-violet-100 bg-white px-6 py-5 shadow-sm">
-        <nav className="mb-3 flex items-center gap-1.5 text-xs text-slate-400">
-          <Link href="../" className="hover:text-violet-600">ตั้งค่าระบบ</Link>
+    <div className="space-y-6">
+      <header className="rounded-3xl border border-violet-100 bg-white p-6 shadow-sm">
+        <nav className="mb-3 flex items-center gap-1.5 text-xs text-violet-500">
+          <Link href="../" className="hover:text-violet-700">{t.page.settingsLink}</Link>
           <ChevronRight className="h-3 w-3" />
-          <span className="text-slate-600">ใบเสร็จและการชำระเงิน</span>
+          <span className="text-slate-600">{t.page.title}</span>
         </nav>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-600 shadow-sm">
-              <ReceiptText className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-black tracking-tight text-slate-900">ใบเสร็จและการชำระเงิน</h1>
-              <p className="mt-0.5 text-sm text-slate-500">ตั้งค่ารูปแบบใบเสร็จ ช่องทางการชำระเงิน และเครื่องพิมพ์</p>
-            </div>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-violet-500">{t.page.settingsLink}</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900">{t.page.title}</h1>
+            <p className="mt-1.5 max-w-xl text-sm text-slate-500">{t.page.description}</p>
           </div>
           <button
             type="button"
@@ -1016,75 +1000,116 @@ export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
             {isSaving ? t.saving : t.save}
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* ── Body ───────────────────────────────────────────────────────────── */}
-      <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">
+      <div className="grid items-start gap-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <nav aria-label={t.page.sectionsLabel} className="space-y-2" role="tablist">
+          <p className="px-1 pb-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{t.page.sectionsLabel}</p>
+          {TABS.map((tab) => {
+            const active = tab.key === activeTab;
+            return (
+              <button
+                key={tab.key}
+                id={`receipt-settings-tab-${tab.key}`}
+                aria-controls="receipt-settings-panel"
+                aria-selected={active}
+                role="tab"
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                onKeyDown={(event) => {
+                  const index = TABS.findIndex((item) => item.key === tab.key);
+                  const next = event.key === "ArrowDown" || event.key === "ArrowRight"
+                    ? TABS[(index + 1) % TABS.length]
+                    : event.key === "ArrowUp" || event.key === "ArrowLeft"
+                      ? TABS[(index - 1 + TABS.length) % TABS.length]
+                      : event.key === "Home" ? TABS[0] : event.key === "End" ? TABS[TABS.length - 1] : null;
+                  if (next) {
+                    event.preventDefault();
+                    setActiveTab(next.key);
+                    document.getElementById(`receipt-settings-tab-${next.key}`)?.focus();
+                  }
+                }}
+                tabIndex={active ? 0 : -1}
+                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500 ${
+                  active
+                    ? "border-violet-200 bg-white text-violet-700 shadow-[0_6px_20px_rgba(124,58,237,0.12)]"
+                    : "border-violet-100 bg-white text-slate-600 hover:border-violet-200 hover:bg-violet-50/60"
+                }`}
+              >
+                <span className={active ? "text-violet-600" : "text-violet-400"}>{tab.icon}</span>
+                {tab.label}
+                {active && <Check className="ml-auto h-4 w-4 text-violet-600" />}
+              </button>
+            );
+          })}
+        </nav>
 
-        {/* ── Left: Preview (iframe — identical to real receipt) ─────────── */}
-        <div className="flex w-[360px] shrink-0 flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
-          <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
-            <span className="text-sm font-bold text-slate-800">{t.previewLabel}</span>
-            <span className="flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-600">
-              {previewLoading
-                ? <Loader2 className="h-3 w-3 animate-spin text-emerald-500" />
-                : <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
-              {t.previewApiLabel}
-            </span>
-          </div>
-          <div className="relative flex-1 overflow-hidden">
-            {previewSrcdoc ? (
-              <iframe
-                srcDoc={previewSrcdoc}
-                title="receipt-preview"
-                className="h-full w-full border-0"
-                sandbox="allow-same-origin"
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-violet-300" />
+        <div className="min-w-0 space-y-5">
+          <section
+            aria-labelledby={`receipt-settings-tab-${activeTab}`}
+            className="min-w-0 rounded-[2rem] border border-violet-100 bg-white p-5 shadow-[0_12px_40px_rgba(124,58,237,0.1)] sm:p-8"
+            id="receipt-settings-panel"
+            role="tabpanel"
+          >
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-violet-100 pb-4 text-violet-600">
+              <div className="flex items-center gap-2">
+                {TABS.find((tab) => tab.key === activeTab)?.icon}
+                <h2 className="text-lg font-semibold text-slate-900">{TABS.find((tab) => tab.key === activeTab)?.label}</h2>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── Right: Tabs + Content ───────────────────────────────────────── */}
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
-          <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-violet-100 bg-gradient-to-r from-violet-50/70 to-white px-4 py-2">
-            {TABS.map((tab) => {
-              const active = tab.key === activeTab;
-              return (
+              {activeTab === "receipt" && (
                 <button
-                  key={tab.key}
+                  ref={previewButtonRef}
                   type="button"
-                  onClick={() => switchTab(tab.key)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
-                    active ? "bg-violet-600 text-white shadow-sm" : "text-slate-500 hover:bg-violet-50 hover:text-violet-700"
-                  }`}
+                  onClick={() => setPreviewOpen(true)}
+                  className="ml-auto inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-sm font-semibold text-violet-700 transition hover:bg-violet-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-500"
                 >
-                  {tab.icon}
-                  {tab.label}
+                  <Eye className="h-4 w-4" />
+                  {t.page.previewButton}
                 </button>
-              );
-            })}
-          </div>
+              )}
+            </div>
+            {panelContent[activeTab]}
+          </section>
 
-          <div className="relative min-h-0 flex-1 overflow-hidden">
-            {TABS.map((tab) => {
-              const cls = panelClass(tab.key);
-              if (cls === "hidden") return null;
-              return (
-                <div
-                  key={tab.key}
-                  className={`pretty-scroll absolute inset-0 overflow-y-auto p-6 ${cls}`}
-                >
-                  {panelContent[tab.key]}
-                </div>
-              );
-            })}
-          </div>
         </div>
       </div>
+
+      {previewOpen && (
+        <dialog
+          ref={previewDialogRef}
+          aria-label={t.previewLabel}
+          onCancel={() => setPreviewOpen(false)}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setPreviewOpen(false);
+          }}
+          className="fixed inset-0 m-auto h-[min(90dvh,760px)] w-[min(95vw,520px)] max-w-none overflow-hidden rounded-2xl border border-violet-100 bg-white p-0 shadow-xl backdrop:bg-slate-900/60"
+        >
+          <div className="flex h-full flex-col" onClick={(event) => event.stopPropagation()}>
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-violet-100 px-5 py-4">
+              <h2 className="text-base font-semibold text-slate-900">{t.previewLabel}</h2>
+              <button
+                type="button"
+                aria-label={t.page.closePreview}
+                onClick={() => setPreviewOpen(false)}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-violet-50 hover:text-violet-700 focus-visible:outline-2 focus-visible:outline-violet-500"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto bg-violet-50/40">
+              <div className="mx-auto h-full w-full max-w-[360px] bg-white">
+                {previewError ? (
+                  <div role="alert" className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-600">{t.page.previewError}</div>
+                ) : previewSrcdoc ? (
+                  <iframe srcDoc={previewSrcdoc} title={t.previewLabel} className="h-full w-full border-0" sandbox="allow-same-origin" />
+                ) : (
+                  <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-violet-300" /></div>
+                )}
+              </div>
+            </div>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 }
