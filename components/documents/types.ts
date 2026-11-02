@@ -199,6 +199,7 @@ export type DocumentPageClientDocumentDict = {
   deliveryCompleteSuccess: string;
   deliveryCompleteError: string;
   previewTitle: string;
+  previewError: string;
   receiptTemplateTitle: string;
   receiptTemplateDescription: string;
   receiptTemplate1Description: string;
@@ -314,6 +315,7 @@ export type DocumentPreviewPanelDict = {
   previewTitle: string;
   viewFull: string;
   loading: string;
+  previewError: string;
   relatedDocs: string;
   email: string;
   share: string;

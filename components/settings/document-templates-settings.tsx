@@ -2,13 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Eye, Loader2, RotateCcw, Save } from "lucide-react";
-import { DrawerShell } from "@/components/warehouse/inventory/drawer-shell";
+import { Check, Eye, Loader2, RotateCcw, Save, X } from "lucide-react";
+import { DocumentA4PreviewDrawer, DocumentA4PreviewPages } from "@/components/documents/document-a4-preview-drawer";
 import { toast } from "@/components/ui/toast";
-import { getCurrentStoreId } from "@/lib/store-storage";
+import { getCurrentStoreId, storeChangedEvent } from "@/lib/store-storage";
 import { canManageStore, useStoreRole } from "@/lib/use-store-role";
-import { getDocuments, getDocumentTemplatePreviewHtml } from "@/services/documents";
-import { getReceiptSettings, updateReceiptSettings } from "@/services/receipt-settings";
+import { fetchDocumentTemplatePreviewHTML, getReceiptSettings, updateReceiptSettings } from "@/services/receipt-settings";
 import type { ReceiptSettingsData } from "@/types/receipt-settings";
 import th from "@/locales/th.json";
 
@@ -55,9 +54,31 @@ export function DocumentTemplatesSettings({ t }: { t: T }) {
   const queryClient = useQueryClient();
   const { role } = useStoreRole();
   const canManage = canManageStore(role);
-  const [storeId] = useState(() => typeof window === "undefined" ? "" : (getCurrentStoreId() ?? ""));
+  const [storeId, setStoreId] = useState("");
+  const storeIdRef = useRef("");
   const [draftOverride, setDraftOverride] = useState<Draft | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewTemplateKey, setPreviewTemplateKey] = useState<Draft["document_template_key"]>("standard");
+  useEffect(() => {
+    const syncStore = () => {
+      const next = getCurrentStoreId() ?? "";
+      if (storeIdRef.current !== next) {
+        storeIdRef.current = next;
+        setStoreId(next);
+        setDraftOverride(null);
+        setPreviewOpen(false);
+      } else if (next) {
+        void queryClient.invalidateQueries({ queryKey: ["document-template-mock-previews", next] });
+      }
+    };
+    syncStore();
+    window.addEventListener(storeChangedEvent, syncStore);
+    window.addEventListener("storage", syncStore);
+    return () => {
+      window.removeEventListener(storeChangedEvent, syncStore);
+      window.removeEventListener("storage", syncStore);
+    };
+  }, [queryClient]);
 
   const query = useQuery({
     queryKey: ["receipt-settings", storeId],
@@ -84,31 +105,19 @@ export function DocumentTemplatesSettings({ t }: { t: T }) {
     if (!window.confirm(t.confirmReset)) return;
     setDraftOverride(DEFAULT_DRAFT);
   };
-  const sourceQuery = useQuery({
-    queryKey: ["document-template-source", storeId],
-    queryFn: async () => {
-      const quotations = await getDocuments({ page: 1, limit: 1, type: "QUOTATION" });
-      if (quotations.items.length) return quotations.items[0];
-      const documents = await getDocuments({ page: 1, limit: 1 });
-      return documents.items[0] ?? null;
-    },
-    enabled: !!storeId,
-  });
-  const sourceId = sourceQuery.data?.id;
   const previewsQuery = useQuery({
-    queryKey: ["document-template-previews", storeId, sourceId, query.data?.document_design],
+    queryKey: ["document-template-mock-previews", storeId, query.data?.document_design],
     queryFn: async () => {
-      if (!sourceId) throw new Error("No document selected for preview");
       const [standard, classic, template3] = await Promise.all([
-        getDocumentTemplatePreviewHtml(sourceId, "standard"),
-        getDocumentTemplatePreviewHtml(sourceId, "classic"),
-        getDocumentTemplatePreviewHtml(sourceId, "template3"),
+        fetchDocumentTemplatePreviewHTML({ document_template_key: "standard" }),
+        fetchDocumentTemplatePreviewHTML({ document_template_key: "classic" }),
+        fetchDocumentTemplatePreviewHTML({ document_template_key: "template3" }),
       ]);
       return { standard, classic, template3 };
     },
-    enabled: !!storeId && !!sourceId,
+    enabled: !!storeId,
   });
-  const currentPreviewHTML = previewsQuery.data?.[draft.document_template_key] ?? "";
+  const currentPreviewHTML = previewsQuery.data?.[previewTemplateKey] ?? "";
 
   if (query.isLoading || !storeId) return <div className="rounded-xl border border-violet-100 bg-white p-6 text-sm text-slate-500">{t.loading}</div>;
   if (query.isError) return <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{t.saveError}</div>;
@@ -125,41 +134,45 @@ export function DocumentTemplatesSettings({ t }: { t: T }) {
           </div>}
         </div>
       </header>
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-5">
-          <section className={card}>
-            <h2 className="mb-4 font-semibold text-slate-800">{t.choose}</h2>
-            <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-              {(["standard", "classic", "template3"] as const).map((key) => <button key={key} type="button" disabled={!canManage} onClick={() => setDraftOverride((current) => ({ ...(current ?? initial), document_template_key: key }))} className={`rounded-xl border-2 p-4 text-left transition ${draft.document_template_key === key ? "border-violet-600 bg-violet-50" : "border-slate-200 hover:border-violet-300"}`}>
-                <div className="mb-3 aspect-[210/297] overflow-hidden rounded-md border bg-white" aria-hidden="true">
+      <section className={card}>
+        <h2 className="mb-4 font-semibold text-slate-800">{t.choose}</h2>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {(["standard", "classic", "template3"] as const).map((key) => <div key={key} className={`rounded-xl border-2 p-4 transition ${draft.document_template_key === key ? "border-violet-600 bg-violet-50" : "border-slate-200"}`}>
+                <button type="button" disabled={!canManage} onClick={() => setDraftOverride((current) => ({ ...(current ?? initial), document_template_key: key }))} className="block w-full text-left disabled:cursor-not-allowed">
+                  <div className="mb-3 aspect-[210/297] overflow-hidden rounded-md border bg-white" aria-hidden="true">
                   {previewsQuery.data?.[key] ? (
                     <A4DocumentPreview html={previewsQuery.data[key]} title={t[key]} />
                   ) : (
                     <div className="flex h-full items-center justify-center p-4 text-center text-sm text-slate-500">
-                      {sourceQuery.isLoading || previewsQuery.isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : sourceQuery.data === null ? t.noDocuments : t.previewError}
+                      {previewsQuery.isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : t.previewError}
                     </div>
                   )}
-                </div>
-                <div className="flex items-center justify-between"><span className="font-semibold text-slate-800">{t[key]}</span>{draft.document_template_key === key && <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-1 text-xs font-bold text-violet-700"><Check className="h-3 w-3"/>{t.active}</span>}</div>
-              </button>)}
-            </div>
-            {sourceQuery.data && <p className="mt-3 text-xs text-slate-600">{t.sourceDocument}: {sourceQuery.data.document_no_full}</p>}
-            {sourceQuery.data === null && <p role="status" className="mt-3 text-sm text-slate-600">{t.noDocuments}</p>}
-          </section>
+                  </div>
+                  <div className="flex items-center justify-between"><span className="font-semibold text-slate-800">{t[key]}</span>{draft.document_template_key === key && <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-1 text-xs font-bold text-violet-700"><Check className="h-3 w-3"/>{t.active}</span>}</div>
+                </button>
+                <button type="button" onClick={() => { setPreviewTemplateKey(key); setPreviewOpen(true); }} disabled={!previewsQuery.data?.[key] || previewsQuery.isLoading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50">
+                  {previewsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Eye className="h-4 w-4"/>}{t.openPreview}
+                </button>
+              </div>)}
         </div>
-        <aside className={card}>
-          <h2 className="font-semibold text-slate-800">{t.preview}</h2>
-          <p className="mt-2 text-sm text-slate-500">{t.previewNote}</p>
-          <button type="button" onClick={() => setPreviewOpen(true)} disabled={!currentPreviewHTML || previewsQuery.isLoading} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-violet-200 px-4 py-3 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:cursor-not-allowed disabled:opacity-50">
-            {previewsQuery.isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Eye className="h-4 w-4"/>}
-            {t.openPreview}
-          </button>
-          {(sourceQuery.isError || previewsQuery.isError) && <p role="alert" className="mt-3 text-sm text-amber-700">{t.previewError}</p>}
-        </aside>
-      </div>
-      <DrawerShell open={previewOpen} title={t.preview} subtitle={t.previewNote} closeLabel={t.closePreview} onClose={() => setPreviewOpen(false)} widthClass="sm:max-w-[960px]">
-        {currentPreviewHTML ? <A4DocumentPreview html={currentPreviewHTML} title={t.preview} /> : previewsQuery.isLoading ? <div className="flex min-h-72 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-violet-600"/></div> : <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">{sourceQuery.data === null ? t.noDocuments : t.previewError}</p>}
-      </DrawerShell>
+        <p className="mt-3 text-xs text-slate-600">{t.sampleData}</p>
+        {previewsQuery.isError && <p role="alert" className="mt-3 text-sm text-amber-700">{t.previewError}</p>}
+      </section>
+      {previewOpen && (
+        <DocumentA4PreviewDrawer onClose={() => setPreviewOpen(false)} title={t.preview}>
+          <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-5 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold text-slate-800">{t.preview}</span>
+              <span className="text-xs font-semibold text-slate-500">{t[previewTemplateKey]} · {t.sampleData}</span>
+            </div>
+            <button type="button" onClick={() => setPreviewOpen(false)} aria-label={t.closePreview} className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-violet-50 hover:text-violet-600">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <DocumentA4PreviewPages key={`${storeId}-${previewTemplateKey}-${previewsQuery.dataUpdatedAt}`} html={currentPreviewHTML}
+            loading={previewsQuery.isLoading || previewsQuery.isFetching} loadingLabel={t.loading} errorLabel={t.previewError} />
+        </DocumentA4PreviewDrawer>
+      )}
     </div>
   );
 }

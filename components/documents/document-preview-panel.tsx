@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { ArrowRight, Ban, Check, ChevronDown, Copy, FileBadge, FileDown, FileMinus, FileSearch, FileText, Loader2, Mail, MoreHorizontal, Pencil, Printer, Receipt, Share2, Truck, Wallet, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -12,8 +12,8 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
 import type { DocumentType } from "@/types/document";
 
+import { DocumentA4PreviewDrawer, DocumentA4PreviewPages } from "./document-a4-preview-drawer";
 import { DocumentTimeline } from "./document-timeline";
-import type { DocumentPreviewPanelDict } from "./types";
 import type { DocumentPreviewPanelProps } from "./types";
 
 
@@ -26,24 +26,6 @@ const A4_TYPES: DocumentType[] = ["INVOICE", "TAX_INVOICE", "BILL", "QUOTATION",
 
 function isA4(type?: DocumentType) {
   return type ? A4_TYPES.includes(type) : true; // default to drawer if unknown
-}
-
-function stripScriptsFromPreviewPage(page: string) {
-  // Paged.js has already finished in the worker iframe. The extracted page is
-  // display-only, so scripts must not be copied into the sandboxed child iframe.
-  return page.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
-}
-
-function buildPreviewPageDocument(styles: string, page: string) {
-  return `<!doctype html><html><head><meta charset="utf-8">${styles}<style>
-    @page{size:A4;margin:0}
-    html,body{margin:0;padding:0;width:794px;height:1123px;overflow:auto;background:#e2e8f0;scrollbar-width:none;-ms-overflow-style:none}
-    html::-webkit-scrollbar,body::-webkit-scrollbar{display:none}
-    .pagedjs_page,.pagedjs_sheet,.pagedjs_pagebox{width:794px!important;height:1123px!important;min-height:1123px!important;margin:0!important}
-    .pagedjs_margin,.pagedjs_bleed,.pagedjs_marks{display:none!important}
-    .pagedjs_page{background:#fff;box-shadow:none!important;position:relative;overflow:visible}
-    .pagedjs_bleed-top{background:#e2e8f0;border-top:2px dashed #94a3b8}
-  </style></head><body>${page}</body></html>`;
 }
 
 export function DocumentPreviewPanel({ documentId, documentNo, documentType, customerId, paymentStatus, documentStatus, dict, onClose, onEdit, onNavigate }: DocumentPreviewPanelProps) {
@@ -66,9 +48,6 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   const isPaid = paymentStatus === "PAID";
   const isCancelled = documentStatus === "CANCELLED";
   const drawer = isA4(documentType);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [previewPages, setPreviewPages] = useState<string[]>([]);
-  const [previewStyles, setPreviewStyles] = useState("");
   const qc = useQueryClient();
 
   // Copy selection — Original / Customer Copy / Company Copy / All copies.
@@ -96,17 +75,12 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     return (bill.document_no_full || bill.document_no).toLowerCase().includes(query);
   });
 
-  const { data: html, isLoading } = useQuery({
+  const { data: html, isLoading, dataUpdatedAt } = useQuery({
     queryKey: ["document-print", documentId, copyIdx, receiptTemplate],
     queryFn: () => getDocumentPrintHtml(documentId, copyIdx, receiptTemplate),
     enabled: !!documentId,
     staleTime: 30_000,
   });
-
-  useEffect(() => {
-    setPreviewPages([]);
-    setPreviewStyles("");
-  }, [html, drawer]);
 
   // Lineage for the timeline strip (Quotation → Invoice → DO → Tax Invoice …).
   const { data: related = [] } = useQuery({
@@ -133,13 +107,6 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [billingComboOpen]);
 
-  // Close drawer on Escape key
-  useEffect(() => {
-    if (!drawer) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [drawer, onClose]);
 
   function notifyConversionFailure(error: unknown, fallback: string) {
     if (error instanceof ApiError && error.status === 409) {
@@ -430,82 +397,13 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
       : null,
   ].filter((item): item is { label: string; icon: typeof Wallet; onClick: () => void; tone: string } => item !== null);
 
-  const handlePreviewLoad = async () => {
-    const frame = iframeRef.current;
-    const frameWindow = frame?.contentWindow as (Window & { __posPagedReady?: Promise<unknown> }) | null;
-    if (!frame || !frameWindow || !drawer) return;
-
-    try {
-      await frameWindow.__posPagedReady;
-    } catch (error) {
-      console.error("Document preview pagination failed", error);
-      return;
-    }
-
-    const frameDocument = frame.contentDocument;
-    const pages = Array.from(frameDocument?.querySelectorAll<HTMLElement>(".pagedjs_page") ?? []);
-    if (!pages.length || !frameDocument) return;
-
-    const styles = Array.from(frameDocument.head.querySelectorAll("style, link[rel='stylesheet']"))
-      .map((node) => node.outerHTML)
-      .join("\n");
-
-    setPreviewStyles(styles);
-    setPreviewPages(pages.map((page) => stripScriptsFromPreviewPage(page.outerHTML)));
-  };
-
-  const handlePreviewPageLoad = (event: SyntheticEvent<HTMLIFrameElement>) => {
-    const frame = event.currentTarget;
-    const frameDocument = frame.contentDocument;
-    if (!frameDocument) return;
-
-    const scale = Math.min(1, frame.clientWidth / 794);
-    frameDocument.documentElement.style.zoom = String(scale);
-  };
-
-  const iframeBody = (
-    <div className={`relative flex min-h-0 flex-1 justify-center overflow-y-auto overflow-x-hidden ${drawer ? "bg-slate-100 p-6 sm:p-8" : "bg-white"}`}>
-      {isLoading ? (
-        <div className="flex h-full items-center justify-center text-sm text-slate-400">
-          {dict.loading}
-        </div>
-      ) : html ? (
-        <>
-          <iframe
-            ref={iframeRef}
-            srcDoc={html}
-            title="document pagination worker"
-            onLoad={handlePreviewLoad}
-            className={drawer
-              ? "pointer-events-none absolute left-0 top-0 h-px w-px opacity-0"
-              : "h-full w-full border-0"}
-            sandbox="allow-same-origin allow-scripts"
-          />
-          {drawer && previewPages.length > 0 && (
-            <div className="flex w-full flex-col items-center gap-4">
-              {previewPages.map((page, index) => (
-                <iframe
-                  key={`preview-page-${index + 1}`}
-                  title={`document preview page ${index + 1}`}
-                  srcDoc={buildPreviewPageDocument(previewStyles, page)}
-                  onLoad={handlePreviewPageLoad}
-                  className="block aspect-[210/297] w-full max-w-[794px] shrink-0 overflow-y-auto border-0 bg-white shadow-md"
-                  sandbox="allow-same-origin"
-                />
-              ))}
-            </div>
-          )}
-          {drawer && previewPages.length === 0 && (
-            <div className="flex min-h-full items-center justify-center text-sm text-slate-400">
-              {dict.loading}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="flex h-full items-center justify-center text-sm text-slate-400">
-          ไม่สามารถโหลดเอกสารได้
-        </div>
-      )}
+  const iframeBody = drawer ? (
+    <DocumentA4PreviewPages key={`${documentId}-${copyIdx}-${receiptTemplate}-${dataUpdatedAt}`} html={html} loading={isLoading} loadingLabel={dict.loading} errorLabel={dict.previewError} />
+  ) : (
+    <div className="relative flex min-h-0 flex-1 justify-center overflow-y-auto overflow-x-hidden bg-white">
+      {isLoading ? <div className="flex h-full items-center justify-center text-sm text-slate-400">{dict.loading}</div>
+        : html ? <iframe srcDoc={html} title="document preview" className="h-full w-full border-0" sandbox="allow-same-origin allow-scripts" />
+        : <div className="flex h-full items-center justify-center text-sm text-slate-400">{dict.previewError}</div>}
     </div>
   );
 
@@ -513,14 +411,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   // ── Drawer mode (A4 documents) ──────────────────────────────────────────────
   if (drawer) {
     return (
-      <>
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 z-[50] bg-black/20 smooth-fade"
-          onClick={onClose}
-        />
-        {/* Drawer panel */}
-        <div className="fixed inset-y-0 right-0 z-[51] flex w-[960px] max-w-[96vw] flex-col bg-white shadow-2xl slide-in-right">
+      <DocumentA4PreviewDrawer onClose={onClose} title={dict.previewTitle}>
           {/* Header */}
           <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-5 py-3">
             <div className="flex items-center gap-3">
@@ -1040,8 +931,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
             </div>
           )}
 
-        </div>
-      </>
+      </DocumentA4PreviewDrawer>
     );
   }
 
