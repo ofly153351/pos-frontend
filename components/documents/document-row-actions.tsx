@@ -1,5 +1,6 @@
 "use client";
 
+import { canCancel as canCancelDocument, canRecordPayment, conversionTargets } from "@/lib/document-actions";
 import { PaymentDialog } from "@/components/documents/payment-dialog";
 import { showApiError } from "@/lib/form-errors";
 import { CreditReasonModal } from "@/components/documents/credit-reason-modal";
@@ -43,24 +44,6 @@ import type { DocumentRowActionsProps } from "./types";
 
 
 
-// Valid "Convert to…" targets per source type. Mirrors the backend workflow
-// matrix (allowedConversions); the server re-validates every request.
-function convertTargetsFor(type: DocumentType): DocumentType[] {
-  switch (type) {
-    case "QUOTATION":
-      return ["INVOICE"];
-    case "INVOICE":
-      return ["RECEIPT", "TAX_INVOICE", "DELIVERY_ORDER", "CREDIT_NOTE"];
-    case "RECEIPT":
-      return ["TAX_INVOICE", "CREDIT_NOTE"];
-    case "DELIVERY_ORDER":
-      return ["INVOICE"];
-    case "TAX_INVOICE":
-      return ["CREDIT_NOTE"];
-    default:
-      return [];
-  }
-}
 
 export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActionsProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -76,17 +59,12 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
   // Refresh the list (stats + rows) after any mutation.
   const refresh = () => qc.invalidateQueries({ queryKey: ["documents"] });
 
-  const isCancelled = doc.status === "CANCELLED";
-  const isCompleted = doc.status === "COMPLETED";
   const isDraft = doc.status === "DRAFT";
-  const isPaid = doc.payment_status === "PAID";
 
-  const convertTargets = convertTargetsFor(doc.type);
-  const canPay =
-    !isCancelled &&
-    !isPaid &&
-    (doc.type === "INVOICE" || (doc.type === "DELIVERY_ORDER" && !!doc.source_document_id));
-  const canCancel = !isCancelled && !isCompleted;
+  // B22: same rules as the preview panel and the backend.
+  const convertTargets = conversionTargets(doc.type, doc.status);
+  const canPay = canRecordPayment(doc.type, doc.status, doc.payment_status);
+  const canCancel = canCancelDocument(doc.status);
   const canDelete = isDraft;
 
   function close() {

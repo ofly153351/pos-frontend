@@ -1,5 +1,6 @@
 "use client";
 
+import { canCancel as canCancelDocument, canRecordPayment, conversionTargets } from "@/lib/document-actions";
 import { PREVIEW_SANDBOX_SCRIPTS, printPreviewFrame, withPreviewBridge } from "@/lib/preview-bridge";
 import { PaymentDialog } from "@/components/documents/payment-dialog";
 import { showApiError } from "@/lib/form-errors";
@@ -336,8 +337,8 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     });
   }
 
-  function handleConvertGeneric(target: "CREDIT_NOTE", reason?: string) {
-    if (!reason) {
+  function handleConvertGeneric(target: DocumentType, reason?: string) {
+    if (target === "CREDIT_NOTE" && !reason) {
       setCreditOpen(true); // B13: ask for the mandatory reason first
       return;
     }
@@ -362,28 +363,31 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   const hasDirectConversion = (target: string) => related.some(
     (item) => item.id !== documentId && item.type === target && item.source_document_id === documentId,
   );
-  const conversionMenuItems = (
-    documentType === "QUOTATION"
-      ? [{ label: dict.typeInvoice, icon: FileBadge, target: "INVOICE", onClick: handleConvert }]
-      : documentType === "INVOICE"
-        ? [
-            { label: dict.typeReceipt, icon: Receipt, target: "RECEIPT", onClick: handleOpenOrCreateReceipt },
-            { label: dict.typeTaxInvoice, icon: FileBadge, target: "TAX_INVOICE", onClick: handleConvertToTax },
-            { label: dict.typeDeliveryOrder, icon: Truck, target: "DELIVERY_ORDER", onClick: handleConvertToDO },
-            { label: dict.typeCreditNote, icon: FileMinus, target: "CREDIT_NOTE", onClick: () => handleConvertGeneric("CREDIT_NOTE") },
-          ]
-        : documentType === "DELIVERY_ORDER" || documentType === "BILL"
-          ? [{ label: dict.typeReceipt, icon: Receipt, target: "RECEIPT", onClick: handleOpenOrCreateReceipt }]
-          : []
-  ).filter((item) => !hasDirectConversion(item.target));
+  // B22: targets come from the shared rules (same as the row menu/backend).
+  const conversionLabel: Partial<Record<DocumentType, string>> = {
+    INVOICE: dict.typeInvoice, RECEIPT: dict.typeReceipt, TAX_INVOICE: dict.typeTaxInvoice,
+    DELIVERY_ORDER: dict.typeDeliveryOrder, CREDIT_NOTE: dict.typeCreditNote,
+  };
+  const conversionIcon: Partial<Record<DocumentType, typeof Receipt>> = {
+    INVOICE: FileBadge, RECEIPT: Receipt, TAX_INVOICE: FileBadge, DELIVERY_ORDER: Truck, CREDIT_NOTE: FileMinus,
+  };
+  const conversionHandler = (target: DocumentType): (() => void) => {
+    switch (target) {
+      case "RECEIPT": return handleOpenOrCreateReceipt;
+      case "TAX_INVOICE": return handleConvertToTax;
+      case "DELIVERY_ORDER": return handleConvertToDO;
+      case "CREDIT_NOTE": return () => handleConvertGeneric("CREDIT_NOTE");
+      default: return documentType === "QUOTATION" ? handleConvert : () => handleConvertGeneric(target);
+    }
+  };
+  const conversionMenuItems = conversionTargets(documentType as DocumentType, documentStatus ?? "")
+    .map((target) => ({ label: conversionLabel[target] ?? target, icon: conversionIcon[target] ?? FileBadge, target, onClick: conversionHandler(target) }))
+    .filter((item) => !hasDirectConversion(item.target));
   const statusMenuItems = [
-    documentType === "INVOICE" && !isPaid && !isCancelled
+    canRecordPayment(documentType as DocumentType, documentStatus ?? "", paymentStatus)
       ? { label: dict.recordPayment, icon: Wallet, onClick: handlePayInvoice, tone: "text-emerald-700 hover:bg-emerald-50" }
       : null,
-    documentType === "DELIVERY_ORDER" && !isPaid && !isCancelled
-      ? { label: dict.recordPayment, icon: Wallet, onClick: handlePayDO, tone: "text-emerald-700 hover:bg-emerald-50" }
-      : null,
-    !isCancelled && documentStatus !== "COMPLETED"
+    canCancelDocument(documentStatus ?? "")
       ? { label: dict.cancelDocument, icon: Ban, onClick: handleCancel, tone: "text-rose-600 hover:bg-rose-50" }
       : null,
   ].filter((item): item is { label: string; icon: typeof Wallet; onClick: () => void; tone: string } => item !== null);
