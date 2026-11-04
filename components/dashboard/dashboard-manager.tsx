@@ -293,8 +293,7 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerDashboa
 
     // Net profit ratio from summary (revenue − discount) / revenue
     const totalRevenue = data?.summary.revenue ?? 0;
-    const totalDiscount = data?.summary.discount_amount ?? 0;
-    const profitRatio = totalRevenue > 0 ? (totalRevenue - totalDiscount) / totalRevenue : 1;
+    const profitRatio = totalRevenue > 0 && data?.summary.net_sales !== undefined ? data.summary.net_sales / totalRevenue : 1;
 
     // Aggregate by date — sum revenue & count orders per day
     const byDate = new Map<string, { revenue: number; orders: number; date: Date }>();
@@ -329,7 +328,9 @@ export function DashboardManager({ dictionary, locale }: DashboardManagerDashboa
 
   const revenue = data?.summary.revenue ?? 0;
   const salesCount = data?.summary.sales_count ?? 0;
-  const netRevenue = revenue - (data?.summary.discount_amount ?? 0);
+  // B14: same recognised-revenue figure as the P&L (pre-VAT, net of refunds).
+  // total_amount is already after discounts, so subtracting them again was wrong.
+  const netRevenue = data?.summary.net_sales ?? revenue;
   const averageBill = data?.summary.average_ticket ?? 0;
 
   // Low stock threshold used in query

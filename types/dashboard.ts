@@ -19,6 +19,8 @@ export type DashboardRange = {
 export type DashboardSummary = {
   average_ticket: number;
   discount_amount: number;
+  /** B14: recognised revenue (pre-VAT, net of refunds) — same as the P&L. */
+  net_sales?: number;
   revenue: number;
   sales_count: number;
   total_items: number;
