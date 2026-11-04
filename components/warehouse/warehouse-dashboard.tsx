@@ -552,7 +552,8 @@ function buildTimelineRows(
         kind: activityType,
         title,
         detail,
-        reference: activity.reference_id,
+        // B26: show the readable document number, never an internal id.
+        reference: activity.reference_no || "",
         createdAt: activity.created_at,
         tone,
         icon,

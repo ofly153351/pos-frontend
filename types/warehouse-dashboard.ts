@@ -58,6 +58,8 @@ export type RecentActivity = {
   type: string;
   description: string;
   reference_id: string;
+  /** B26: readable sale/receipt/credit-sale/count number. */
+  reference_no?: string;
   time: string;
   created_at: string;
   product_name: string;
