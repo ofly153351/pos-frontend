@@ -1101,7 +1101,7 @@ export function ReceiptPaymentSettings({ t }: { t: ReceiptPaymentSettingsT }) {
                 {previewError ? (
                   <div role="alert" className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-600">{t.page.previewError}</div>
                 ) : previewSrcdoc ? (
-                  <iframe srcDoc={previewSrcdoc} title={t.previewLabel} className="h-full w-full border-0" sandbox="allow-same-origin" />
+                  <iframe srcDoc={previewSrcdoc} title={t.previewLabel} className="h-full w-full border-0" sandbox="" />
                 ) : (
                   <div className="flex h-full items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-violet-300" /></div>
                 )}

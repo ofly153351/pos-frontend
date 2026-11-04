@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { PREVIEW_SANDBOX_SCRIPTS, printPreviewFrame, withPreviewBridge } from "@/lib/preview-bridge";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -112,12 +113,9 @@ export function SaleDocumentPreviewModal({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [printDropOpen]);
 
+  // B29: frames are cross-origin (no allow-same-origin); ask them to print.
   function printDocument() {
-    const w = iframeRef.current?.contentWindow;
-    if (w) {
-      w.focus();
-      w.print();
-    }
+    printPreviewFrame(iframeRef.current);
   }
 
   function printAllCopies() {
@@ -128,14 +126,8 @@ export function SaleDocumentPreviewModal({
     const allHtml = buildAllCopiesHtml(html, copyLabels);
     const iframe = printAllRef.current;
     if (!iframe) return;
-    iframe.srcdoc = allHtml;
-    iframe.onload = () => {
-      const w = iframe.contentWindow;
-      if (w) {
-        w.focus();
-        w.print();
-      }
-    };
+    iframe.srcdoc = withPreviewBridge(allHtml);
+    iframe.onload = () => printPreviewFrame(iframe);
   }
 
   function printCopyDirect(idx: number | "all") {
@@ -154,11 +146,8 @@ export function SaleDocumentPreviewModal({
     }
     const iframe = printAllRef.current;
     if (!iframe) return;
-    iframe.srcdoc = injectCopyBanner(html, copyLabels[idx]);
-    iframe.onload = () => {
-      const w = iframe.contentWindow;
-      if (w) { w.focus(); w.print(); }
-    };
+    iframe.srcdoc = withPreviewBridge(injectCopyBanner(html, copyLabels[idx]));
+    iframe.onload = () => printPreviewFrame(iframe);
   }
 
   async function shareDocument() {
@@ -274,10 +263,10 @@ export function SaleDocumentPreviewModal({
           ) : (
             <iframe
               ref={iframeRef}
-              srcDoc={previewHtml}
+              srcDoc={withPreviewBridge(previewHtml)}
               title={docLabel}
               className={`h-full w-full bg-white ${isReceipt ? "mx-auto max-w-md" : ""}`}
-              sandbox="allow-same-origin allow-scripts allow-modals"
+              sandbox={PREVIEW_SANDBOX_SCRIPTS}
             />
           )}
         </div>
@@ -374,7 +363,7 @@ export function SaleDocumentPreviewModal({
         title="print-all"
         aria-hidden="true"
         className="pointer-events-none fixed bottom-0 right-0 h-px w-px opacity-0"
-        sandbox="allow-same-origin allow-scripts allow-modals"
+        sandbox={PREVIEW_SANDBOX_SCRIPTS}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { PREVIEW_SANDBOX_SCRIPTS, printPreviewFrame, withPreviewBridge } from "@/lib/preview-bridge";
 import { PaymentDialog } from "@/components/documents/payment-dialog";
 import { showApiError } from "@/lib/form-errors";
 import { CreditReasonModal } from "@/components/documents/credit-reason-modal";
@@ -274,18 +275,16 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   function handlePrint(template = receiptTemplate) {
     startOpenTransition(async () => {
       const freshHtml = await getDocumentPrintHtml(documentId, copyIdx, template);
-      const blob = new Blob([freshHtml], { type: "text/html;charset=utf-8" });
-      const blobUrl = URL.createObjectURL(blob);
+      // B29: a same-origin blob frame gave document HTML full app access.
+      // Print from a sandboxed, cross-origin frame through the preview bridge.
       const frame = document.createElement("iframe");
       frame.style.cssText = "position:fixed;width:0;height:0;opacity:0;pointer-events:none";
+      frame.setAttribute("sandbox", PREVIEW_SANDBOX_SCRIPTS);
+      frame.srcdoc = withPreviewBridge(freshHtml);
       document.body.appendChild(frame);
-      frame.src = blobUrl;
-      frame.onload = async () => {
-        const printWindow = frame.contentWindow as (Window & { __posPagedReady?: Promise<unknown> }) | null;
-        await printWindow?.__posPagedReady;
-        printWindow?.focus();
-        printWindow?.print();
-        setTimeout(() => { URL.revokeObjectURL(blobUrl); frame.remove(); }, 2000);
+      frame.onload = () => {
+        printPreviewFrame(frame);
+        setTimeout(() => frame.remove(), 60000);
       };
     });
   }
@@ -394,7 +393,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   ) : (
     <div className="relative flex min-h-0 flex-1 justify-center overflow-y-auto overflow-x-hidden bg-white">
       {isLoading ? <div className="flex h-full items-center justify-center text-sm text-slate-400">{dict.loading}</div>
-        : html ? <iframe srcDoc={html} title="document preview" className="h-full w-full border-0" sandbox="allow-same-origin allow-scripts" />
+        : html ? <iframe srcDoc={withPreviewBridge(html)} title="document preview" className="h-full w-full border-0" sandbox={PREVIEW_SANDBOX_SCRIPTS} />
         : <div className="flex h-full items-center justify-center text-sm text-slate-400">{dict.previewError}</div>}
     </div>
   );

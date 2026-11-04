@@ -1,5 +1,6 @@
 "use client";
 
+import { PREVIEW_SANDBOX_SCRIPTS, printPreviewFrame, withPreviewBridge } from "@/lib/preview-bridge";
 import { useEffect, useRef, useState } from "react";
 import { FileText, Loader2, Printer, X } from "lucide-react";
 
@@ -33,16 +34,9 @@ export function DocumentPrintClient({ documentId, dict, copy = -1 }: DocumentPri
   }, [documentId, copy, dict.requestFailed]);
 
   function handlePrint() {
-    const fw = frameRef.current?.contentWindow as (Window & { __posPagedReady?: Promise<unknown> }) | null;
-    if (fw) {
-      void (async () => {
-        await fw.__posPagedReady;
-        fw.focus();
-        fw.print();
-      })();
-    } else {
-      window.print();
-    }
+    // B29: the frame is cross-origin; the bridge waits for Paged.js and prints.
+    if (frameRef.current) printPreviewFrame(frameRef.current);
+    else window.print();
   }
 
   return (
@@ -89,10 +83,10 @@ export function DocumentPrintClient({ documentId, dict, copy = -1 }: DocumentPri
         {html && (
           <iframe
             ref={frameRef}
-            srcDoc={html}
+            srcDoc={withPreviewBridge(html)}
             title="document-preview"
             className="h-[297mm] w-[210mm] border-0 bg-white shadow-xl"
-            sandbox="allow-scripts allow-same-origin"
+            sandbox={PREVIEW_SANDBOX_SCRIPTS}
           />
         )}
       </div>

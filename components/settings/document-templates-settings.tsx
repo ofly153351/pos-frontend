@@ -41,7 +41,7 @@ function A4DocumentPreview({ html, title }: { html: string; title: string }) {
       <iframe
         title={title}
         srcDoc={previewHTML}
-        sandbox="allow-same-origin"
+        sandbox=""
         className="absolute top-0 border-0 bg-white"
         style={{ width: A4_WIDTH_PX, height: A4_HEIGHT_PX, left: (containerWidth - A4_WIDTH_PX * scale) / 2, transform: `scale(${scale})`, transformOrigin: "top left", pointerEvents: "none" }}
         tabIndex={-1}
