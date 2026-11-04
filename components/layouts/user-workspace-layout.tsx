@@ -88,6 +88,7 @@ export function UserWorkspaceLayout({
     "store-settings": shell.settings,
     "storage-locations": shell.storageLocations,
     "receipt-payment": shell.receiptPayment,
+    documentTemplates: shell.documentTemplates,
     "activity-logs": shell.activityLogs,
     staff: shell.staff,
     settings: shell.settings,

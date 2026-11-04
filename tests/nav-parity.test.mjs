@@ -28,3 +28,11 @@ test("B20: reports/finance and settings are manager-only in both", () => {
   assert.match(cfg, /manageOnly:\s*true/);
   assert.match(side, /\{canManage \? \(/);
 });
+
+test("B24: every drawer menu key has a translated label (no raw keys)", () => {
+  const layout = readFileSync(new URL("../components/layouts/user-workspace-layout.tsx", import.meta.url), "utf8");
+  const block = layout.slice(layout.indexOf("const navLabels"), layout.indexOf("};", layout.indexOf("const navLabels")));
+  const labelled = new Set([...block.matchAll(/^\s*"?([A-Za-z-]+)"?:/gm)].map((m) => m[1]));
+  const keys = [...cfg.matchAll(/key:\s*"([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(keys.filter((k) => !labelled.has(k)), []);
+});
