@@ -1,25 +1,5 @@
-"use client";
-
-import { useEffect, use } from "react";
-import { useRouter } from "next/navigation";
-
-type Props = { params: Promise<{ locale: string }> };
-
-// Sales page ไม่มี UI ของตัวเอง — set flag แล้ว redirect
-// Cashier modal ถูกควบคุมโดย UserWorkspaceLayout ผ่าน localStorage "pos-cashier-open"
-export default function SalesPage({ params }: Props) {
-  const { locale } = use(params);
-  const router = useRouter();
-
-  useEffect(() => {
-    localStorage.setItem("pos-cashier-open", "1");
-    // ถ้ามี history → back, ถ้าไม่มี (เพิ่ง login) → ไป dashboard
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      router.replace(`/${locale}/dashboard`);
-    }
-  }, [locale, router]);
-
+// UserWorkspaceLayout renders the full-screen cashier for this route.
+// Keep direct links on /sales rather than handing off through browser history.
+export default function SalesPage() {
   return null;
 }

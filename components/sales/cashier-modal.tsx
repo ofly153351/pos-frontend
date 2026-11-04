@@ -300,7 +300,7 @@ export function CashierModal({ dictionary, locale, navLabels, onClose }: Cashier
         locale={locale}
         labels={navLabels}
         onClose={() => setIsMenuOpen(false)}
-        onNavigate={() => { setIsMenuOpen(false); triggerClose(); }}
+        onNavigate={() => setIsMenuOpen(false)}
       />
 
       {/* Confirmation dialog */}

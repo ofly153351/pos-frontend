@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { UserWorkspaceSidebar } from "@/components/navigation/user-workspace-sidebar";
 import { UserWorkspaceTopbar } from "@/components/navigation/user-workspace-topbar";
@@ -29,28 +29,19 @@ export function UserWorkspaceLayout({
   titles,
 }: UserWorkspaceLayoutUserWorkspaceLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   // POS (/sales) is a self-contained full-height layout — leave it untouched.
   // Every other workspace page gets extra bottom padding so page-bottom content
   // (pagination, action bars) clears the fixed CopilotFAB at bottom-right.
   const isPosPage = pathname.endsWith("/sales");
   const [collapsed, setCollapsed] = useState(false);
-  const [isCashierOpen, setIsCashierOpen] = useState(false);
-
-  useEffect(() => {
-    const storedCashierOpen = localStorage.getItem("pos-cashier-open") === "1";
-    if (!storedCashierOpen) return;
-    // ล้าง flag ทันที แล้วเปิด modal — ป้องกันเปิดซ้ำเมื่อ navigate กลับมา
-    localStorage.removeItem("pos-cashier-open");
-    const frame = requestAnimationFrame(() => setIsCashierOpen(true));
-    return () => cancelAnimationFrame(frame);
-  }, [pathname]);
 
   function openCashier() {
-    setIsCashierOpen(true);
+    router.push(`/${locale}/sales`);
   }
 
   function closeCashier() {
-    setIsCashierOpen(false);
+    router.push(`/${locale}/dashboard`);
   }
 
   const navLabels: NavLabels = {
@@ -213,7 +204,7 @@ export function UserWorkspaceLayout({
         <main className={`flex-1 min-h-0 overflow-auto pretty-scroll ${isPosPage ? "p-6 lg:p-8" : "p-6 lg:p-8 pb-24 lg:pb-28"}`}>{children}</main>
       </div>
 
-      {isCashierOpen ? (
+      {isPosPage ? (
         <CashierModal
           dictionary={salesDictionary}
           locale={locale}
