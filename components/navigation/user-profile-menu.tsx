@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, LogOut, Settings, User } from "lucide-react";
@@ -56,7 +57,7 @@ export function UserProfileMenu({
       .filter(Boolean)
       .slice(0, 2)
       .map((p) => p[0]?.toUpperCase() ?? "")
-      .join("") || "MP";
+      .join("");
 
   async function handleLogout() {
     if (isLoggingOut) return;
@@ -82,9 +83,14 @@ export function UserProfileMenu({
         onClick={() => setIsOpen((v) => !v)}
         type="button"
       >
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600 text-xs font-bold text-white ring-1 ring-violet-300">
-          {initials}
-        </div>
+        {/* B21: no fake initials before the session loads. */}
+        {initials ? (
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-600 text-xs font-bold text-white ring-1 ring-violet-300">
+            {initials}
+          </div>
+        ) : (
+          <Skeleton className="h-8 w-8 rounded-full" />
+        )}
         {displayName ? (
           <p className="hidden max-w-[120px] truncate text-sm font-semibold text-slate-800 sm:block">
             {displayName}

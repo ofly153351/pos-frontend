@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -159,7 +160,9 @@ export function UserWorkspaceSidebar({
   // visible to all member roles; the backend enforces real permissions.
   const { role: storeRole } = useStoreRole();
   const canManage = canManageStore(storeRole);
-  const [storeName, setStoreName] = useState(shell.station);
+  // B21: start empty (identical on server and client) and show a skeleton until
+  // the real store loads; never render a fake store identity.
+  const [storeName, setStoreName] = useState("");
   const [storeDescription, setStoreDescription] = useState("");
   const [storeAddress, setStoreAddress] = useState("");
   const [storeLogoUrl, setStoreLogoUrl] = useState("");
@@ -272,7 +275,7 @@ export function UserWorkspaceSidebar({
         saveCurrentStoreId(firstStore.id);
       } catch {
         if (isMounted) {
-          setStoreName(shell.station);
+          setStoreName("—");
           setStoreDescription("");
           setStoreAddress("");
           setStoreLogoUrl("");
@@ -285,7 +288,7 @@ export function UserWorkspaceSidebar({
     return () => {
       isMounted = false;
     };
-  }, [shell.station]);
+  }, []);
 
 
   const promotionsHref = `/${locale}/promotions`;
@@ -805,9 +808,13 @@ export function UserWorkspaceSidebar({
                   src={storeLogoUrl}
                 />
               ) : (
-                <span className="block truncate text-center text-xs font-semibold text-violet-300">
-                  {storeName.slice(0, 2).toUpperCase()}
-                </span>
+                storeName ? (
+                  <span className="block truncate text-center text-xs font-semibold text-violet-300">
+                    {storeName.slice(0, 2).toUpperCase()}
+                  </span>
+                ) : (
+                  <Skeleton className="mx-auto h-4 w-6 bg-violet-800/60" />
+                )
               )}
             </div>
           ) : (
@@ -825,15 +832,23 @@ export function UserWorkspaceSidebar({
                       src={storeLogoUrl}
                     />
                   ) : (
-                    <span className="text-xs font-semibold text-violet-300">
-                      {storeName.slice(0, 2).toUpperCase()}
-                    </span>
+                    storeName ? (
+                      <span className="text-xs font-semibold text-violet-300">
+                        {storeName.slice(0, 2).toUpperCase()}
+                      </span>
+                    ) : (
+                      <Skeleton className="h-4 w-6 bg-violet-800/60" />
+                    )
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-violet-200">
-                    {storeName}
-                  </p>
+                  {storeName ? (
+                    <p className="truncate text-sm font-semibold text-violet-200">
+                      {storeName}
+                    </p>
+                  ) : (
+                    <Skeleton className="h-4 w-28 bg-violet-800/60" />
+                  )}
                   {storeDescription ? (
                     <p className="mt-1 truncate text-xs text-violet-400">
                       {storeDescription}

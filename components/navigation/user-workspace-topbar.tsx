@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { PanelLeft, PanelRight } from "lucide-react";
@@ -99,14 +100,19 @@ export function UserWorkspaceTopbar({
           {storeLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              alt={storeName || title}
+              alt={storeName}
               className="h-full w-full object-cover"
               src={storeLogoUrl}
             />
           ) : (
-            <span className="text-xs font-bold text-violet-600">
-              {(storeName || title).slice(0, 2).toUpperCase()}
-            </span>
+            storeName ? (
+              <span className="text-xs font-bold text-violet-600">
+                {storeName.slice(0, 2).toUpperCase()}
+              </span>
+            ) : (
+              // B21: skeleton until the real store loads; never page-title initials.
+              <Skeleton className="h-full w-full rounded-none" />
+            )
           )}
         </div>
 
