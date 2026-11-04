@@ -2291,6 +2291,7 @@
     "deleteSuccess": "ลบเอกสารสำเร็จ",
     "deleteError": "ไม่สามารถลบเอกสารได้",
     "statusUpdateSuccess": "อัปเดตสถานะสำเร็จ",
+    "statusUpdatePartial": "อัปเดต {updated} รายการ ข้าม {skipped} รายการที่เปลี่ยนเป็นสถานะนี้ไม่ได้: {documents}",
     "statusUpdateError": "ไม่สามารถอัปเดตสถานะได้",
     "noDocuments": "ไม่มีเอกสาร",
     "noDocumentsHint": "สร้างเอกสารใหม่เพื่อเริ่มต้น",
@@ -4663,8 +4664,7 @@
       "level_invalid": "{field}ต้องมากกว่า 0",
       "max_below_min": "{field}ต้องไม่น้อยกว่าสต็อกขั้นต่ำ",
       "end_before_start": "{field}ต้องอยู่หลังวันที่เริ่ม",
-      "not_in_store": "{field}ไม่ได้อยู่ในร้านนี้",
-      "invalid_transition": "ไม่สามารถเปลี่ยนสถานะจาก {from} เป็น {to} ได้"
+      "not_in_store": "{field}ไม่ได้อยู่ในร้านนี้"
     },
     "fields": {
       "tax_id": "เลขประจำตัวผู้เสียภาษี",
@@ -4707,6 +4707,23 @@
     "belowCostTitle": "ราคาขายต่ำกว่าราคาทุน",
     "belowCostBody": "ราคาขาย ฿{price} ต่ำกว่าราคาทุน ฿{cost} ต้องการบันทึกต่อหรือไม่?",
     "belowCostConfirm": "บันทึกต่อ",
-    "belowCostCancel": "กลับไปแก้ไข"
+    "belowCostCancel": "กลับไปแก้ไข",
+    "conflicts": {
+      "invalid_transition": "ไม่สามารถเปลี่ยนสถานะจาก “{from}” เป็น “{to}” ได้",
+      "source_not_eligible": "เอกสารต้นทาง {document_no} อยู่ในสถานะ “{from}” จึงนำไปใช้ต่อไม่ได้",
+      "already_converted": "เอกสารนี้ถูกแปลงหรือวางบิลไปแล้ว: {document_no}"
+    },
+    "statuses": {
+      "DRAFT": "ร่าง",
+      "PENDING": "รอดำเนินการ",
+      "SENT": "ส่งแล้ว",
+      "ACCEPTED": "อนุมัติแล้ว",
+      "REJECTED": "ปฏิเสธ",
+      "EXPIRED": "หมดอายุ",
+      "OVERDUE": "เกินกำหนด",
+      "COMPLETED": "เสร็จสิ้น",
+      "CONVERTED": "แปลงแล้ว",
+      "CANCELLED": "ยกเลิก"
+    }
   }
 }

@@ -158,6 +158,7 @@ export function CreateDocumentModal({ dict: d, initialType, editDocument, onClos
       const response = await getDocuments({
         type: "DELIVERY_ORDER",
         customer_id: customerId || undefined,
+        billable: true, // B07: hide cancelled and already-billed delivery orders
         limit: 500,
       });
       return response?.items ?? [];

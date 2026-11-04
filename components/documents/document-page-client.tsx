@@ -1,5 +1,6 @@
 "use client";
 
+import { showApiError } from "@/lib/form-errors";
 import { formatBusinessDate, todayBusinessDate } from "@/lib/business-date";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
@@ -162,12 +163,25 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
   function handleBulkStatus(status: DocumentStatus) {
     startBulkTransition(async () => {
       try {
-        await bulkDocumentAction({ ids: Array.from(selectedIds), action: "SET_STATUS", status });
-        toast.success(d.statusUpdateSuccess);
+        const result = await bulkDocumentAction({ ids: Array.from(selectedIds), action: "SET_STATUS", status });
+        // B06: report what changed and what the rules skipped — never silent.
+        const skipped = result?.skipped ?? [];
+        if (skipped.length > 0) {
+          const names = skipped.map((s) => s.document_no || s.id).slice(0, 5).join(", ");
+          toast.warning(
+            d.statusUpdatePartial
+              .replace("{updated}", String(result?.updated.length ?? 0))
+              .replace("{skipped}", String(skipped.length))
+              .replace("{documents}", names),
+            7000,
+          );
+        } else {
+          toast.success(d.statusUpdateSuccess);
+        }
         setSelectedIds(new Set());
         queryClient.invalidateQueries({ queryKey: ["documents"] });
-      } catch {
-        toast.error(d.statusUpdateError);
+      } catch (err) {
+        showApiError(err);
       }
     });
   }

@@ -2291,6 +2291,7 @@
     "deleteSuccess": "Document deleted",
     "deleteError": "Failed to delete document",
     "statusUpdateSuccess": "Status updated",
+    "statusUpdatePartial": "Updated {updated}; skipped {skipped} that cannot move to this status: {documents}",
     "statusUpdateError": "Failed to update status",
     "noDocuments": "No documents",
     "noDocumentsHint": "Create a new document to get started",
@@ -4663,8 +4664,7 @@
       "level_invalid": "{field} must be greater than 0",
       "max_below_min": "{field} must not be below the minimum stock",
       "end_before_start": "{field} must be after the start date",
-      "not_in_store": "{field} does not belong to this store",
-      "invalid_transition": "Cannot change status from {from} to {to}"
+      "not_in_store": "{field} does not belong to this store"
     },
     "fields": {
       "tax_id": "Tax ID",
@@ -4707,6 +4707,23 @@
     "belowCostTitle": "Selling price is below cost",
     "belowCostBody": "Selling price ฿{price} is below the cost ฿{cost}. Save anyway?",
     "belowCostConfirm": "Save anyway",
-    "belowCostCancel": "Go back"
+    "belowCostCancel": "Go back",
+    "conflicts": {
+      "invalid_transition": "Cannot change status from “{from}” to “{to}”.",
+      "source_not_eligible": "Source document {document_no} is “{from}” and cannot be used.",
+      "already_converted": "This document was already converted or billed: {document_no}"
+    },
+    "statuses": {
+      "DRAFT": "Draft",
+      "PENDING": "Pending",
+      "SENT": "Sent",
+      "ACCEPTED": "Accepted",
+      "REJECTED": "Rejected",
+      "EXPIRED": "Expired",
+      "OVERDUE": "Overdue",
+      "COMPLETED": "Completed",
+      "CONVERTED": "Converted",
+      "CANCELLED": "Cancelled"
+    }
   }
 }

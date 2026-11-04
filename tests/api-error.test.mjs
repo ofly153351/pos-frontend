@@ -13,11 +13,12 @@ function load(rel, deps = {}) {
 }
 
 class ApiError extends Error {
-  constructor(message, status, code, fields) {
+  constructor(message, status, code, fields, details) {
     super(message);
     this.status = status;
     this.code = code;
     this.fields = fields;
+    this.details = details;
   }
 }
 const { localizeApiError } = load("../lib/api-error.ts", { "@/services/api": { ApiError } });
@@ -51,7 +52,7 @@ test("B23: unknown field codes keep the backend message visible", () => {
 });
 
 test("B23: every code and status key exists in both languages", () => {
-  for (const section of ["codes", "fields", "status"]) {
+  for (const section of ["codes", "fields", "status", "conflicts", "statuses"]) {
     assert.deepEqual(Object.keys(locales.th[section]).sort(), Object.keys(locales.en[section]).sort(), section);
   }
 });
@@ -64,4 +65,16 @@ test("B16: below-cost detection (warn, never block)", () => {
   assert.equal(belowCostPrice("50", "", ""), null);
   assert.equal(belowCostPrice("", "", "40"), null);
   assert.equal(belowCostPrice("50", "0", "40"), null);
+});
+
+test("B06/B07/B12: structured 409 reasons are explained in the selected language", () => {
+  const transition = new ApiError("cannot change status from CANCELLED to PENDING", 409, "CONFLICT", undefined, { reason: "invalid_transition", from: "CANCELLED", to: "PENDING" });
+  const th = localizeApiError(transition, locales.th);
+  assert.equal(th.level, "warning");
+  assert.equal(th.message, "ไม่สามารถเปลี่ยนสถานะจาก “ยกเลิก” เป็น “รอดำเนินการ” ได้");
+  assert.equal(localizeApiError(transition, locales.en).message, "Cannot change status from “Cancelled” to “Pending”.");
+  const billed = new ApiError("x", 409, "CONFLICT", undefined, { reason: "already_converted", document_no: "BIL256911-0001" });
+  assert.match(localizeApiError(billed, locales.th).message, /BIL256911-0001/);
+  const closed = new ApiError("x", 409, "CONFLICT", undefined, { reason: "source_not_eligible", document_no: "DO1", from: "CANCELLED" });
+  assert.equal(localizeApiError(closed, locales.en).message, "Source document DO1 is “Cancelled” and cannot be used.");
 });

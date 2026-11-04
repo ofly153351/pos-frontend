@@ -17,6 +17,10 @@ export type ApiErrorMessages = {
   status: Record<string, string>;
   generic: string;
   reference: string;
+  /** 409 explanations keyed by backend `error.details.reason`. */
+  conflicts?: Record<string, string>;
+  /** Document status labels used inside conflict messages. */
+  statuses?: Record<string, string>;
 };
 
 export type ApiErrorLevel = "warning" | "error";
@@ -70,6 +74,20 @@ export function localizeApiError(err: unknown, messages: ApiErrorMessages = regi
     const level: ApiErrorLevel = WARNING_STATUSES.has(err.status) ? "warning" : "error";
     const firstField = Object.values(fields)[0];
     if (firstField) return { message: firstField, level, fields };
+
+    // Structured conflicts (B06/B07/B12): explain the rule in the user's language.
+    const details = (err.details ?? null) as Record<string, unknown> | null;
+    const reason = typeof details?.reason === "string" ? details.reason : "";
+    const conflict = reason ? messages.conflicts?.[reason] : undefined;
+    if (conflict) {
+      const label = (v: unknown) => (typeof v === "string" ? messages.statuses?.[v] ?? v : "");
+      const message = fill(conflict, {
+        from: label(details?.from),
+        to: label(details?.to),
+        document_no: typeof details?.document_no === "string" ? details.document_no : "",
+      });
+      return { message, level, fields };
+    }
 
     const statusText = messages.status[String(err.status)];
     if (statusText) {

@@ -2,6 +2,7 @@ import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest, authorizedRawRequest } from "@/services/api";
 import type {
   BulkActionPayload,
+  BulkStatusResult,
   CreateDocumentPayload,
   Document,
   DocumentListQuery,
@@ -68,8 +69,9 @@ export async function deleteDocument(id: string): Promise<void> {
   await authorizedApiRequest(`${base()}/${id}`, { method: "DELETE", allowEmptyData: true });
 }
 
-export async function bulkDocumentAction(payload: BulkActionPayload): Promise<void> {
-  await authorizedApiRequest(`${base()}/bulk`, { method: "POST", body: payload, allowEmptyData: true });
+export async function bulkDocumentAction(payload: BulkActionPayload): Promise<BulkStatusResult | null> {
+  const res = await authorizedApiRequest<BulkStatusResult | null>(`${base()}/bulk`, { method: "POST", body: payload, allowEmptyData: true });
+  return res.data ?? null;
 }
 
 export async function convertQuotation(id: string): Promise<Document> {

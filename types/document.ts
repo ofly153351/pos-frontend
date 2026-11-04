@@ -137,6 +137,8 @@ export interface DocumentListQuery {
   staff_id?: string;
   date_from?: string;
   date_to?: string;
+  /** Delivery orders that may still be billed (not closed, not on an active bill). */
+  billable?: boolean;
 }
 
 export interface CreateDocumentPayload {
@@ -192,6 +194,12 @@ export type UpdateDocumentPayload = CreateDocumentPayload;
 
 export interface UpdateDocumentStatusPayload {
   status: DocumentStatus;
+}
+
+/** Per-document outcome of a bulk status change (B06). */
+export interface BulkStatusResult {
+  updated: string[];
+  skipped: { id: string; document_no?: string; from?: DocumentStatus; reason: "invalid_transition" | "not_found" }[];
 }
 
 export interface BulkActionPayload {

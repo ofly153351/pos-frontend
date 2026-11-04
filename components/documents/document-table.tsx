@@ -27,7 +27,8 @@ function fmtDate(s: string) {
   return formatBusinessDate(s, "short");
 }
 
-const STATUS_OPTIONS: DocumentStatus[] = ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "CONVERTED", "CANCELLED"];
+// CONVERTED is set only by conversion (B06), so it is not offered manually.
+const STATUS_OPTIONS: DocumentStatus[] = ["DRAFT", "PENDING", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "COMPLETED", "CANCELLED"];
 
 export function DocumentTable({
   dict: d, documents, total, page, limit, isLoading,

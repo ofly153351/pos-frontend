@@ -258,6 +258,7 @@ export type DocumentPageClientDocumentDict = {
   deleteSuccess: string;
   deleteError: string;
   statusUpdateSuccess: string;
+  statusUpdatePartial: string;
   statusUpdateError: string;
   noDocuments: string;
   noDocumentsHint: string;
