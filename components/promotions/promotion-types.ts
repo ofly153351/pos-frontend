@@ -391,4 +391,6 @@ export type PromotionDictionary = {
   paused: string;
   resumed: string;
   activated: string;
+  invalidDiscount: string;
+  invalidDiscountActivate: string;
 };

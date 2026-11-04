@@ -1613,7 +1613,11 @@ export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesMana
           void prepareReceiptPreview(response.data.id, paymentMethod);
         }
       } catch (nextError) {
-        setError(errorMessage(nextError));
+        // The backend reports a short payment in English; show the localized copy
+        // the client-side guard already uses for the same condition.
+        const paidAmountRejected =
+          nextError instanceof ApiError && nextError.fields?.some((f) => f.field === "paid_amount");
+        setError(paidAmountRejected ? dictionary.insufficientPayment : errorMessage(nextError));
       }
     });
   }

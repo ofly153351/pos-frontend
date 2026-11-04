@@ -110,6 +110,54 @@ function checkConditions(
   return { ok: true };
 }
 
+// ── Discount-parameter validation ────────────────────────────────────────────
+// Mirrors the backend rule (pos-backend internal/modules/promotion/validation.go):
+// the server refuses to create/activate these campaigns and never grants them a
+// discount at checkout, so the cart must not apply them either — otherwise the
+// cashier sees a total the server will reject.
+
+type DiscountField =
+  | "percentOff"
+  | "amountOff"
+  | "discountAmount"
+  | "exchangeDiscount"
+  | "bundlePrice"
+  | "fixedPrice"
+  | "memberPrice"
+  | "buyQty"
+  | "getQty";
+
+const DISCOUNT_FIELDS_BY_TYPE: Partial<Record<PromotionType, DiscountField[]>> = {
+  percentage: ["percentOff"],
+  happy_hour: ["percentOff"],
+  fixed_amount: ["amountOff"],
+  coupon: ["amountOff"],
+  spend_x_discount: ["discountAmount"],
+  cylinder_exchange: ["exchangeDiscount"],
+  bundle: ["bundlePrice"],
+  fixed_price: ["fixedPrice"],
+  member_price: ["memberPrice"],
+  buy_x_get_y: ["buyQty", "getQty"],
+};
+
+// Returns the first invalid discount field, or null when the campaign's discount
+// parameters are usable. Drafts may omit unfinished fields (supplied values must
+// still be valid); paused campaigns are never checked so legacy rows can be paused.
+export function invalidDiscountField(c: Partial<Campaign>): DiscountField | null {
+  const status = c.status ?? "active";
+  if (status === "paused") return null;
+  const fields = c.type ? DISCOUNT_FIELDS_BY_TYPE[c.type as PromotionType] ?? [] : [];
+  for (const field of fields) {
+    const raw = (c as Record<string, unknown>)[field];
+    if ((raw === undefined || raw === null) && status === "draft") continue;
+    const value = typeof raw === "number" ? raw : Number.NaN;
+    if (!Number.isFinite(value) || value < 0) return field;
+    if (field === "percentOff" && value > 100) return field;
+    if ((field === "buyQty" || field === "getQty") && value <= 0) return field;
+  }
+  return null;
+}
+
 // ── Per-type discount calculator ─────────────────────────────────────────────
 
 function calcDiscount(c: Campaign, ctx: EvalContext): number {
@@ -185,6 +233,11 @@ export function evaluatePromotion(c: Campaign, ctx: EvalContext): EvalResult {
     return { applies: false, reason: "paused", discountTotal: 0, finalTotal: subtotal, steps };
   }
 
+  // 1.5 — invalid stored discount parameters (e.g. legacy 150% campaigns)
+  if (invalidDiscountField({ ...c, status: "active" })) {
+    return { applies: false, reason: "invalid_parameters", discountTotal: 0, finalTotal: subtotal, steps };
+  }
+
   // 2 — schedule
   const schedCheck = isWithinSchedule(c, now);
   if (!schedCheck.ok) {
@@ -220,7 +273,9 @@ export function evaluatePromotion(c: Campaign, ctx: EvalContext): EvalResult {
   }
 
   // 4 — calculate
-  const discount = calcDiscount(c, ctx);
+  // Defense in depth: a discount can never be negative or exceed the line/bill.
+  const raw = calcDiscount(c, ctx);
+  const discount = Number.isFinite(raw) ? Math.min(Math.max(raw, 0), Math.max(subtotal, 0)) : 0;
   const final = Math.max(0, subtotal - discount);
 
   return {

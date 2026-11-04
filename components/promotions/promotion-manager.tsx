@@ -35,7 +35,7 @@ import { QueryErrorState } from "@/components/ui/query-error-state";
 import { ReportKpiCard } from "@/components/reports/report-kpi-card";
 import { ConfirmDialog } from "@/components/stock/confirm-dialog";
 import type { Locale } from "@/lib/locale-config";
-import { evaluatePromotion } from "./promotion-engine";
+import { evaluatePromotion, invalidDiscountField } from "./promotion-engine";
 import { createPromotion, deletePromotion, listPromotions, updatePromotion } from "@/services/promotions";
 import type {
   Campaign,
@@ -307,11 +307,12 @@ function Field({ label, required, hint, children }: { label?: string; required?:
   );
 }
 
-function NumInput({ value, onChange, placeholder, min }: { value?: number; onChange: (n?: number) => void; placeholder?: string; min?: number }) {
+function NumInput({ value, onChange, placeholder, min, max }: { value?: number; onChange: (n?: number) => void; placeholder?: string; min?: number; max?: number }) {
   return (
     <input
       type="number"
       min={min ?? 0}
+      max={max}
       step="any"
       className="h-9 w-full rounded-xl border border-slate-200 px-3 text-sm focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
       value={value ?? ""}
@@ -354,7 +355,7 @@ function TypeConfigFields({ form, onChange, dict }: { form: Partial<Campaign>; o
     case "happy_hour":
       return (
         <Field label={d.percentOff} required>
-          <NumInput value={form.percentOff} onChange={(v) => onChange({ percentOff: v })} placeholder="10" />
+          <NumInput value={form.percentOff} onChange={(v) => onChange({ percentOff: v })} placeholder="10" max={100} />
         </Field>
       );
     case "fixed_amount":
@@ -1305,8 +1306,21 @@ export function PromotionManager({ dictionary: dict, locale }: PromotionManagerP
     setForm(defaultForm());
   }
 
+  // Same rule the backend enforces; reject locally with a localized message
+  // instead of round-tripping to a generic "validation failed".
+  function invalidDiscountMessage(c: Partial<Campaign>, template: string): string | null {
+    const field = invalidDiscountField(c);
+    if (!field) return null;
+    return template.replace("{field}", dict.typeConfig[field] ?? field);
+  }
+
   async function saveForm() {
     if (!form.name?.trim() || !form.type || isPending) return;
+    const invalid = invalidDiscountMessage(form, dict.invalidDiscount);
+    if (invalid) {
+      toast.error(invalid);
+      return;
+    }
     setIsPending(true);
     try {
       if (editingId) {
@@ -1360,6 +1374,13 @@ export function PromotionManager({ dictionary: dict, locale }: PromotionManagerP
     if (!c) return;
     const s = computeDisplayStatus(c);
     const next: CampaignStatus = s === "paused" || s === "draft" ? "active" : "paused";
+    if (next === "active") {
+      const invalid = invalidDiscountMessage({ ...c, status: "active" }, dict.invalidDiscountActivate);
+      if (invalid) {
+        toast.error(invalid);
+        return;
+      }
+    }
     try {
       await updatePromotion(id, { ...c, status: next, updatedAt: new Date().toISOString() });
       await refetchCampaigns();

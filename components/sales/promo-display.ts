@@ -16,6 +16,7 @@
 
 import {
   LINE_LEVEL_TYPES,
+  invalidDiscountField,
   isWithinSchedule,
   matchesScope,
 } from "@/components/promotions/promotion-engine";
@@ -65,7 +66,7 @@ export function buildPromoDisplayIndex(
   badgeLabel: (c: Campaign) => string,
 ): PromoDisplayIndex {
   const live = (campaigns ?? []).filter(
-    (c) => c.status === "active" && isWithinSchedule(c, now).ok,
+    (c) => c.status === "active" && isWithinSchedule(c, now).ok && !invalidDiscountField(c),
   );
   if (live.length === 0) return EMPTY_INDEX;
 

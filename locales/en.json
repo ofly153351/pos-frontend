@@ -3686,7 +3686,9 @@
     "duplicated": "Campaign duplicated",
     "paused": "Campaign paused",
     "resumed": "Campaign resumed",
-    "activated": "Campaign activated"
+    "activated": "Campaign activated",
+    "invalidDiscount": "Invalid discount value ({field}): percentage must be 0–100 and amounts/quantities cannot be negative",
+    "invalidDiscountActivate": "This campaign has an invalid discount value ({field}). Fix it before activating."
   },
   "customerDisplay": {
     "welcomeTitle": "Welcome",
