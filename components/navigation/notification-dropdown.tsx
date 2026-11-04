@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { listLowStock } from "@/services/stock-alerts";
-import { listCountSessions } from "@/services/stock-count";
+import { listCountSessionSummaries } from "@/services/stock-count";
 import type { NotificationDropdownNotificationLabels } from "./types";
 import type { NotificationDropdownProps } from "./types";
 export type { NotificationDropdownNotificationLabels as NotificationLabels } from "./types";
@@ -34,7 +34,7 @@ export function NotificationDropdown({ labels, locale }: NotificationDropdownPro
 
   const refresh = useCallback(() => {
     setHasError(false);
-    listCountSessions()
+    listCountSessionSummaries()
       .then((res) => {
         const sessions = res.data ?? [];
         setPendingCounts(

@@ -311,8 +311,15 @@ export function StockManager({
   // Separate full-dataset query for KPI chips — always fetches all products so counts
   // are correct regardless of the current page size or page number. Reuses the same
   // data when already searching (main query already fetches everything).
+  // B28: when the page query is unfiltered and already holds every product
+  // (the default "all" page size), reuse it instead of fetching the catalog twice.
+  const pageData = productsQuery.data;
+  const pageIsComplete = !!pageData
+    && (selectedStockStatus !== "low_stock" && selectedStockStatus !== "out_of_stock")
+    && (isSearching || productPage === 1)
+    && (pageData.items?.length ?? 0) >= (pageData.total ?? Infinity);
   const allProductsQuery = useQuery({
-    enabled: hasMounted && !isSearching,
+    enabled: hasMounted && !isSearching && productsQuery.isSuccess && !pageIsComplete,
     placeholderData: (prev) => prev,
     queryFn: async () => {
       const response = await listProducts({ limit: null, page: 1, sort_by: sortBy });
@@ -336,7 +343,7 @@ export function StockManager({
   const productsQueryError = productsQuery.error;
 
   // Full product list for KPI chips. When searching, main query already has all results.
-  const allProductsForStats = isSearching
+  const allProductsForStats = isSearching || pageIsComplete
     ? products
     : (allProductsQuery.data?.items ?? []);
 
@@ -400,7 +407,7 @@ export function StockManager({
 
   // KPI chips use the full dataset so stats are accurate across all pages.
   const summaryStats = {
-    total: allProductsQuery.data?.total ?? productTotal,
+    total: pageIsComplete ? productTotal : (allProductsQuery.data?.total ?? productTotal),
     ready: productsForStatusCounts.filter((p) => p.is_active && (p.total_stock ?? 0) > 0 && !isLowStockProduct(p)).length,
     low: productsForStatusCounts.filter(isLowStockProduct).length,
     out: productsForStatusCounts.filter((p) => (p.total_stock ?? 0) === 0).length,

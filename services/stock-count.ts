@@ -1,4 +1,5 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
+import { sharedRequest } from "@/lib/inflight";
 import { authorizedApiRequest } from "@/services/api";
 import type { CountSession } from "@/types/stock-count";
 
@@ -14,6 +15,13 @@ function ensureStoreId() {
 export function listCountSessions() {
   const storeId = ensureStoreId();
   return authorizedApiRequest<CountSession[]>(`/api/stores/${storeId}/stock-count-sessions`);
+}
+
+// Session headers only (items empty) — for badges/counters (B28).
+export function listCountSessionSummaries() {
+  const storeId = ensureStoreId();
+  return sharedRequest(`count-summaries/${storeId}`, () =>
+    authorizedApiRequest<CountSession[]>(`/api/stores/${storeId}/stock-count-sessions?summary=1`));
 }
 
 // Create or replace a single session (header + items) — used for save-draft and

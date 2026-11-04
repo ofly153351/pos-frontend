@@ -1,5 +1,6 @@
 import { getCurrentStoreId } from "@/lib/store-storage";
 import { authorizedApiRequest } from "@/services/api";
+import { sharedRequest } from "@/lib/inflight";
 import type {
   CreateBankAccountInput,
   CreateStoreInput,
@@ -111,11 +112,11 @@ export function createStore(input: CreateStoreInput) {
 }
 
 export function listMyStores() {
-  return authorizedApiRequest<Store[]>("/api/me/stores", {}, { requireToken: true });
+  return sharedRequest("me/stores", () => authorizedApiRequest<Store[]>("/api/me/stores", {}, { requireToken: true }));
 }
 
 export function getStoreById(storeId: string) {
-  return authorizedApiRequest<Store>(`/api/stores/${storeId}`, {}, { requireToken: true });
+  return sharedRequest(`store/${storeId}`, () => authorizedApiRequest<Store>(`/api/stores/${storeId}`, {}, { requireToken: true }));
 }
 
 export function updateStoreById(storeId: string, input: UpdateStoreInput) {
