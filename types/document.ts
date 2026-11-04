@@ -47,6 +47,7 @@ export interface Document {
   customer_name: string;
   customer_phone?: string;
   customer_tax_id?: string;
+  customer_branch?: string;
   staff_id: string;
   delivery_date?: string;
   delivery_address?: string;
@@ -145,6 +146,9 @@ export interface CreateDocumentPayload {
   type: DocumentType;
   customer_id: string;
   customer_name?: string;
+  /** Walk-in buyer tax identity for tax invoices (B03). */
+  customer_tax_id?: string;
+  customer_branch?: string;
   customer_address?: string;
   customer_phone?: string;
   document_date: string;

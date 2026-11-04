@@ -4688,7 +4688,12 @@
       "brand_id": "Brand",
       "paid_amount": "Amount received",
       "status": "Status",
-      "amount": "Amount"
+      "amount": "Amount",
+      "seller_tax_id": "Store tax ID",
+      "seller_address": "Store address",
+      "customer_name": "Buyer name",
+      "customer_tax_id": "Buyer tax ID",
+      "customer_branch": "Buyer branch (company)"
     },
     "status": {
       "400": "The request is invalid. Please check the data.",
