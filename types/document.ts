@@ -115,6 +115,9 @@ export interface RelatedDocument {
 export interface DocumentStats {
   total: number;
   pending_payment: number;
+  /** B11: remaining balance of open debts (one per obligation). */
+  pending_amount?: number;
+  overdue_amount?: number;
   overdue: number;
   paid: number;
 }

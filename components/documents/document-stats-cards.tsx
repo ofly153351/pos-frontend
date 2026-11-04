@@ -45,6 +45,7 @@ export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE",
             <div>
               <p className="text-xs text-slate-500">{dict.statsPending}</p>
               <p className="tabular-nums text-xl font-bold text-amber-600">{stats.pending_payment}</p>
+              {stats.pending_amount ? <p className="tabular-nums text-xs text-amber-700">฿{stats.pending_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p> : null}
             </div>
           </div>
 
