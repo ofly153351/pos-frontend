@@ -1,5 +1,6 @@
 "use client";
 
+import { toBusinessDate, todayBusinessDate } from "@/lib/business-date";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Minus, Plus, Search, Trash2, X } from "lucide-react";
@@ -41,7 +42,7 @@ const CREATABLE_TYPES: DocumentType[] = [
 ];
 
 function today() {
-  return new Date().toISOString().split("T")[0];
+  return todayBusinessDate();
 }
 
 function lineAmount(item: CreateDocumentModalLineItem): number {
@@ -99,13 +100,13 @@ export function CreateDocumentModal({ dict: d, initialType, editDocument, onClos
     if (!editDocument) return;
     setDocType(editDocument.type);
     setCustomerId(editDocument.customer_id);
-    setDocDate(editDocument.document_date.slice(0, 10));
-    setDueDate(editDocument.due_date?.slice(0, 10) ?? "");
+    setDocDate(toBusinessDate(editDocument.document_date));
+    setDueDate(toBusinessDate(editDocument.due_date));
     setVatEnabled(editDocument.vat_rate > 0);
     setPriceValidityDays(editDocument.price_validity_days ?? "");
     setDeliveryLeadTimeDays(editDocument.delivery_lead_time_days ?? "");
-    setPoReceivedDate(editDocument.po_received_date?.slice(0, 10) ?? "");
-    setDeliveryDate(editDocument.delivery_date?.slice(0, 10) ?? "");
+    setPoReceivedDate(toBusinessDate(editDocument.po_received_date));
+    setDeliveryDate(toBusinessDate(editDocument.delivery_date));
     setDeliveryAddress(editDocument.delivery_address ?? "");
     setDeliveryContact(editDocument.delivery_contact ?? "");
     setDeliveryPhone(editDocument.delivery_phone ?? "");

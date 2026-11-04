@@ -1,5 +1,6 @@
 "use client";
 
+import { todayBusinessDate } from "@/lib/business-date";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { ArrowRight, Ban, Check, ChevronDown, Copy, FileBadge, FileDown, FileMinus, FileSearch, FileText, Loader2, Mail, MoreHorizontal, Pencil, Printer, Receipt, Share2, Truck, Wallet, X } from "lucide-react";
@@ -324,7 +325,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     startConvertTransition(async () => {
       try {
         const full = await getDocument(documentId);
-        const today = new Date().toISOString().slice(0, 10);
+        const today = todayBusinessDate();
         await createDocument({
           type: full.type,
           customer_id: full.customer_id,

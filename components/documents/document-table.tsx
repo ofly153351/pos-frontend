@@ -1,5 +1,6 @@
 "use client";
 
+import { formatBusinessDate } from "@/lib/business-date";
 import { useState } from "react";
 import { Loader2, Package, Printer, Send, Trash2, X } from "lucide-react";
 import type { DocumentListItem, DocumentStatus } from "@/types/document";
@@ -23,7 +24,7 @@ function fmt(n: number) {
 }
 
 function fmtDate(s: string) {
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "short" }).format(new Date(s));
+  return formatBusinessDate(s, "short");
 }
 
 const STATUS_OPTIONS: DocumentStatus[] = ["DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "CONVERTED", "CANCELLED"];

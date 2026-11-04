@@ -1,5 +1,6 @@
 "use client";
 
+import { todayBusinessDate } from "@/lib/business-date";
 import { useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -113,7 +114,7 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
     startTransition(async () => {
       try {
         const full = await getDocument(doc.id);
-        const today = new Date().toISOString().slice(0, 10);
+        const today = todayBusinessDate();
         await createDocument({
           type: full.type,
           customer_id: full.customer_id,

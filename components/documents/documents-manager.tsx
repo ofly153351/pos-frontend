@@ -1,5 +1,6 @@
 "use client";
 
+import { toBusinessDate } from "@/lib/business-date";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
 
@@ -31,12 +32,8 @@ import type { DocumentsManagerInvoiceStatus } from "./types";
 // Bangkok calendar date (YYYY-MM-DD) of an ISO timestamp. Matches the convention in
 // date-range-filter (todayIso) and the backend's `AT TIME ZONE 'Asia/Bangkok'`, so a
 // 00:30 ICT document lands on the right local day rather than the prior UTC day.
-const BKK_OFFSET_MS = 7 * 60 * 60 * 1000;
 function bkkDate(iso?: string | null): string {
-  if (!iso) return "";
-  const t = new Date(iso);
-  if (Number.isNaN(t.getTime())) return "";
-  return new Date(t.getTime() + BKK_OFFSET_MS).toISOString().slice(0, 10);
+  return toBusinessDate(iso);
 }
 
 

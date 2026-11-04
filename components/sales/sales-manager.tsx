@@ -1,5 +1,6 @@
 "use client";
 
+import { todayBusinessDate } from "@/lib/business-date";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, useTransition } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -1396,7 +1397,7 @@ export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesMana
   function handleCreateQuotation() {
     startQuotationTransition(async () => {
       try {
-        const today = new Date().toISOString().split("T")[0];
+        const today = todayBusinessDate();
         await createDocument({
           type: "QUOTATION",
           customer_id: selectedCustomerId,
@@ -1673,7 +1674,7 @@ export const SalesManager = forwardRef<SalesManagerSalesManagerHandle, SalesMana
         const { createDocument } = await import("@/services/documents");
         const saleRes = await getSaleById(completedSaleId);
         const sale = saleRes.data;
-        const today = new Date().toISOString().split("T")[0];
+        const today = todayBusinessDate();
         await createDocument({
           type: "TAX_INVOICE",
           customer_id: sale.customer_id ?? "",

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatBusinessDate, todayBusinessDate } from "@/lib/business-date";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,7 +39,7 @@ function fmtCurrency(n: number) {
   return new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", minimumFractionDigits: 2 }).format(n);
 }
 function fmtDateShort(s: string) {
-  return new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" }).format(new Date(s));
+  return formatBusinessDate(s, "medium");
 }
 
 // Localised label maps for the document type / status / payment enums — shared by
@@ -229,7 +230,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
-      a.download = `documents-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.download = `documents-${todayBusinessDate()}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
