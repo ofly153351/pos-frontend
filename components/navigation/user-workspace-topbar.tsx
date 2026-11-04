@@ -81,8 +81,8 @@ export function UserWorkspaceTopbar({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-violet-100 bg-white/90 px-6 shadow-sm backdrop-blur-md">
-      <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b border-violet-100 bg-white/90 px-3 shadow-sm backdrop-blur-md sm:px-6">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-violet-200 bg-white text-violet-700 transition hover:bg-violet-50"
@@ -96,7 +96,7 @@ export function UserWorkspaceTopbar({
           )}
         </button>
 
-        <div className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-violet-200 bg-violet-50">
+        <div className="hidden h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-violet-200 bg-violet-50 sm:inline-flex">
           {storeLogoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -116,13 +116,13 @@ export function UserWorkspaceTopbar({
           )}
         </div>
 
-        <div className="text-lg font-bold text-slate-900">{title}</div>
+        <div className="min-w-0 truncate text-base font-bold text-slate-900 sm:text-lg">{title}</div>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
         <div className="inline-flex items-center gap-1 rounded-xl border border-violet-200 bg-white p-1">
           <button
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+            className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition sm:px-3 ${
               locale === "th"
                 ? "bg-violet-600 text-white shadow-sm"
                 : "text-violet-700 hover:bg-violet-50"
@@ -133,7 +133,7 @@ export function UserWorkspaceTopbar({
             TH
           </button>
           <button
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
+            className={`rounded-lg px-2 py-1.5 text-xs font-semibold transition sm:px-3 ${
               locale === "en"
                 ? "bg-violet-600 text-white shadow-sm"
                 : "text-violet-700 hover:bg-violet-50"

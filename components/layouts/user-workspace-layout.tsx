@@ -1,5 +1,6 @@
 "use client";
 
+import { SidebarDrawer } from "@/components/navigation/sidebar-drawer";
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
@@ -35,6 +36,15 @@ export function UserWorkspaceLayout({
   // (pagination, action bars) clears the fixed CopilotFAB at bottom-right.
   const isPosPage = pathname.endsWith("/sales");
   const [collapsed, setCollapsed] = useState(false);
+  // B30: below lg the fixed sidebar is hidden and the same menu opens as a drawer.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  function toggleNavigation() {
+    if (typeof window !== "undefined" && !window.matchMedia("(min-width: 1024px)").matches) {
+      setDrawerOpen((open) => !open);
+      return;
+    }
+    setCollapsed((current) => !current);
+  }
 
   function openCashier() {
     router.push(`/${locale}/sales`);
@@ -127,6 +137,14 @@ export function UserWorkspaceLayout({
   return (
     <CopilotProvider>
     <div className="h-screen overflow-hidden bg-[linear-gradient(160deg,_#f5f3ff_0%,_#faf5ff_35%,_#f8fafc_100%)] text-slate-900">
+      <SidebarDrawer
+        isOpen={drawerOpen}
+        locale={locale}
+        labels={navLabels}
+        onClose={() => setDrawerOpen(false)}
+        onNavigate={() => setDrawerOpen(false)}
+      />
+      <div className="hidden lg:block">
       <UserWorkspaceSidebar
         collapsed={collapsed}
         labels={{
@@ -172,10 +190,11 @@ export function UserWorkspaceLayout({
         onOpenCashier={openCashier}
         shell={shell}
       />
+      </div>
 
       <div
         className={`flex h-full flex-col transition-all duration-300 ${
-          collapsed ? "ml-20" : "ml-64"
+          collapsed ? "lg:ml-20" : "lg:ml-64"
         }`}
       >
         <UserWorkspaceTopbar
@@ -196,7 +215,7 @@ export function UserWorkspaceLayout({
             title: shell.notificationsTitle,
             viewAll: shell.notificationsViewAll,
           }}
-          onToggle={() => setCollapsed((current) => !current)}
+          onToggle={toggleNavigation}
           settingsLabel={shell.settings}
           sidebarCollapsed={collapsed}
           title={title}
