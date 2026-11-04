@@ -74,6 +74,8 @@ export type CreditSalesManagerCreditSalesDictionary = {
   detailTotalLabel: string;
   detailPaidLabel: string;
   detailRemainingLabel: string;
+  detailReturnedLabel: string;
+  detailUnreturnedLabel: string;
   detailItemsTitle: string;
   detailPayHistoryTitle: string;
   detailNoPayments: string;

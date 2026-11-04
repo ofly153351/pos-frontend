@@ -23,6 +23,9 @@ export type CreditSalePayment = {
   id: string;
   amount: number;
   method: "cash" | "transfer" | "return";
+  /** B15: "return" = goods came back on a loan (not money). */
+  kind?: "payment" | "return";
+  created_by_name?: string;
   note?: string;
   paid_at: string;
 };
@@ -43,6 +46,16 @@ export type CreditSale = {
   due_date: string;
   created_at: string;
   created_by: string;
+  /** B15: recorder's name from the session user. */
+  created_by_name?: string;
+  /** B15: money owed (credit sales only). */
+  receivable_amount?: number;
+  /** B15: money actually received (returns excluded). */
+  collected_amount?: number;
+  /** B15: value of goods returned on a loan. */
+  returned_value?: number;
+  /** B15: value of loaned goods not yet returned. */
+  unreturned_goods_value?: number;
   status: CreditSaleStatus;
   payments: CreditSalePayment[];
 };

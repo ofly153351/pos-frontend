@@ -4232,6 +4232,8 @@
     "detailTotalLabel": "มูลค่ารวม",
     "detailPaidLabel": "ชำระแล้ว",
     "detailRemainingLabel": "คงค้าง",
+    "detailReturnedLabel": "คืนแล้ว (มูลค่าสินค้า)",
+    "detailUnreturnedLabel": "ค้างคืน (มูลค่าสินค้า)",
     "detailItemsTitle": "รายการสินค้า",
     "detailPayHistoryTitle": "ประวัติชำระ/คืน",
     "detailNoPayments": "ยังไม่มีประวัติการชำระ",

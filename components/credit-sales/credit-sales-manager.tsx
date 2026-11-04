@@ -254,9 +254,11 @@ export function CreditSalesManager({
 
   // ─── KPI
   const kpi = useMemo(() => {
-    const active = sales.filter((s) => computeStatus(s) !== "cancelled" && computeStatus(s) !== "completed");
+    // B15: money owed counts credit sales only — borrowed goods are tracked by
+    // pieces (loanItems) and are never part of the receivable.
+    const active = sales.filter((s) => s.type !== "loan" && computeStatus(s) !== "cancelled" && computeStatus(s) !== "completed");
     const totalPending = active.reduce((sum, s) => sum + Math.max(0, s.total_amount - s.paid_amount), 0);
-    const overdue = sales.filter((s) => computeStatus(s) === "overdue").length;
+    const overdue = sales.filter((s) => s.type !== "loan" && computeStatus(s) === "overdue").length;
     const loanItems = sales
       .filter((s) => s.type === "loan" && computeStatus(s) !== "cancelled" && computeStatus(s) !== "completed")
       .reduce((sum, s) => sum + s.items.reduce((n, item) => n + item.quantity, 0), 0);
@@ -1319,7 +1321,7 @@ export function CreditSalesManager({
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
                   { label: dictionary.detailCustomerLabel, value: viewSale.customer_name },
-                  { label: dictionary.detailCreatedByLabel, value: viewSale.created_by },
+                  { label: dictionary.detailCreatedByLabel, value: viewSale.created_by_name || viewSale.created_by },
                   { label: dictionary.detailCreatedAtLabel, value: fmtDate(viewSale.created_at) },
                   { label: dictionary.detailDueDateLabel, value: fmtDate(viewSale.due_date) },
                 ].map(({ label, value }) => (
@@ -1336,13 +1338,14 @@ export function CreditSalesManager({
                   <p className="text-xs text-slate-500">{dictionary.detailTotalLabel}</p>
                   <p className="mt-1 text-lg font-bold text-slate-900">{fmtBaht(viewSale.total_amount)}</p>
                 </div>
+                {/* B15: a loan shows goods returned / not returned, never "paid". */}
                 <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
-                  <p className="text-xs text-emerald-600">{dictionary.detailPaidLabel}</p>
-                  <p className="mt-1 text-lg font-bold text-emerald-700">{fmtBaht(viewSale.paid_amount)}</p>
+                  <p className="text-xs text-emerald-600">{viewSale.type === "loan" ? dictionary.detailReturnedLabel : dictionary.detailPaidLabel}</p>
+                  <p className="mt-1 text-lg font-bold text-emerald-700">{fmtBaht(viewSale.type === "loan" ? viewSale.returned_value ?? viewSale.paid_amount : viewSale.collected_amount ?? viewSale.paid_amount)}</p>
                 </div>
-                <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-center">
-                  <p className="text-xs text-rose-600">{dictionary.detailRemainingLabel}</p>
-                  <p className="mt-1 text-lg font-bold text-rose-700">{fmtBaht(Math.max(0, viewSale.total_amount - viewSale.paid_amount))}</p>
+                <div className={`rounded-xl border p-3 text-center ${viewSale.type === "loan" ? "border-amber-100 bg-amber-50" : "border-rose-100 bg-rose-50"}`}>
+                  <p className={`text-xs ${viewSale.type === "loan" ? "text-amber-700" : "text-rose-600"}`}>{viewSale.type === "loan" ? dictionary.detailUnreturnedLabel : dictionary.detailRemainingLabel}</p>
+                  <p className={`mt-1 text-lg font-bold ${viewSale.type === "loan" ? "text-amber-800" : "text-rose-700"}`}>{fmtBaht(Math.max(0, viewSale.total_amount - viewSale.paid_amount))}</p>
                 </div>
               </div>
 
@@ -1383,7 +1386,7 @@ export function CreditSalesManager({
                 ) : (
                   <div className="space-y-2">
                     {viewSale.payments.map((pay, index) => (
-                      <div key={`${pay.id ?? "pay"}-${index}`} className="flex items-center justify-between rounded-xl border border-slate-100 px-4 py-3">
+                      <div key={`${pay.id ?? "pay"}-${index}`} className={`flex items-center justify-between rounded-xl border px-4 py-3 ${pay.method === "return" ? "border-amber-100 bg-amber-50/50" : "border-slate-100"}`}>
                         <div>
                           <p className="text-sm font-medium text-slate-900">{fmtBaht(pay.amount)}</p>
                           <p className="text-xs text-slate-500">
@@ -1393,6 +1396,7 @@ export function CreditSalesManager({
                                 ? dictionary.paymentMethodReturn
                                 : dictionary.paymentMethodTransfer}
                             {pay.note ? ` · ${pay.note}` : ""}
+                            {pay.created_by_name ? ` · ${pay.created_by_name}` : ""}
                           </p>
                         </div>
                         <p className="text-xs text-slate-400">{fmtDate(pay.paid_at)}</p>
