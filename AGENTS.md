@@ -55,6 +55,16 @@ AGENTS.md — POS Frontend
 - PDF generation must use stored totals from toDocData(); never recalculate VAT.
 - Preserve ?copy=N through the BFF.
 - Tax Invoice creation: POST /sales/:id/documents with { type: "TAX_INVOICE" }.
+7b. P1 Shared Helpers and Rules (owner-approved 2026-11-04)
+- Business dates: use lib/business-date.ts (todayBusinessDate, toBusinessDate, formatBusinessDate). Never use toISOString().slice(0, 10) or the browser timezone for business dates.
+- API errors: use friendlyMessage / setFromApiError / showApiError from lib/form-errors (backed by lib/api-error.ts). They translate backend field codes, HTTP statuses and 409 details.reason through the apiErrors section of th.json and en.json. 400/409/422 show as warnings. Do not show raw backend text, and do not hard-code Thai or English fallbacks.
+- Below-cost prices: warn and confirm (lib/price-checks.ts). Never block.
+- Payments: always go through the confirmed PaymentDialog (POST /documents/:id/payments with an Idempotency-Key). Never flip payment flags.
+- Credit notes: issue them from the original document with a reason (CreditReasonModal). Never create standalone credit notes.
+- Loans (credit_sales.type='loan') are goods. Never add them to money totals.
+- Previews: never combine allow-scripts with allow-same-origin. Use lib/preview-bridge.ts (withPreviewBridge, printPreviewFrame, PREVIEW_SANDBOX_SCRIPTS) and talk to frames only via postMessage. Inert pages use sandbox="".
+- Identity placeholders: render skeletons until real store/user data loads. Never show fake names.
+
 8. Data and Pagination
 - For server-paginated lists, use the paginated query only for display.
 - Fetch stats separately (reference: stock-manager.tsx allProductsQuery) with limit=9999 and staleTime: 30_000.
