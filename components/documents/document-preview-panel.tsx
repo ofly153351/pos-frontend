@@ -1,5 +1,6 @@
 "use client";
 
+import { PaymentDialog } from "@/components/documents/payment-dialog";
 import { showApiError } from "@/lib/form-errors";
 import { CreditReasonModal } from "@/components/documents/credit-reason-modal";
 import { todayBusinessDate } from "@/lib/business-date";
@@ -9,7 +10,7 @@ import { ArrowRight, Ban, Check, ChevronDown, Copy, FileBadge, FileDown, FileMin
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "@/services/api";
-import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, createDocument, getDocument, getDocumentPdfBlob, payInvoice, updateDocumentPaymentStatus, getDocumentPrintHtml, getRelatedDocuments, getDocuments, getDocumentRevisions, restoreDocumentRevision } from "@/services/documents";
+import { cancelDocument, completeDeliveryOrder, convertDocument, convertQuotation, convertToDeliveryOrder, convertToTaxInvoice, createDocument, getDocument, getDocumentPdfBlob, getDocumentPrintHtml, getRelatedDocuments, getDocuments, getDocumentRevisions, restoreDocumentRevision } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { copyChoicesFor } from "@/lib/document-copies";
@@ -34,7 +35,7 @@ function isA4(type?: DocumentType) {
 export function DocumentPreviewPanel({ documentId, documentNo, documentType, customerId, paymentStatus, documentStatus, dict, onClose, onEdit, onNavigate }: DocumentPreviewPanelProps) {
   const [, startOpenTransition] = useTransition();
   const [isConverting, startConvertTransition] = useTransition();
-  const [isPaying, startPayTransition] = useTransition();
+  const [isPaying] = useTransition();
   const [isCancelling, startCancelTransition] = useTransition();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
@@ -113,10 +114,11 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
 
   // B23/B12: explain the actual reason (already converted, closed source,
   // credit ceiling…) in the selected language instead of a fixed message.
-  function notifyConversionFailure(error: unknown, _fallback?: string) {
+  function notifyConversionFailure(error: unknown) {
     showApiError(error);
   }
   const [creditOpen, setCreditOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
 
   function handleConvert() {
     startConvertTransition(async () => {
@@ -126,22 +128,14 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
       } catch (error) {
-        notifyConversionFailure(error, "ไม่สามารถแปลงเอกสารได้");
+        notifyConversionFailure(error);
       }
     });
   }
 
+  // B05: open the confirmed payment dialog instead of paying in one click.
   function handlePayInvoice() {
-    startPayTransition(async () => {
-      try {
-        await payInvoice(documentId);
-        toast.success(dict.payRelatedSuccess);
-        qc.invalidateQueries({ queryKey: ["documents"] });
-        onClose();
-      } catch {
-        toast.error("ไม่สามารถดำเนินการได้");
-      }
-    });
+    setPayOpen(true);
   }
 
   function handleConvertToTax() {
@@ -153,7 +147,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
       } catch (error) {
-        notifyConversionFailure(error, "ไม่สามารถแปลงเอกสารได้");
+        notifyConversionFailure(error);
       }
     });
   }
@@ -222,22 +216,14 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
         qc.invalidateQueries({ queryKey: ["documents"] });
         onClose();
       } catch (error) {
-        notifyConversionFailure(error, "ไม่สามารถสร้างใบส่งของได้");
+        notifyConversionFailure(error);
       }
     });
   }
 
+  // A delivery order is paid through the same ledger as its invoice (B05).
   function handlePayDO() {
-    startPayTransition(async () => {
-      try {
-        await updateDocumentPaymentStatus(documentId, "PAID");
-        toast.success("ชำระเงินใบส่งของแล้ว");
-        qc.invalidateQueries({ queryKey: ["documents"] });
-        onClose();
-      } catch {
-        toast.error("ไม่สามารถดำเนินการได้");
-      }
-    });
+    setPayOpen(true);
   }
 
   function handleCompleteDelivery() {
@@ -362,7 +348,7 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
         qc.invalidateQueries({ queryKey: ["documents"] });
         toast.success(dict.convertSuccess);
       } catch (error) {
-        notifyConversionFailure(error, dict.convertError);
+        notifyConversionFailure(error);
       }
     });
   }
@@ -944,6 +930,15 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   // ── Panel mode (A5 / RECEIPT — inline card) ─────────────────────────────────
   return (
     <div className="flex w-[360px] shrink-0 flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
+      <PaymentDialog
+        documentId={documentId}
+        open={payOpen}
+        onClose={() => setPayOpen(false)}
+        onPaid={() => {
+          qc.invalidateQueries({ queryKey: ["documents"] });
+          qc.invalidateQueries({ queryKey: ["document-payments", documentId] });
+        }}
+      />
       <CreditReasonModal
         open={creditOpen}
         documentNo={documentNo}

@@ -4665,7 +4665,10 @@
       "max_below_min": "{field} must not be below the minimum stock",
       "end_before_start": "{field} must be after the start date",
       "not_in_store": "{field} does not belong to this store",
-      "credit_source_invalid": "{field} must be an invoice, receipt or tax invoice"
+      "credit_source_invalid": "{field} must be an invoice, receipt or tax invoice",
+      "payment_method_invalid": "{field} is not valid",
+      "date_invalid": "{field} is not valid",
+      "not_payable": "This {field} type has no debt to pay"
     },
     "fields": {
       "tax_id": "Tax ID",
@@ -4697,7 +4700,10 @@
       "customer_branch": "Buyer branch (company)",
       "reason": "Reason",
       "source_document_id": "Original document",
-      "total_amount": "Credit amount"
+      "total_amount": "Credit amount",
+      "method": "Payment method",
+      "paid_date": "Payment date",
+      "document_id": "Document"
     },
     "status": {
       "400": "The request is invalid. Please check the data.",
@@ -4721,7 +4727,8 @@
       "invalid_transition": "Cannot change status from “{from}” to “{to}”.",
       "source_not_eligible": "Source document {document_no} is “{from}” and cannot be used.",
       "already_converted": "This document was already converted or billed: {document_no}",
-      "credit_exceeds_original": "Total credit would exceed {document_no} (remaining ฿{remaining})"
+      "credit_exceeds_original": "Total credit would exceed {document_no} (remaining ฿{remaining})",
+      "overpayment": "Payment exceeds the remaining balance (฿{remaining})"
     },
     "statuses": {
       "DRAFT": "Draft",
@@ -4739,6 +4746,33 @@
     "creditReasonLabel": "Reason (required)",
     "creditReasonPlaceholder": "e.g. damaged goods returned",
     "creditReasonConfirm": "Create credit note",
-    "creditReasonCancel": "Cancel"
+    "creditReasonCancel": "Cancel",
+    "payment": {
+      "title": "Record payment",
+      "total": "Document total",
+      "paid": "Paid",
+      "credited": "Credited",
+      "remaining": "Remaining",
+      "amount": "Amount received",
+      "method": "Method",
+      "date": "Payment date",
+      "note": "Note",
+      "methods": {
+        "cash": "Cash",
+        "transfer": "Bank transfer",
+        "qr": "QR PromptPay",
+        "card": "Card",
+        "cheque": "Cheque"
+      },
+      "resultFull": "After saving: fully paid; the document becomes “Completed / Paid”.",
+      "resultPartial": "After saving: partially paid, ฿{remaining} remaining.",
+      "resultOver": "Amount exceeds the remaining balance.",
+      "settles": "Settles: {documents}",
+      "confirm": "Confirm payment",
+      "cancel": "Cancel",
+      "success": "Payment recorded",
+      "nothingDue": "Nothing is due on this document",
+      "history": "Payment history"
+    }
   }
 }

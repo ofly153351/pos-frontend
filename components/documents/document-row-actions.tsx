@@ -1,5 +1,6 @@
 "use client";
 
+import { PaymentDialog } from "@/components/documents/payment-dialog";
 import { showApiError } from "@/lib/form-errors";
 import { CreditReasonModal } from "@/components/documents/credit-reason-modal";
 import { todayBusinessDate } from "@/lib/business-date";
@@ -30,7 +31,6 @@ import {
   deleteDocument,
   getDocument,
   getDocumentPdfBlob,
-  payInvoice,
 } from "@/services/documents";
 import { toast } from "@/components/ui/toast";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -68,6 +68,7 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
   const [confirmKind, setConfirmKind] = useState<null | "cancel" | "delete">(null);
   const [isPending, startTransition] = useTransition();
   const [creditOpen, setCreditOpen] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const qc = useQueryClient();
@@ -179,20 +180,11 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
     });
   }
 
+  // B05: payment is confirmed in a dialog (amount, method, date, result); the
+  // backend resolves which debt the document carries (no double counting).
   function handlePay() {
     close();
-    // DELIVERY_ORDER settles its linked invoice; INVOICE settles itself.
-    const targetId = doc.type === "DELIVERY_ORDER" ? doc.source_document_id : doc.id;
-    if (!targetId) return;
-    startTransition(async () => {
-      try {
-        await payInvoice(targetId);
-        refresh();
-        toast.success(d.paySuccess);
-      } catch {
-        toast.error(d.payError);
-      }
-    });
+    setPayOpen(true);
   }
 
   // Cancel / Delete open a themed confirmation modal (see render below) instead of
@@ -252,6 +244,7 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
 
   return (
     <div ref={wrapRef} className="relative flex items-center gap-0.5">
+      <PaymentDialog documentId={doc.id} open={payOpen} onClose={() => setPayOpen(false)} onPaid={refresh} />
       <CreditReasonModal
         open={creditOpen}
         documentNo={doc.document_no_full}

@@ -4665,7 +4665,10 @@
       "max_below_min": "{field}ต้องไม่น้อยกว่าสต็อกขั้นต่ำ",
       "end_before_start": "{field}ต้องอยู่หลังวันที่เริ่ม",
       "not_in_store": "{field}ไม่ได้อยู่ในร้านนี้",
-      "credit_source_invalid": "{field}ต้องเป็นใบแจ้งหนี้ ใบเสร็จ หรือใบกำกับภาษี"
+      "credit_source_invalid": "{field}ต้องเป็นใบแจ้งหนี้ ใบเสร็จ หรือใบกำกับภาษี",
+      "payment_method_invalid": "{field}ไม่ถูกต้อง",
+      "date_invalid": "{field}ไม่ถูกต้อง",
+      "not_payable": "{field}ประเภทนี้ไม่มียอดหนี้ให้ชำระ"
     },
     "fields": {
       "tax_id": "เลขประจำตัวผู้เสียภาษี",
@@ -4697,7 +4700,10 @@
       "customer_branch": "สาขาผู้ซื้อ (นิติบุคคล)",
       "reason": "เหตุผล",
       "source_document_id": "เอกสารต้นฉบับ",
-      "total_amount": "ยอดลดหนี้"
+      "total_amount": "ยอดลดหนี้",
+      "method": "ช่องทางชำระ",
+      "paid_date": "วันที่รับชำระ",
+      "document_id": "เอกสาร"
     },
     "status": {
       "400": "คำขอไม่ถูกต้อง กรุณาตรวจสอบข้อมูล",
@@ -4721,7 +4727,8 @@
       "invalid_transition": "ไม่สามารถเปลี่ยนสถานะจาก “{from}” เป็น “{to}” ได้",
       "source_not_eligible": "เอกสารต้นทาง {document_no} อยู่ในสถานะ “{from}” จึงนำไปใช้ต่อไม่ได้",
       "already_converted": "เอกสารนี้ถูกแปลงหรือวางบิลไปแล้ว: {document_no}",
-      "credit_exceeds_original": "ยอดลดหนี้รวมเกินยอดเอกสาร {document_no} (ลดได้อีก ฿{remaining})"
+      "credit_exceeds_original": "ยอดลดหนี้รวมเกินยอดเอกสาร {document_no} (ลดได้อีก ฿{remaining})",
+      "overpayment": "จำนวนเงินเกินยอดคงค้าง (คงค้าง ฿{remaining})"
     },
     "statuses": {
       "DRAFT": "ร่าง",
@@ -4739,6 +4746,33 @@
     "creditReasonLabel": "เหตุผล (จำเป็น)",
     "creditReasonPlaceholder": "เช่น สินค้าชำรุด ลูกค้าส่งคืน",
     "creditReasonConfirm": "ออกใบลดหนี้",
-    "creditReasonCancel": "ยกเลิก"
+    "creditReasonCancel": "ยกเลิก",
+    "payment": {
+      "title": "บันทึกการรับชำระ",
+      "total": "ยอดเอกสาร",
+      "paid": "ชำระแล้ว",
+      "credited": "ลดหนี้แล้ว",
+      "remaining": "คงค้าง",
+      "amount": "จำนวนเงินที่รับ",
+      "method": "ช่องทาง",
+      "date": "วันที่รับชำระ",
+      "note": "หมายเหตุ",
+      "methods": {
+        "cash": "เงินสด",
+        "transfer": "โอนเงิน",
+        "qr": "QR พร้อมเพย์",
+        "card": "บัตร",
+        "cheque": "เช็ค"
+      },
+      "resultFull": "หลังบันทึก: ชำระครบ เอกสารจะเปลี่ยนเป็น “เสร็จสิ้น/ชำระแล้ว”",
+      "resultPartial": "หลังบันทึก: ชำระบางส่วน คงค้าง ฿{remaining}",
+      "resultOver": "จำนวนเงินเกินยอดคงค้าง",
+      "settles": "ตัดหนี้ของ: {documents}",
+      "confirm": "ยืนยันรับชำระ",
+      "cancel": "ยกเลิก",
+      "success": "บันทึกการรับชำระแล้ว",
+      "nothingDue": "เอกสารนี้ไม่มียอดคงค้าง",
+      "history": "ประวัติการชำระ"
+    }
   }
 }

@@ -90,6 +90,54 @@ export async function payInvoice(id: string): Promise<Document> {
   return res.data;
 }
 
+// ── Payments (B05) — recorded in the existing payment ledger ─────────────────
+export interface DocumentBalance {
+  document_id: string;
+  document_no: string;
+  total: number;
+  paid: number;
+  credited: number;
+  remaining: number;
+  payment_status: "UNPAID" | "PARTIAL" | "PAID";
+}
+export interface DocumentPaymentRecord {
+  id: string;
+  amount: number;
+  method: string;
+  paid_at: string;
+  note?: string;
+}
+export interface DocumentPaymentSummary {
+  balances: DocumentBalance[];
+  total: number;
+  paid: number;
+  credited: number;
+  remaining: number;
+  payments: DocumentPaymentRecord[];
+  replayed?: boolean;
+}
+export interface RecordPaymentPayload {
+  amount: number;
+  method: "cash" | "transfer" | "qr" | "card" | "cheque";
+  paid_date: string;
+  note?: string;
+}
+
+export async function getDocumentPayments(id: string): Promise<DocumentPaymentSummary> {
+  const res = await authorizedApiRequest<DocumentPaymentSummary>(`${base()}/${id}/payments`);
+  return res.data;
+}
+
+/** idempotencyKey must stay the same for retries of one confirmed submission. */
+export async function recordDocumentPayment(id: string, payload: RecordPaymentPayload, idempotencyKey: string): Promise<DocumentPaymentSummary> {
+  const res = await authorizedApiRequest<DocumentPaymentSummary>(`${base()}/${id}/payments`, {
+    method: "POST",
+    body: payload,
+    headers: { "Idempotency-Key": idempotencyKey },
+  });
+  return res.data;
+}
+
 export async function updateDocumentPaymentStatus(id: string, paymentStatus: "UNPAID" | "PARTIAL" | "PAID"): Promise<void> {
   await authorizedApiRequest(`${base()}/${id}/payment-status`, {
     method: "PUT",
