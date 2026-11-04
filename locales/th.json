@@ -4664,7 +4664,8 @@
       "level_invalid": "{field}ต้องมากกว่า 0",
       "max_below_min": "{field}ต้องไม่น้อยกว่าสต็อกขั้นต่ำ",
       "end_before_start": "{field}ต้องอยู่หลังวันที่เริ่ม",
-      "not_in_store": "{field}ไม่ได้อยู่ในร้านนี้"
+      "not_in_store": "{field}ไม่ได้อยู่ในร้านนี้",
+      "credit_source_invalid": "{field}ต้องเป็นใบแจ้งหนี้ ใบเสร็จ หรือใบกำกับภาษี"
     },
     "fields": {
       "tax_id": "เลขประจำตัวผู้เสียภาษี",
@@ -4693,7 +4694,10 @@
       "seller_address": "ที่อยู่ร้าน",
       "customer_name": "ชื่อผู้ซื้อ",
       "customer_tax_id": "เลขประจำตัวผู้เสียภาษีผู้ซื้อ",
-      "customer_branch": "สาขาผู้ซื้อ (นิติบุคคล)"
+      "customer_branch": "สาขาผู้ซื้อ (นิติบุคคล)",
+      "reason": "เหตุผล",
+      "source_document_id": "เอกสารต้นฉบับ",
+      "total_amount": "ยอดลดหนี้"
     },
     "status": {
       "400": "คำขอไม่ถูกต้อง กรุณาตรวจสอบข้อมูล",
@@ -4716,7 +4720,8 @@
     "conflicts": {
       "invalid_transition": "ไม่สามารถเปลี่ยนสถานะจาก “{from}” เป็น “{to}” ได้",
       "source_not_eligible": "เอกสารต้นทาง {document_no} อยู่ในสถานะ “{from}” จึงนำไปใช้ต่อไม่ได้",
-      "already_converted": "เอกสารนี้ถูกแปลงหรือวางบิลไปแล้ว: {document_no}"
+      "already_converted": "เอกสารนี้ถูกแปลงหรือวางบิลไปแล้ว: {document_no}",
+      "credit_exceeds_original": "ยอดลดหนี้รวมเกินยอดเอกสาร {document_no} (ลดได้อีก ฿{remaining})"
     },
     "statuses": {
       "DRAFT": "ร่าง",
@@ -4729,6 +4734,11 @@
       "COMPLETED": "เสร็จสิ้น",
       "CONVERTED": "แปลงแล้ว",
       "CANCELLED": "ยกเลิก"
-    }
+    },
+    "creditReasonTitle": "เหตุผลการออกใบลดหนี้",
+    "creditReasonLabel": "เหตุผล (จำเป็น)",
+    "creditReasonPlaceholder": "เช่น สินค้าชำรุด ลูกค้าส่งคืน",
+    "creditReasonConfirm": "ออกใบลดหนี้",
+    "creditReasonCancel": "ยกเลิก"
   }
 }

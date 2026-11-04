@@ -4664,7 +4664,8 @@
       "level_invalid": "{field} must be greater than 0",
       "max_below_min": "{field} must not be below the minimum stock",
       "end_before_start": "{field} must be after the start date",
-      "not_in_store": "{field} does not belong to this store"
+      "not_in_store": "{field} does not belong to this store",
+      "credit_source_invalid": "{field} must be an invoice, receipt or tax invoice"
     },
     "fields": {
       "tax_id": "Tax ID",
@@ -4693,7 +4694,10 @@
       "seller_address": "Store address",
       "customer_name": "Buyer name",
       "customer_tax_id": "Buyer tax ID",
-      "customer_branch": "Buyer branch (company)"
+      "customer_branch": "Buyer branch (company)",
+      "reason": "Reason",
+      "source_document_id": "Original document",
+      "total_amount": "Credit amount"
     },
     "status": {
       "400": "The request is invalid. Please check the data.",
@@ -4716,7 +4720,8 @@
     "conflicts": {
       "invalid_transition": "Cannot change status from “{from}” to “{to}”.",
       "source_not_eligible": "Source document {document_no} is “{from}” and cannot be used.",
-      "already_converted": "This document was already converted or billed: {document_no}"
+      "already_converted": "This document was already converted or billed: {document_no}",
+      "credit_exceeds_original": "Total credit would exceed {document_no} (remaining ฿{remaining})"
     },
     "statuses": {
       "DRAFT": "Draft",
@@ -4729,6 +4734,11 @@
       "COMPLETED": "Completed",
       "CONVERTED": "Converted",
       "CANCELLED": "Cancelled"
-    }
+    },
+    "creditReasonTitle": "Credit note reason",
+    "creditReasonLabel": "Reason (required)",
+    "creditReasonPlaceholder": "e.g. damaged goods returned",
+    "creditReasonConfirm": "Create credit note",
+    "creditReasonCancel": "Cancel"
   }
 }

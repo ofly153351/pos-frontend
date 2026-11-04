@@ -1,5 +1,7 @@
 "use client";
 
+import { showApiError } from "@/lib/form-errors";
+import { CreditReasonModal } from "@/components/documents/credit-reason-modal";
 import { todayBusinessDate } from "@/lib/business-date";
 import { useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
@@ -65,6 +67,7 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [confirmKind, setConfirmKind] = useState<null | "cancel" | "delete">(null);
   const [isPending, startTransition] = useTransition();
+  const [creditOpen, setCreditOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const qc = useQueryClient();
@@ -158,15 +161,20 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
     });
   }
 
-  function handleConvert(target: DocumentType) {
+  function handleConvert(target: DocumentType, reason?: string) {
     close();
+    // B13: a credit note needs a reason first.
+    if (target === "CREDIT_NOTE" && !reason) {
+      setCreditOpen(true);
+      return;
+    }
     startTransition(async () => {
       try {
-        await convertDocument(doc.id, target);
+        await convertDocument(doc.id, target, undefined, undefined, reason);
         refresh();
         toast.success(d.convertSuccess);
-      } catch {
-        toast.error(d.convertError);
+      } catch (err) {
+        showApiError(err);
       }
     });
   }
@@ -244,6 +252,15 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
 
   return (
     <div ref={wrapRef} className="relative flex items-center gap-0.5">
+      <CreditReasonModal
+        open={creditOpen}
+        documentNo={doc.document_no_full}
+        onClose={() => setCreditOpen(false)}
+        onSubmit={(reason) => {
+          setCreditOpen(false);
+          handleConvert("CREDIT_NOTE", reason);
+        }}
+      />
       {/* Quick: duplicate */}
       <button
         title={d.duplicate}

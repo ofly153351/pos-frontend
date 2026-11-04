@@ -125,6 +125,7 @@ export async function convertDocument(
   targetType: DocumentType,
   receiptTemplate?: 1 | 2,
   sourceDocumentIds?: string[],
+  reason?: string,
 ): Promise<Document> {
   const res = await authorizedApiRequest<Document>(`${base()}/${id}/convert-to`, {
     method: "POST",
@@ -132,6 +133,8 @@ export async function convertDocument(
       target_type: targetType,
       ...(targetType === "RECEIPT" && receiptTemplate ? { receipt_template: receiptTemplate } : {}),
       ...(targetType === "RECEIPT" && sourceDocumentIds?.length ? { source_document_ids: sourceDocumentIds } : {}),
+      // B13: a credit note always states its reason.
+      ...(targetType === "CREDIT_NOTE" && reason ? { reason } : {}),
     },
   });
   return res.data;

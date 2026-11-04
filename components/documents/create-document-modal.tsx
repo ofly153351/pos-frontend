@@ -36,9 +36,10 @@ const TYPE_LABELS: Record<string, keyof CreateDocumentModalDict> = {
 };
 
 // Types a user may hand-author here. RECEIPT is excluded — receipts come from POS
-// sales, never from this modal.
+// sales, never from this modal. CREDIT_NOTE is excluded too (B13): a credit note
+// is issued from its original document with a reason, never standalone.
 const CREATABLE_TYPES: DocumentType[] = [
-  "INVOICE", "TAX_INVOICE", "QUOTATION", "BILL", "CREDIT_NOTE", "DELIVERY_ORDER",
+  "INVOICE", "TAX_INVOICE", "QUOTATION", "BILL", "DELIVERY_ORDER",
 ];
 
 function today() {

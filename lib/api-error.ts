@@ -85,6 +85,7 @@ export function localizeApiError(err: unknown, messages: ApiErrorMessages = regi
         from: label(details?.from),
         to: label(details?.to),
         document_no: typeof details?.document_no === "string" ? details.document_no : "",
+        remaining: typeof details?.remaining === "number" ? details.remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "",
       });
       return { message, level, fields };
     }

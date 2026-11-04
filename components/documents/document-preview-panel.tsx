@@ -1,5 +1,7 @@
 "use client";
 
+import { showApiError } from "@/lib/form-errors";
+import { CreditReasonModal } from "@/components/documents/credit-reason-modal";
 import { todayBusinessDate } from "@/lib/business-date";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
@@ -109,13 +111,12 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   }, [billingComboOpen]);
 
 
-  function notifyConversionFailure(error: unknown, fallback: string) {
-    if (error instanceof ApiError && error.status === 409) {
-      toast.warning(dict.alreadyConverted);
-      return;
-    }
-    toast.error(fallback);
+  // B23/B12: explain the actual reason (already converted, closed source,
+  // credit ceiling…) in the selected language instead of a fixed message.
+  function notifyConversionFailure(error: unknown, _fallback?: string) {
+    showApiError(error);
   }
+  const [creditOpen, setCreditOpen] = useState(false);
 
   function handleConvert() {
     startConvertTransition(async () => {
@@ -350,10 +351,14 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
     });
   }
 
-  function handleConvertGeneric(target: "CREDIT_NOTE") {
+  function handleConvertGeneric(target: "CREDIT_NOTE", reason?: string) {
+    if (!reason) {
+      setCreditOpen(true); // B13: ask for the mandatory reason first
+      return;
+    }
     startConvertTransition(async () => {
       try {
-        await convertDocument(documentId, target);
+        await convertDocument(documentId, target, undefined, undefined, reason);
         qc.invalidateQueries({ queryKey: ["documents"] });
         toast.success(dict.convertSuccess);
       } catch (error) {
@@ -939,6 +944,15 @@ export function DocumentPreviewPanel({ documentId, documentNo, documentType, cus
   // ── Panel mode (A5 / RECEIPT — inline card) ─────────────────────────────────
   return (
     <div className="flex w-[360px] shrink-0 flex-col overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm">
+      <CreditReasonModal
+        open={creditOpen}
+        documentNo={documentNo}
+        onClose={() => setCreditOpen(false)}
+        onSubmit={(reason) => {
+          setCreditOpen(false);
+          handleConvertGeneric("CREDIT_NOTE", reason);
+        }}
+      />
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-violet-100 bg-gradient-to-r from-violet-50 to-white px-4 py-3">
         <span className="text-sm font-bold text-slate-800">{dict.previewTitle}</span>
