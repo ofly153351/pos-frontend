@@ -1,5 +1,6 @@
 "use client";
 
+import { newProductDefaults } from "@/lib/product-defaults";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -415,7 +416,7 @@ function resetProductForm() {
 
   function openCreateModal() {
     setEditingProductId(null);
-    setFormState({ ...initialProductFormState, brand_id: productBrands[0]?.id ?? "", initial_stock: "", supplier_id: "", unit_id: productUnits[0]?.id ?? "" });
+    setFormState({ ...initialProductFormState, ...newProductDefaults(productUnits), initial_stock: "", supplier_id: "" });
     setIsProductModalOpen(true);
   }
 
