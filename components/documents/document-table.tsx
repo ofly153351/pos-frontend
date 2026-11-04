@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Loader2, Package, Printer, Send, Trash2, X } from "lucide-react";
 import type { DocumentListItem, DocumentStatus } from "@/types/document";
 import { getDocumentPrintHtml } from "@/services/documents";
-import { toast } from "@/components/ui/toast";
 import { PageSizeDropdown } from "@/components/ui/page-size-dropdown";
 import { DocumentTypeBadge } from "./document-type-badge";
 import { DocumentStatusBadge, PaymentStatusBadge } from "./document-status-badge";
@@ -106,8 +105,10 @@ export function DocumentTable({
               {bulkPrinting ? d.loading : d.printAll}
             </button>
             <button
-              className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 transition-colors hover:bg-violet-50"
-              onClick={() => toast.info(d.comingSoon)}
+              className="flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-sm text-violet-700 opacity-50"
+              disabled
+              title={d.comingSoon}
+              aria-label={`${d.send} (${d.comingSoon})`}
               type="button"
             >
               <Send className="h-3.5 w-3.5" />

@@ -183,7 +183,8 @@ export function SaleDocumentPreviewModal({
         break;
       case "email":
       case "line":
-        toast.success(dict.comingSoon);
+        // B27: not connected — inform, never report success.
+        toast.info(dict.comingSoon);
         break;
     }
   }

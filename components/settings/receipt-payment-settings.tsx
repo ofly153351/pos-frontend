@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { unavailableText } from "@/lib/unavailable";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -636,13 +637,6 @@ const GATEWAY_DEFAULT: ReceiptPaymentSettingsGatewayConfig = {
   omise: { public_key: "", secret_key: "", webhook_secret: "" },
   c2p: { merchant_id: "", secret_key: "" },
 };
-function loadGatewayConfig(storeId: string): ReceiptPaymentSettingsGatewayConfig {
-  try {
-    const raw = localStorage.getItem(`pos_gateway_${storeId}`);
-    if (!raw) return GATEWAY_DEFAULT;
-    return { ...GATEWAY_DEFAULT, ...JSON.parse(raw) };
-  } catch { return GATEWAY_DEFAULT; }
-}
 
 function WebhookUrlField({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
@@ -665,19 +659,23 @@ function WebhookUrlField({ url }: { url: string }) {
 }
 
 function GatewayTab({ storeId }: { storeId: string }) {
-  const [config, setConfig] = useState<ReceiptPaymentSettingsGatewayConfig>(() => loadGatewayConfig(storeId));
+  const [config, setConfig] = useState<ReceiptPaymentSettingsGatewayConfig>(GATEWAY_DEFAULT);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
-  const [saved, setSaved] = useState(false);
 
   const webhookUrl = `${typeof window !== "undefined" ? window.location.origin : "https://your-domain.com"}/api/webhooks/payment`;
 
   function toggleSecret(k: string) { setShowSecrets(p => ({ ...p, [k]: !p[k] })); }
 
-  function save() {
-    localStorage.setItem(`pos_gateway_${storeId}`, JSON.stringify(config));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }
+  // B27: the gateway is not connected to the backend. Never claim a save, and
+  // never keep gateway secrets in browser storage — purge any earlier copy.
+  useEffect(() => {
+    try {
+      localStorage.removeItem(`pos_gateway_${storeId}`);
+    } catch {
+      /* storage unavailable */
+    }
+  }, [storeId]);
+  const saved = false;
 
   const PROVIDERS = [
     { key: "none" as ReceiptPaymentSettingsGatewayProvider,  label: "ไม่ใช้ Gateway", desc: "ยืนยันด้วยตนเองผ่านมือถือ",           badge: "bg-slate-500" },
@@ -691,10 +689,11 @@ function GatewayTab({ storeId }: { storeId: string }) {
       <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
         <Zap className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
         <div>
-          <p className="font-semibold">ฟีเจอร์นี้กำลังพัฒนา (กำหนดค่าล่วงหน้าได้)</p>
-          <p className="mt-0.5 text-amber-700">ตั้งค่าไว้ได้เลย — เมื่อ backend webhook พร้อม ระบบจะอ่านค่าจากที่นี่ทันที · บันทึกเฉพาะในเครื่องนี้ก่อน</p>
+          <p className="font-semibold">{unavailableText("unavailableTitle")}</p>
+          <p className="mt-0.5 text-amber-700">{unavailableText("gatewayUnavailableBody")}</p>
         </div>
       </div>
+      <fieldset disabled className="space-y-5 opacity-60">
 
       {/* Provider selector */}
       <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
@@ -785,11 +784,12 @@ function GatewayTab({ storeId }: { storeId: string }) {
       )}
 
       <div className="flex justify-end">
-        <button type="button" onClick={save} className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-700">
+        <button type="button" title={unavailableText("unavailableTitle")} className="flex cursor-not-allowed items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white">
           {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           {saved ? "บันทึกแล้ว" : "บันทึก"}
         </button>
       </div>
+      </fieldset>
     </div>
   );
 }
