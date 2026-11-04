@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { notFound } from "next/navigation";
 
+import { ApiErrorMessagesRegistrar } from "@/components/shared/api-error-messages";
+import { getDictionary } from "@/lib/i18n";
 import { isSupportedLocale, locales } from "@/lib/locale-config";
 
 type LocaleLayoutProps = {
@@ -23,5 +25,12 @@ export default async function LocaleLayout({
     notFound();
   }
 
-  return children;
+  const dictionary = await getDictionary(locale);
+
+  return (
+    <>
+      <ApiErrorMessagesRegistrar messages={dictionary.apiErrors} />
+      {children}
+    </>
+  );
 }

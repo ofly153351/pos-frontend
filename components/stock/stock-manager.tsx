@@ -26,7 +26,7 @@ import {
 import { addSupplierProduct, listSuppliers, type Supplier } from "@/services/suppliers";
 import { listLocations, type Location } from "@/services/locations";
 import { ApiError } from "@/services/api";
-import { friendlyMessage } from "@/lib/form-errors";
+import { friendlyMessage, showApiError } from "@/lib/form-errors";
 import { toast } from "@/components/ui/toast";
 import type { Product, ProductBrand, ProductInput, ProductType, ProductUnit } from "@/types/product";
 import type { StockManagerProductStockStatus } from "./types";
@@ -500,7 +500,7 @@ function resetProductForm() {
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
         toast.success("ลบสินค้าสำเร็จ");
       } catch (nextError) {
-        toast.error(friendlyMessage(nextError));
+        showApiError(nextError);
       }
     });
   }
@@ -513,7 +513,7 @@ function resetProductForm() {
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
         toast.success("ลบสินค้าสำเร็จ");
       } catch (nextError) {
-        toast.error(friendlyMessage(nextError));
+        showApiError(nextError);
       }
     });
   }
@@ -526,7 +526,7 @@ function resetProductForm() {
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
         toast.success(`เปิดใช้งาน ${ids.length} รายการสำเร็จ`);
       } catch (nextError) {
-        toast.error(friendlyMessage(nextError));
+        showApiError(nextError);
       }
     });
   }
@@ -539,7 +539,7 @@ function resetProductForm() {
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
         toast.success(`ปิดใช้งาน ${ids.length} รายการสำเร็จ`);
       } catch (nextError) {
-        toast.error(friendlyMessage(nextError));
+        showApiError(nextError);
       }
     });
   }
@@ -552,7 +552,7 @@ function resetProductForm() {
         queryClient.invalidateQueries({ queryKey: ["stock", "products"] });
         toast.success(`เปลี่ยนหมวดหมู่ ${ids.length} รายการสำเร็จ`);
       } catch (nextError) {
-        toast.error(friendlyMessage(nextError));
+        showApiError(nextError);
       }
     });
   }

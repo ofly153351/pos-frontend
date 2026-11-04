@@ -17,7 +17,7 @@ import {
 } from "@/services/suppliers";
 import { listPurchaseOrders, type PurchaseOrder } from "@/services/purchases";
 import { toast } from "@/components/ui/toast";
-import { friendlyMessage } from "@/lib/form-errors";
+import { friendlyMessage, showApiError } from "@/lib/form-errors";
 import { SkeletonListItem } from "@/components/ui/skeleton";
 import { AddSupplierModal } from "./add-supplier-modal";
 import { QueryErrorState } from "@/components/ui/query-error-state";
@@ -856,7 +856,7 @@ export function SupplierManager({ dictionary }: SupplierManagerSupplierManagerPr
       if (selectedId === supplier.id) setSelectedId(null);
       toast.success(dictionary.successDeleted);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : dictionary.requestFailed);
+      showApiError(err);
     } finally {
       setIsDeletingId(null);
     }

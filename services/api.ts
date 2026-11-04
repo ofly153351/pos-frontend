@@ -14,7 +14,9 @@ type RequestOptions = {
   responseType?: "arraybuffer" | "blob" | "json" | "text";
 };
 
-export type ApiFieldError = { field: string; message: string };
+// `code` is a stable machine code (backend platform/fieldcheck) translated via
+// locales `apiErrors.codes`; `message` is the backend fallback text.
+export type ApiFieldError = { field: string; message: string; code?: string };
 
 export type ApiErrorCode =
   | "VALIDATION_ERROR"

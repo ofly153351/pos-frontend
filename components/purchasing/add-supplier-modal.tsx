@@ -1,5 +1,6 @@
 "use client";
 
+import { showApiError } from "@/lib/form-errors";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -305,7 +306,7 @@ export function AddSupplierModal({ dictionary: dict, onClose, onSuccess }: AddSu
       onSuccess?.(result.data!);
       triggerClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : dict.requestFailed);
+      showApiError(err);
     } finally {
       setSaving(false);
     }

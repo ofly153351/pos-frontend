@@ -5,6 +5,9 @@ import type { ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { Alert } from "@/components/ui/alert";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { getApiErrorMessages } from "@/lib/api-error";
+import { belowCostPrice } from "@/lib/price-checks";
 import type {
   ManagementDictionary,
   ProductFormLabels,
@@ -504,14 +507,31 @@ export function ProductFormDrawer({
   supplierOptions,
   unitOptions,
 }: ProductFormModalProductFormDrawerProps) {
+  // B16: warn (never block) when the selling price is below cost.
+  const formRef = useRef<HTMLFormElement>(null);
+  const belowCostConfirmedRef = useRef(false);
+  const [belowCostPending, setBelowCostPending] = useState<number | null>(null);
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    const lowest = belowCostPrice(formState.base_price, formState.special_price, formState.cost_price);
+    if (lowest !== null && !belowCostConfirmedRef.current) {
+      event.preventDefault();
+      setBelowCostPending(lowest);
+      return;
+    }
+    belowCostConfirmedRef.current = false;
+    onSubmit(event);
+  }
+
   useEffect(() => {
-    if (!isOpen) return;
+    // While the below-cost confirmation is open, Escape belongs to that dialog.
+    if (!isOpen || belowCostPending !== null) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, belowCostPending]);
 
   if (!isOpen) return null;
 
@@ -587,7 +607,7 @@ export function ProductFormDrawer({
       </div>
 
       {error ? <Alert tone="error" className="mb-4">{error}</Alert> : null}
-      <form onSubmit={onSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
         {/* Mobile / tablet preview — collapsible summary (hidden on desktop where the sticky panel shows) */}
         <div className="mb-4 lg:hidden">
           <CollapsibleSection summary={formState.name || "—"} title={posPreviewLabel}>
@@ -836,7 +856,41 @@ export function ProductFormDrawer({
           </button>
         </div>
       </form>
+      <BelowCostConfirm
+        lowest={belowCostPending}
+        cost={Number(formState.cost_price)}
+        onCancel={() => setBelowCostPending(null)}
+        onConfirm={() => {
+          setBelowCostPending(null);
+          belowCostConfirmedRef.current = true;
+          formRef.current?.requestSubmit();
+        }}
+      />
     </div>
+  );
+}
+
+function BelowCostConfirm({ lowest, cost, onCancel, onConfirm }: {
+  lowest: number | null;
+  cost: number;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const m = getApiErrorMessages() as Record<string, unknown>;
+  const text = (key: string, fallback: string) => (typeof m[key] === "string" ? (m[key] as string) : fallback);
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    <ConfirmModal
+      open={lowest !== null}
+      title={text("belowCostTitle", "Selling price is below cost")}
+      message={text("belowCostBody", "Selling price ฿{price} is below the cost ฿{cost}. Save anyway?")
+        .replace("{price}", fmt(lowest ?? 0))
+        .replace("{cost}", fmt(cost))}
+      confirmLabel={text("belowCostConfirm", "Save anyway")}
+      cancelLabel={text("belowCostCancel", "Go back")}
+      onConfirm={onConfirm}
+      onClose={onCancel}
+    />
   );
 }
 

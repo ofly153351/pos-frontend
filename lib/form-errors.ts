@@ -14,38 +14,39 @@
  *   <FieldError message={fieldErrors.name} />
  */
 
-import { ApiError } from "@/services/api";
+import { toast } from "@/components/ui/toast";
+import { localizeApiError } from "@/lib/api-error";
+import type { ApiError } from "@/services/api";
 
 export type FieldErrors = Record<string, string | undefined>;
 
-/** Maps an ApiError's structured fields into a FieldErrors state.
- *  Returns true when field errors were found (caller can skip generic toast).
+/** Maps an ApiError's structured fields into a FieldErrors state, localized
+ *  through `apiErrors.codes` (B23). Returns true when field errors were found
+ *  (caller can skip the generic toast).
  */
 export function setFromApiError(
   err: ApiError,
   setErrors: (fn: (prev: FieldErrors) => FieldErrors) => void,
 ): boolean {
   if (err.fields?.length) {
-    const map = err.fieldMap();
-    setErrors(() => map);
+    const { fields } = localizeApiError(err);
+    setErrors(() => fields);
     return true;
   }
   return false;
 }
 
-/** Returns a human-readable message for an ApiError.
- *  Falls back gracefully so the user always sees something meaningful.
+/** Returns a message in the selected language for any error. Known field codes
+ *  and HTTP statuses are translated; unknown failures keep a visible reference.
  */
 export function friendlyMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    // Prefer the server message; backend now returns meaningful text
-    if (err.message && err.message !== "Request failed") return err.message;
-    // Generic fallbacks by status
-    if (err.status === 403) return "ไม่มีสิทธิ์ดำเนินการ";
-    if (err.status === 404) return "ไม่พบข้อมูล";
-    if (err.status === 409) return "ข้อมูลซ้ำหรือขัดแย้ง";
-    if (err.status >= 500) return "เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง";
-  }
-  if (err instanceof Error) return err.message;
-  return "เกิดข้อผิดพลาด กรุณาลองใหม่";
+  return localizeApiError(err).message;
+}
+
+/** Shows an error toast at the right level: 400/409/422 → warning, else error. */
+export function showApiError(err: unknown): string {
+  const { message, level } = localizeApiError(err);
+  if (level === "warning") toast.warning(message, 5000);
+  else toast.error(message);
+  return message;
 }

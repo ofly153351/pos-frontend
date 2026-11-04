@@ -1,5 +1,6 @@
 "use client";
 
+import { friendlyMessage } from "@/lib/form-errors";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -88,7 +89,7 @@ export function StoreSetupForm({
         if (SUBSCRIPTION_ENABLED) await applyPendingPlan(response.data.id);
         router.replace(SUBSCRIPTION_ENABLED ? `/${locale}/admin/plans` : `/${locale}/dashboard`);
       } catch (nextError) {
-        setError(nextError instanceof Error ? nextError.message : "Request failed");
+        setError(friendlyMessage(nextError));
       }
     });
   }

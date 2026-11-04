@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "@/components/ui/toast";
-import { friendlyMessage } from "@/lib/form-errors";
+import { showApiError } from "@/lib/form-errors";
 import {
   clearAuthSession,
   getAuthSession,
@@ -295,7 +295,7 @@ export function ProfileManager({ dictionary, locale }: ProfileManagerProfileMana
       setSession((prev) => (prev ? { ...prev, user: { ...prev.user, name } } : prev));
       toast.success(CAN_UPDATE_PROFILE ? dictionary.profileSaved : dictionary.profileSavedLocalNote);
     } catch (error) {
-      toast.error(friendlyMessage(error));
+      showApiError(error);
     }
   }
 
@@ -328,7 +328,7 @@ export function ProfileManager({ dictionary, locale }: ProfileManagerProfileMana
         setConfirmPassword("");
         toast.success(dictionary.passwordSuccess);
       } catch (error) {
-        toast.error(friendlyMessage(error));
+        showApiError(error);
       }
     });
   }
@@ -341,7 +341,7 @@ export function ProfileManager({ dictionary, locale }: ProfileManagerProfileMana
       );
       toast.success(dictionary.preferencesSaved);
     } catch (error) {
-      toast.error(friendlyMessage(error));
+      showApiError(error);
     }
   }
 

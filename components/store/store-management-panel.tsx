@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { friendlyMessage } from "@/lib/form-errors";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -196,7 +197,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
         if (!preferred) return;
         selectStore(preferred, myStores);
       } catch (e) {
-        if (active) setError(e instanceof Error ? e.message : dictionary.errorFallback);
+        if (active) setError(friendlyMessage(e));
       }
     }
     load();
@@ -264,7 +265,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
         setEditLogoFile(null);
         toast.success(dictionary.updateSuccess);
       } catch (e) {
-        setError(e instanceof Error ? e.message : dictionary.errorFallback);
+        setError(friendlyMessage(e));
       }
     });
   }
@@ -292,7 +293,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
         setIsCreateModalOpen(false);
         toast.success(dictionary.createSuccess);
       } catch (e) {
-        setError(e instanceof Error ? e.message : dictionary.errorFallback);
+        setError(friendlyMessage(e));
       }
     });
   }
