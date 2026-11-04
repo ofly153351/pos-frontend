@@ -37,6 +37,10 @@ export type StoreManagementPanelStoreManagementDictionary = {
   updateSuccess: string;
   updating: string;
   bankAccountsSection?: string;
+  bankAccountNamePlaceholder?: string;
+  faxLabel?: string;
+  emailLabel?: string;
+  websiteLabel?: string;
   bankAccountsEmpty?: string;
   bankAccountAdd?: string;
   bankAccountBank?: string;

@@ -1,5 +1,6 @@
 "use client"
 
+import { uiText } from "@/lib/ui-text";
 import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import {
@@ -125,12 +126,12 @@ export function OverviewTab() {
   if (error || !data) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3 p-6 text-center">
-        <p className="text-sm text-slate-500">โหลดข้อมูลไม่สำเร็จ</p>
+        <p className="text-sm text-slate-500">{uiText("loadFailed")}</p>
         <button
           onClick={() => refetch()}
           className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"
         >
-          ลองอีกครั้ง
+          {uiText("retry")}
         </button>
       </div>
     )

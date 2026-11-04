@@ -1,5 +1,6 @@
 "use client";
 
+import { uiText } from "@/lib/ui-text";
 import { ChevronDown, Trash2, Ticket } from "lucide-react";
 import type { SaleDiscountType } from "@/types/sale";
 import type { Product } from "@/types/product";
@@ -76,7 +77,7 @@ export function CartPanel({
               <p className="mt-0.5 text-xs text-violet-400">
                 {cart.length > 0
                   ? `สินค้า ${cart.length} รายการ`
-                  : "ยังไม่มีสินค้า"}
+                  : uiText("cartEmpty")}
               </p>
             </div>
             <button
@@ -85,7 +86,7 @@ export function CartPanel({
               type="button"
             >
               <Trash2 className="h-3 w-3" />
-              ล้าง
+              {uiText("clear")}
             </button>
           </div>
 

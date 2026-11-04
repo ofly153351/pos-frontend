@@ -20,12 +20,18 @@ function baht(n: number | undefined | null): string {
   return "฿" + v.toLocaleString("th-TH", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+// B25/B26: dates/times follow the selected locale (Buddhist calendar in TH,
+// Gregorian in EN) and the Bangkok business timezone.
+function intlLocale(locale: string) {
+  return locale === "en" ? "en-GB" : "th-TH";
 }
 
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("th-TH", { day: "2-digit", month: "short" });
+function fmtTime(iso: string, locale = "th"): string {
+  return new Date(iso).toLocaleTimeString(intlLocale(locale), { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Bangkok" });
+}
+
+function fmtDate(iso: string, locale = "th"): string {
+  return new Date(iso).toLocaleDateString(intlLocale(locale), { day: "2-digit", month: "short", timeZone: "Asia/Bangkok" });
 }
 
 function statusMeta(status: string, dict: SalesHistoryDict): { label: string; cls: string } {
@@ -352,8 +358,8 @@ export function SalesHistoryManager({ dict, embedded = false }: { dict: SalesHis
                         className="cursor-pointer border-b border-slate-100 transition-colors hover:bg-violet-50/60"
                       >
                       <td className="px-3 py-2.5">
-                        <span className="block text-xs text-slate-400">{fmtDate(sale.created_at)}</span>
-                        <span className="font-medium tabular-nums">{fmtTime(sale.created_at)}</span>
+                        <span className="block text-xs text-slate-400">{fmtDate(sale.created_at, locale)}</span>
+                        <span className="font-medium tabular-nums">{fmtTime(sale.created_at, locale)}</span>
                       </td>
                       <td className="px-3 py-2.5">
                         <span className="text-xs text-slate-500 tabular-nums">

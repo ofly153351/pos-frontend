@@ -822,6 +822,21 @@
     "noLogoLabel": "ไม่มีโลโก้",
     "emptyStores": "ยังไม่มีร้าน",
     "errorFallback": "คำขอล้มเหลว",
+    "bankAccountsSection": "บัญชีธนาคาร",
+    "bankAccountsEmpty": "ยังไม่มีบัญชีธนาคาร",
+    "bankAccountAdd": "เพิ่ม",
+    "bankAccountBank": "ธนาคาร",
+    "bankAccountNo": "เลขบัญชี",
+    "bankAccountName": "ชื่อบัญชี",
+    "bankAccountNamePlaceholder": "ชื่อเจ้าของบัญชี",
+    "bankAccountPrimary": "บัญชีหลัก",
+    "bankAccountPrimaryUpdated": "ตั้งเป็นบัญชีหลักแล้ว",
+    "bankAccountAdded": "เพิ่มบัญชีธนาคารแล้ว",
+    "bankAccountDeleted": "ลบบัญชีธนาคารแล้ว",
+    "bankAccountError": "ไม่สามารถดำเนินการกับบัญชีธนาคารได้",
+    "faxLabel": "โทรสาร",
+    "emailLabel": "อีเมล",
+    "websiteLabel": "เว็บไซต์",
     "storeListTitle": "ร้านค้าของคุณ",
     "activeLabel": "ใช้งานอยู่",
     "addStoreButton": "เพิ่มร้านค้า",
@@ -4790,6 +4805,19 @@
       "unavailableTitle": "ยังไม่เปิดใช้งาน",
       "gatewayUnavailableBody": "Payment Gateway ยังไม่ได้เชื่อมต่อกับระบบ จึงยังบันทึกการตั้งค่าไม่ได้ ข้อมูลที่เคยกรอกไว้ในเครื่องนี้ถูกลบเพื่อความปลอดภัย",
       "comingSoonShort": "เร็วๆ นี้"
+    },
+    "ui": {
+      "mainMenu": "เมนูหลัก",
+      "closeMenu": "ปิดเมนู",
+      "copilotTitle": "ผู้ช่วยร้าน",
+      "copilotOverview": "สรุปร้าน",
+      "copilotActions": "สิ่งที่ต้องทำ",
+      "copilotInsights": "ข้อมูลเชิงลึก",
+      "copilotChat": "ถามผู้ช่วย",
+      "loadFailed": "โหลดข้อมูลไม่สำเร็จ",
+      "retry": "ลองอีกครั้ง",
+      "cartEmpty": "ยังไม่มีสินค้า",
+      "clear": "ล้าง"
     }
   }
 }

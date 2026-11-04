@@ -1,5 +1,6 @@
 "use client"
 
+import { uiText } from "@/lib/ui-text";
 import { X, FileText, Zap, Eye, MessageSquare } from "lucide-react"
 import { useCopilot } from "./copilot-provider"
 import { OverviewTab } from "./tabs/overview-tab"
@@ -8,10 +9,10 @@ import { ActionsTab } from "./tabs/actions-tab"
 import { ChatTab } from "./tabs/chat-tab"
 
 const TABS = [
-  { id: 'overview' as const, label: 'สรุปร้าน', Icon: FileText },
-  { id: 'actions' as const, label: 'สิ่งที่ต้องทำ', Icon: Zap },
-  { id: 'insights' as const, label: 'ข้อมูลเชิงลึก', Icon: Eye },
-  { id: 'chat' as const, label: 'ถามผู้ช่วย', Icon: MessageSquare },
+  { id: 'overview' as const, labelKey: 'copilotOverview' as const, Icon: FileText },
+  { id: 'actions' as const, labelKey: 'copilotActions' as const, Icon: Zap },
+  { id: 'insights' as const, labelKey: 'copilotInsights' as const, Icon: Eye },
+  { id: 'chat' as const, labelKey: 'copilotChat' as const, Icon: MessageSquare },
 ]
 
 export function CopilotPanel() {
@@ -47,7 +48,7 @@ export function CopilotPanel() {
                 d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"
               />
             </svg>
-            <span className="font-semibold text-white">ผู้ช่วยร้าน</span>
+            <span className="font-semibold text-white">{uiText("copilotTitle")}</span>
             {criticalCount > 0 && (
               <span className="rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-bold text-white">
                 {criticalCount} ด่วน
@@ -65,7 +66,7 @@ export function CopilotPanel() {
 
         {/* Tab bar */}
         <div className="flex shrink-0 border-b border-slate-100">
-          {TABS.map(({ id, label, Icon }) => {
+          {TABS.map(({ id, labelKey, Icon }) => {
             const isActive = activeTab === id
             const riskCount = id === 'insights' ? (data?.risks.length ?? 0) : 0
             return (
@@ -79,7 +80,7 @@ export function CopilotPanel() {
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" />
-                <span>{label}</span>
+                <span>{uiText(labelKey)}</span>
                 {riskCount > 0 && !isActive && (
                   <span className="absolute right-2 top-1.5 h-1.5 w-1.5 rounded-full bg-rose-500" />
                 )}

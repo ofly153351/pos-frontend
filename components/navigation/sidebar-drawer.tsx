@@ -1,5 +1,6 @@
 "use client";
 
+import { uiText } from "@/lib/ui-text";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -80,10 +81,10 @@ export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: S
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-600/20">
               <CircleDollarSign className="h-4 w-4 text-violet-400" />
             </div>
-            <span className="text-sm font-bold text-white">เมนูหลัก</span>
+            <span className="text-sm font-bold text-white">{uiText("mainMenu")}</span>
           </div>
           <button
-            aria-label="ปิดเมนู"
+            aria-label={uiText("closeMenu")}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-violet-400 transition hover:bg-violet-900/60 hover:text-white"
             onClick={onClose}
             type="button"

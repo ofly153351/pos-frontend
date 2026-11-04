@@ -534,13 +534,13 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
                   <Field label={dictionary.phoneLabel}>
                     <input className={inputCls} onChange={(e) => setEditPhone(e.target.value)} type="tel" value={editPhone} />
                   </Field>
-                  <Field label="โทรสาร (Fax)">
+                  <Field label={dictionary.faxLabel ?? "Fax"}>
                     <input className={inputCls} onChange={(e) => setEditFax(e.target.value)} type="tel" value={editFax} placeholder="02-000-0001" />
                   </Field>
-                  <Field label="อีเมล (Email)">
+                  <Field label={dictionary.emailLabel ?? "Email"}>
                     <input className={inputCls} onChange={(e) => setEditEmail(e.target.value)} type="email" value={editEmail} placeholder="store@example.com" />
                   </Field>
-                  <Field label="เว็บไซต์ (Website)">
+                  <Field label={dictionary.websiteLabel ?? "Website"}>
                     <input className={inputCls} onChange={(e) => setEditWebsite(e.target.value)} type="url" value={editWebsite} placeholder="https://example.com" />
                   </Field>
                 </div>
@@ -641,7 +641,7 @@ export function StoreManagementPanel({ dictionary }: StoreManagementPanelProps) 
                       <label className="mb-1 block text-xs font-medium text-slate-500">{dictionary.bankAccountName ?? "ชื่อบัญชี"}</label>
                       <input
                         className={inputCls}
-                        placeholder="ชื่อเจ้าของบัญชี"
+                        placeholder={dictionary.bankAccountNamePlaceholder ?? ""}
                         value={newAccountName}
                         onChange={(e) => setNewAccountName(e.target.value)}
                       />

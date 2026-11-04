@@ -341,7 +341,7 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
                 }`}
               >
                 <FileText className="h-3.5 w-3.5" />
-                เอกสาร
+                {d.tabDocuments}
               </button>
               <button
                 type="button"

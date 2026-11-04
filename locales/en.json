@@ -822,6 +822,21 @@
     "noLogoLabel": "No logo",
     "emptyStores": "No store available",
     "errorFallback": "Request failed",
+    "bankAccountsSection": "Bank accounts",
+    "bankAccountsEmpty": "No bank accounts yet",
+    "bankAccountAdd": "Add",
+    "bankAccountBank": "Bank",
+    "bankAccountNo": "Account number",
+    "bankAccountName": "Account name",
+    "bankAccountNamePlaceholder": "Account holder name",
+    "bankAccountPrimary": "Primary",
+    "bankAccountPrimaryUpdated": "Primary account updated",
+    "bankAccountAdded": "Bank account added",
+    "bankAccountDeleted": "Bank account removed",
+    "bankAccountError": "Could not update the bank account",
+    "faxLabel": "Fax",
+    "emailLabel": "Email",
+    "websiteLabel": "Website",
     "storeListTitle": "Your stores",
     "activeLabel": "Active",
     "addStoreButton": "Add store",
@@ -4790,6 +4805,19 @@
       "unavailableTitle": "Not available yet",
       "gatewayUnavailableBody": "The payment gateway is not connected yet, so these settings cannot be saved. Values previously kept on this device were removed for security.",
       "comingSoonShort": "Coming soon"
+    },
+    "ui": {
+      "mainMenu": "Main menu",
+      "closeMenu": "Close menu",
+      "copilotTitle": "Store assistant",
+      "copilotOverview": "Overview",
+      "copilotActions": "To do",
+      "copilotInsights": "Insights",
+      "copilotChat": "Ask the assistant",
+      "loadFailed": "Failed to load data",
+      "retry": "Try again",
+      "cartEmpty": "No items yet",
+      "clear": "Clear"
     }
   }
 }
