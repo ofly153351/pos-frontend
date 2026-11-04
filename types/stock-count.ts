@@ -64,6 +64,9 @@ export type CountSession = {
   status: CountStatus;
   createdAt: string;
   createdBy: string;
+  /** B19: resolved display names (empty when unknown — never invented). */
+  createdByName?: string;
+  completedByName?: string;
   items: CountItem[];
   countType: CountType;
   cycleRule: string;

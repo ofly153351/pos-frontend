@@ -180,6 +180,10 @@ function normalizeSession(s: Partial<CountSession> & { id: string; name: string;
     status: (s.status as CountStatus) ?? "draft",
     createdAt: s.createdAt,
     createdBy: s.createdBy ?? "",
+    // B19: names resolved by the backend from the session user; empty for
+    // historical rows without a user (shown as unknown, never invented).
+    createdByName: s.createdByName ?? "",
+    completedByName: s.completedByName ?? "",
     countType: (s.countType as CountType) ?? "full",
     cycleRule: s.cycleRule ?? "",
     blindCount: Boolean(s.blindCount),
@@ -371,7 +375,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
   });
 
   const active = sessions.find((s) => s.id === activeId) ?? null;
-  const activeUser = active?.staff.trim() || active?.createdBy.trim() || "System";
+  const activeUser = active?.staff.trim() || active?.createdByName?.trim() || "";
 
   useEffect(() => {
     if (view === "wizard" && step >= 3 && (!activeId || !sessions.some((s) => s.id === activeId))) {
@@ -1203,7 +1207,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                         </td>
                         <td className={`px-3 py-2.5 text-right text-sm font-bold tabular-nums ${varianceCount(session) > 0 ? "text-rose-600" : "text-slate-400"}`}>{varianceCount(session)}</td>
                         <td className="hidden whitespace-nowrap px-3 py-2.5 text-xs text-slate-500 xl:table-cell">{dtf.format(new Date(lastAct))}</td>
-                        <td className="hidden px-3 py-2.5 text-sm text-slate-600 lg:table-cell">{session.createdBy || t.list.unknownUser}</td>
+                        <td className="hidden px-3 py-2.5 text-sm text-slate-600 lg:table-cell">{session.createdByName || t.list.unknownUser}</td>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center justify-end gap-1.5">
                             {canContinue ? (
@@ -1609,7 +1613,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                   </div>
                   <div className="flex items-center gap-2 text-slate-500">
                     <Users className="h-4 w-4 shrink-0 text-violet-400" />
-                    <span className="truncate">{active.staff || active.createdBy || t.list.unknownUser}</span>
+                    <span className="truncate">{active.staff || active.createdByName || t.list.unknownUser}</span>
                   </div>
                   <div className="flex items-center gap-2 text-slate-500">
                     <Clock className="h-4 w-4 shrink-0 text-violet-400" />
@@ -1920,8 +1924,8 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
         const detailCards = [
           { label: t.review.sessionName, value: active.name },
           { label: t.review.sessionDate, value: dtf.format(new Date(active.createdAt)) },
-          { label: t.review.creator, value: active.createdBy || t.list.unknownUser },
-          { label: t.review.completedBy, value: active.completedBy || activeUser || t.list.unknownUser },
+          { label: t.review.creator, value: active.createdByName || t.list.unknownUser },
+          { label: t.review.completedBy, value: active.completedByName || t.list.unknownUser },
           { label: t.review.completedAt, value: active.completedAt ? dtf.format(new Date(active.completedAt)) : "—" },
           { label: t.review.warehouse, value: [active.warehouseName || t.list.allWarehouses, active.zone].filter(Boolean).join(" · ") || t.list.allWarehouses },
           { label: t.review.category, value: active.categoryName || t.list.allCategories },

@@ -496,8 +496,12 @@ function buildTimelineRows(
       const activity = item.item;
       const absQty = Math.abs(Number(activity.quantity_change ?? 0));
       const qtyText = locale === "th" ? `${formatNumber(absQty, locale)} ${activity.unit || ""}`.trim() : formatNumber(absQty, locale);
+      // B19: adjustments/count corrections keep their sign (+ found, − missing);
+      // direction-typed rows (receive/issue/sale) show the magnitude.
+      const signedQty = Number(activity.quantity_change ?? 0);
+      const signedText = `${signedQty > 0 ? "+" : signedQty < 0 ? "−" : ""}${qtyText}`;
       let title = t.types.adjustment;
-      let detail = t.messages.adjustment.replace("{product}", activity.product_name || "-").replace("{qty}", qtyText).replace("{location}", activity.location_name || "-");
+      let detail = t.messages.adjustment.replace("{product}", activity.product_name || "-").replace("{qty}", signedText).replace("{location}", activity.location_name || "-");
       let tone = "bg-violet-100 text-violet-600";
       let icon: ReactNode = <Boxes className="h-4 w-4" />;
 
