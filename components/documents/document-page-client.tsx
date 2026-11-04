@@ -378,6 +378,8 @@ export function DocumentPageClient({ dictionary: d, salesDict }: DocumentPageCli
                     <div key={type || "all"} className="group relative">
                       <button
                         type="button"
+                        aria-label={label}
+                        aria-pressed={active}
                         onClick={() => updateQuery({ type: type as DocumentType | "", page: 1 })}
                         className={`flex h-11 w-11 items-center justify-center rounded-xl transition-all ${
                           active

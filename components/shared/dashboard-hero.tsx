@@ -1,5 +1,6 @@
 "use client";
 
+import { a11yLabel } from "@/lib/a11y";
 import { type ReactNode, useState } from "react";
 import {
   CalendarRange,
@@ -141,6 +142,9 @@ export function DashboardHero<P extends string = DashboardHeroHeroPeriod>({
               className={`rounded-xl p-2 transition ${
                 filterOpen ? "bg-white text-violet-700" : "bg-white/10 text-white hover:bg-white/20"
               }`}
+              aria-label={a11yLabel("filter")}
+              title={a11yLabel("filter")}
+              aria-expanded={filterOpen}
               onClick={() => setFilterOpen((v) => !v)}
             >
               <Filter className="h-4 w-4" />
@@ -153,6 +157,7 @@ export function DashboardHero<P extends string = DashboardHeroHeroPeriod>({
               type="button"
               className="rounded-xl bg-white/10 p-2 text-white backdrop-blur-sm transition hover:bg-white/20 disabled:opacity-50"
               disabled={isLoading}
+              aria-label={periodLabels.refresh}
               onClick={onRefresh}
               title={periodLabels.refresh}
             >

@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { a11yLabel } from "@/lib/a11y";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import * as XLSX from "xlsx";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1246,7 +1247,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                       onChange={(v: number) => { setListPageSize(v); setListPage(1); }}
                     />
                     <div className="flex items-center gap-0.5">
-                      <button
+                      <button aria-label={a11yLabel("previousPage")} title={a11yLabel("previousPage")}
                         type="button"
                         onClick={() => setListPage(p => Math.max(1, p - 1))}
                         disabled={safeListPage <= 1}
@@ -1274,7 +1275,7 @@ export function StockCountManager({ dictionary, locale, autoStart = false, initi
                             </button>
                           </span>
                         ))}
-                      <button
+                      <button aria-label={a11yLabel("nextPage")} title={a11yLabel("nextPage")}
                         type="button"
                         onClick={() => setListPage(p => Math.min(listTotalPages, p + 1))}
                         disabled={safeListPage >= listTotalPages}

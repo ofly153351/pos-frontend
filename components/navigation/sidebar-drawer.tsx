@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, CircleDollarSign, X } from "lucide-react";
 
 import { NAV_SECTIONS, isNavGroup } from "@/components/navigation/nav-config";
@@ -18,6 +18,16 @@ export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: S
   const { role: storeRole } = useStoreRole();
   const canManage = canManageStore(storeRole);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // B31: every drawer closes with Escape.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
 
   const receiveBase = `/${locale}/warehouse/receive`;
 
@@ -136,6 +146,8 @@ export function SidebarDrawer({ isOpen, locale, labels, onClose, onNavigate }: S
                             </Link>
                             <button
                               aria-expanded={isExp}
+                              aria-label={label(entry.key)}
+                              title={label(entry.key)}
                               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition ${
                                 groupActive
                                   ? "text-white hover:bg-white/10"

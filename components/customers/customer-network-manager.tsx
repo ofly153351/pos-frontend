@@ -1,5 +1,6 @@
 "use client";
 
+import { a11yLabel } from "@/lib/a11y";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Award, ChevronDown, CreditCard, Crown, FileText, Pencil, Plus, Search, Star, Trash2, Truck, Users, X } from "lucide-react";
@@ -947,6 +948,8 @@ export function CustomerNetworkManager({ dictionary, locale }: CustomerNetworkMa
               <p className="mt-0.5 text-xs text-slate-500">{dictionary.discountRuleSubtitle}</p>
             </div>
             <button
+              aria-label={a11yLabel("close")}
+              title={a11yLabel("close")}
               className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               onClick={closeDiscountDrawer}
               type="button"

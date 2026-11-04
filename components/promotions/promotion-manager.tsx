@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { a11yLabel } from "@/lib/a11y";
 import { useCallback, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1472,11 +1473,11 @@ export function PromotionManager({ dictionary: dict, locale }: PromotionManagerP
           ))}
         </select>
         <div className="ml-auto flex rounded-xl border border-slate-200 p-0.5">
-          <button type="button" onClick={() => setListView("table")}
+          <button type="button" aria-label={a11yLabel("listView")} title={a11yLabel("listView")} aria-pressed={listView === "table"} onClick={() => setListView("table")}
             className={`flex h-7 w-8 items-center justify-center rounded-lg transition ${listView === "table" ? "bg-violet-100 text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
             <LayoutList className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={() => setListView("grid")}
+          <button type="button" aria-label={a11yLabel("gridView")} title={a11yLabel("gridView")} aria-pressed={listView === "grid"} onClick={() => setListView("grid")}
             className={`flex h-7 w-8 items-center justify-center rounded-lg transition ${listView === "grid" ? "bg-violet-100 text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
             <Grid3x3 className="h-3.5 w-3.5" />
           </button>

@@ -5,7 +5,7 @@ import { PaymentDialog } from "@/components/documents/payment-dialog";
 import { showApiError } from "@/lib/form-errors";
 import { CreditReasonModal } from "@/components/documents/credit-reason-modal";
 import { todayBusinessDate } from "@/lib/business-date";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -70,6 +70,16 @@ export function DocumentRowActions({ doc, dict: d, onPreview }: DocumentRowActio
   function close() {
     setMenuOpen(false);
   }
+
+  // B31: the actions menu closes with Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   // Open the menu as a body portal anchored to the trigger button. This escapes the
   // row's opacity dimming + stacking context (cancelled rows use opacity-60, which

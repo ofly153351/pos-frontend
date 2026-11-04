@@ -1,5 +1,6 @@
 "use client";
 
+import { a11yLabel } from "@/lib/a11y";
 import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageSizeDropdown } from "@/components/ui/page-size-dropdown";
@@ -74,7 +75,7 @@ export function SalesHistoryPagination({
           onChange={onPageSizeChange}
         />
         <div className="flex items-center gap-0.5">
-          <button
+          <button aria-label={a11yLabel("previousPage")} title={a11yLabel("previousPage")}
             type="button"
             disabled={page <= 1}
             onMouseDown={preventScroll}
@@ -94,7 +95,7 @@ export function SalesHistoryPagination({
               {p}
             </button>
           ))}
-          <button
+          <button aria-label={a11yLabel("nextPage")} title={a11yLabel("nextPage")}
             type="button"
             disabled={page >= totalPages}
             onMouseDown={preventScroll}

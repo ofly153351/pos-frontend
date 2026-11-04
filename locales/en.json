@@ -4775,6 +4775,16 @@
       "success": "Payment recorded",
       "nothingDue": "Nothing is due on this document",
       "history": "Payment history"
+    },
+    "a11y": {
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "close": "Close",
+      "listView": "List view",
+      "gridView": "Grid view",
+      "filter": "More filters",
+      "refresh": "Refresh",
+      "moreActions": "More actions"
     }
   }
 }

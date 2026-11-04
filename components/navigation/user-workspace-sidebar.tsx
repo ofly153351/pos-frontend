@@ -92,6 +92,8 @@ function CollapsibleNavGroup({
         {!collapsed ? (
           <button
             aria-expanded={expanded}
+            aria-label={label}
+            title={label}
             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
               active
                 ? "text-white hover:bg-white/10"
@@ -525,6 +527,8 @@ export function UserWorkspaceSidebar({
             {!collapsed ? (
               <button
                 aria-expanded={purchasingExpanded}
+                aria-label={labels.purchasing}
+                title={labels.purchasing}
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isPurchasingRoute
                     ? "text-white hover:bg-white/10"
@@ -641,6 +645,8 @@ export function UserWorkspaceSidebar({
             {!collapsed ? (
               <button
                 aria-expanded={settingsExpanded}
+                aria-label={labels.settings}
+                title={labels.settings}
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                   isSettingsRoute
                     ? "text-white hover:bg-white/10"

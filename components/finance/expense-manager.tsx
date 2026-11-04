@@ -1,5 +1,6 @@
 "use client";
 
+import { a11yLabel } from "@/lib/a11y";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, ChevronLeft, ChevronRight, Hash, Pencil, Plus, Scale, Tags, Trash2, Wallet, type LucideIcon } from "lucide-react";
@@ -306,7 +307,7 @@ export function ExpenseManager({ dictionary: t, locale }: ExpenseManagerProps) {
                     onChange={(v: number) => { setPageSize(v); setPage(1); }}
                   />
                   <div className="flex items-center gap-0.5">
-                    <button
+                    <button aria-label={a11yLabel("previousPage")} title={a11yLabel("previousPage")}
                       type="button"
                       onClick={() => setPage(p => Math.max(1, p - 1))}
                       disabled={safePage <= 1}
@@ -334,7 +335,7 @@ export function ExpenseManager({ dictionary: t, locale }: ExpenseManagerProps) {
                           </button>
                         </span>
                       ))}
-                    <button
+                    <button aria-label={a11yLabel("nextPage")} title={a11yLabel("nextPage")}
                       type="button"
                       onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                       disabled={safePage >= totalPages}

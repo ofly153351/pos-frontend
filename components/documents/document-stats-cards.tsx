@@ -1,5 +1,6 @@
 "use client";
 
+import { a11yLabel } from "@/lib/a11y";
 import { AlertCircle, CheckCircle2, Clock, FileSpreadsheet, FileStack, Plus, Printer } from "lucide-react";
 import type { DocumentStats, DocumentType } from "@/types/document";
 import type { DocumentStatsCardsDict } from "./types";
@@ -103,6 +104,9 @@ export function DocumentStatsCards({ dict, stats, defaultCreateType = "INVOICE",
             </button>
             <div className="group relative">
               <button
+                aria-haspopup="menu"
+                aria-label={`${dict.createDocument} · ${a11yLabel("moreActions")}`}
+                title={a11yLabel("moreActions")}
                 className="rounded-r-lg border-l border-violet-500 bg-violet-600 px-2 py-3 text-white transition-colors hover:bg-violet-700"
                 type="button"
               >
